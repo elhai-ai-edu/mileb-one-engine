@@ -1,9 +1,53 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head><meta charset="UTF-8"><title>Mileb.One - סטודנטים</title></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mileb.One - מרכז למידה וחדשנות</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .portal-container { max-width: 800px; width: 90%; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #2c3e50; margin-bottom: 10px; }
+        .subtitle { color: #7f8c8d; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .branch-card { padding: 25px; border-radius: 15px; text-decoration: none; color: white; transition: transform 0.2s; display: flex; flex-direction: column; align-items: center; }
+        .branch-card:hover { transform: translateY(-5px); }
+        .courses { background: #3498db; }
+        .skills { background: #1abc9c; }
+        .faculty { background: #9b59b6; }
+        .admin { background: #34495e; }
+        .branch-card i { font-size: 2rem; margin-bottom: 10px; }
+        .branch-card h3 { margin: 0; font-size: 1.4rem; }
+        .branch-card p { font-size: 0.9rem; opacity: 0.9; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
 <body>
-    <h1>מרכז הלמידה - קורסים</h1>
-    <div id="course-list"></div>
-    <script src="app.js"></script>
+    <div class="portal-container">
+        <h1>Mileb.One</h1>
+        <p class="subtitle">ברוכים הבאים למערכת האקולוגית של הלמידה</p>
+        
+        <div class="grid">
+            <a href="#courses" class="branch-card courses">
+                <h3>📚 קורסים אקדמיים</h3>
+                <p>ליווי מבוסס AI לחומר הלימוד</p>
+            </a>
+
+            <a href="/skills" class="branch-card skills">
+                <h3>🔍 אבחון ומיומנויות</h3>
+                <p>פיתוח יכולות למידה ותעסוקה</p>
+            </a>
+
+            <a href="/faculty" class="branch-card faculty">
+                <h3>💡 חדשנות וסגל</h3>
+                <p>כלים למרצים וטרנספורמציה</p>
+            </a>
+
+            <a href="/admin" class="branch-card admin">
+                <h3>📊 בקרה וניהול</h3>
+                <p>ניתוח נתונים ומבט מוסדי</p>
+            </a>
+        </div>
+    </div>
 </body>
 </html>
