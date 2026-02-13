@@ -1,4 +1,5 @@
 [build]
+  command = "" # הוספנו את השורה הזאת כדי לבטל את Hugo
   publish = "."
 
 [[redirects]]
