@@ -6,36 +6,36 @@
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
         .portal-container { max-width: 900px; width: 95%; background: white; padding: 50px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); text-align: center; }
-        .brand { color: #000; font-size: 1.6rem; margin-bottom: 25px; font-weight: 300; display: block; }
         .main-title { color: #003366; font-size: 2.5rem; margin-bottom: 10px; font-weight: 700; }
         .main-subtitle { color: #7f8c8d; font-size: 1.2rem; margin-bottom: 45px; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
         .branch-card { padding: 35px 20px; border-radius: 15px; text-decoration: none; color: white; transition: 0.3s; display: flex; flex-direction: column; align-items: center; }
         .branch-card:hover { transform: translateY(-8px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .branch-card h3 { margin: 0; font-size: 1.5rem; }
+        .courses { background: #3498db; } .skills { background: #1abc9c; } .faculty { background: #9b59b6; } .admin { background: #34495e; }
         @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
     <div class="portal-container">
-        <span class="brand">MilEd.One</span>
+        <span style="font-weight:300; font-size:1.5rem;">MilEd.One</span>
         <h1 id="h-title">טוען...</h1>
         <p id="h-subtitle" class="main-subtitle"></p>
-        <div id="h-grid" class="grid"></div>
+        <div class="grid">
+            <a href="/students.html" class="branch-card courses"><h3 id="t-courses"></h3><p id="d-courses"></p></a>
+            <a href="/skills.html" class="branch-card skills"><h3 id="t-skills"></h3><p id="d-skills"></p></a>
+            <a href="/faculty.html" class="branch-card faculty"><h3 id="t-faculty"></h3><p id="d-faculty"></p></a>
+            <a href="/admin.html" class="branch-card admin"><h3 id="t-admin"></h3><p id="d-admin"></p></a>
+        </div>
     </div>
     <script>
         fetch('/config.json').then(r => r.json()).then(data => {
             document.getElementById('h-title').innerText = data.home.main_title;
             document.getElementById('h-subtitle').innerText = data.home.main_subtitle;
-            const grid = document.getElementById('h-grid');
-            data.home.cards.forEach(card => {
-                const a = document.createElement('a');
-                a.href = card.link;
-                a.className = 'branch-card';
-                a.style.backgroundColor = card.color;
-                a.innerHTML = `<h3>${card.title}</h3><p>${card.desc}</p>`;
-                grid.appendChild(a);
-            });
+            const cards = data.home.cards;
+            for (let key in cards) {
+                document.getElementById('t-' + key).innerText = cards[key].title;
+                document.getElementById('d-' + key).innerText = cards[key].desc;
+            }
         });
     </script>
 </body>
