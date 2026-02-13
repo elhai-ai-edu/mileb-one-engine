@@ -1,58 +1,31 @@
 {
-  "system_version": "2.0",
+  "system_version": "2.2",
   "branches": {
     "courses": {
-      "path": "/index.html",
+      "title": "פורטל סטודנטים",
+      "subtitle": "בחרו את הקורס שלכם:",
       "items": {
-        "hebrew_optometry": { 
-          "name": "עברית מתקדמים - אופטומטריה", 
-          "mode": "supportive",
-          "arabic_support": true 
-        },
-        "hebrew_management": { 
-          "name": "עברית מתקדמים - ניהול", 
-          "mode": "supportive",
-          "arabic_support": true 
-        },
-        "academic_writing_sector": { 
-          "name": "קריאה וכתיבה אקדמית - מכינת מגזר", 
-          "mode": "academic_scaffolding",
-          "arabic_support": true 
-        },
-        "gerontology_strauss": { 
-          "name": "מבוא לגרונטולוגיה - מכינה שטראוס", 
-          "mode": "milestone_ready",
-          "arabic_support": false 
-        },
-        "social_science_sector": { 
-          "name": "מבוא למדעי החברה - מכינת מגזר", 
-          "mode": "theoretical_mediation",
-          "arabic_support": true 
-        }
-      }
-    },
-    "skills": {
-      "path": "/skills.html",
-      "items": {
-        "diagnostic_v1": { 
-          "name": "אבחון וקידום מיומנויות למידה", 
-          "mode": "interview" 
-        }
+        "hebrew_optometry": { "name": "עברית - אופטומטריה", "mode": "supportive", "arabic_support": true },
+        "hebrew_management": { "name": "עברית - ניהול", "mode": "supportive", "arabic_support": true },
+        "academic_writing_sector": { "name": "קריאה וכתיבה אקדמית", "mode": "academic_scaffolding", "arabic_support": true },
+        "gerontology_strauss": { "name": "גרונטולוגיה - שטראוס", "mode": "milestone_ready", "arabic_support": false },
+        "social_science_sector": { "name": "מדעי החברה", "mode": "theoretical_mediation", "arabic_support": true }
       }
     },
     "faculty": {
-      "path": "/faculty.html",
+      "title": "פורטל סגל ומרצים",
+      "subtitle": "כלים פדגוגיים מבוססי AI:",
       "items": {
-        "pedagogical_transformation": { "name": "טרנספורמציה פדגוגית" },
+        "pedagogical_transformation": { "name": "בוט טרנספורמציה פדגוגית" },
         "bot_architect": { "name": "בוט יוצר בוטים" },
         "staff_support": { "name": "תמיכה פדגוגית ורגשית" }
       }
     },
-    "admin": {
-      "path": "/admin.html",
+    "skills": {
+      "title": "אבחון ומיומנויות",
+      "subtitle": "בחרו תהליך אבחון:",
       "items": {
-        "analytics_dashboard": { "name": "לוח בקרת הנהלה (אנליטיקה)" },
-        "dropout_prevention": { "name": "מערכת איתור נשירה" }
+        "diagnostic_v1": { "name": "אבחון מיומנויות למידה", "mode": "interview" }
       }
     }
   }
