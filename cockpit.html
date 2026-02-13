@@ -1,109 +1,88 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <title>MilEd.One Cockpit - ניהול על</title>
+    <meta charset="UTF-8"><title>MilEd.One Cockpit - שליטה מלאה</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #2c3e50; color: white; padding: 30px; }
-        .cockpit-card { max-width: 1000px; margin: auto; background: #ecf0f1; color: #333; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { text-align: center; color: #2c3e50; border-bottom: 4px solid #3498db; padding-bottom: 10px; }
-        .branch-section { background: white; border: 1px solid #bdc3c7; padding: 20px; border-radius: 10px; margin-bottom: 30px; }
-        .branch-header { background: #3498db; color: white; padding: 10px; border-radius: 5px; margin: -20px -20px 20px -20px; font-weight: bold; font-size: 1.2rem; }
-        label { display: block; font-weight: bold; margin-top: 10px; color: #2c3e50; }
-        input[type="text"] { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .items-list { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-top: 15px; }
-        .item-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #2ecc71; color: white; margin-top: 10px; }
-        .btn-del { background: #e74c3c; color: white; }
-        .btn-save-all { background: #e67e22; color: white; width: 100%; font-size: 1.5rem; padding: 20px; margin-top: 30px; }
-        #json-output { width: 100%; height: 300px; margin-top: 20px; font-family: monospace; display: none; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a2a3a; color: white; padding: 20px; }
+        .cockpit-card { max-width: 1000px; margin: auto; background: #ecf0f1; color: #333; padding: 30px; border-radius: 15px; }
+        .section { background: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-right: 10px solid #3498db; }
+        .home-section { border-right-color: #e74c3c; } /* צבע שונה לדף הבית */
+        h2 { margin-top: 0; color: #2c3e50; }
+        label { font-weight: bold; display: block; margin-top: 10px; }
+        input { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ddd; }
+        .card-edit { background: #f9f9f9; padding: 15px; margin-top: 10px; border-radius: 8px; border: 1px dashed #ccc; }
+        .btn-save { background: #e67e22; color: white; width: 100%; padding: 20px; font-size: 1.5rem; border: none; cursor: pointer; border-radius: 10px; }
+        textarea { width: 100%; height: 200px; margin-top: 20px; display: none; }
     </style>
 </head>
 <body>
-
 <div class="cockpit-card">
-    <h1>MilEd.One Cockpit</h1>
-    <p style="text-align: center;">ניהול מערכת הלמידה - שליטה בכל הענפים</p>
+    <h1>MilEd.One - לוח בקרה ראשי</h1>
     
-    <div id="sections-container"></div>
-
-    <button class="btn btn-save-all" onclick="generateConfig()">שמור וצור קוד עדכון</button>
-    
-    <div id="output-area" style="display:none; margin-top:20px; background: #fff3cd; padding: 20px; border: 2px solid #f39c12; border-radius: 10px;">
-        <h3>העתק את כל הקוד למטה ל-GitHub (קובץ config.json):</h3>
-        <textarea id="json-output"></textarea>
+    <div class="section home-section">
+        <h2>🏠 ניהול דף הבית (Main Page)</h2>
+        <label>כותרת ראשית:</label>
+        <input type="text" id="h-main-title" onchange="config.home.main_title = this.value">
+        <label>תת כותרת:</label>
+        <input type="text" id="h-main-subtitle" onchange="config.home.main_subtitle = this.value">
+        
+        <div id="home-cards-editor"></div>
     </div>
+
+    <div id="branches-editor"></div>
+
+    <button class="btn-save" onclick="generate()">שמור והפק קוד עדכון לגיטהאב</button>
+    <textarea id="json-output"></textarea>
 </div>
 
 <script>
-    let configData = {};
-    const branches = ['courses', 'skills', 'faculty', 'admin'];
-
+    let config = {};
     fetch('/config.json').then(r => r.json()).then(data => {
-        configData = data;
-        renderCockpit();
+        config = data;
+        initHome();
+        initBranches();
     });
 
-    function renderCockpit() {
-        const container = document.getElementById('sections-container');
-        container.innerHTML = '';
-
-        branches.forEach(b => {
-            const branch = configData.branches[b];
+    function initHome() {
+        document.getElementById('h-main-title').value = config.home.main_title;
+        document.getElementById('h-main-subtitle').value = config.home.main_subtitle;
+        const container = document.getElementById('home-cards-editor');
+        container.innerHTML = '<h3>עריכת כרטיסי ניווט:</h3>';
+        config.home.cards.forEach((card, index) => {
             const div = document.createElement('div');
-            div.className = 'branch-section';
+            div.className = 'card-edit';
             div.innerHTML = `
-                <div class="branch-header">ניהול ענף: ${b.toUpperCase()}</div>
-                <label>כותרת הדף (Title):</label>
-                <input type="text" value="${branch.title}" onchange="configData.branches['${b}'].title = this.value">
-                <label>שורת הסבר (Subtitle):</label>
-                <input type="text" value="${branch.subtitle}" onchange="configData.branches['${b}'].subtitle = this.value">
-                
-                <div class="items-list">
-                    <label>כפתורים ובוטים:</label>
-                    <div id="items-${b}"></div>
-                    <button class="btn btn-add" onclick="addItem('${b}')">+ הוסף כפתור</button>
-                </div>
+                <label>כותרת כרטיס ${index+1}:</label>
+                <input type="text" value="${card.title}" onchange="config.home.cards[${index}].title = this.value">
+                <label>תיאור כרטיס:</label>
+                <input type="text" value="${card.desc}" onchange="config.home.cards[${index}].desc = this.value">
             `;
             container.appendChild(div);
-            renderItems(b);
         });
     }
 
-    function renderItems(b) {
-        const list = document.getElementById(`items-${b}`);
-        list.innerHTML = '';
-        for (let id in configData.branches[b].items) {
-            const row = document.createElement('div');
-            row.className = 'item-row';
-            row.innerHTML = `
-                <input type="text" value="${configData.branches[b].items[id].name}" onchange="configData.branches['${b}'].items['${id}'].name = this.value">
-                <button class="btn btn-del" onclick="deleteItem('${b}', '${id}')">מחיקה</button>
+    function initBranches() {
+        const root = document.getElementById('branches-editor');
+        for (let b in config.branches) {
+            if (b === 'cockpit') continue;
+            const branch = config.branches[b];
+            const div = document.createElement('div');
+            div.className = 'section';
+            div.innerHTML = `<h2>ענף: ${branch.title}</h2>
+                <label>כותרת פנימית:</label><input type="text" value="${branch.title}" onchange="config.branches['${b}'].title = this.value">
+                <label>תיאור פנימי:</label><input type="text" value="${branch.subtitle}" onchange="config.branches['${b}'].subtitle = this.value">
             `;
-            list.appendChild(row);
+            root.appendChild(div);
         }
     }
 
-    function addItem(b) {
-        const id = b + "_" + Date.now();
-        configData.branches[b].items[id] = { name: "שם חדש..." };
-        renderCockpit();
-    }
-
-    function deleteItem(b, id) {
-        delete configData.branches[b].items[id];
-        renderCockpit();
-    }
-
-    function generateConfig() {
+    function generate() {
         const out = document.getElementById('json-output');
-        out.value = JSON.stringify(configData, null, 2);
+        out.value = JSON.stringify(config, null, 2);
         out.style.display = 'block';
-        document.getElementById('output-area').style.display = 'block';
         out.select();
+        alert("הקוד הופק! העתק אותו ל-config.json בגיטהאב.");
     }
 </script>
-
 </body>
 </html>
