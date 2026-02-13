@@ -1,31 +1,34 @@
 {
-  "system_version": "2.2",
+  "system_version": "3.0",
   "branches": {
     "courses": {
       "title": "פורטל סטודנטים",
       "subtitle": "בחרו את הקורס שלכם:",
       "items": {
-        "hebrew_optometry": { "name": "עברית - אופטומטריה", "mode": "supportive", "arabic_support": true },
-        "hebrew_management": { "name": "עברית - ניהול", "mode": "supportive", "arabic_support": true },
-        "academic_writing_sector": { "name": "קריאה וכתיבה אקדמית", "mode": "academic_scaffolding", "arabic_support": true },
-        "gerontology_strauss": { "name": "גרונטולוגיה - שטראוס", "mode": "milestone_ready", "arabic_support": false },
-        "social_science_sector": { "name": "מדעי החברה", "mode": "theoretical_mediation", "arabic_support": true }
-      }
-    },
-    "faculty": {
-      "title": "פורטל סגל ומרצים",
-      "subtitle": "כלים פדגוגיים מבוססי AI:",
-      "items": {
-        "pedagogical_transformation": { "name": "בוט טרנספורמציה פדגוגית" },
-        "bot_architect": { "name": "בוט יוצר בוטים" },
-        "staff_support": { "name": "תמיכה פדגוגית ורגשית" }
+        "hebrew_optometry": { "name": "עברית - אופטומטריה" },
+        "gerontology_strauss": { "name": "גרונטולוגיה - שטראוס" }
       }
     },
     "skills": {
       "title": "אבחון ומיומנויות",
       "subtitle": "בחרו תהליך אבחון:",
       "items": {
-        "diagnostic_v1": { "name": "אבחון מיומנויות למידה", "mode": "interview" }
+        "diagnostic_v1": { "name": "אבחון מיומנויות למידה" }
+      }
+    },
+    "faculty": {
+      "title": "פורטל סגל ומרצים",
+      "subtitle": "כלים פדגוגיים מבוססי AI:",
+      "items": {
+        "pedagogical_transformation": { "name": "בוט טרנספורמציה פדגוגית" }
+      }
+    },
+    "admin": {
+      "title": "ניהול ובקרה מוסדית",
+      "subtitle": "נתוני מערכת ומדדי הצלחה:",
+      "items": {
+        "analytics": { "name": "לוח בקרת אנליטיקה" },
+        "retention": { "name": "דוח איתור נשירה" }
       }
     }
   }
