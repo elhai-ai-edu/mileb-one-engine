@@ -5,36 +5,60 @@
       "title": "פורטל סטודנטים",
       "subtitle": "בחרו את הקורס שלכם:",
       "items": {
-        "hebrew_optometry": { "name": "עברית - אופטומטריה" },
-        "hebrew_management": { "name": "עברית - ניהול" },
-        "academic_writing": { "name": "קריאה וכתיבה אקדמית" },
-        "gerontology_strauss": { "name": "גרונטולוגיה - שטראוס" },
-        "social_science": { "name": "מדעי החברה" }
+        "hebrew_management": {
+          "name": "עברית - ניהול"
+        },
+        "academic_writing": {
+          "name": "קריאה וכתיבה אקדמית"
+        },
+        "gerontology_strauss": {
+          "name": "גרונטולוגיה - שטראוס"
+        },
+        "social_science": {
+          "name": "מדעי החברה"
+        },
+        "courses_1770988876522": {
+          "name": "עברית - אופטיקה המהוללת"
+        }
       }
     },
     "faculty": {
       "title": "פורטל סגל ומרצים",
       "subtitle": "כלים פדגוגיים מבוססי AI:",
       "items": {
-        "pedagogical_transformation": { "name": "בוט טרנספורמציה פדגוגית" },
-        "bot_architect": { "name": "בוט יוצר בוטים" },
-        "staff_support": { "name": "תמיכה פדגוגית ורגשית" }
+        "pedagogical_transformation": {
+          "name": "בוט טרנספורמציה פדגוגית"
+        },
+        "bot_architect": {
+          "name": "בוט יוצר בוטים"
+        },
+        "staff_support": {
+          "name": "תמיכה פדגוגית ורגשית"
+        }
       }
     },
     "skills": {
       "title": "מרכז פיתוח מיומנויות ואבחון",
       "subtitle": "בחר תהליך עבודה:",
       "items": {
-        "diagnostic": { "name": "התחל אבחון מיומנויות" },
-        "learning_skills": { "name": "פיתוח מיומנויות למידה" }
+        "diagnostic": {
+          "name": "התחל אבחון מיומנויות"
+        },
+        "learning_skills": {
+          "name": "פיתוח מיומנויות למידה"
+        }
       }
     },
     "admin": {
       "title": "ניהול ובקרה מוסדית",
       "subtitle": "נתוני מערכת ומדדי הצלחה:",
       "items": {
-        "analytics": { "name": "לוח בקרת אנליטיקה" },
-        "retention": { "name": "דוח איתור נשירה" }
+        "analytics": {
+          "name": "לוח בקרת אנליטיקה"
+        },
+        "retention": {
+          "name": "דוח איתור נשירה"
+        }
       }
     }
   }
