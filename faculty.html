@@ -1,16 +1,29 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head><meta charset="UTF-8"><title>MilEd.One - פורטל סגל</title>
-<style>
-    body { font-family: sans-serif; text-align: center; padding: 40px; background: #f4f7f6; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px; margin: auto; }
-    .btn { padding: 20px; background: #9b59b6; color: white; border-radius: 10px; text-decoration: none; font-weight: bold; }
-</style>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MilEd.One - פורטל סגל</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { max-width: 800px; width: 90%; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
+        h1 { color: #9b59b6; font-size: 2.2rem; margin-bottom: 10px; }
+        .subtitle { color: #7f8c8d; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .btn { padding: 25px; border-radius: 15px; text-decoration: none; color: white; background: #9b59b6; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn:hover { transform: translateY(-3px); background: #8e44ad; }
+        .back-btn { display: inline-block; margin-top: 40px; color: #7f8c8d; text-decoration: none; font-weight: bold; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
 </head>
 <body>
-    <h1 id="title" style="color: #9b59b6;"></h1>
-    <p id="subtitle"></p>
-    <div id="list" class="grid"></div>
+    <div class="container">
+        <span style="font-weight: 300; color: #000;">MilEd.One</span>
+        <h1 id="title">פורטל סגל ומרצים</h1>
+        <p id="subtitle" class="subtitle">כלים פדגוגיים מבוססי AI</p>
+        <div id="list" class="grid"></div>
+        <a href="/" class="back-btn">→ חזרה לדף הבית</a>
+    </div>
     <script>
         fetch('/config.json').then(r => r.json()).then(data => {
             const faculty = data.branches.faculty;
