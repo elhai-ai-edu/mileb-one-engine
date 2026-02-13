@@ -1,13 +1,29 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head><meta charset="UTF-8"><title>MilEd.One - סגל</title></head>
-<body style="font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6;">
-    <h1 style="color: #9b59b6;">פורטל מרצים וחדשנות פדגוגית</h1>
-    <p>כלים מתקדמים לניהול פדגוגי מבוסס AI</p>
-    <div style="display: flex; justify-content: center; gap: 20px; margin-top: 30px;">
-        <button onclick="location.href='/chat.html?class=pedagogical_transformation'" style="padding: 20px; background: #9b59b6; color: white; border: none; border-radius: 10px; cursor: pointer;">🤖 בוט טרנספורמציה פדגוגית</button>
-        <button onclick="alert('לוח הבקרה בבנייה')" style="padding: 20px; background: #34495e; color: white; border: none; border-radius: 10px; cursor: pointer;">📊 לוח בקרה אישי למרצה</button>
-    </div>
-    <br><a href="/">חזרה לדף הבית</a>
+<head><meta charset="UTF-8"><title>MilEd.One - פורטל סגל</title>
+<style>
+    body { font-family: sans-serif; text-align: center; padding: 40px; background: #f4f7f6; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px; margin: auto; }
+    .btn { padding: 20px; background: #9b59b6; color: white; border-radius: 10px; text-decoration: none; font-weight: bold; }
+</style>
+</head>
+<body>
+    <h1 id="title" style="color: #9b59b6;"></h1>
+    <p id="subtitle"></p>
+    <div id="list" class="grid"></div>
+    <script>
+        fetch('/config.json').then(r => r.json()).then(data => {
+            const faculty = data.branches.faculty;
+            document.getElementById('title').innerText = faculty.title;
+            document.getElementById('subtitle').innerText = faculty.subtitle;
+            for (let id in faculty.items) {
+                const a = document.createElement('a');
+                a.className = 'btn';
+                a.href = `/chat.html?class=${id}`;
+                a.innerText = faculty.items[id].name;
+                document.getElementById('list').appendChild(a);
+            }
+        });
+    </script>
 </body>
 </html>
