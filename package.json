@@ -1,0 +1,7 @@
+{
+  "name": "mileb-one-engine",
+  "version": "1.0.0",
+  "description": "Mileb AI Engine",
+  "main": "index.js",
+  "type": "commonjs"
+}
