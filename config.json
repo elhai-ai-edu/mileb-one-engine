@@ -1,24 +1,22 @@
 {
   "classes": {
-    "hebrew_optometry": {
-      "name": "עברית מתקדמים - אופטומטריה",
-      "arabic_support": true
-    },
-    "hebrew_management": {
-      "name": "עברית מתקדמים - ניהול",
-      "arabic_support": true
-    },
-    "academic_writing_sector": {
-      "name": "קריאה וכתיבה אקדמית - מכינת מגזר",
-      "arabic_support": true
-    },
-    "gerontology_strauss": {
-      "name": "מבוא לגרונטולוגיה - מכינה שטראוס",
-      "arabic_support": false
-    },
-    "social_science_sector": {
-      "name": "מבוא למדעי החברה - מכינת מגזר",
-      "arabic_support": true
-    }
+    "//_1": "--- ענף 1: קורסים (סטודנטים) ---",
+    "hebrew_optometry": { "name": "עברית - אופטומטריה", "type": "course" },
+    "hebrew_management": { "name": "עברית - ניהול", "type": "course" },
+    "writing_sector": { "name": "כתיבה אקדמית - מגזר", "type": "course" },
+    "gerontology_strauss": { "name": "גרונטולוגיה - שטראוס", "type": "course" },
+    "social_science_sector": { "name": "מדעי החברה - מגזר", "type": "course" },
+
+    "//_2": "--- ענף 2: מיומנויות ואבחון (סטודנטים) ---",
+    "skills_diagnostic": { "name": "אבחון וקידום מיומנויות", "type": "diagnostic" },
+
+    "//_3": "--- ענף 3: חדשנות וסגל (מרצים) ---",
+    "pedagogical_transformation": { "name": "בוט טרנספורמציה פדגוגית", "type": "faculty" },
+    "bot_architect": { "name": "בוט יוצר בוטים", "type": "faculty" },
+    "staff_support": { "name": "תמיכה פדגוגית ורגשית", "type": "faculty" },
+
+    "//_4": "--- ענף 4: הנהלה ובקרה (ניהול) ---",
+    "management_dashboard": { "name": "לוח בקרה וניתוח נתונים", "type": "admin" },
+    "dropout_prevention": { "name": "מנגנון איתור נשירה", "type": "admin" }
   }
 }
