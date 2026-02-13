@@ -1,24 +1,40 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head><meta charset="UTF-8"><title>MilEd.One - ניהול וביקורת</title></head>
-<body style="font-family: sans-serif; text-align: center; padding: 50px; background: #f4f7f6;">
-    <h1 id="title" style="color: #34495e;"></h1>
-    <p id="subtitle"></p>
-    <div id="list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 600px; margin: auto; margin-top: 30px;"></div>
-    <br><hr><br>
-    <a href="/">חזרה לדף הבית</a>
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MilEd.One - הנהלה</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { max-width: 800px; width: 90%; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
+        h1 { color: #34495e; font-size: 2.2rem; margin-bottom: 10px; }
+        .subtitle { color: #7f8c8d; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .btn { padding: 25px; border-radius: 15px; text-decoration: none; color: white; background: #34495e; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn:hover { transform: translateY(-3px); background: #2c3e50; }
+        .back-btn { display: inline-block; margin-top: 40px; color: #7f8c8d; text-decoration: none; font-weight: bold; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <span style="font-weight: 300; color: #000;">MilEd.One</span>
+        <h1 id="title">בקרה וניהול מוסדי</h1>
+        <p id="subtitle" class="subtitle">נתונים ומדדי הצלחה בזמן אמת</p>
+        <div id="list" class="grid"></div>
+        <a href="/" class="back-btn">→ חזרה לדף הבית</a>
+    </div>
     <script>
         fetch('/config.json').then(r => r.json()).then(data => {
             const admin = data.branches.admin;
             document.getElementById('title').innerText = admin.title;
             document.getElementById('subtitle').innerText = admin.subtitle;
             for (let id in admin.items) {
-                const btn = document.createElement('a');
-                btn.style = "padding: 20px; background: #34495e; color: white; text-decoration: none; border-radius: 10px; font-weight: bold;";
-                btn.href = "#"; // כאן יבואו לינקים לדוחות בעתיד
-                btn.innerText = admin.items[id].name;
-                document.getElementById('list').appendChild(btn);
+                const a = document.createElement('a');
+                a.className = 'btn';
+                a.href = '#'; // לינקים ללוחות הבקרה בעתיד
+                a.innerText = admin.items[id].name;
+                document.getElementById('list').appendChild(a);
             }
         });
     </script>
