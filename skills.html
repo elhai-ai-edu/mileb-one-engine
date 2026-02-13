@@ -1,8 +1,42 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head><meta charset="UTF-8"><title>Mileb.One - מיומנויות</title></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MilEd.One - מיומנויות</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .container { max-width: 800px; width: 90%; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
+        h1 { color: #1abc9c; font-size: 2.2rem; margin-bottom: 10px; }
+        .subtitle { color: #7f8c8d; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .btn { padding: 25px; border-radius: 15px; text-decoration: none; color: white; background: #1abc9c; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn:hover { transform: translateY(-3px); background: #16a085; }
+        .back-btn { display: inline-block; margin-top: 40px; color: #7f8c8d; text-decoration: none; font-weight: bold; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
 <body>
-    <h1>מרכז פיתוח מיומנויות ואבחון</h1>
-    <button onclick="startDiagnostic()">התחל אבחון מיומנויות</button>
+    <div class="container">
+        <span style="font-weight: 300; color: #000;">MilEd.One</span>
+        <h1 id="title">אבחון ומיומנויות</h1>
+        <p id="subtitle" class="subtitle">פיתוח יכולות למידה ותעסוקה</p>
+        <div id="list" class="grid"></div>
+        <a href="/" class="back-btn">→ חזרה לדף הבית</a>
+    </div>
+    <script>
+        fetch('/config.json').then(r => r.json()).then(data => {
+            const skills = data.branches.skills;
+            document.getElementById('title').innerText = skills.title;
+            document.getElementById('subtitle').innerText = skills.subtitle;
+            for (let id in skills.items) {
+                const a = document.createElement('a');
+                a.className = 'btn';
+                a.href = `/chat.html?class=${id}`;
+                a.innerText = skills.items[id].name;
+                document.getElementById('list').appendChild(a);
+            }
+        });
+    </script>
 </body>
 </html>
