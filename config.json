@@ -1,0 +1,24 @@
+{
+  "classes": {
+    "hebrew_optometry": {
+      "name": "עברית מתקדמים - אופטומטריה",
+      "arabic_support": true
+    },
+    "hebrew_management": {
+      "name": "עברית מתקדמים - ניהול",
+      "arabic_support": true
+    },
+    "academic_writing_sector": {
+      "name": "קריאה וכתיבה אקדמית - מכינת מגזר",
+      "arabic_support": true
+    },
+    "gerontology_strauss": {
+      "name": "מבוא לגרונטולוגיה - מכינה שטראוס",
+      "arabic_support": false
+    },
+    "social_science_sector": {
+      "name": "מבוא למדעי החברה - מכינת מגזר",
+      "arabic_support": true
+    }
+  }
+}
