@@ -4,17 +4,91 @@
     "main_title": "ברוכים הבאים למערכת הלמידה",
     "main_subtitle": "פורטל MilEd.One לחדשנות פדגוגית",
     "cards": {
-      "courses": { "title": "📚 קורסים אקדמיים", "desc": "ליווי מבוסס AI לחומר הלימוד" },
-      "skills": { "title": "🔍 אבחון ומיומנויות", "desc": "פיתוח יכולות למידה ותעסוקה" },
-      "faculty": { "title": "💡 חדשנות וסגל", "desc": "כלים לקידום הוראה למרצים מבוססי AI" },
-      "admin": { "title": "📊 בקרה וניהול", "desc": "ניתוח נתונים ומבט מוסדי" }
+      "courses": {
+        "title": "📚 קורסים אקדמיים",
+        "desc": "ליווי מבוסס AI לחומר הלימוד"
+      },
+      "skills": {
+        "title": "🔍 אבחון ומיומנויות",
+        "desc": "פיתוח יכולות למידה ותעסוקה"
+      },
+      "faculty": {
+        "title": "💡 חדשנות וסגל",
+        "desc": "כלים לקידום הוראה למרצים מבוססי AI"
+      },
+      "admin": {
+        "title": "📊 בקרה וניהול",
+        "desc": "ניתוח נתונים ומבט מוסדי"
+      }
     }
   },
   "branches": {
-    "courses": { "title": "פורטל סטודנטים", "subtitle": "בחרו את הקורס שלכם:", "items": { "hebrew_optometry": { "name": "עברית - אופטומטריה" }, "gerontology_strauss": { "name": "גרונטולוגיה - שטראוס" } } },
-    "faculty": { "title": "פורטל סגל ומרצים", "subtitle": "כלים פדגוגיים מבוססי AI:", "items": { "pedagogical_transformation": { "name": "בוט טרנספורמציה פדגוגית" } } },
-    "skills": { "title": "אבחון ומיומנויות", "subtitle": "בחר תהליך עבודה:", "items": { "diagnostic": { "name": "התחל אבחון מיומנויות" } } },
-    "admin": { "title": "ניהול ובקרה מוסדית", "subtitle": "נתונים ומדדי הצלחה:", "items": { "analytics": { "name": "לוח בקרת אנליטיקה" } } },
-    "cockpit": { "title": "MilEd.One Cockpit", "subtitle": "ניהול מערכת הלמידה - שליטה מלאה בתוכן ובכותרות" }
+    "courses": {
+      "title": "פורטל סטודנטים",
+      "subtitle": "בחרו את הקורס שלכם:",
+      "items": {
+        "hebrew_optometry": {
+          "name": "עברית מתקדמים - אופטומטריה"
+        },
+        "gerontology_strauss": {
+          "name": "מבוא לגרונטולוגיה - מכינה שטראוס"
+        },
+        "courses_1770990070303": {
+          "name": "עברית מתקדמים - ניהול"
+        },
+        "courses_1770990094850": {
+          "name": "מבוא למדעי החברה - מכינת דוברי ערבית"
+        },
+        "courses_1770990112495": {
+          "name": "קריאה וכתיבה אקדמית- מכינת דוברי ערבית"
+        }
+      }
+    },
+    "faculty": {
+      "title": "פורטל סגל ומרצים",
+      "subtitle": "כלים פדגוגיים מבוססי AI:",
+      "items": {
+        "pedagogical_transformation": {
+          "name": "בוט בנייה ושיפור מערכי שיעור"
+        },
+        "faculty_1770990189482": {
+          "name": "בוט בונה בוטים פדגוגיים"
+        },
+        "faculty_1770990203618": {
+          "name": "בוט תמיכה פסיכו-טכנו-פדגוגית"
+        }
+      }
+    },
+    "skills": {
+      "title": "אבחון ופיתוח מיומנויות",
+      "subtitle": "בחר תהליך עבודה:",
+      "items": {
+        "diagnostic": {
+          "name": "אבחון מיומנויות למידה"
+        },
+        "skills_1770990255494": {
+          "name": "פיתוח מיומנויות למידה"
+        },
+        "skills_1770990293730": {
+          "name": "אבחון מיומנוית תסוקתיות"
+        },
+        "skills_1770990304982": {
+          "name": "פיותח מיומנויות תעסוקתיות"
+        }
+      }
+    },
+    "admin": {
+      "title": "ניהול ובקרה מוסדית",
+      "subtitle": "נתונים ומדדי הצלחה:",
+      "items": {
+        "analytics": {
+          "name": "לוח בקרה  וניתוח דאטה"
+        }
+      }
+    },
+    "cockpit": {
+      "title": "MilEd.One Cockpit",
+      "subtitle": "ניהול מערכת הלמידה - שליטה מלאה בתוכן ובכותרות"
+    }
   }
 }
