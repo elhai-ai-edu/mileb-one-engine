@@ -13,9 +13,9 @@
         .branch-card { padding: 25px; border-radius: 15px; text-decoration: none; color: white; transition: all 0.3s ease; display: flex; flex-direction: column; align-items: center; cursor: pointer; border: none; }
         .branch-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         .courses { background: #3498db; } .skills { background: #1abc9c; } .faculty { background: #9b59b6; } .admin { background: #34495e; }
-        #course-list-container { display: none; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; }
-        .course-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        @media (max-width: 600px) { .grid, .course-grid { grid-template-columns: 1fr; } }
+        .branch-card h3 { margin: 0; font-size: 1.3rem; font-weight: 600; }
+        .branch-card p { font-size: 0.85rem; opacity: 0.9; margin-top: 8px; }
+        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -24,60 +24,26 @@
         <h1 class="main-title">ברוכים הבאים<br>למערכת הלמידה</h1>
         
         <div class="grid">
-            <div class="branch-card courses" onclick="loadCourses()">
+            <a href="/students.html" class="branch-card courses">
                 <h3>📚 קורסים אקדמיים</h3>
-                <p>ליווי מבוסס AI לחומר המימוד</p>
-            </div>
+                <p>ליווי מבוסס AI לחומר הלימוד</p>
+            </a>
+
             <a href="/skills.html" class="branch-card skills">
                 <h3>🔍 אבחון ומיומנויות</h3>
                 <p>פיתוח יכולות למידה ותעסוקה</p>
             </a>
+
             <a href="/faculty.html" class="branch-card faculty">
                 <h3>💡 חדשנות וסגל</h3>
                 <p>כלים למרצים וטרנספורמציה</p>
             </a>
+
             <a href="/admin.html" class="branch-card admin">
                 <h3>📊 בקרה וניהול</h3>
                 <p>ניתוח נתונים ומבט מוסדי</p>
             </a>
         </div>
-
-        <div id="course-list-container">
-            <h2 id="status-msg" style="color: #2c3e50; font-size: 1.5rem; font-weight: 400;">בחר את הקורס שלך:</h2>
-            <div id="course-list" class="course-grid"></div>
-        </div>
     </div>
-
-    <script>
-        function loadCourses() {
-            const container = document.getElementById('course-list-container');
-            const list = document.getElementById('course-list');
-            const status = document.getElementById('status-msg');
-            
-            container.style.display = 'block';
-            status.innerText = "טוען רשימה...";
-
-            fetch('/config.json')
-                .then(res => res.json())
-                .then(data => {
-                    list.innerHTML = '';
-                    status.innerText = "בחר את הקורס שלך:";
-                    const items = data.branches.courses.items;
-                    for (const [id, info] of Object.entries(items)) {
-                        const a = document.createElement('a');
-                        a.href = `/chat.html?class=${id}`;
-                        a.className = 'branch-card courses';
-                        a.style.padding = '15px';
-                        a.innerHTML = `<h3 style="font-size:1.1rem;">${info.name}</h3>`;
-                        list.appendChild(a);
-                    }
-                    container.scrollIntoView({ behavior: 'smooth' });
-                })
-                .catch(err => {
-                    status.innerText = "שגיאה בטעינה. וודא ש-config.json תקין.";
-                    console.error(err);
-                });
-        }
-    </script>
 </body>
 </html>
