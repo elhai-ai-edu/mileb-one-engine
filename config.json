@@ -1,65 +1,20 @@
 {
-  "system_version": "3.0",
+  "system_version": "3.5",
+  "home": {
+    "main_title": "ברוכים הבאים למערכת הלמידה",
+    "main_subtitle": "פורטל MilEd.One לחדשנות פדגוגית",
+    "cards": [
+      { "id": "courses", "title": "📚 קורסים אקדמיים", "desc": "ליווי מבוסס AI לחומר הלימוד", "link": "/students.html", "color": "#3498db" },
+      { "id": "skills", "title": "🔍 אבחון ומיומנויות", "desc": "פיתוח יכולות למידה ותעסוקה", "link": "/skills.html", "color": "#1abc9c" },
+      { "id": "faculty", "title": "💡 חדשנות וסגל", "desc": "כלים לקידום הוראה למרצים מבוססי AI", "link": "/faculty.html", "color": "#9b59b6" },
+      { "id": "admin", "title": "📊 בקרה וניהול", "desc": "ניתוח נתונים ומבט מוסדי", "link": "/admin.html", "color": "#34495e" }
+    ]
+  },
   "branches": {
-    "courses": {
-      "title": "פורטל סטודנטים",
-      "subtitle": "בחרו את הקורס שלכם:",
-      "items": {
-        "hebrew_management": {
-          "name": "עברית מתקדמים  - ניהול"
-        },
-        "academic_writing": {
-          "name": "קריאה וכתיבה אקדמית - מכינה דוברי ערבית"
-        },
-        "gerontology_strauss": {
-          "name": "מבוא לגרונטולוגיה - מכינה שטראוס"
-        },
-        "social_science": {
-          "name": "מבוא למדעי החברה - מכינה דוברי ערבית"
-        },
-        "courses_1770988876522": {
-          "name": "עברית מתקדמים  - אופטיקה "
-        }
-      }
-    },
-    "faculty": {
-      "title": "פורטל סגל ומרצים",
-      "subtitle": "כלים פדגוגיים מבוססי AI:",
-      "items": {
-        "pedagogical_transformation": {
-          "name": "בוט טרנספורמציה פדגוגית"
-        },
-        "bot_architect": {
-          "name": "בוט יוצר בוטים"
-        },
-        "staff_support": {
-          "name": "תמיכה פדגוגית ורגשית"
-        }
-      }
-    },
-    "skills": {
-      "title": "מרכז אבחון ופיתוח מיומנויות ",
-      "subtitle": "בחר תהליך עבודה:",
-      "items": {
-        "diagnostic": {
-          "name": "התחל אבחון מיומנויות"
-        },
-        "learning_skills": {
-          "name": "התחל פיתוח מיומנויות "
-        }
-      }
-    },
-    "admin": {
-      "title": "ניהול ובקרה מוסדית",
-      "subtitle": "נתוני מערכת ומדדי הצלחה:",
-      "items": {
-        "analytics": {
-          "name": "לוח בקרת אנליטיקה"
-        },
-        "retention": {
-          "name": "דוח איתור נשירה"
-        }
-      }
-    }
+    "courses": { "title": "פורטל סטודנטים", "subtitle": "בחרו את הקורס שלכם:", "items": { "hebrew_optometry": { "name": "עברית - אופטומטריה" }, "gerontology_strauss": { "name": "גרונטולוגיה - שטראוס" } } },
+    "faculty": { "title": "פורטל סגל", "subtitle": "כלים לקידום הוראה", "items": { "pedagogical_transformation": { "name": "בוט טרנספורמציה" } } },
+    "skills": { "title": "מיומנויות", "subtitle": "בחר תהליך:", "items": { "diagnostic": { "name": "אבחון" } } },
+    "admin": { "title": "ניהול", "subtitle": "מדדי הצלחה", "items": { "analytics": { "name": "אנליטיקה" } } },
+    "cockpit": { "title": "MilEd.One Cockpit", "subtitle": "ניהול על של המערכת", "items": {} }
   }
-}
+}}
