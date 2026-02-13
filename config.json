@@ -6,19 +6,19 @@
     "cards": {
       "courses": {
         "title": "📚 קורסים אקדמיים",
-        "desc": "ליווי מבוסס AI לחומר הלימוד"
+        "desc": "לסטודנטים: סוכני קידום למידה מבוססי AI "
       },
       "skills": {
         "title": "🔍 אבחון ומיומנויות",
-        "desc": "פיתוח יכולות למידה ותעסוקה"
+        "desc": "אבחון ופיתוח מיומנויות למידה ותעסוקה"
       },
       "faculty": {
         "title": "💡 חדשנות וסגל",
-        "desc": "כלים לקידום הוראה למרצים מבוססי AI"
+        "desc": "למרצים: כלים מבוססי AI לקידום ההוראה  "
       },
       "admin": {
         "title": "📊 בקרה וניהול",
-        "desc": "ניתוח נתונים ומבט מוסדי"
+        "desc": "להנהלה: ניתוח נתונים ומבט מוסדי"
       }
     }
   },
