@@ -22,26 +22,28 @@
     <div class="portal-container">
         <span class="brand">MilEd.One</span>
         <h1 class="main-title">ברוכים הבאים<br>למערכת הלמידה</h1>
+        
         <div class="grid">
             <div class="branch-card courses" onclick="loadCourses()">
                 <h3>📚 קורסים אקדמיים</h3>
-                <p>ליווי מבוסס AI לחומר הלימוד</p>
+                <p>ליווי מבוסס AI לחומר המימוד</p>
             </div>
-            <a href="/skills" class="branch-card skills">
+            <a href="/skills.html" class="branch-card skills">
                 <h3>🔍 אבחון ומיומנויות</h3>
                 <p>פיתוח יכולות למידה ותעסוקה</p>
             </a>
-            <a href="/faculty" class="branch-card faculty">
+            <a href="/faculty.html" class="branch-card faculty">
                 <h3>💡 חדשנות וסגל</h3>
                 <p>כלים למרצים וטרנספורמציה</p>
             </a>
-            <a href="/admin" class="branch-card admin">
+            <a href="/admin.html" class="branch-card admin">
                 <h3>📊 בקרה וניהול</h3>
                 <p>ניתוח נתונים ומבט מוסדי</p>
             </a>
         </div>
+
         <div id="course-list-container">
-            <h2 id="list-header" style="color: #2c3e50; font-size: 1.5rem; font-weight: 400;">בחר את הקורס שלך:</h2>
+            <h2 id="status-msg" style="color: #2c3e50; font-size: 1.5rem; font-weight: 400;">בחר את הקורס שלך:</h2>
             <div id="course-list" class="course-grid"></div>
         </div>
     </div>
@@ -49,30 +51,30 @@
     <script>
         function loadCourses() {
             const container = document.getElementById('course-list-container');
-            const courseList = document.getElementById('course-list');
-            const header = document.getElementById('list-header');
+            const list = document.getElementById('course-list');
+            const status = document.getElementById('status-msg');
             
-            header.innerText = "טוען רשימה...";
             container.style.display = 'block';
+            status.innerText = "טוען רשימה...";
 
             fetch('/config.json')
                 .then(res => res.json())
                 .then(data => {
-                    courseList.innerHTML = '';
-                    const courses = data.branches.courses.items;
-                    header.innerText = "בחר את הקורס שלך:";
-                    for (const [id, course] of Object.entries(courses)) {
-                        const card = document.createElement('a');
-                        card.href = `/chat.html?class=${id}`; // וודא שיש לך קובץ chat.html
-                        card.className = 'branch-card courses';
-                        card.style.padding = '15px';
-                        card.innerHTML = `<h3 style="font-size:1.1rem;">${course.name}</h3>`;
-                        courseList.appendChild(card);
+                    list.innerHTML = '';
+                    status.innerText = "בחר את הקורס שלך:";
+                    const items = data.branches.courses.items;
+                    for (const [id, info] of Object.entries(items)) {
+                        const a = document.createElement('a');
+                        a.href = `/chat.html?class=${id}`;
+                        a.className = 'branch-card courses';
+                        a.style.padding = '15px';
+                        a.innerHTML = `<h3 style="font-size:1.1rem;">${info.name}</h3>`;
+                        list.appendChild(a);
                     }
                     container.scrollIntoView({ behavior: 'smooth' });
                 })
                 .catch(err => {
-                    header.innerText = "שגיאה בטעינת הקורסים. וודא שקובץ config.json קיים.";
+                    status.innerText = "שגיאה בטעינה. וודא ש-config.json תקין.";
                     console.error(err);
                 });
         }
