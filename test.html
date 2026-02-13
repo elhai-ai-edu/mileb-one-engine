@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8">
+  <title>API Test</title>
+</head>
+<body>
+
+<h2>בדיקת חיבור ל-DeepSeek</h2>
+<button onclick="testAPI()">בדוק חיבור</button>
+
+<pre id="result"></pre>
+
+<script>
+async function testAPI() {
+  const res = await fetch('/.netlify/functions/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: "שלום" })
+  });
+
+  const data = await res.json();
+  document.getElementById("result").textContent =
+    JSON.stringify(data, null, 2);
+}
+</script>
+
+</body>
+</html>
