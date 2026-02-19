@@ -1,7 +1,7 @@
-// functions/chat.js — MilEd.One v2.9 (Stable Beta)
+// functions/chat.js — MilEd.One v3.0 (The Final Fix)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-1.5-flash";
-// חזרה ל-v1beta - הגרסה שבוודאות מכילה את המודל הזה
+// שימוש בגרסה המפורשת והעדכנית ביותר של המודל
+const GEMINI_MODEL = "gemini-1.5-flash-latest"; 
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 exports.handler = async (event) => {
@@ -17,13 +17,13 @@ exports.handler = async (event) => {
         const { message, history = [], classId = "general" } = JSON.parse(event.body || "{}");
 
         if (!GEMINI_API_KEY) {
-            return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ חסר מפתח API בנטליפיי." }) };
+            return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ חסר מפתח API בנטליפיי. הגדר GEMINI_API_KEY." }) };
         }
 
-        // בניית מערך ההודעות
+        // בניית מערך contents פשוט ביותר
         let contents = [];
         
-        // הוספת היסטוריה קיימת
+        // הוספת היסטוריה
         history.forEach(m => {
             if (m.content && m.content.trim()) {
                 contents.push({
@@ -33,15 +33,16 @@ exports.handler = async (event) => {
             }
         });
 
-        // הוספת ההנחיה והודעת המשתמש הנוכחית כהודעה אחת כדי למנוע שגיאות מבנה
-        const systemPrompt = `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית.`;
-        const finalMessage = contents.length === 0 ? `${systemPrompt}\n\nשאלה: ${message}` : message;
+        // הוספת הודעה נוכחית עם הנחיה מובנית
+        const systemInstruction = `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית מקצועית.`;
+        const userText = contents.length === 0 ? `${systemInstruction}\n\nשאלה: ${message}` : message;
 
         contents.push({
             role: "user",
-            parts: [{ text: finalMessage }]
+            parts: [{ text: userText }]
         });
 
+        // קריאה ל-API
         const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -51,8 +52,8 @@ exports.handler = async (event) => {
         const data = await response.json();
 
         if (!response.ok) {
-            console.error("Gemini API Error Detail:", JSON.stringify(data));
-            return { statusCode: 200, headers, body: JSON.stringify({ reply: `❌ שגיאה: ${data.error?.message || "תקלה בתקשורת"}` }) };
+            console.error("Gemini Error:", data);
+            return { statusCode: 200, headers, body: JSON.stringify({ reply: `❌ שגיאה: ${data.error?.message || "תקלה בשרתי גוגל"}` }) };
         }
 
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "לא התקבלה תשובה.";
