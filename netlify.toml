@@ -1,18 +1,23 @@
+# MilEd.One — v2.0 — redeploy trigger
 [build]
-  command = ""
+  functions = "functions"
   publish = "."
 
-[[redirects]]
-  from = "/faculty"
-  to = "/faculty.html"
-  status = 200
+[functions]
+  node_bundler = "esbuild"
+
+# הגדרת environment variables — המפתחות עצמם מוגדרים ב-Netlify Dashboard
+# לעולם אל תכתוב מפתחות בקובץ הזה!
+# הגדר את GEMINI_API_KEY ב:
+# Netlify Dashboard → Site Settings → Environment Variables
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
 
 [[redirects]]
-  from = "/admin"
-  to = "/admin.html"
-  status = 200
-
-[[redirects]]
-  from = "/skills"
-  to = "/skills.html"
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
   status = 200
