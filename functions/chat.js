@@ -1,7 +1,8 @@
-// functions/chat.js — MilEd.One v2.6 (Auto-Fix Empty Messages)
+// functions/chat.js — MilEd.One v2.7 (Stable Release)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = "gemini-1.5-flash";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// שינוי ל-v1 (הגרסה היציבה והנתמכת)
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
 
 exports.handler = async (event) => {
     const headers = {
@@ -19,10 +20,7 @@ exports.handler = async (event) => {
             return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ חסר מפתח API בנטליפיי." }) };
         }
 
-        // --- ניקוי היסטוריה מהודעות ריקות כדי למנוע את שגיאת ה-'data' ---
         const cleanContents = [];
-        
-        // הוספת היסטוריה קודמת (רק אם יש בה טקסט)
         history.forEach(m => {
             if (m.content && m.content.trim().length > 0) {
                 cleanContents.push({
@@ -32,7 +30,6 @@ exports.handler = async (event) => {
             }
         });
 
-        // הוספת ההודעה הנוכחית (חייבת להיות קיימת)
         if (!message || message.trim().length === 0) {
             return { statusCode: 200, headers, body: JSON.stringify({ reply: "לא כתבת הודעה." }) };
         }
@@ -47,7 +44,8 @@ exports.handler = async (event) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 contents: cleanContents,
-                systemInstruction: { parts: [{ text: `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית.` }] }
+                // גרסת v1 תומכת ב-systemInstruction עבור מודל 1.5 flash
+                systemInstruction: { parts: [{ text: `אתה עוזר למידה אקדמי מומחה. ענה בעברית ברורה ומקצועית.` }] }
             })
         });
 
@@ -55,7 +53,7 @@ exports.handler = async (event) => {
 
         if (!response.ok) {
             console.error("Gemini API Error:", data);
-            return { statusCode: 200, headers, body: JSON.stringify({ reply: `❌ שגיאה: ${data.error?.message || "תקלה בתקשורת"}` }) };
+            return { statusCode: 200, headers, body: JSON.stringify({ reply: `❌ שגיאת מודל: ${data.error?.message || "תקלה בתקשורת"}` }) };
         }
 
         const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "לא התקבלה תשובה.";
