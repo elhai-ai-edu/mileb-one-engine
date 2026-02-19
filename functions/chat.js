@@ -1,65 +1,50 @@
-// functions/chat.js — MilEd.One v2.4 (Robust Version)
+// functions/chat.js — MilEd.One v2.5 (Final Release)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-1.5-flash"; // חזרה למודל יציב יותר
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 exports.handler = async (event) => {
     const headers = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Content-Type": "application/json"
     };
 
-    // טיפול ב-CORS
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
     if (event.httpMethod !== "POST") return { statusCode: 405, headers, body: "Method Not Allowed" };
 
     try {
-        const { message, history = [], systemPrompt = "אתה עוזר לימודי מועיל. ענה בעברית." } = JSON.parse(event.body || "{}");
+        const { message, history = [], classId = "general" } = JSON.parse(event.body || "{}");
 
-        if (!GEMINI_API_KEY) {
-            return { statusCode: 500, headers, body: JSON.stringify({ error: "Missing API Key in Netlify settings" }) };
+        if (!GEMINI_API_KEY || GEMINI_API_KEY === "YOUR_KEY_HERE") {
+            return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ שגיאה: מפתח ה-API לא הוגדר בנטליפיי. אנא הגדר GEMINI_API_KEY ב-Environment Variables." }) };
         }
 
-        // בניית היסטוריית השיחה
         const contents = [
-            ...history.map(m => ({
-                role: m.role === "assistant" ? "model" : "user",
-                parts: [{ text: m.content }]
-            })),
+            ...history.map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] })),
             { role: "user", parts: [{ text: message }] }
         ];
-
-        const requestBody = {
-            systemInstruction: { parts: [{ text: systemPrompt }] },
-            contents,
-            generationConfig: { temperature: 0.7, maxOutputTokens: 1024 }
-        };
 
         const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify({ 
+                contents,
+                systemInstruction: { parts: [{ text: `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית ברורה.` }] }
+            })
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            console.error("Gemini Error:", data);
-            return { statusCode: response.status, headers, body: JSON.stringify({ error: "שגיאה מהמודל", details: data }) };
+            return { statusCode: 200, headers, body: JSON.stringify({ reply: `❌ שגיאה מה-AI: ${data.error?.message || "תקלה לא ידועה"}` }) };
         }
 
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "לא התקבלה תשובה";
+        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "לא התקבלה תשובה מהמודל.";
 
-        return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify({ reply })
-        };
+        return { statusCode: 200, headers, body: JSON.stringify({ reply }) };
 
     } catch (err) {
-        console.error("Serverless Error:", err);
-        return { statusCode: 500, headers, body: JSON.stringify({ error: "שגיאה פנימית", details: err.message }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ reply: `🔥 שגיאת שרת: ${err.message}` }) };
     }
 };
