@@ -8,7 +8,6 @@
         :root { --primary: #3498db; --skills: #1abc9c; --bg: #f4f7f6; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        /* סרגל ניווט עליון משודרג */
         header { 
             background: white; padding: 10px 20px; 
             display: flex; justify-content: space-between; align-items: center; 
@@ -25,16 +24,16 @@
 
         .current-course { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
 
-        /* אזור הצ'אט */
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
         .message { max-width: 85%; padding: 15px; border-radius: 15px; line-height: 1.5; font-size: 1rem; position: relative; }
         .user { align-self: flex-start; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
         .ai { align-self: flex-end; background: #e9e9eb; color: #333; border-bottom-left-radius: 2px; }
+        .loading-text { font-style: italic; color: #888; font-size: 0.8rem; margin-top: 5px; }
         
-        /* אזור קלט */
         .input-area { background: white; padding: 20px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
         input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px; outline: none; font-size: 1rem; }
         button { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -60,46 +59,84 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         const classId = params.get('class');
+        let chatHistory = []; // לניהול היסטוריה עתידית
 
+        // טעינת שם הקורס מהקונפיג
         fetch('/config.json').then(res => res.json()).then(data => {
-            // חיפוש שם הקורס בכל הענפים
             let courseName = "צ'אט למידה";
             for(let b in data.branches) {
-                if(data.branches[b].items[classId]) {
+                if(data.branches[b].items && data.branches[b].items[classId]) {
                     courseName = data.branches[b].items[classId].name;
                     break;
                 }
             }
             document.getElementById('course-title').innerText = courseName;
-        });
+        }).catch(err => { document.getElementById('course-title').innerText = "מרכז למידה"; });
 
         async function sendMessage() {
             const input = document.getElementById('user-input');
             const chatWindow = document.getElementById('chat-window');
-            if (!input.value.trim()) return;
+            const sendBtn = document.getElementById('send-btn');
+            
+            const text = input.value.trim();
+            if (!text) return;
 
+            // הצגת הודעת המשתמש
             const userMsg = document.createElement('div');
             userMsg.className = 'message user';
-            userMsg.innerText = input.value;
+            userMsg.innerText = text;
             chatWindow.appendChild(userMsg);
 
-            const text = input.value;
             input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
             chatWindow.scrollTop = chatWindow.scrollHeight;
 
+            // הודעת "חושב" זמנית
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message ai loading-text';
+            loadingMsg.innerText = 'מחשב תשובה...';
+            chatWindow.appendChild(loadingMsg);
+
             try {
-                const response = await fetch('/.netlify/functions/chat', {
+                // שימוש בנתיב המקוצר שהגדרנו ב-netlify.toml
+                const response = await fetch('/api/chat', {
                     method: 'POST',
-                    body: JSON.stringify({ message: text, classId: classId })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: text, 
+                        classId: classId,
+                        history: chatHistory 
+                    })
                 });
+                
                 const data = await response.json();
+                chatWindow.removeChild(loadingMsg);
+
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'message ai';
-                aiMsg.innerText = data.reply;
+                aiMsg.innerText = data.reply || "סליחה, קרתה שגיאה בקבלת התשובה.";
                 chatWindow.appendChild(aiMsg);
+
+                // עדכון היסטוריה
+                chatHistory.push({ role: 'user', content: text });
+                chatHistory.push({ role: 'assistant', content: data.reply });
+
+            } catch (e) { 
+                console.error(e);
+                chatWindow.removeChild(loadingMsg);
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'message ai';
+                errorMsg.innerText = 'מצטער, יש לי תקלה בחיבור לשרת. נסה שוב בעוד רגע.';
+                chatWindow.appendChild(errorMsg);
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-            } catch (e) { console.error(e); }
+            }
         }
+
         function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
     </script>
 </body>
