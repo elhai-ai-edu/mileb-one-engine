@@ -1,12 +1,8 @@
-# MilEd.One — v2.0 — redeploy trigger
+# MilEd.One — v2.0
 [build]
-  functions = "functions"
   publish = "."
-
-# הגדרת environment variables — המפתחות עצמם מוגדרים ב-Netlify Dashboard
-# לעולם אל תכתוב מפתחות בקובץ הזה!
-# הגדר את GEMINI_API_KEY ב:
-# Netlify Dashboard → Site Settings → Environment Variables
+  functions = "functions"
+  command = ""
 
 [[headers]]
   for = "/*"
