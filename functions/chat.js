@@ -1,8 +1,5 @@
-// functions/chat.js — MilEd.One v3.0 (The Final Fix)
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-// שימוש בגרסה המפורשת והעדכנית ביותר של המודל
-const GEMINI_MODEL = "gemini-1.5-flash-latest"; 
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// functions/chat.js — MilEd.One v4.0 (Official Google SDK)
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 exports.handler = async (event) => {
     const headers = {
@@ -12,55 +9,46 @@ exports.handler = async (event) => {
     };
 
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
-    
+
     try {
         const { message, history = [], classId = "general" } = JSON.parse(event.body || "{}");
 
-        if (!GEMINI_API_KEY) {
-            return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ חסר מפתח API בנטליפיי. הגדר GEMINI_API_KEY." }) };
+        if (!process.env.GEMINI_API_KEY) {
+            return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ שגיאה: מפתח ה-API לא מוגדר בנטליפיי." }) };
         }
 
-        // בניית מערך contents פשוט ביותר
-        let contents = [];
-        
-        // הוספת היסטוריה
-        history.forEach(m => {
-            if (m.content && m.content.trim()) {
-                contents.push({
-                    role: m.role === "assistant" ? "model" : "user",
-                    parts: [{ text: m.content }]
-                });
-            }
+        // אתחול הספרייה של גוגל
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            systemInstruction: `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית מקצועית.`
         });
 
-        // הוספת הודעה נוכחית עם הנחיה מובנית
-        const systemInstruction = `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית מקצועית.`;
-        const userText = contents.length === 0 ? `${systemInstruction}\n\nשאלה: ${message}` : message;
-
-        contents.push({
-            role: "user",
-            parts: [{ text: userText }]
+        // המרת היסטוריית השיחה לפורמט של גוגל
+        const chat = model.startChat({
+            history: history.map(m => ({
+                role: m.role === "assistant" ? "model" : "user",
+                parts: [{ text: m.content }],
+            })),
         });
 
-        // קריאה ל-API
-        const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents })
-        });
+        // שליחת ההודעה
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        const text = response.text();
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error("Gemini Error:", data);
-            return { statusCode: 200, headers, body: JSON.stringify({ reply: `❌ שגיאה: ${data.error?.message || "תקלה בשרתי גוגל"}` }) };
-        }
-
-        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "לא התקבלה תשובה.";
-
-        return { statusCode: 200, headers, body: JSON.stringify({ reply }) };
+        return {
+            statusCode: 200,
+            headers,
+            body: JSON.stringify({ reply: text })
+        };
 
     } catch (err) {
-        return { statusCode: 200, headers, body: JSON.stringify({ reply: `🔥 תקלה טכנית: ${err.message}` }) };
+        console.error("SDK Error:", err);
+        return { 
+            statusCode: 200, 
+            headers, 
+            body: JSON.stringify({ reply: `🔥 שגיאה בספריית גוגל: ${err.message}` }) 
+        };
     }
 };
