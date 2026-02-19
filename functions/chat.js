@@ -1,4 +1,4 @@
-// functions/chat.js — MilEd.One v4.0 (Official Google SDK)
+// functions/chat.js — MilEd.One v5.0 (Strict Content Filter)
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 exports.handler = async (event) => {
@@ -11,29 +11,31 @@ exports.handler = async (event) => {
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers, body: "" };
 
     try {
-        const { message, history = [], classId = "general" } = JSON.parse(event.body || "{}");
+        const body = JSON.parse(event.body || "{}");
+        const { message, history = [], classId = "general" } = body;
 
         if (!process.env.GEMINI_API_KEY) {
-            return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ שגיאה: מפתח ה-API לא מוגדר בנטליפיי." }) };
+            return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ חסר מפתח API בנטליפיי." }) };
         }
 
-        // אתחול הספרייה של גוגל
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash",
-            systemInstruction: `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית מקצועית.`
+            systemInstruction: `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית.`
         });
 
-        // המרת היסטוריית השיחה לפורמט של גוגל
-        const chat = model.startChat({
-            history: history.map(m => ({
+        // ניקוי וסינון היסטוריה - לוקחים רק הודעות תקינות ומתעלמים משגיאות קודמות
+        const validHistory = history
+            .filter(m => m.content && typeof m.content === 'string' && m.content.trim().length > 0)
+            .filter(m => !m.content.includes("❌") && !m.content.includes("🔥")) // מסנן הודעות שגיאה קודמות
+            .map(m => ({
                 role: m.role === "assistant" ? "model" : "user",
-                parts: [{ text: m.content }],
-            })),
-        });
+                parts: [{ text: m.content.trim() }],
+            }));
 
-        // שליחת ההודעה
-        const result = await chat.sendMessage(message);
+        const chat = model.startChat({ history: validHistory });
+
+        const result = await chat.sendMessage(message.trim());
         const response = await result.response;
         const text = response.text();
 
@@ -44,11 +46,11 @@ exports.handler = async (event) => {
         };
 
     } catch (err) {
-        console.error("SDK Error:", err);
+        console.error("Detailed Error:", err);
         return { 
             statusCode: 200, 
             headers, 
-            body: JSON.stringify({ reply: `🔥 שגיאה בספריית גוגל: ${err.message}` }) 
+            body: JSON.stringify({ reply: `הבוט מתאתחל... נסה לשלוח את ההודעה שוב. (פרטים: ${err.message})` }) 
         };
     }
 };
