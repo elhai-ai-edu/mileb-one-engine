@@ -1,7 +1,7 @@
 {
-  "name": "mileb-one-engine",
+  "name": "miled-one",
   "version": "1.0.0",
-  "description": "Mileb AI Engine",
-  "main": "index.js",
-  "type": "commonjs"
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
+  }
 }
