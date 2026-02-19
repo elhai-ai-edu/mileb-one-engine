@@ -3,9 +3,6 @@
   functions = "functions"
   publish = "."
 
-[functions]
-  node_bundler = "esbuild"
-
 # הגדרת environment variables — המפתחות עצמם מוגדרים ב-Netlify Dashboard
 # לעולם אל תכתוב מפתחות בקובץ הזה!
 # הגדר את GEMINI_API_KEY ב:
