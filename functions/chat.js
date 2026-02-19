@@ -1,7 +1,8 @@
-// functions/chat.js — MilEd.One v2.8 (Universal Compatibility)
+// functions/chat.js — MilEd.One v2.9 (Stable Beta)
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = "gemini-1.5-flash";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1/models/${GEMINI_MODEL}:generateContent`;
+// חזרה ל-v1beta - הגרסה שבוודאות מכילה את המודל הזה
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 exports.handler = async (event) => {
     const headers = {
@@ -19,32 +20,27 @@ exports.handler = async (event) => {
             return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ חסר מפתח API בנטליפיי." }) };
         }
 
-        // בניית הקשר המערכת בתוך ההודעה הראשונה (במקום בשדה נפרד)
-        const systemContext = `הנחיית מערכת: אתה עוזר למידה אקדמי בקורס ${classId}. ענה תמיד בעברית מקצועית ומסייעת.`;
+        // בניית מערך ההודעות
+        let contents = [];
         
-        const contents = [];
-        
-        // אם זו ההודעה הראשונה, נשלב את ההנחיה
-        if (history.length === 0) {
-            contents.push({
-                role: "user",
-                parts: [{ text: `${systemContext}\n\nהודעת הסטודנט: ${message}` }]
-            });
-        } else {
-            // אם יש היסטוריה, נוסיף אותה כרגיל
-            history.forEach(m => {
-                if (m.content && m.content.trim()) {
-                    contents.push({
-                        role: m.role === "assistant" ? "model" : "user",
-                        parts: [{ text: m.content }]
-                    });
-                }
-            });
-            contents.push({
-                role: "user",
-                parts: [{ text: message }]
-            });
-        }
+        // הוספת היסטוריה קיימת
+        history.forEach(m => {
+            if (m.content && m.content.trim()) {
+                contents.push({
+                    role: m.role === "assistant" ? "model" : "user",
+                    parts: [{ text: m.content }]
+                });
+            }
+        });
+
+        // הוספת ההנחיה והודעת המשתמש הנוכחית כהודעה אחת כדי למנוע שגיאות מבנה
+        const systemPrompt = `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית.`;
+        const finalMessage = contents.length === 0 ? `${systemPrompt}\n\nשאלה: ${message}` : message;
+
+        contents.push({
+            role: "user",
+            parts: [{ text: finalMessage }]
+        });
 
         const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
             method: "POST",
@@ -55,6 +51,7 @@ exports.handler = async (event) => {
         const data = await response.json();
 
         if (!response.ok) {
+            console.error("Gemini API Error Detail:", JSON.stringify(data));
             return { statusCode: 200, headers, body: JSON.stringify({ reply: `❌ שגיאה: ${data.error?.message || "תקלה בתקשורת"}` }) };
         }
 
