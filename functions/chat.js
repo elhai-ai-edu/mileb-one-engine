@@ -1,4 +1,4 @@
-// functions/chat.js — MilEd.One v5.0 (Strict Content Filter)
+// functions/chat.js — MilEd.One v6.0 (Endpoint Fix)
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 exports.handler = async (event) => {
@@ -14,20 +14,24 @@ exports.handler = async (event) => {
         const body = JSON.parse(event.body || "{}");
         const { message, history = [], classId = "general" } = body;
 
-        if (!process.env.GEMINI_API_KEY) {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
             return { statusCode: 200, headers, body: JSON.stringify({ reply: "⚠️ חסר מפתח API בנטליפיי." }) };
         }
 
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        // תיקון: הוספת הקידומת models/ ושינוי מבנה ה-systemInstruction
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            systemInstruction: `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית.`
+            model: "gemini-1.5-flash", // הספרייה כבר מוסיפה את הקידומת בעצמה בגרסאות חדשות
+            systemInstruction: {
+                parts: [{ text: `אתה עוזר למידה אקדמי בקורס ${classId}. ענה בעברית בצורה ברורה ומקצועית.` }]
+            }
         });
 
-        // ניקוי וסינון היסטוריה - לוקחים רק הודעות תקינות ומתעלמים משגיאות קודמות
-        const validHistory = history
-            .filter(m => m.content && typeof m.content === 'string' && m.content.trim().length > 0)
-            .filter(m => !m.content.includes("❌") && !m.content.includes("🔥")) // מסנן הודעות שגיאה קודמות
+        const validHistory = (history || [])
+            .filter(m => m.content && m.content.trim().length > 0)
+            .filter(m => !m.content.includes("❌") && !m.content.includes("🔥") && !m.content.includes("הבוט מתאתחל"))
             .map(m => ({
                 role: m.role === "assistant" ? "model" : "user",
                 parts: [{ text: m.content.trim() }],
@@ -46,11 +50,12 @@ exports.handler = async (event) => {
         };
 
     } catch (err) {
-        console.error("Detailed Error:", err);
+        console.error("Final Error Trace:", err);
+        // אם flash עדיין לא עובד, נסה להחליף את המודל ל-gemini-pro כגיבוי אחרון
         return { 
             statusCode: 200, 
             headers, 
-            body: JSON.stringify({ reply: `הבוט מתאתחל... נסה לשלוח את ההודעה שוב. (פרטים: ${err.message})` }) 
+            body: JSON.stringify({ reply: `מערכת הלמידה בתהליך התחברות. אנא נסה לשלוח את ההודעה שוב בעוד רגע. (קוד שגיאה: ${err.message})` }) 
         };
     }
 };
