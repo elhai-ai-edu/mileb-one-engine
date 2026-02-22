@@ -1,19 +1,41 @@
-// functions/chat.js — MilEd.One v3.2 — OpenRouter + Dynamic Config
+// functions/chat.js — MilEd.One v4.0
+// Dynamic config + Model routing (Flash / Flash Thinking)
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL      = "google/gemini-2.0-flash-001";
 const SITE_URL           = "https://cozy-seahorse-7c5204.netlify.app";
-const DEFAULT_PROMPT     = "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
 
-// ── טעינת config.json דרך fetch ───────────────────────────
+// ── ניתוב מודלים ──────────────────────────────────────────
+// Flash Thinking — למשימות מורכבות (מרצים, פרויקטים, אבחון)
+// Flash רגיל    — לשיחות סוקרטיות עם סטודנטים (זול ומהיר)
+const MODEL_THINKING = "google/gemini-2.0-flash-thinking-exp";
+const MODEL_FAST     = "google/gemini-2.0-flash-001";
+
+const THINKING_BOT_TYPES = [
+  "faculty_assistant",
+  "faculty_bot_builder",
+  "faculty_support",
+  "faculty_lesson_builder",
+  "task_final_project",
+  "skills_diagnostic",
+  "skills_career_diagnostic",
+  "admin_analytics"
+];
+
+function selectModel(botType) {
+  if (botType && THINKING_BOT_TYPES.includes(botType))
+    return MODEL_THINKING;
+  return MODEL_FAST;
+}
+
+// ── טעינת config.json ─────────────────────────────────────
 async function loadConfig() {
   try {
     const res = await fetch(`${SITE_URL}/config.json`);
     if (!res.ok) return null;
     return await res.json();
   } catch (e) {
-    console.error('config fetch error:', e.message);
+    console.error('config error:', e.message);
     return null;
   }
 }
@@ -22,13 +44,11 @@ async function loadConfig() {
 function findBot(config, botType) {
   if (!config || !botType) return null;
 
-  // חפש ב-universal
   for (let id in config.universal?.items || {}) {
     if (config.universal.items[id].botType === botType)
       return config.universal.items[id];
   }
 
-  // חפש בכל ה-branches
   for (let branch in config.branches || {}) {
     for (let id in config.branches[branch]?.items || {}) {
       if (config.branches[branch].items[id].botType === botType)
@@ -38,6 +58,8 @@ function findBot(config, botType) {
 
   return null;
 }
+
+const DEFAULT_PROMPT = "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
 
 // ── פונקציה ראשית ─────────────────────────────────────────
 exports.handler = async (event) => {
@@ -52,12 +74,15 @@ exports.handler = async (event) => {
 
   try {
     const {
-      message    = "שלום",
-      history    = [],
-      botType    = null,
-      studentId  = "anonymous",
-      classId    = null
+      message   = "שלום",
+      history   = [],
+      botType   = null,
+      studentId = "anonymous",
+      classId   = null
     } = JSON.parse(event.body || "{}");
+
+    // ── בחירת מודל לפי סוג הבוט ───────────────────────
+    const model = selectModel(botType);
 
     // ── טעינת config ומציאת הבוט ───────────────────────
     const config       = await loadConfig();
@@ -84,7 +109,7 @@ exports.handler = async (event) => {
         "X-Title":       "MilEd.One"
       },
       body: JSON.stringify({
-        model:       DEFAULT_MODEL,
+        model,
         messages,
         max_tokens:  1024,
         temperature: 0.7
@@ -98,9 +123,10 @@ exports.handler = async (event) => {
     console.log("RESEARCH_LOG:", JSON.stringify({
       timestamp:     new Date().toISOString(),
       studentId,     classId,      botType,
-      botName:       botConfig?.name  || "unknown",
+      botName:       botConfig?.name   || "unknown",
       layer:         botConfig?._layer || "unknown",
-      model:         DEFAULT_MODEL,
+      model,
+      isThinking:    model === MODEL_THINKING,
       messageLength: message.length,
       replyLength:   reply.length,
       historyLength: history.length,
@@ -113,8 +139,9 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         reply,
         botType,
-        botName: botConfig?.name || null,
-        model:   DEFAULT_MODEL
+        botName:   botConfig?.name || null,
+        model,
+        isThinking: model === MODEL_THINKING
       })
     };
 
