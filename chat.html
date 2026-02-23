@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -30,11 +31,210 @@
         .ai { align-self: flex-end; background: #e9e9eb; color: #333; border-bottom-left-radius: 2px; }
         .loading-text { font-style: italic; color: #888; font-size: 0.8rem; margin-top: 5px; }
         
-        .input-area { background: white; padding: 20px; display: flex; gap: 10px; border-top: 1px solid #ddd; }
+        .input-area { background: white; padding: 20px; display: flex; gap: 10px; align-items: center; border-top: 1px solid #ddd; }
         input { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 10px; outline: none; font-size: 1rem; }
         button { background: var(--primary); color: white; border: none; padding: 10px 25px; border-radius: 10px; cursor: pointer; font-weight: bold; }
         button:disabled { background: #ccc; cursor: not-allowed; }
+
+        #voice-btn {
+            padding: 10px 14px;
+            font-size: 1.2rem;
+            background: #eee;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #voice-btn.recording {
+            background: #e74c3c;
+            color: white;
+            border-color: #e74c3c;
+        }
+        #voice-error {
+            display: none;
+            color: red;
+            font-size: 0.8rem;
+            padding: 0 10px;
+            text-align: center;
+        }
     </style>
+</head>
+<body>
+
+    <header>
+        <div class="nav-links">
+            <a href="/students.html" class="nav-btn btn-courses">📚 הקורסים שלי</a>
+            <a href="/skills.html" class="nav-btn btn-skills">🔍 אבחון ומיומנויות</a>
+        </div>
+        <div id="course-title" class="current-course">טוען...</div>
+        <div style="font-weight: 300; font-size: 1.2rem;">MilEd.One</div>
+    </header>
+
+    <div id="chat-window">
+        <div class="message ai">שלום! אני עוזר הלמידה של MilEd.One. איך אוכל לסייע לך היום בחומר הנלמד?</div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="כתוב שאלה על חומר הלימוד..." onkeypress="handleKey(event)">
+        <button id="voice-btn" onclick="toggleRecording()" title="דבר">🎤</button>
+        <button id="send-btn" onclick="sendMessage()">שלח</button>
+    </div>
+    <p id="voice-error"></p>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const classId = params.get('classId');
+        const chatWindow = document.getElementById('chat-window');
+        const input = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        let chatHistory = [];
+
+        // טעינת שם הקורס
+        if (classId) {
+            fetch('/api/config')
+                .then(r => r.json())
+                .then(data => {
+                    const course = data.classes?.find(c => c.id === classId);
+                    document.getElementById('course-title').textContent = course?.name || classId;
+                })
+                .catch(() => {
+                    document.getElementById('course-title').textContent = classId;
+                });
+        }
+
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            const userMsg = document.createElement('div');
+            userMsg.className = 'message user';
+            userMsg.innerText = text;
+            chatWindow.appendChild(userMsg);
+
+            input.value = '';
+            input.disabled = true;
+            sendBtn.disabled = true;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            const loadingMsg = document.createElement('div');
+            loadingMsg.className = 'message ai loading-text';
+            loadingMsg.innerText = 'מחשב תשובה...';
+            chatWindow.appendChild(loadingMsg);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: text, 
+                        classId: classId,
+                        history: chatHistory 
+                    })
+                });
+                
+                const data = await response.json();
+                chatWindow.removeChild(loadingMsg);
+
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'message ai';
+                aiMsg.innerText = data.reply || "סליחה, קרתה שגיאה בקבלת התשובה.";
+                chatWindow.appendChild(aiMsg);
+
+                chatHistory.push({ role: 'user', content: text });
+                chatHistory.push({ role: 'assistant', content: data.reply });
+
+            } catch (e) { 
+                console.error(e);
+                chatWindow.removeChild(loadingMsg);
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'message ai';
+                errorMsg.innerText = 'מצטער, יש לי תקלה בחיבור לשרת. נסה שוב בעוד רגע.';
+                chatWindow.appendChild(errorMsg);
+            } finally {
+                input.disabled = false;
+                sendBtn.disabled = false;
+                input.focus();
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }
+        }
+
+        function handleKey(e) { if (e.key === 'Enter') sendMessage(); }
+
+        // ===== קול לטקסט =====
+        let recognition = null;
+        let isRecording = false;
+
+        function toggleRecording() {
+            isRecording ? stopRecording() : startRecording();
+        }
+
+        async function startRecording() {
+            document.getElementById('voice-error').style.display = 'none';
+
+            if (!('SpeechRecognition' in window) && !('webkitSpeechRecognition' in window)) {
+                showVoiceError('הדפדפן שלך לא תומך בהקלטה. נסה Chrome.');
+                return;
+            }
+
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (err) {
+                if (err.name === 'NotAllowedError') showVoiceError('לא אישרת גישה למיקרופון. אפשר בהגדרות הדפדפן.');
+                else if (err.name === 'NotFoundError') showVoiceError('לא נמצא מיקרופון במכשיר.');
+                else showVoiceError('שגיאה בגישה למיקרופון.');
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'he-IL';
+            recognition.interimResults = true;
+            recognition.continuous = true;
+
+            recognition.onresult = (event) => {
+                const transcript = Array.from(event.results)
+                    .map(r => r[0].transcript)
+                    .join('');
+                input.value = transcript;
+            };
+
+            recognition.onerror = (event) => {
+                const errors = {
+                    'not-allowed': 'הרשאת מיקרופון נדחתה.',
+                    'no-speech': 'לא זוהה דיבור. נסה שוב.',
+                    'network': 'שגיאת רשת.',
+                };
+                showVoiceError(errors[event.error] || `שגיאה: ${event.error}`);
+                stopRecording();
+            };
+
+            recognition.onend = () => stopRecording();
+
+            recognition.start();
+            isRecording = true;
+            const btn = document.getElementById('voice-btn');
+            btn.textContent = '⏹';
+            btn.classList.add('recording');
+        }
+
+        function stopRecording() {
+            if (recognition) { recognition.stop(); recognition = null; }
+            isRecording = false;
+            const btn = document.getElementById('voice-btn');
+            btn.textContent = '🎤';
+            btn.classList.remove('recording');
+        }
+
+        function showVoiceError(msg) {
+            const el = document.getElementById('voice-error');
+            el.textContent = msg;
+            el.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
+```    </style>
 </head>
 <body>
 
