@@ -1,5 +1,5 @@
-// functions/chat.js — MilEd.One v4.1
-// Dynamic config + Model routing (Flash / Flash Thinking)
+// functions/chat.js — MilEd.One v4.2
+// Dynamic config + Model routing + Enhanced research logging
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -30,7 +30,7 @@ function selectModel(botType) {
 let cachedConfig = null;
 
 async function loadConfig() {
-  if (cachedConfig) return cachedConfig; // ← מחזיר מה-cache
+  if (cachedConfig) return cachedConfig;
   try {
     const res = await fetch(`${SITE_URL}/config.json`);
     if (!res.ok) return null;
@@ -61,6 +61,16 @@ function findBot(config, botType) {
   return null;
 }
 
+// ── ניתוח שאלה — מה הסטודנט שאל? ────────────────────────
+function analyzeMessage(message) {
+  const lower = message.toLowerCase();
+  const isQuestion = message.includes('?') || message.includes('מה') || 
+                     message.includes('איך') || message.includes('למה') ||
+                     message.includes('מתי') || message.includes('איפה');
+  const wordCount = message.trim().split(/\s+/).length;
+  return { isQuestion, wordCount };
+}
+
 const DEFAULT_PROMPT = "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
 
 // ── פונקציה ראשית ─────────────────────────────────────────
@@ -83,18 +93,15 @@ exports.handler = async (event) => {
       classId   = null
     } = JSON.parse(event.body || "{}");
 
-    // ── בחירת מודל לפי סוג הבוט ───────────────────────
-    const model = selectModel(botType);
-
-    // ── טעינת config מה-cache ומציאת הבוט ─────────────
-    const config       = await loadConfig();
-    const botConfig    = findBot(config, botType);
+    const model      = selectModel(botType);
+    const config     = await loadConfig();
+    const botConfig  = findBot(config, botType);
+    const logContent = config?.engine?.logContent ?? false;
     const systemPrompt = botConfig?.systemPrompt || DEFAULT_PROMPT;
 
-    // ── הגבלת היסטוריה ל-14 הודעות אחרונות (7 סיבובים) ─
+    // ── הגבלת היסטוריה ל-14 הודעות אחרונות ─────────────
     const trimmedHistory = history.slice(-14);
 
-    // ── בניית הודעות ────────────────────────────────────
     const messages = [
       { role: "system", content: systemPrompt },
       ...trimmedHistory.map(m => ({
@@ -113,30 +120,43 @@ exports.handler = async (event) => {
         "HTTP-Referer":  SITE_URL,
         "X-Title":       "MilEd.One"
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        max_tokens:  1024,
-        temperature: 0.7
-      })
+      body: JSON.stringify({ model, messages, max_tokens: 1024, temperature: 0.7 })
     });
 
     const data  = await response.json();
     const reply = data.choices?.[0]?.message?.content || JSON.stringify(data);
 
-    // ── Log מחקרי ────────────────────────────────────────
-    console.log("RESEARCH_LOG:", JSON.stringify({
-      timestamp:     new Date().toISOString(),
-      studentId,     classId,      botType,
-      botName:       botConfig?.name   || "unknown",
-      layer:         botConfig?._layer || "unknown",
+    // ── ניתוח הודעה לצרכי מחקר ──────────────────────────
+    const { isQuestion, wordCount } = analyzeMessage(message);
+
+    // ── Log מחקרי מורחב ──────────────────────────────────
+    const logEntry = {
+      timestamp:      new Date().toISOString(),
+      studentId,
+      classId,
+      botType,
+      botName:        botConfig?.name   || "unknown",
+      layer:          botConfig?._layer || "unknown",
       model,
-      isThinking:    model === MODEL_THINKING,
-      messageLength: message.length,
-      replyLength:   reply.length,
-      historyLength: trimmedHistory.length,
-      tokensUsed:    data.usage || null
-    }));
+      isThinking:     model === MODEL_THINKING,
+      // מדדי שיחה
+      historyLength:  trimmedHistory.length,
+      sessionTurn:    Math.floor(trimmedHistory.length / 2) + 1,
+      // מדדי הודעה
+      messageWordCount:  wordCount,
+      messageIsQuestion: isQuestion,
+      replyLength:    reply.length,
+      // טוקנים ועלות
+      tokensUsed:     data.usage || null,
+    };
+
+    // תוכן הודעות — רק אם logContent=true ב-config
+    if (logContent) {
+      logEntry.messageContent = message;
+      logEntry.replyContent   = reply.slice(0, 200); // רק 200 תווים ראשונים
+    }
+
+    console.log("RESEARCH_LOG:", JSON.stringify(logEntry));
 
     return {
       statusCode: 200,
@@ -144,7 +164,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         reply,
         botType,
-        botName:   botConfig?.name || null,
+        botName:    botConfig?.name || null,
         model,
         isThinking: model === MODEL_THINKING
       })
