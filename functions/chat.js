@@ -1,4 +1,4 @@
-// functions/chat.js — MilEd.One v4.0
+// functions/chat.js — MilEd.One v4.1
 // Dynamic config + Model routing (Flash / Flash Thinking)
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
@@ -6,8 +6,6 @@ const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
 const SITE_URL           = "https://cozy-seahorse-7c5204.netlify.app";
 
 // ── ניתוב מודלים ──────────────────────────────────────────
-// Flash Thinking — למשימות מורכבות (מרצים, פרויקטים, אבחון)
-// Flash רגיל    — לשיחות סוקרטיות עם סטודנטים (זול ומהיר)
 const MODEL_THINKING = "google/gemini-2.0-flash-thinking-exp";
 const MODEL_FAST     = "google/gemini-2.0-flash-001";
 
@@ -28,12 +26,16 @@ function selectModel(botType) {
   return MODEL_FAST;
 }
 
-// ── טעינת config.json ─────────────────────────────────────
+// ── Cache של config — נטען פעם אחת בלבד ─────────────────
+let cachedConfig = null;
+
 async function loadConfig() {
+  if (cachedConfig) return cachedConfig; // ← מחזיר מה-cache
   try {
     const res = await fetch(`${SITE_URL}/config.json`);
     if (!res.ok) return null;
-    return await res.json();
+    cachedConfig = await res.json();
+    return cachedConfig;
   } catch (e) {
     console.error('config error:', e.message);
     return null;
@@ -84,15 +86,18 @@ exports.handler = async (event) => {
     // ── בחירת מודל לפי סוג הבוט ───────────────────────
     const model = selectModel(botType);
 
-    // ── טעינת config ומציאת הבוט ───────────────────────
+    // ── טעינת config מה-cache ומציאת הבוט ─────────────
     const config       = await loadConfig();
     const botConfig    = findBot(config, botType);
     const systemPrompt = botConfig?.systemPrompt || DEFAULT_PROMPT;
 
+    // ── הגבלת היסטוריה ל-14 הודעות אחרונות (7 סיבובים) ─
+    const trimmedHistory = history.slice(-14);
+
     // ── בניית הודעות ────────────────────────────────────
     const messages = [
       { role: "system", content: systemPrompt },
-      ...history.map(m => ({
+      ...trimmedHistory.map(m => ({
         role:    m.role === "assistant" ? "assistant" : "user",
         content: m.content
       })),
@@ -129,7 +134,7 @@ exports.handler = async (event) => {
       isThinking:    model === MODEL_THINKING,
       messageLength: message.length,
       replyLength:   reply.length,
-      historyLength: history.length,
+      historyLength: trimmedHistory.length,
       tokensUsed:    data.usage || null
     }));
 
