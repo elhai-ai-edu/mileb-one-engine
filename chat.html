@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -55,7 +54,7 @@
             display: none;
             color: red;
             font-size: 0.8rem;
-            padding: 0 10px;
+            padding: 4px 20px;
             text-align: center;
         }
     </style>
@@ -90,18 +89,20 @@
         const sendBtn = document.getElementById('send-btn');
         let chatHistory = [];
 
-        // טעינת שם הקורס
-        if (classId) {
-            fetch('/api/config')
-                .then(r => r.json())
-                .then(data => {
-                    const course = data.classes?.find(c => c.id === classId);
-                    document.getElementById('course-title').textContent = course?.name || classId;
-                })
-                .catch(() => {
-                    document.getElementById('course-title').textContent = classId;
-                });
-        }
+        // טעינת שם הקורס מ-config.json
+        fetch('/config.json')
+            .then(r => r.json())
+            .then(data => {
+                let courseName = classId || 'מרכז למידה';
+                for (let branch in data.branches) {
+                    const item = data.branches[branch].items?.[classId];
+                    if (item) { courseName = item.name; break; }
+                }
+                document.getElementById('course-title').textContent = courseName;
+            })
+            .catch(() => {
+                document.getElementById('course-title').textContent = classId || 'מרכז למידה';
+            });
 
         async function sendMessage() {
             const text = input.value.trim();
@@ -234,4 +235,3 @@
     </script>
 </body>
 </html>
-```
