@@ -88,15 +88,20 @@
         const input = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         let chatHistory = [];
+        let currentBotType = null; // ← נטען מה-config
 
-        // טעינת שם הקורס מ-config.json
+        // טעינת שם הקורס וה-botType מ-config.json
         fetch('/config.json')
             .then(r => r.json())
             .then(data => {
                 let courseName = classId || 'מרכז למידה';
                 for (let branch in data.branches) {
                     const item = data.branches[branch].items?.[classId];
-                    if (item) { courseName = item.name; break; }
+                    if (item) {
+                        courseName = item.name;
+                        currentBotType = item.botType; // ← שמירת botType
+                        break;
+                    }
                 }
                 document.getElementById('course-title').textContent = courseName;
             })
@@ -130,6 +135,7 @@
                     body: JSON.stringify({ 
                         message: text, 
                         classId: classId,
+                        botType: currentBotType, // ← תוקן: נשלח botType
                         history: chatHistory 
                     })
                 });
