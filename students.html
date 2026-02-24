@@ -23,8 +23,7 @@
         <h1 class="main-title">פורטל סטודנטים</h1>
         <p class="subtitle">בחרו את הקורס שלכם:</p>
         
-        <div id="course-list" class="course-grid">
-            </div>
+        <div id="course-list" class="course-grid"></div>
 
         <a href="/" class="back-link">→ חזרה לדף הבית</a>
     </div>
@@ -37,7 +36,7 @@
                 const courses = data.branches.courses.items;
                 for (const [id, info] of Object.entries(courses)) {
                     const a = document.createElement('a');
-                    a.href = `/chat.html?class=${id}`;
+                    a.href = `/chat.html?classId=${id}`;  // ← תוקן: class → classId
                     a.className = 'course-card';
                     a.innerText = info.name;
                     list.appendChild(a);
