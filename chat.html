@@ -50,6 +50,11 @@
             color: white;
             border-color: #e74c3c;
         }
+        #voice-btn:disabled {
+            background: #eee;
+            color: #bbb;
+            cursor: not-allowed;
+        }
         #voice-error {
             display: none;
             color: red;
@@ -87,10 +92,31 @@
         const chatWindow = document.getElementById('chat-window');
         const input = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
-        let chatHistory = [];
-        let currentBotType = null; // ← נטען מה-config
+        const voiceBtn = document.getElementById('voice-btn');
 
-        // טעינת שם הקורס וה-botType מ-config.json
+        // ── studentId — מזהה זמני לסשן ─────────────────────
+        let studentId = sessionStorage.getItem('studentId');
+        if (!studentId) {
+            studentId = 's_' + Math.random().toString(36).slice(2, 10);
+            sessionStorage.setItem('studentId', studentId);
+        }
+
+        // ── היסטוריה — נשמרת בסשן ───────────────────────────
+        const historyKey = `history_${classId}`;
+        let chatHistory = JSON.parse(sessionStorage.getItem(historyKey) || '[]');
+
+        // שחזור היסטוריה קיימת לתצוגה
+        chatHistory.forEach(m => {
+            const div = document.createElement('div');
+            div.className = 'message ' + (m.role === 'user' ? 'user' : 'ai');
+            div.innerText = m.content;
+            chatWindow.appendChild(div);
+        });
+        if (chatHistory.length > 0) chatWindow.scrollTop = chatWindow.scrollHeight;
+
+        let currentBotType = null;
+
+        // ── טעינת שם הקורס וה-botType ────────────────────────
         fetch('/config.json')
             .then(r => r.json())
             .then(data => {
@@ -99,7 +125,7 @@
                     const item = data.branches[branch].items?.[classId];
                     if (item) {
                         courseName = item.name;
-                        currentBotType = item.botType; // ← שמירת botType
+                        currentBotType = item.botType;
                         break;
                     }
                 }
@@ -109,6 +135,7 @@
                 document.getElementById('course-title').textContent = classId || 'מרכז למידה';
             });
 
+        // ── שליחת הודעה ──────────────────────────────────────
         async function sendMessage() {
             const text = input.value.trim();
             if (!text) return;
@@ -121,6 +148,7 @@
             input.value = '';
             input.disabled = true;
             sendBtn.disabled = true;
+            voiceBtn.disabled = true; // ← מושבת בזמן טעינה
             chatWindow.scrollTop = chatWindow.scrollHeight;
 
             const loadingMsg = document.createElement('div');
@@ -135,7 +163,8 @@
                     body: JSON.stringify({ 
                         message: text, 
                         classId: classId,
-                        botType: currentBotType, // ← תוקן: נשלח botType
+                        botType: currentBotType,
+                        studentId: studentId, // ← נשלח מזהה סטודנט
                         history: chatHistory 
                     })
                 });
@@ -151,6 +180,9 @@
                 chatHistory.push({ role: 'user', content: text });
                 chatHistory.push({ role: 'assistant', content: data.reply });
 
+                // שמירת היסטוריה ב-sessionStorage
+                sessionStorage.setItem(historyKey, JSON.stringify(chatHistory));
+
             } catch (e) { 
                 console.error(e);
                 chatWindow.removeChild(loadingMsg);
@@ -161,6 +193,7 @@
             } finally {
                 input.disabled = false;
                 sendBtn.disabled = false;
+                voiceBtn.disabled = false; // ← מחזיר למצב רגיל
                 input.focus();
                 chatWindow.scrollTop = chatWindow.scrollHeight;
             }
@@ -220,17 +253,15 @@
 
             recognition.start();
             isRecording = true;
-            const btn = document.getElementById('voice-btn');
-            btn.textContent = '⏹';
-            btn.classList.add('recording');
+            voiceBtn.textContent = '⏹';
+            voiceBtn.classList.add('recording');
         }
 
         function stopRecording() {
             if (recognition) { recognition.stop(); recognition = null; }
             isRecording = false;
-            const btn = document.getElementById('voice-btn');
-            btn.textContent = '🎤';
-            btn.classList.remove('recording');
+            voiceBtn.textContent = '🎤';
+            voiceBtn.classList.remove('recording');
         }
 
         function showVoiceError(msg) {
