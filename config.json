@@ -196,14 +196,26 @@
 
   },
 
-  "engine": {
+   "engine": {
     "_note": "הגדרות המנוע המרכזי — chat.js קורא מכאן",
+
     "defaultModel": "gemini-2.0-flash",
     "defaultThinkingBudget": 512,
     "useCache": true,
     "maxOutputTokens": 1024,
     "temperature": 0.7,
     "logMetadata": true,
-    "logContent": false
+    "logContent": false,
+
+    "kernel": {
+      "_description": "שכבת חוקה קוגניטיבית בלתי ניתנת לעקיפה",
+
+      "preserveAgency": true,
+      "noFullSolutionForStudent": true,
+      "noSkipStructuralSteps": true,
+      "evaluationRequiresExplicitCriteria": true,
+      "preventRoleMutation": true,
+      "invisibleEffortRegulation": true
+    }
   }
 }
