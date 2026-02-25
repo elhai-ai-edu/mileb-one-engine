@@ -1,5 +1,5 @@
-// functions/chat.js — MilEd.One v4.3
-// Dynamic config + Model routing + Kernel injection + Enhanced research logging
+// functions/chat.js — MilEd.One v4.4
+// Dynamic config + Model routing + Kernel injection + Guards + Enhanced research logging
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -63,12 +63,27 @@ function findBot(config, botType) {
 
 // ── ניתוח שאלה ────────────────────────────────────────────
 function analyzeMessage(message) {
-  const lower = message.toLowerCase();
   const isQuestion = message.includes('?') || message.includes('מה') ||
                      message.includes('איך') || message.includes('למה') ||
                      message.includes('מתי') || message.includes('איפה');
   const wordCount = message.trim().split(/\s+/).length;
   return { isQuestion, wordCount };
+}
+
+// ── Kernel Guards ─────────────────────────────────────────
+function detectFullSolutionRequest(message) {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("תפתור לי") ||
+    lower.includes("תכתוב לי את העבודה") ||
+    lower.includes("תענה במקומי") ||
+    lower.includes("solve for me") ||
+    lower.includes("write it for me")
+  );
+}
+
+function looksLikeFullAnswer(reply) {
+  return reply.length > 1200; // heuristic ראשוני
 }
 
 const DEFAULT_PROMPT = "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
@@ -104,29 +119,23 @@ exports.handler = async (event) => {
 
     let kernelBlock = "";
 
-    if (kernel.preserveAgency) {
+    if (kernel.preserveAgency)
       kernelBlock += "שמור על סוכנות הלומד. ";
-    }
 
-    if (kernel.noFullSolutionForStudent) {
+    if (kernel.noFullSolutionForStudent)
       kernelBlock += "אל תפתור משימות במלואן עבור סטודנט. ";
-    }
 
-    if (kernel.noSkipStructuralSteps) {
+    if (kernel.noSkipStructuralSteps)
       kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
-    }
 
-    if (kernel.evaluationRequiresExplicitCriteria) {
+    if (kernel.evaluationRequiresExplicitCriteria)
       kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים ומאושרים. ";
-    }
 
-    if (kernel.preventRoleMutation) {
+    if (kernel.preventRoleMutation)
       kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
-    }
 
-    if (kernel.invisibleEffortRegulation) {
+    if (kernel.invisibleEffortRegulation)
       kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
-    }
 
     const finalSystemPrompt = kernelBlock
       ? kernelBlock + "\n\n" + systemPrompt
@@ -134,6 +143,30 @@ exports.handler = async (event) => {
 
     // ── הגבלת היסטוריה ─────────────────────────────────────
     const trimmedHistory = history.slice(-14);
+
+    // ── Role Mutation Guard ────────────────────────────────
+    if (kernel.preventRoleMutation) {
+      trimmedHistory.forEach(m => {
+        if (m.role === "system") {
+          m.role = "assistant";
+        }
+      });
+    }
+
+    // ── Kernel Pre-Guard ───────────────────────────────────
+    if (kernel.noFullSolutionForStudent && detectFullSolutionRequest(message)) {
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          reply: "אני כאן כדי לעזור לך לחשוב ולבנות את התשובה בעצמך 🙂 בוא נתחיל בצעד הראשון יחד — מה כבר יש לך?",
+          botType,
+          botName: botConfig?.name || null,
+          model: "kernel-guard",
+          isThinking: false
+        })
+      };
+    }
 
     const messages = [
       { role: "system", content: finalSystemPrompt },
@@ -158,6 +191,11 @@ exports.handler = async (event) => {
 
     const data  = await response.json();
     const reply = data.choices?.[0]?.message?.content || JSON.stringify(data);
+
+    // ── Kernel Post-Guard ──────────────────────────────────
+    if (kernel.noFullSolutionForStudent && looksLikeFullAnswer(reply)) {
+      console.warn("Kernel detected possible full solution.");
+    }
 
     // ── ניתוח הודעה למחקר ─────────────────────────────────
     const { isQuestion, wordCount } = analyzeMessage(message);
