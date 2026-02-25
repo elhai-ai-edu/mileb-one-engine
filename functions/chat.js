@@ -1,5 +1,5 @@
-// functions/chat.js — MilEd.One v4.2
-// Dynamic config + Model routing + Enhanced research logging
+// functions/chat.js — MilEd.One v4.3
+// Dynamic config + Model routing + Kernel injection + Enhanced research logging
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -26,7 +26,7 @@ function selectModel(botType) {
   return MODEL_FAST;
 }
 
-// ── Cache של config — נטען פעם אחת בלבד ─────────────────
+// ── Cache של config ───────────────────────────────────────
 let cachedConfig = null;
 
 async function loadConfig() {
@@ -61,10 +61,10 @@ function findBot(config, botType) {
   return null;
 }
 
-// ── ניתוח שאלה — מה הסטודנט שאל? ────────────────────────
+// ── ניתוח שאלה ────────────────────────────────────────────
 function analyzeMessage(message) {
   const lower = message.toLowerCase();
-  const isQuestion = message.includes('?') || message.includes('מה') || 
+  const isQuestion = message.includes('?') || message.includes('מה') ||
                      message.includes('איך') || message.includes('למה') ||
                      message.includes('מתי') || message.includes('איפה');
   const wordCount = message.trim().split(/\s+/).length;
@@ -99,19 +99,52 @@ exports.handler = async (event) => {
     const logContent = config?.engine?.logContent ?? false;
     const systemPrompt = botConfig?.systemPrompt || DEFAULT_PROMPT;
 
-    // ── הגבלת היסטוריה ל-14 הודעות אחרונות ─────────────
+    // ── Kernel Injection ───────────────────────────────────
+    const kernel = config?.engine?.kernel || {};
+
+    let kernelBlock = "";
+
+    if (kernel.preserveAgency) {
+      kernelBlock += "שמור על סוכנות הלומד. ";
+    }
+
+    if (kernel.noFullSolutionForStudent) {
+      kernelBlock += "אל תפתור משימות במלואן עבור סטודנט. ";
+    }
+
+    if (kernel.noSkipStructuralSteps) {
+      kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
+    }
+
+    if (kernel.evaluationRequiresExplicitCriteria) {
+      kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים ומאושרים. ";
+    }
+
+    if (kernel.preventRoleMutation) {
+      kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
+    }
+
+    if (kernel.invisibleEffortRegulation) {
+      kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
+    }
+
+    const finalSystemPrompt = kernelBlock
+      ? kernelBlock + "\n\n" + systemPrompt
+      : systemPrompt;
+
+    // ── הגבלת היסטוריה ─────────────────────────────────────
     const trimmedHistory = history.slice(-14);
 
     const messages = [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: finalSystemPrompt },
       ...trimmedHistory.map(m => ({
-        role:    m.role === "assistant" ? "assistant" : "user",
+        role: m.role === "assistant" ? "assistant" : "user",
         content: m.content
       })),
       { role: "user", content: message }
     ];
 
-    // ── קריאה ל-OpenRouter ───────────────────────────────
+    // ── קריאה ל-OpenRouter ─────────────────────────────────
     const response = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: {
@@ -126,34 +159,29 @@ exports.handler = async (event) => {
     const data  = await response.json();
     const reply = data.choices?.[0]?.message?.content || JSON.stringify(data);
 
-    // ── ניתוח הודעה לצרכי מחקר ──────────────────────────
+    // ── ניתוח הודעה למחקר ─────────────────────────────────
     const { isQuestion, wordCount } = analyzeMessage(message);
 
-    // ── Log מחקרי מורחב ──────────────────────────────────
     const logEntry = {
-      timestamp:      new Date().toISOString(),
+      timestamp: new Date().toISOString(),
       studentId,
       classId,
       botType,
-      botName:        botConfig?.name   || "unknown",
-      layer:          botConfig?._layer || "unknown",
+      botName: botConfig?.name || "unknown",
+      layer: botConfig?._layer || "unknown",
       model,
-      isThinking:     model === MODEL_THINKING,
-      // מדדי שיחה
-      historyLength:  trimmedHistory.length,
-      sessionTurn:    Math.floor(trimmedHistory.length / 2) + 1,
-      // מדדי הודעה
-      messageWordCount:  wordCount,
+      isThinking: model === MODEL_THINKING,
+      historyLength: trimmedHistory.length,
+      sessionTurn: Math.floor(trimmedHistory.length / 2) + 1,
+      messageWordCount: wordCount,
       messageIsQuestion: isQuestion,
-      replyLength:    reply.length,
-      // טוקנים ועלות
-      tokensUsed:     data.usage || null,
+      replyLength: reply.length,
+      tokensUsed: data.usage || null
     };
 
-    // תוכן הודעות — רק אם logContent=true ב-config
     if (logContent) {
       logEntry.messageContent = message;
-      logEntry.replyContent   = reply.slice(0, 200); // רק 200 תווים ראשונים
+      logEntry.replyContent   = reply.slice(0, 200);
     }
 
     console.log("RESEARCH_LOG:", JSON.stringify(logEntry));
@@ -164,7 +192,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         reply,
         botType,
-        botName:    botConfig?.name || null,
+        botName: botConfig?.name || null,
         model,
         isThinking: model === MODEL_THINKING
       })
