@@ -1,5 +1,5 @@
-// functions/chat.js — MilEd.One v4.4
-// Dynamic config + Model routing + Kernel injection + Guards + Enhanced research logging
+// functions/chat.js — MilEd.One v4.5
+// Dynamic config + Model routing + Kernel injection + Guards + Soft Enforcement + Enhanced research logging
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -83,7 +83,7 @@ function detectFullSolutionRequest(message) {
 }
 
 function looksLikeFullAnswer(reply) {
-  return reply.length > 1200; // heuristic ראשוני
+  return reply.length > 1200;
 }
 
 const DEFAULT_PROMPT = "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
@@ -144,7 +144,6 @@ exports.handler = async (event) => {
     // ── הגבלת היסטוריה ─────────────────────────────────────
     const trimmedHistory = history.slice(-14);
 
-    // ── Role Mutation Guard ────────────────────────────────
     if (kernel.preventRoleMutation) {
       trimmedHistory.forEach(m => {
         if (m.role === "system") {
@@ -177,7 +176,6 @@ exports.handler = async (event) => {
       { role: "user", content: message }
     ];
 
-    // ── קריאה ל-OpenRouter ─────────────────────────────────
     const response = await fetch(OPENROUTER_URL, {
       method: "POST",
       headers: {
@@ -192,12 +190,18 @@ exports.handler = async (event) => {
     const data  = await response.json();
     const reply = data.choices?.[0]?.message?.content || JSON.stringify(data);
 
-    // ── Kernel Post-Guard ──────────────────────────────────
+    // ── Kernel Post-Guard (Soft Enforcement) ───────────────
+    let finalReply = reply;
+
     if (kernel.noFullSolutionForStudent && looksLikeFullAnswer(reply)) {
       console.warn("Kernel detected possible full solution.");
+
+      finalReply =
+        "נראה שהתשובה הפכה מלאה מדי 🙂\n\n" +
+        "בוא נעשה רגע צעד אחורה ונבנה את זה יחד.\n\n" +
+        "מה לדעתך הוא השלב הראשון בתהליך?";
     }
 
-    // ── ניתוח הודעה למחקר ─────────────────────────────────
     const { isQuestion, wordCount } = analyzeMessage(message);
 
     const logEntry = {
@@ -213,13 +217,13 @@ exports.handler = async (event) => {
       sessionTurn: Math.floor(trimmedHistory.length / 2) + 1,
       messageWordCount: wordCount,
       messageIsQuestion: isQuestion,
-      replyLength: reply.length,
+      replyLength: finalReply.length,
       tokensUsed: data.usage || null
     };
 
     if (logContent) {
       logEntry.messageContent = message;
-      logEntry.replyContent   = reply.slice(0, 200);
+      logEntry.replyContent   = finalReply.slice(0, 200);
     }
 
     console.log("RESEARCH_LOG:", JSON.stringify(logEntry));
@@ -228,7 +232,7 @@ exports.handler = async (event) => {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        reply,
+        reply: finalReply,
         botType,
         botName: botConfig?.name || null,
         model,
