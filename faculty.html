@@ -1,101 +1,99 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
 
 <meta charset="UTF-8">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>MilEd.One - פורטל סגל</title>
+<title>MilEd.One - סגל</title>
 
 <style>
 
-body {
-font-family:'Segoe UI',sans-serif;
-background:#f4f7f6;
-margin:0;
-display:flex;
-align-items:center;
-justify-content:center;
-min-height:100vh;
+body
+{
+    font-family:'Segoe UI',sans-serif;
+    background:#f4f7f6;
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:100vh;
 }
 
-.container {
-max-width:800px;
-width:90%;
-background:white;
-padding:40px;
-border-radius:20px;
-box-shadow:0 10px 30px rgba(0,0,0,0.05);
-text-align:center;
+.container
+{
+    max-width:800px;
+    width:90%;
+    background:white;
+    padding:40px;
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.05);
+    text-align:center;
 }
 
-h1 {
-color:#9b59b6;
-font-size:2.2rem;
-margin-bottom:10px;
+h1
+{
+    color:#9b59b6;
+    font-size:2.2rem;
+    margin-bottom:10px;
 }
 
-.subtitle {
-color:#7f8c8d;
-margin-bottom:30px;
+.subtitle
+{
+    color:#7f8c8d;
+    margin-bottom:30px;
 }
 
-.grid {
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:20px;
+.grid
+{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
 }
 
-.btn {
-
-padding:25px;
-
-border-radius:15px;
-
-text-decoration:none;
-
-color:white;
-
-background:#9b59b6;
-
-font-weight:bold;
-
-transition:0.3s;
-
-display:flex;
-
-align-items:center;
-
-justify-content:center;
-
+.btn
+{
+    padding:25px;
+    border-radius:15px;
+    text-decoration:none;
+    color:white;
+    background:#9b59b6;
+    font-weight:bold;
+    transition:0.3s;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
 
-.btn:hover {
-
-transform:translateY(-3px);
-
-background:#8e44ad;
-
+.btn:hover
+{
+    transform:translateY(-3px);
+    background:#8e44ad;
 }
 
-.back-btn {
-
-display:inline-block;
-
-margin-top:40px;
-
-color:#7f8c8d;
-
-text-decoration:none;
-
-font-weight:bold;
-
+.back-btn
+{
+    display:inline-block;
+    margin-top:40px;
+    color:#7f8c8d;
+    text-decoration:none;
+    font-weight:bold;
 }
 
-@media(max-width:600px){
+.error
+{
+    color:#e74c3c;
+    margin-top:20px;
+}
 
-.grid{grid-template-columns:1fr;}
-
+@media (max-width:600px)
+{
+    .grid
+    {
+        grid-template-columns:1fr;
+    }
 }
 
 </style>
@@ -105,17 +103,26 @@ font-weight:bold;
 
 <body>
 
+
 <div class="container">
 
-<span>MilEd.One</span>
+<span style="font-weight:300;color:#000;">
+MilEd.One
+</span>
 
-<h1 id="title">פורטל סגל</h1>
+<h1 id="title">
+טוען...
+</h1>
 
-<p id="subtitle">טוען...</p>
+<p id="subtitle" class="subtitle"></p>
 
 <div id="list" class="grid"></div>
 
-<a href="/" class="back-btn">← חזרה</a>
+<div id="error" class="error"></div>
+
+<a href="/" class="back-btn">
+→ חזרה לדף הבית
+</a>
 
 </div>
 
@@ -123,87 +130,133 @@ font-weight:bold;
 <script>
 
 
-// ─────────────────────────────
-// facultyId — מזהה מרצה
-// ─────────────────────────────
+/* =====================================================
+   state
+===================================================== */
 
-let facultyId = sessionStorage.getItem("facultyId");
+let CONFIG=null;
 
-if(!facultyId){
-
-facultyId = prompt("הכנס מזהה מרצה:");
-
-if(facultyId){
-
-sessionStorage.setItem("facultyId",facultyId);
-
-}
-
-}
+let USER=null;
 
 
-// ─────────────────────────────
-// access control
-// ─────────────────────────────
 
-function hasAccess(tool){
+/* =====================================================
+   auth check
+===================================================== */
 
-const scope = tool.scope || "global";
+function checkAuth()
+{
+    const token=localStorage.getItem("miled_token");
 
-const owner = tool.owner || null;
+    const role=localStorage.getItem("miled_role");
 
+    const name=localStorage.getItem("miled_user");
 
-if(scope==="global") return true;
+    if(!token || role!=="faculty")
+    {
+        document.getElementById("error").innerText=
+        "גישה מוגבלת לסגל בלבד";
 
-if(scope==="institution") return true;
+        return false;
+    }
 
-if(scope==="faculty_private")
+    USER=
+    {
+        token,
+        role,
+        name
+    };
 
-return owner===facultyId;
-
-
-return false;
-
+    return true;
 }
 
 
-// ─────────────────────────────
-// load config
-// ─────────────────────────────
 
-fetch('/config.json')
+/* =====================================================
+   load config with TTL protection
+===================================================== */
 
-.then(r=>r.json())
+async function loadConfig()
+{
+    try
+    {
+        const res=
+        await fetch('/config.json?ts='+Date.now());
 
-.then(data=>{
+        if(!res.ok)
+            throw new Error("config load failed");
 
-const faculty = data.branches.faculty;
+        CONFIG=
+        await res.json();
 
-document.getElementById("title").innerText = faculty.title;
+        initPage();
+    }
 
-document.getElementById("subtitle").innerText = faculty.subtitle;
+    catch(err)
+    {
+        console.error(err);
 
-
-for(let id in faculty.items){
-
-const tool = faculty.items[id];
-
-if(!hasAccess(tool)) continue;
-
-
-const a=document.createElement("a");
-
-a.className="btn";
-
-a.href=`/chat.html?classId=${id}`;
-
-a.innerText=tool.name;
-
-document.getElementById("list").appendChild(a);
-
+        document.getElementById("error").innerText=
+        "שגיאה בטעינת המערכת";
+    }
 }
 
-});
+
+
+/* =====================================================
+   init page
+===================================================== */
+
+function initPage()
+{
+    const faculty=CONFIG.branches.faculty;
+
+    document.getElementById("title").innerText=
+        faculty.title;
+
+    document.getElementById("subtitle").innerText=
+        faculty.subtitle;
+
+
+    const container=
+        document.getElementById("list");
+
+
+    for(let id in faculty.items)
+    {
+        const bot=faculty.items[id];
+
+
+        /* private bot guard */
+
+        if(bot.private && USER.role!=="faculty")
+            continue;
+
+
+        const a=document.createElement("a");
+
+        a.className="btn";
+
+        a.href="/chat.html?class="+id;
+
+        a.innerText=bot.name;
+
+        container.appendChild(a);
+    }
+}
+
+
+
+/* =====================================================
+   start
+===================================================== */
+
+if(checkAuth())
+{
+    loadConfig();
+}
+
+
 
 </script>
 
