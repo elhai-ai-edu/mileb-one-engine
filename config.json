@@ -1,6 +1,21 @@
 {
-  "system_version": "4.1",
+  "system_version": "4.2",
+
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
+
+  "_systemPromptExport": {
+    "_description": "שכבת הגדרת ייצוא prompt מלא ל-LLM חיצוני (System Prompt Export Layer)",
+    
+    "includeKernelInExport": true,
+
+    "exportMode": "merged",
+
+    "exportStructure": {
+      "header": "## System Identity",
+      "kernelSection": "## Core Pedagogical Kernel",
+      "botSection": "## Bot Specific Instructions"
+    }
+  },
 
   "toolGovernance": {
     "_description": "שכבת הרשאות ובקרה על כלי המערכת (Tool Governance Layer)",
@@ -198,16 +213,28 @@
   "engine": {
 
     "defaultModel": "gemini-2.0-flash",
+
     "defaultThinkingBudget": 512,
+
     "temperature": 0.7,
+
+    "_kernelExport": {
+      "_description": "הגדרת האם kernel הוא חלק מה-System Prompt המלא",
+      "includeInSystemPrompt": true
+    },
 
     "kernel": {
 
       "preserveAgency": true,
+
       "noFullSolutionForStudent": true,
+
       "noSkipStructuralSteps": true,
+
       "evaluationRequiresExplicitCriteria": true,
+
       "preventRoleMutation": true,
+
       "invisibleEffortRegulation": true
 
     }
