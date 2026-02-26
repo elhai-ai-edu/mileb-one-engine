@@ -1,10 +1,11 @@
-// functions/chat.js — MilEd.One v4.7
+// functions/chat.js — MilEd.One v4.8
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing
-// + Hard guards + Config cache TTL + Safer model selection
+// + Hard guards + Config cache TTL + Safe OpenRouter handling + Engine-config driven params
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
 const SITE_URL           = "https://cozy-seahorse-7c5204.netlify.app";
+
 
 // ─────────────────────────────────────────
 // MODEL ROUTING
@@ -27,8 +28,10 @@ const THINKING_BOT_TYPES = [
 function selectModel(botType) {
   if (botType && THINKING_BOT_TYPES.includes(botType))
     return MODEL_THINKING;
+
   return MODEL_FAST;
 }
+
 
 // ─────────────────────────────────────────
 // CONFIG CACHE (TTL)
@@ -36,87 +39,111 @@ function selectModel(botType) {
 
 let cachedConfig = null;
 let cachedAt = 0;
-const CACHE_TTL = 60_000; // 60 seconds
+const CACHE_TTL = 60_000;
 
 async function loadConfig() {
+
   const now = Date.now();
 
   if (cachedConfig && (now - cachedAt) < CACHE_TTL)
     return cachedConfig;
 
   try {
+
     const res = await fetch(`${SITE_URL}/config.json`);
-    if (!res.ok) return null;
+
+    if (!res.ok) {
+      console.error("CONFIG LOAD FAILED:", res.status);
+      return null;
+    }
 
     cachedConfig = await res.json();
     cachedAt = now;
 
     return cachedConfig;
+
   } catch (e) {
-    console.error("config load error:", e.message);
+
+    console.error("CONFIG FETCH ERROR:", e.message);
     return null;
+
   }
+
 }
+
 
 // ─────────────────────────────────────────
 // AUTHORIZATION LAYER
 // ─────────────────────────────────────────
 
 function hasAccess(bot, context) {
+
   const scope = bot.scope || "global";
   const owner = bot.owner || null;
 
   const facultyId = context.facultyId || null;
-  const classId   = context.classId   || null; // reserved for future
+  const classId   = context.classId   || null;
   void classId;
 
-  // GLOBAL — accessible to all
-  if (scope === "global") return true;
+  if (scope === "global")
+    return true;
 
-  // INSTITUTION — accessible to all institutional users (stage 1)
-  if (scope === "institution") return true;
+  if (scope === "institution")
+    return !!facultyId;
 
-  // FACULTY PRIVATE — owner only
   if (scope === "faculty_private")
     return !!(owner && facultyId && owner === facultyId);
 
-  // COURSE SPECIFIC (stage 1 simple allow; later enforce by classId/courseId)
-  if (scope === "course_specific") return true;
+  if (scope === "course_specific")
+    return true;
 
   return false;
+
 }
+
 
 // ─────────────────────────────────────────
 // BOT RESOLUTION
 // ─────────────────────────────────────────
 
 function findBot(config, botType, context = {}) {
-  if (!config || !botType) return null;
 
-  // universal layer
+  if (!config || !botType)
+    return null;
+
   for (let id in (config.universal?.items || {})) {
+
     const bot = config.universal.items[id];
+
     if (bot.botType === botType && hasAccess(bot, context))
       return bot;
+
   }
 
-  // branches layer
   for (let branch in (config.branches || {})) {
+
     for (let id in (config.branches[branch]?.items || {})) {
+
       const bot = config.branches[branch].items[id];
+
       if (bot.botType === botType && hasAccess(bot, context))
         return bot;
+
     }
+
   }
 
   return null;
+
 }
+
 
 // ─────────────────────────────────────────
 // MESSAGE ANALYSIS
 // ─────────────────────────────────────────
 
 function analyzeMessage(message) {
+
   const isQuestion =
     message.includes("?") ||
     message.includes("מה") ||
@@ -126,15 +153,20 @@ function analyzeMessage(message) {
     message.includes("איפה");
 
   const wordCount = message.trim().split(/\s+/).length;
+
   return { isQuestion, wordCount };
+
 }
+
 
 // ─────────────────────────────────────────
 // KERNEL GUARDS
 // ─────────────────────────────────────────
 
 function detectFullSolutionRequest(message) {
+
   const lower = message.toLowerCase();
+
   return (
     lower.includes("תפתור לי") ||
     lower.includes("תכתוב לי את העבודה") ||
@@ -142,96 +174,107 @@ function detectFullSolutionRequest(message) {
     lower.includes("solve for me") ||
     lower.includes("write it for me")
   );
+
 }
 
 function looksLikeFullAnswer(reply) {
+
   return reply.length > 1200;
+
 }
 
 const DEFAULT_PROMPT =
   "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
+
 
 // ─────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────
 
 exports.handler = async (event) => {
+
   const headers = {
+
     "Access-Control-Allow-Origin":  "*",
     "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Content-Type": "application/json"
+
   };
 
   if (event.httpMethod === "OPTIONS")
     return { statusCode: 200, headers, body: "" };
 
   if (event.httpMethod !== "POST")
-    return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: "Method not allowed" })
+    };
 
   try {
-    // ─────────────────────────────────────
-    // INPUT PARSE
-    // ─────────────────────────────────────
+
+    // ───────────────── INPUT ─────────────────
+
     const {
       message   = "שלום",
       history   = [],
       botType   = null,
-
       studentId = "anonymous",
       facultyId = null,
       classId   = null,
-
       sessionId = null
     } = JSON.parse(event.body || "{}");
 
-    // 🔴 HARD GUARD — botType required
-    if (!botType) {
+    if (!botType)
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ error: "botType required" })
       };
-    }
 
     const context = { facultyId, classId, studentId };
 
-    // ─────────────────────────────────────
-    // LOAD CONFIG
-    // ─────────────────────────────────────
+
+    // ───────────────── CONFIG ─────────────────
+
     const config = await loadConfig();
 
-    // 🔴 HARD GUARD — config required
-    if (!config) {
+    if (!config)
       return {
         statusCode: 500,
         headers,
         body: JSON.stringify({ error: "Configuration load failed" })
       };
-    }
+
 
     const botConfig = findBot(config, botType, context);
 
-    // 🔴 HARD GUARD — must resolve + authorize
-    if (!botConfig) {
-      console.warn("ACCESS DENIED:", { botType, facultyId, classId });
+    if (!botConfig)
       return {
         statusCode: 403,
         headers,
-        body: JSON.stringify({ error: "Access denied or bot not found", botType })
+        body: JSON.stringify({
+          error: "Access denied or bot not found",
+          botType
+        })
       };
-    }
+
 
     const systemPrompt = botConfig.systemPrompt || DEFAULT_PROMPT;
 
-    // ✅ model selection by resolved bot (source of truth)
     const model = selectModel(botConfig.botType);
 
-    const logContent = config?.engine?.logContent ?? false;
+    const engine = config.engine || {};
 
-    // ─────────────────────────────────────
-    // KERNEL INJECTION
-    // ─────────────────────────────────────
-    const kernel = config?.engine?.kernel || {};
+    const temperature = engine.temperature ?? 0.7;
+    const maxTokens   = engine.maxOutputTokens ?? 1024;
+    const logContent  = engine.logContent ?? false;
+
+
+    // ───────────────── KERNEL ─────────────────
+
+    const kernel = engine.kernel || {};
 
     let kernelBlock = "";
 
@@ -245,7 +288,7 @@ exports.handler = async (event) => {
       kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
 
     if (kernel.evaluationRequiresExplicitCriteria)
-      kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים ומאושרים. ";
+      kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
 
     if (kernel.preventRoleMutation)
       kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
@@ -253,134 +296,212 @@ exports.handler = async (event) => {
     if (kernel.invisibleEffortRegulation)
       kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
 
-    const finalSystemPrompt = kernelBlock
-      ? kernelBlock + "\n\n" + systemPrompt
-      : systemPrompt;
 
-    // ─────────────────────────────────────
-    // HISTORY LIMIT
-    // ─────────────────────────────────────
-    const trimmedHistory = history.slice(-14);
+    const finalSystemPrompt =
+      kernelBlock
+        ? kernelBlock + "\n\n" + systemPrompt
+        : systemPrompt;
 
-    // ─────────────────────────────────────
-    // PRE GUARD
-    // ─────────────────────────────────────
-    if (kernel.noFullSolutionForStudent && detectFullSolutionRequest(message)) {
+
+    // ───────────────── HISTORY ─────────────────
+
+    const trimmedHistory =
+      history
+        .filter(m => m && typeof m.content === "string")
+        .slice(-14);
+
+
+    // ───────────────── PRE GUARD ─────────────────
+
+    if (kernel.noFullSolutionForStudent &&
+        detectFullSolutionRequest(message)) {
+
       return {
+
         statusCode: 200,
         headers,
         body: JSON.stringify({
-          reply: "אני כאן כדי לעזור לך לחשוב ולבנות את התשובה בעצמך 🙂 מה כבר ניסית?",
+
+          reply:
+            "אני כאן כדי לעזור לך לחשוב ולבנות את התשובה בעצמך 🙂 מה כבר ניסית?",
+
           botType,
-          botName: botConfig?.name || null,
+          botName: botConfig.name,
           model: "kernel-guard",
           isThinking: false
+
         })
+
       };
+
     }
 
-    // ─────────────────────────────────────
-    // BUILD MESSAGE STACK
-    // ─────────────────────────────────────
+
+    // ───────────────── BUILD MESSAGES ─────────────────
+
     const messages = [
+
       { role: "system", content: finalSystemPrompt },
+
       ...trimmedHistory.map(m => ({
         role: m.role === "assistant" ? "assistant" : "user",
         content: m.content
       })),
+
       { role: "user", content: message }
+
     ];
 
-    // ─────────────────────────────────────
-    // CALL MODEL
-    // ─────────────────────────────────────
+
+    // ───────────────── OPENROUTER CALL ─────────────────
+
     const response = await fetch(OPENROUTER_URL, {
+
       method: "POST",
+
       headers: {
+
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "Content-Type":  "application/json",
-        "HTTP-Referer":  SITE_URL,
-        "X-Title":       "MilEd.One"
+        "Content-Type": "application/json",
+        "HTTP-Referer": SITE_URL,
+        "X-Title": "MilEd.One"
+
       },
+
       body: JSON.stringify({
+
         model,
         messages,
-        max_tokens: 1024,
-        temperature: 0.7
+        temperature,
+        max_tokens: maxTokens
+
       })
+
     });
 
-    const data  = await response.json();
-    const reply = data.choices?.[0]?.message?.content || JSON.stringify(data);
 
-    // ─────────────────────────────────────
-    // POST GUARD
-    // ─────────────────────────────────────
-    let finalReply = reply;
+    let raw;
+    let data;
 
-    if (kernel.noFullSolutionForStudent && looksLikeFullAnswer(reply)) {
-      finalReply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
+    try {
+
+      raw = await response.text();
+      data = JSON.parse(raw);
+
+    } catch {
+
+      console.error("INVALID JSON FROM OPENROUTER");
+      throw new Error("Invalid upstream response");
+
     }
 
-    // ─────────────────────────────────────
-    // RESEARCH LOGGING
-    // ─────────────────────────────────────
-    const { isQuestion, wordCount } = analyzeMessage(message);
+    if (!response.ok) {
+
+      console.error("OPENROUTER ERROR:", raw.slice(0, 500));
+
+      return {
+
+        statusCode: 502,
+        headers,
+        body: JSON.stringify({
+          error: "Upstream model error"
+        })
+
+      };
+
+    }
+
+
+    let reply =
+      data.choices?.[0]?.message?.content
+      || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
+
+
+    if (kernel.noFullSolutionForStudent &&
+        looksLikeFullAnswer(reply)) {
+
+      reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
+
+    }
+
+
+    // ───────────────── LOGGING ─────────────────
+
+    const { isQuestion, wordCount } =
+      analyzeMessage(message);
 
     const logEntry = {
+
       timestamp: new Date().toISOString(),
 
       studentId,
       facultyId,
-      sessionId,
       classId,
+      sessionId,
 
       botType,
-      botName: botConfig?.name || "unknown",
+      botName: botConfig.name,
 
-      scope: botConfig?.scope || "global",
-      owner: botConfig?.owner || null,
+      scope: botConfig.scope,
+      owner: botConfig.owner,
 
-      layer: botConfig?._layer || "unknown",
+      layer: botConfig._layer,
 
       model,
+
       isThinking: model === MODEL_THINKING,
 
       messageWordCount: wordCount,
       messageIsQuestion: isQuestion,
-      replyLength: finalReply.length,
+
+      replyLength: reply.length,
 
       tokensUsed: data.usage || null
+
     };
 
     if (logContent) {
+
       logEntry.messageContent = message;
-      logEntry.replyContent   = finalReply.slice(0, 200);
+      logEntry.replyPreview   = reply.slice(0, 200);
+
     }
 
     console.log("RESEARCH_LOG:", JSON.stringify(logEntry));
 
-    // ─────────────────────────────────────
-    // RESPONSE
-    // ─────────────────────────────────────
+
+    // ───────────────── RESPONSE ─────────────────
+
     return {
+
       statusCode: 200,
       headers,
+
       body: JSON.stringify({
-        reply: finalReply,
+
+        reply,
         botType,
-        botName: botConfig?.name || null,
+        botName: botConfig.name,
         model,
         isThinking: model === MODEL_THINKING
+
       })
+
     };
 
+
   } catch (err) {
-    console.error("ERROR:", err);
+
+    console.error("CHAT ERROR:", err);
+
     return {
+
       statusCode: 500,
       headers,
       body: JSON.stringify({ error: err.message })
+
     };
+
   }
+
 };
