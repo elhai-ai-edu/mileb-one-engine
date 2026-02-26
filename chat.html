@@ -86,10 +86,20 @@ button:disabled { background: #ccc; }
 
 <button id="send-btn" onclick="sendMessage()">שלח</button>
 
+<!-- EXPORT BUTTON — ADDED -->
+<button onclick="exportPrompt()">ייצא prompt</button>
+
 </div>
 
 
 <script>
+
+// ─────────────────────────────
+// EXPORT STATE — ADDED
+// ─────────────────────────────
+
+window.__LAST_EXPORT_PROMPT = null;
+
 
 // ─────────────────────────────
 // session identifiers
@@ -293,6 +303,11 @@ return;
 const data = await response.json();
 
 
+// SAVE PROMPT FOR EXPORT — ADDED
+if(data.exportPrompt)
+window.__LAST_EXPORT_PROMPT = data.exportPrompt;
+
+
 loading.remove();
 
 
@@ -334,6 +349,70 @@ sendBtn.disabled=false;
 function handleKey(e){
 
 if(e.key==="Enter") sendMessage();
+
+}
+
+
+// ─────────────────────────────
+// EXPORT FUNCTION — ADDED
+// ─────────────────────────────
+
+function exportPrompt(){
+
+if(!window.__LAST_EXPORT_PROMPT){
+
+alert("אין prompt לייצוא עדיין");
+
+return;
+
+}
+
+const botName =
+document.getElementById("course-title")?.innerText
+|| "MilEd Bot";
+
+const now =
+new Date().toISOString();
+
+const content =
+`MilEd.One — Prompt Export
+================================
+
+Bot name: ${botName}
+Exported at: ${now}
+
+--------------------------------
+SYSTEM PROMPT
+--------------------------------
+
+${window.__LAST_EXPORT_PROMPT}
+
+--------------------------------
+Generated via MilEd.One
+--------------------------------
+`;
+
+const blob =
+new Blob([content], {type:"text/plain;charset=utf-8"});
+
+const url =
+URL.createObjectURL(blob);
+
+const a =
+document.createElement("a");
+
+a.href=url;
+
+a.download=
+botName.replace(/\s+/g,"_")+"_prompt.txt";
+
+document.body.appendChild(a);
+
+a.click();
+
+document.body.removeChild(a);
+
+URL.revokeObjectURL(url);
 
 }
 
