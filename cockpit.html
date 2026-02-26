@@ -2,97 +2,112 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>MilEd.One Cockpit – System Configuration</title>
+<title>MilEd.One Cockpit v2 – System Manager</title>
 
 <style>
 
 body{
 font-family:'Segoe UI',sans-serif;
 background:#1a2a3a;
-color:#333;
 padding:20px;
+color:#333;
 }
 
-.cockpit-card{
-max-width:1200px;
+.cockpit{
+max-width:1300px;
 margin:auto;
 background:#ecf0f1;
 padding:30px;
-border-radius:15px;
-box-shadow:0 10px 30px rgba(0,0,0,0.5);
+border-radius:12px;
 }
 
 .section{
 background:white;
 padding:20px;
-border-radius:10px;
-margin-bottom:25px;
-border-right:8px solid #3498db;
+margin-bottom:20px;
+border-radius:8px;
 }
 
-.item-box{
+.tool{
 background:#f8f9fa;
 padding:15px;
-border-radius:8px;
-margin-top:15px;
+margin-top:10px;
+border-radius:6px;
+border:1px solid #ddd;
 }
 
 input, textarea, select{
+
 width:100%;
 padding:8px;
-margin-top:5px;
-margin-bottom:10px;
+margin-bottom:8px;
 border-radius:5px;
 border:1px solid #ccc;
-font-family:inherit;
+
 }
 
 textarea{
-height:120px;
+height:100px;
 }
 
 button{
-cursor:pointer;
+
 border:none;
-padding:10px;
+padding:8px 12px;
 border-radius:6px;
+cursor:pointer;
+
 }
 
-.btn-add{
+.add{
 background:#27ae60;
 color:white;
 }
 
-.btn-delete{
+.delete{
 background:#c0392b;
 color:white;
 }
 
-.btn-save{
+.save{
 background:#e67e22;
 color:white;
 width:100%;
-padding:18px;
-font-size:1.2rem;
+padding:15px;
+font-size:18px;
 margin-top:20px;
 }
 
+.userbar{
+background:#34495e;
+color:white;
+padding:10px;
+margin-bottom:15px;
+border-radius:6px;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<div class="cockpit-card">
+<div class="cockpit">
 
-<h1>MilEd.One Cockpit – System Configuration</h1>
+<div class="userbar">
+
+משתמש נוכחי:
+<span id="currentUser"></span>
+
+</div>
+
+<h1>MilEd Cockpit v2</h1>
 
 <div id="editor"></div>
 
-<button class="btn-save" onclick="generateConfig()">
-שמור והפק config.json
+<button class="save" onclick="saveConfig()">
+שמור config לשרת
 </button>
-
-<textarea id="output" style="display:none;"></textarea>
 
 </div>
 
@@ -100,23 +115,48 @@ margin-top:20px;
 
 let config={}
 
-const branchKeys=[
-"courses",
-"faculty",
-"skills",
-"admin"
-]
+let currentUser=null
 
-fetch("/config.json")
-.then(r=>r.json())
-.then(data=>{
-config=data
+const branchKeys=["courses","faculty","skills","admin"]
+
+init()
+
+async function init(){
+
+currentUser=await getCurrentUser()
+
+document.getElementById("currentUser").innerText=
+currentUser.id+" ("+currentUser.role+")"
+
+const res=await fetch("/config.json")
+
+config=await res.json()
+
 render()
-})
+
+}
+
+async function getCurrentUser(){
+
+/*
+בעתיד יגיע מהשרת
+כרגע mock
+*/
+
+return{
+
+id:"faculty_123",
+
+role:"faculty"
+
+}
+
+}
 
 function render(){
 
 const root=document.getElementById("editor")
+
 root.innerHTML=""
 
 branchKeys.forEach(branchKey=>{
@@ -124,21 +164,23 @@ branchKeys.forEach(branchKey=>{
 const branch=config.branches[branchKey]
 
 let html=`
+
 <div class="section">
 
 <h2>${branch.title}</h2>
 
-<button class="btn-add"
+<button class="add"
 onclick="addTool('${branchKey}')">
-+ הוסף כלי
+
++ הוסף כלי חדש
+
 </button>
+
 `
 
 for(let id in branch.items){
 
-const tool=branch.items[id]
-
-html+=createToolEditor(branchKey,id,tool)
+html+=renderTool(branchKey,id,branch.items[id])
 
 }
 
@@ -150,72 +192,98 @@ root.innerHTML+=html
 
 }
 
-function createToolEditor(branch,id,tool){
+function renderTool(branch,id,tool){
 
 return`
 
-<div class="item-box">
+<div class="tool">
 
-<label>שם הכלי</label>
+<label>name</label>
+
 <input
 value="${tool.name||''}"
 onchange="update('${branch}','${id}','name',this.value)">
 
 <label>botType</label>
+
 <input
 value="${tool.botType||''}"
 onchange="update('${branch}','${id}','botType',this.value)">
 
-<label>System Prompt</label>
+<label>systemPrompt</label>
+
 <textarea
-onchange="update('${branch}','${id}','systemPrompt',this.value)"
->${tool.systemPrompt||''}</textarea>
+onchange="update('${branch}','${id}','systemPrompt',this.value)">
+
+${tool.systemPrompt||''}
+
+</textarea>
 
 <label>thinkingBudget</label>
-<input
-type="number"
+
+<input type="number"
+
 value="${tool.thinkingBudget||512}"
+
 onchange="update('${branch}','${id}','thinkingBudget',parseInt(this.value))">
 
-<label>layer</label>
-<select
-onchange="update('${branch}','${id}','_layer',this.value)">
+<label>scope (תחום הרשאה)</label>
 
-<option value="course_general">course_general</option>
-<option value="course_task">course_task</option>
-<option value="skills_process">skills_process</option>
-<option value="faculty_tool">faculty_tool</option>
-<option value="faculty_monitoring_tool">faculty_monitoring_tool</option>
-<option value="admin_tool">admin_tool</option>
-
-</select>
-
-<label>scope</label>
 <select
 onchange="update('${branch}','${id}','scope',this.value)">
 
-<option value="global">global</option>
-<option value="faculty_private">faculty_private</option>
-<option value="institution">institution</option>
-<option value="course_specific">course_specific</option>
+<option ${tool.scope==="global"?"selected":""}>global</option>
+
+<option ${tool.scope==="faculty_private"?"selected":""}>faculty_private</option>
+
+<option ${tool.scope==="institution"?"selected":""}>institution</option>
+
+<option ${tool.scope==="course_specific"?"selected":""}>course_specific</option>
 
 </select>
 
-<label>owner</label>
+<label>visibility (רמת חשיפה)</label>
+
+<select
+onchange="update('${branch}','${id}','visibility',this.value)">
+
+<option ${tool.visibility==="system"?"selected":""}>system</option>
+
+<option ${tool.visibility==="faculty"?"selected":""}>faculty</option>
+
+<option ${tool.visibility==="institution"?"selected":""}>institution</option>
+
+</select>
+
+<label>owner (בעלים)</label>
+
 <input
-value="${tool.owner||'system'}"
+value="${tool.owner||''}"
 onchange="update('${branch}','${id}','owner',this.value)">
 
-<button
-class="btn-delete"
+<label>createdBy</label>
+
+<input
+value="${tool.createdBy||''}"
+onchange="update('${branch}','${id}','createdBy',this.value)">
+
+<label>version</label>
+
+<input
+value="${tool.version||'1.0'}"
+onchange="update('${branch}','${id}','version',this.value)">
+
+<button class="delete"
 onclick="deleteTool('${branch}','${id}')">
 
-מחק כלי
+מחק
 
 </button>
 
 </div>
+
 `
+
 }
 
 function update(branch,id,key,value){
@@ -230,6 +298,8 @@ const id="tool_"+Date.now()
 
 config.branches[branch].items[id]={
 
+id:id,
+
 name:"כלי חדש",
 
 botType:"",
@@ -238,28 +308,21 @@ systemPrompt:"",
 
 thinkingBudget:512,
 
-_layer:inferLayer(branch),
+scope:"faculty_private",
 
-scope:"global",
+visibility:"faculty",
 
-owner:"system",
+owner:currentUser.id,
 
-createdAt:new Date().toISOString()
+createdBy:currentUser.id,
+
+createdAt:new Date().toISOString(),
+
+version:"1.0"
 
 }
 
 render()
-
-}
-
-function inferLayer(branch){
-
-if(branch==="courses")return"course_general"
-if(branch==="skills")return"skills_process"
-if(branch==="faculty")return"faculty_tool"
-if(branch==="admin")return"admin_tool"
-
-return"course_general"
 
 }
 
@@ -271,17 +334,21 @@ render()
 
 }
 
-function generateConfig(){
+async function saveConfig(){
 
-const out=document.getElementById("output")
+await fetch("/api/saveConfig",{
 
-out.style.display="block"
+method:"POST",
 
-out.value=JSON.stringify(config,null,2)
+headers:{
+"Content-Type":"application/json"
+},
 
-out.select()
+body:JSON.stringify(config)
 
-alert("הקוד מוכן להעתקה ל-config.json")
+})
+
+alert("config נשמר בהצלחה")
 
 }
 
