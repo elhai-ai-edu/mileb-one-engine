@@ -1,42 +1,258 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MilEd.One - הנהלה</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f7f6; margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-        .container { max-width: 800px; width: 90%; background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; }
-        h1 { color: #34495e; font-size: 2.2rem; margin-bottom: 10px; }
-        .subtitle { color: #7f8c8d; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .btn { padding: 25px; border-radius: 15px; text-decoration: none; color: white; background: #34495e; font-weight: bold; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
-        .btn:hover { transform: translateY(-3px); background: #2c3e50; }
-        .back-btn { display: inline-block; margin-top: 40px; color: #7f8c8d; text-decoration: none; font-weight: bold; }
-        @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
-    </style>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>MilEd.One - הנהלה</title>
+
+<style>
+
+body{
+font-family:'Segoe UI',sans-serif;
+background:#f4f7f6;
+margin:0;
+display:flex;
+align-items:center;
+justify-content:center;
+min-height:100vh;
+}
+
+.container{
+
+max-width:800px;
+width:90%;
+
+background:white;
+
+padding:40px;
+
+border-radius:20px;
+
+box-shadow:0 10px 30px rgba(0,0,0,0.05);
+
+text-align:center;
+
+}
+
+h1{
+color:#34495e;
+font-size:2.2rem;
+margin-bottom:10px;
+}
+
+.subtitle{
+color:#7f8c8d;
+margin-bottom:30px;
+}
+
+.grid{
+
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
+
+}
+
+.btn{
+
+padding:25px;
+
+border-radius:15px;
+
+text-decoration:none;
+
+color:white;
+
+background:#34495e;
+
+font-weight:bold;
+
+transition:0.3s;
+
+display:flex;
+
+align-items:center;
+
+justify-content:center;
+
+}
+
+.btn:hover{
+
+transform:translateY(-3px);
+
+background:#2c3e50;
+
+}
+
+.back-btn{
+
+display:inline-block;
+
+margin-top:40px;
+
+color:#7f8c8d;
+
+text-decoration:none;
+
+font-weight:bold;
+
+}
+
+.hidden{
+
+color:red;
+font-weight:bold;
+margin-top:20px;
+
+}
+
+@media(max-width:600px){
+
+.grid{grid-template-columns:1fr;}
+
+}
+
+</style>
+
 </head>
+
 <body>
-    <div class="container">
-        <span style="font-weight: 300; color: #000;">MilEd.One</span>
-        <h1 id="title">בקרה וניהול מוסדי</h1>
-        <p id="subtitle" class="subtitle">נתונים ומדדי הצלחה בזמן אמת</p>
-        <div id="list" class="grid"></div>
-        <a href="/" class="back-btn">→ חזרה לדף הבית</a>
-    </div>
-    <script>
-        fetch('/config.json').then(r => r.json()).then(data => {
-            const admin = data.branches.admin;
-            document.getElementById('title').innerText = admin.title;
-            document.getElementById('subtitle').innerText = admin.subtitle;
-            for (let id in admin.items) {
-                const a = document.createElement('a');
-                a.className = 'btn';
-                a.href = '#'; // לינקים ללוחות הבקרה בעתיד
-                a.innerText = admin.items[id].name;
-                document.getElementById('list').appendChild(a);
-            }
-        });
-    </script>
+
+<div class="container">
+
+<span style="font-weight:300;color:#000;">MilEd.One</span>
+
+<h1 id="title">טוען...</h1>
+
+<p id="subtitle" class="subtitle">טוען...</p>
+
+<div id="list" class="grid"></div>
+
+<div id="no-access" class="hidden" style="display:none">
+אין לך הרשאה לצפות בכלי הנהלה
+</div>
+
+<a href="/" class="back-btn">← חזרה לדף הבית</a>
+
+</div>
+
+<script>
+
+
+// ─────────────────────────────
+// institution identity (temporary mock)
+// ─────────────────────────────
+
+let institutionRole=sessionStorage.getItem("institutionRole");
+
+
+// demo fallback
+// later replace with real login system
+
+if(!institutionRole){
+
+institutionRole="guest";
+
+}
+
+
+// ─────────────────────────────
+// access control
+// ─────────────────────────────
+
+function hasInstitutionAccess(tool){
+
+const scope=tool.scope||"global";
+
+
+if(scope==="global")
+return true;
+
+
+if(scope==="institution")
+return institutionRole==="admin";
+
+
+return false;
+
+}
+
+
+// ─────────────────────────────
+// load config
+// ─────────────────────────────
+
+fetch('/config.json')
+
+.then(r=>r.json())
+
+.then(data=>{
+
+const admin=data.branches.admin;
+
+document.getElementById('title').innerText=admin.title;
+
+document.getElementById('subtitle').innerText=admin.subtitle;
+
+
+const list=document.getElementById('list');
+
+let visibleCount=0;
+
+
+for(let id in admin.items){
+
+const tool=admin.items[id];
+
+
+if(!hasInstitutionAccess(tool))
+continue;
+
+
+visibleCount++;
+
+
+const a=document.createElement('a');
+
+a.className='btn';
+
+a.href=`/chat.html?classId=${id}`;
+
+a.innerText=tool.name;
+
+list.appendChild(a);
+
+}
+
+
+// no access fallback
+
+if(visibleCount===0){
+
+document.getElementById("no-access").style.display="block";
+
+}
+
+
+})
+
+.catch(err=>{
+
+console.error("config load error:",err);
+
+document.getElementById('title').innerText="שגיאה";
+
+document.getElementById('subtitle').innerText="לא ניתן לטעון";
+
+});
+
+
+</script>
+
 </body>
+
 </html>
