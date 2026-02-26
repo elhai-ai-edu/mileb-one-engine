@@ -1,111 +1,291 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8"><title>MilEd.One Cockpit</title>
-    <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #1a2a3a; color: #333; padding: 20px; }
-        .cockpit-card { max-width: 1000px; margin: auto; background: #ecf0f1; padding: 30px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .section { background: white; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-right: 8px solid #3498db; }
-        .home-section { border-right-color: #e74c3c; }
-        h1 { text-align: center; color: #2c3e50; }
-        h2 { margin-top: 0; color: #2980b9; font-size: 1.4rem; }
-        label { font-weight: bold; display: block; margin-top: 10px; font-size: 0.9rem; }
-        input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .item-row { display: flex; gap: 10px; margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 5px; }
-        .btn-save { background: #e67e22; color: white; width: 100%; padding: 20px; font-size: 1.5rem; border: none; cursor: pointer; border-radius: 10px; margin-top: 20px; }
-        #json-output { width: 100%; height: 200px; margin-top: 20px; display: none; font-family: monospace; }
-    </style>
-</head>
-<body>
-<div class="cockpit-card">
-    <h1 id="top-title">MilEd.One Cockpit</h1>
-    
-    <div id="editor-container"></div>
+<meta charset="UTF-8">
+<title>MilEd.One Cockpit – System Configuration</title>
 
-    <button class="btn-save" onclick="generate()">שמור והפק קוד עדכון לגיטהאב</button>
-    
-    <div id="output-area" style="display:none; margin-top:20px; background: #fff3cd; padding: 15px; border-radius: 10px;">
-        <p>העתק את הקוד למטה ל-<b>config.json</b> בגיטהאב:</p>
-        <textarea id="json-output"></textarea>
-    </div>
+<style>
+
+body{
+font-family:'Segoe UI',sans-serif;
+background:#1a2a3a;
+color:#333;
+padding:20px;
+}
+
+.cockpit-card{
+max-width:1200px;
+margin:auto;
+background:#ecf0f1;
+padding:30px;
+border-radius:15px;
+box-shadow:0 10px 30px rgba(0,0,0,0.5);
+}
+
+.section{
+background:white;
+padding:20px;
+border-radius:10px;
+margin-bottom:25px;
+border-right:8px solid #3498db;
+}
+
+.item-box{
+background:#f8f9fa;
+padding:15px;
+border-radius:8px;
+margin-top:15px;
+}
+
+input, textarea, select{
+width:100%;
+padding:8px;
+margin-top:5px;
+margin-bottom:10px;
+border-radius:5px;
+border:1px solid #ccc;
+font-family:inherit;
+}
+
+textarea{
+height:120px;
+}
+
+button{
+cursor:pointer;
+border:none;
+padding:10px;
+border-radius:6px;
+}
+
+.btn-add{
+background:#27ae60;
+color:white;
+}
+
+.btn-delete{
+background:#c0392b;
+color:white;
+}
+
+.btn-save{
+background:#e67e22;
+color:white;
+width:100%;
+padding:18px;
+font-size:1.2rem;
+margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="cockpit-card">
+
+<h1>MilEd.One Cockpit – System Configuration</h1>
+
+<div id="editor"></div>
+
+<button class="btn-save" onclick="generateConfig()">
+שמור והפק config.json
+</button>
+
+<textarea id="output" style="display:none;"></textarea>
+
 </div>
 
 <script>
-    let config = {};
-    const branchKeys = ['courses', 'faculty', 'skills', 'admin'];
 
-    fetch('/config.json').then(r => r.json()).then(data => {
-        config = data;
-        render();
-    });
+let config={}
 
-    function render() {
-        const root = document.getElementById('editor-container');
-        root.innerHTML = '';
+const branchKeys=[
+"courses",
+"faculty",
+"skills",
+"admin"
+]
 
-        // 1. עריכת דף הבית
-        let homeHtml = `<div class="section home-section">
-            <h2>🏠 ניהול דף הבית</h2>
-            <label>כותרת ראשית:</label>
-            <input type="text" value="${config.home.main_title}" onchange="config.home.main_title = this.value">
-            <label>תת כותרת:</label>
-            <input type="text" value="${config.home.main_subtitle}" onchange="config.home.main_subtitle = this.value">
-            <hr>
-            <h3>עריכת כרטיסי הניווט (השמות בדף הבית):</h3>`;
-        
-        for (let key in config.home.cards) {
-            homeHtml += `
-                <div style="background:#f0f4f8; padding:10px; margin-top:10px; border-radius:5px;">
-                    <label>כרטיס ${key} - כותרת:</label>
-                    <input type="text" value="${config.home.cards[key].title}" onchange="config.home.cards['${key}'].title = this.value">
-                    <label>תיאור:</label>
-                    <input type="text" value="${config.home.cards[key].desc}" onchange="config.home.cards['${key}'].desc = this.value">
-                </div>`;
-        }
-        homeHtml += `</div>`;
-        root.innerHTML += homeHtml;
+fetch("/config.json")
+.then(r=>r.json())
+.then(data=>{
+config=data
+render()
+})
 
-        // 2. עריכת הענפים
-        branchKeys.forEach(b => {
-            const branch = config.branches[b];
-            let branchHtml = `<div class="section">
-                <h2>ענף: ${branch.title}</h2>
-                <label>כותרת פנימית:</label>
-                <input type="text" value="${branch.title}" onchange="config.branches['${b}'].title = this.value">
-                <label>הסבר פנימי:</label>
-                <input type="text" value="${branch.subtitle}" onchange="config.branches['${b}'].subtitle = this.value">
-                <div style="margin-top:15px;"><strong>כפתורים/בוטים:</strong></div>
-                <div id="items-${b}">`;
+function render(){
 
-            for (let id in branch.items) {
-                branchHtml += `<div class="item-row">
-                    <input type="text" value="${branch.items[id].name}" onchange="config.branches['${b}'].items['${id}'].name = this.value">
-                    <button style="background:red; color:white; border:none; cursor:pointer;" onclick="deleteItem('${b}','${id}')">X</button>
-                </div>`;
-            }
-            branchHtml += `</div><button style="margin-top:10px;" onclick="addItem('${b}')">+ הוסף כפתור</button></div>`;
-            root.innerHTML += branchHtml;
-        });
-    }
+const root=document.getElementById("editor")
+root.innerHTML=""
 
-    function addItem(b) {
-        const id = b + "_" + Date.now();
-        config.branches[b].items[id] = { name: "חדש..." };
-        render();
-    }
+branchKeys.forEach(branchKey=>{
 
-    function deleteItem(b, id) {
-        delete config.branches[b].items[id];
-        render();
-    }
+const branch=config.branches[branchKey]
 
-    function generate() {
-        const out = document.getElementById('json-output');
-        out.value = JSON.stringify(config, null, 2);
-        out.style.display = 'block';
-        document.getElementById('output-area').style.display = 'block';
-        out.select();
-    }
+let html=`
+<div class="section">
+
+<h2>${branch.title}</h2>
+
+<button class="btn-add"
+onclick="addTool('${branchKey}')">
++ הוסף כלי
+</button>
+`
+
+for(let id in branch.items){
+
+const tool=branch.items[id]
+
+html+=createToolEditor(branchKey,id,tool)
+
+}
+
+html+="</div>"
+
+root.innerHTML+=html
+
+})
+
+}
+
+function createToolEditor(branch,id,tool){
+
+return`
+
+<div class="item-box">
+
+<label>שם הכלי</label>
+<input
+value="${tool.name||''}"
+onchange="update('${branch}','${id}','name',this.value)">
+
+<label>botType</label>
+<input
+value="${tool.botType||''}"
+onchange="update('${branch}','${id}','botType',this.value)">
+
+<label>System Prompt</label>
+<textarea
+onchange="update('${branch}','${id}','systemPrompt',this.value)"
+>${tool.systemPrompt||''}</textarea>
+
+<label>thinkingBudget</label>
+<input
+type="number"
+value="${tool.thinkingBudget||512}"
+onchange="update('${branch}','${id}','thinkingBudget',parseInt(this.value))">
+
+<label>layer</label>
+<select
+onchange="update('${branch}','${id}','_layer',this.value)">
+
+<option value="course_general">course_general</option>
+<option value="course_task">course_task</option>
+<option value="skills_process">skills_process</option>
+<option value="faculty_tool">faculty_tool</option>
+<option value="faculty_monitoring_tool">faculty_monitoring_tool</option>
+<option value="admin_tool">admin_tool</option>
+
+</select>
+
+<label>scope</label>
+<select
+onchange="update('${branch}','${id}','scope',this.value)">
+
+<option value="global">global</option>
+<option value="faculty_private">faculty_private</option>
+<option value="institution">institution</option>
+<option value="course_specific">course_specific</option>
+
+</select>
+
+<label>owner</label>
+<input
+value="${tool.owner||'system'}"
+onchange="update('${branch}','${id}','owner',this.value)">
+
+<button
+class="btn-delete"
+onclick="deleteTool('${branch}','${id}')">
+
+מחק כלי
+
+</button>
+
+</div>
+`
+}
+
+function update(branch,id,key,value){
+
+config.branches[branch].items[id][key]=value
+
+}
+
+function addTool(branch){
+
+const id="tool_"+Date.now()
+
+config.branches[branch].items[id]={
+
+name:"כלי חדש",
+
+botType:"",
+
+systemPrompt:"",
+
+thinkingBudget:512,
+
+_layer:inferLayer(branch),
+
+scope:"global",
+
+owner:"system",
+
+createdAt:new Date().toISOString()
+
+}
+
+render()
+
+}
+
+function inferLayer(branch){
+
+if(branch==="courses")return"course_general"
+if(branch==="skills")return"skills_process"
+if(branch==="faculty")return"faculty_tool"
+if(branch==="admin")return"admin_tool"
+
+return"course_general"
+
+}
+
+function deleteTool(branch,id){
+
+delete config.branches[branch].items[id]
+
+render()
+
+}
+
+function generateConfig(){
+
+const out=document.getElementById("output")
+
+out.style.display="block"
+
+out.value=JSON.stringify(config,null,2)
+
+out.select()
+
+alert("הקוד מוכן להעתקה ל-config.json")
+
+}
+
 </script>
+
 </body>
 </html>
