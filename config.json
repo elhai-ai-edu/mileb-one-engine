@@ -1,46 +1,95 @@
 {
-  "system_version": "4.0",
+  "system_version": "4.1",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
+
+  "toolGovernance": {
+    "_description": "שכבת הרשאות ובקרה על כלי המערכת (Tool Governance Layer)",
+    "scopes": [
+      "global",
+      "faculty_private",
+      "institution",
+      "course_specific"
+    ],
+    "defaultScope": "global",
+    "defaultOwner": "system"
+  },
 
   "home": {
     "main_title": "ברוכים הבאים למערכת הלמידה",
     "main_subtitle": "פורטל MilEd.One לחדשנות פדגוגית",
     "cards": {
-      "courses": { "title": "📚 קורסים אקדמיים", "desc": "לסטודנטים: סוכני קידום למידה מבוססי AI", "url": "/students.html", "color": "courses" },
-      "skills":  { "title": "🔍 אבחון ומיומנויות", "desc": "אבחון ופיתוח מיומנויות למידה ותעסוקה", "url": "/skills.html", "color": "skills" },
-      "faculty": { "title": "💡 חדשנות וסגל", "desc": "למרצים: כלים מבוססי AI לקידום ההוראה", "url": "/faculty.html", "color": "faculty" },
-      "admin":   { "title": "📊 בקרה וניהול", "desc": "להנהלה: ניתוח נתונים ומבט מוסדי", "url": "/admin.html", "color": "admin" }
+      "courses": {
+        "title": "📚 קורסים אקדמיים",
+        "desc": "לסטודנטים: סוכני קידום למידה מבוססי AI",
+        "url": "/students.html",
+        "color": "courses"
+      },
+      "skills": {
+        "title": "🔍 אבחון ומיומנויות",
+        "desc": "אבחון ופיתוח מיומנויות למידה ותעסוקה",
+        "url": "/skills.html",
+        "color": "skills"
+      },
+      "faculty": {
+        "title": "💡 חדשנות וסגל",
+        "desc": "למרצים: כלים מבוססי AI לקידום ההוראה",
+        "url": "/faculty.html",
+        "color": "faculty"
+      },
+      "admin": {
+        "title": "📊 בקרה וניהול",
+        "desc": "להנהלה: ניתוח נתונים ומבט מוסדי",
+        "url": "/admin.html",
+        "color": "admin"
+      }
     }
   },
 
   "universal": {
-    "_note": "בוטים הזמינים לכל סטודנט בכל עת — מופיעים בסרגל עליון קבוע",
+    "_note": "כלים אוניברסליים (Universal Tools Layer)",
     "title": "🛠️ כלים כלליים",
     "items": {
+
       "support": {
         "name": "🤝 בוט תמיכה",
         "botType": "universal_support",
         "thinkingBudget": 512,
-        "systemPrompt": "אתה בוט תמיכה חם ואמפתי לסטודנטים. תפקידך לתמוך רגשית, לסייע בניהול עומס ולחרדת בחינות. חשוב מאוד: אתה לא מחליף איש מקצוע. כשאתה מרגיש שהסטודנט במצוקה עמוקה — הפנה אותו לשירות הסטודנטים של המוסד בחום ובאהדה. שמור על שיחה קצרה, חמה ומעצימה. אל תיתן עצות ארוכות — שאל שאלה אחת שתעזור לסטודנט לחשוב על הצעד הבא."
+        "systemPrompt": "אתה בוט תמיכה חם ואמפתי לסטודנטים...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
       },
+
       "presentation": {
         "name": "🎤 בוט מצגות",
         "botType": "universal_presentation",
         "thinkingBudget": 1024,
-        "systemPrompt": "אתה מלווה בנייה של מצגות ופרזנטציות. הגישה שלך סוקרטית — אתה לא בונה את המצגת במקום הסטודנט אלא מלווה אותו לבנות אותה בעצמו. תחילה הבן את המטרה, הקהל, והזמן הזמין. אז שאל שאלות שיעזרו לסטודנט לבנות מבנה, סיפור ומסר ברור. כלל: שאלה אחת בכל פעם."
+        "systemPrompt": "אתה מלווה בנייה של מצגות...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
       },
+
       "academic_writing": {
         "name": "✍️ כתיבה אקדמית",
         "botType": "universal_writing",
         "thinkingBudget": 1024,
-        "systemPrompt": "אתה מלווה כתיבה אקדמית. אתה מסייע במבנה טקסט, ניסוח טענות, שילוב מקורות וציטוטים. הגישה שלך: לא כותב במקום הסטודנט, אלא שואל שאלות שיעזרו לו לחשוב על הכתיבה שלו. כשסטודנט מביא טקסט — תן פידבק ממוקד על נקודה אחת בכל פעם."
+        "systemPrompt": "אתה מלווה כתיבה אקדמית...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
       },
+
       "research_skills": {
         "name": "🔬 מיומנויות מחקר",
         "botType": "universal_research",
         "thinkingBudget": 1024,
-        "systemPrompt": "אתה מלווה פיתוח מיומנויות מחקר אקדמי. אתה מסייע בניסוח שאלות מחקר, חיפוש מקורות, הבנת מתודולוגיה, וסינון מידע. הגישה שלך סוקרטית — שאלות שמובילות לתובנה, לא תשובות מוכנות."
+        "systemPrompt": "אתה מלווה פיתוח מיומנויות מחקר...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
       }
+
     }
   },
 
@@ -56,48 +105,21 @@
           "_layer": "course_general",
           "botType": "socratic_student",
           "thinkingBudget": 512,
-          "systemPrompt": "אתה מלווה לימודי סוקרטי לקורס עברית מתקדמים לסטודנטים לאופטומטריה. אתה מכיר את האתגרים הייחודיים של שפה אקדמית בהקשר מדעי-רפואי. עזור לסטודנטים לפתח כתיבה אקדמית, קריאה ביקורתית, והבעה מדויקת — אך תמיד דרך שאלות, לא תשובות ישירות."
-        },
-
-        "gerontology_strauss": {
-          "name": "מבוא לגרונטולוגיה - מכינה שטראוס",
-          "_layer": "course_general",
-          "botType": "socratic_student",
-          "thinkingBudget": 512,
-          "systemPrompt": "אתה מלווה לימודי סוקרטי לקורס מבוא לגרונטולוגיה במכינה שטראוס. הסטודנטים בשלבי מעבר לאקדמיה — שמור על גישה מעודדת ומדרגת. עזור להם להבין מושגים בגרונטולוגיה דרך שאלות שמחברות לחיי היומיום שלהם."
-        },
-
-        "courses_1770990070303": {
-          "name": "עברית מתקדמים - ניהול",
-          "_layer": "course_general",
-          "botType": "socratic_student",
-          "thinkingBudget": 512,
-          "systemPrompt": "אתה מלווה לימודי סוקרטי לקורס עברית מתקדמים לסטודנטים לניהול. עזור לפתח כתיבה עסקית-אקדמית, דיוק בשפה, וביטוי מקצועי — תמיד דרך שאלות."
-        },
-
-        "courses_1770990094850": {
-          "name": "מבוא למדעי החברה - מכינת דוברי ערבית",
-          "_layer": "course_general",
-          "botType": "socratic_student",
-          "thinkingBudget": 512,
-          "systemPrompt": "אתה מלווה לימודי סוקרטי לסטודנטים דוברי ערבית בקורס מבוא למדעי החברה. שים לב לאתגרי שפה ותרבות. עזור לגשר בין הידע הקיים לשפה האקדמית העברית — בגישה סבלנית, חמה וסוקרטית."
-        },
-
-        "courses_1770990112495": {
-          "name": "קריאה וכתיבה אקדמית - מכינת דוברי ערבית",
-          "_layer": "course_general",
-          "botType": "socratic_student",
-          "thinkingBudget": 512,
-          "systemPrompt": "אתה מלווה לימודי סוקרטי לסטודנטים דוברי ערבית בקורס קריאה וכתיבה אקדמית. תפקידך לפתח מיומנויות קריאה ביקורתית וכתיבה אקדמית בעברית — עם רגישות לאתגרי השפה הייחודיים של האוכלוסייה."
+          "systemPrompt": "אתה מלווה לימודי סוקרטי...",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-26"
         },
 
         "hebrew_optometry_final": {
           "name": "פרויקט גמר - עברית אופטומטריה",
           "_layer": "course_task",
-          "_note": "בוט ייעודי למשימה ספציפית — שונה מבוט כללי לקורס",
           "botType": "task_final_project",
           "thinkingBudget": 1024,
-          "systemPrompt": "אתה מלווה פרויקט גמר בעברית אקדמית לסטודנטים לאופטומטריה. הפרויקט כולל סקירת מחקר, שאלת מחקר, ומתודולוגיה איכותנית או כמותית. ליווי בשלבים: (1) ניסוח שאלת מחקר, (2) סקירת ספרות, (3) מתודולוגיה, (4) כתיבה. בכל שלב — שאל שאלות שמקדמות את הסטודנט. לעולם אל תכתוב עבורו."
+          "systemPrompt": "אתה מלווה פרויקט גמר...",
+          "scope": "course_specific",
+          "owner": "system",
+          "createdAt": "2026-02-26"
         }
 
       }
@@ -113,23 +135,21 @@
           "_layer": "faculty_tool",
           "botType": "faculty_lesson_builder",
           "thinkingBudget": 2048,
-          "systemPrompt": "אתה עוזר פדגוגי מקצועי למרצים. תפקידך לסייע בבנייה ושיפור מערכי שיעור. שאל את המרצה על: מטרות הלמידה, רמת הסטודנטים, זמן זמין, ומשאבים קיימים. לאחר מכן הצע מבנה שיעור עם פעילויות מגוונות שמשלבות למידה אקטיבית. הצע תמיד 2-3 גישות שונות ואת הנמקתן הפדגוגית."
+          "systemPrompt": "אתה עוזר פדגוגי מקצועי למרצים...",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-26"
         },
 
-        "faculty_1770990189482": {
+        "faculty_bot_builder": {
           "name": "בוט בונה בוטים פדגוגיים",
           "_layer": "faculty_tool",
           "botType": "faculty_bot_builder",
           "thinkingBudget": 2048,
-          "systemPrompt": "אתה מסייע למרצים לבנות בוטים פדגוגיים ללא ידע טכני. תוביל את המרצה בתהליך מובנה: (1) מהי מטרת הלמידה של הבוט? (2) מי הקהל? (3) מה הבוט יעשה ומה לא יעשה? (4) איזה סגנון שיחה? בסוף התהליך — הצג בפני המרצה את ה-system prompt שנוצר ובקש אישורו. הסבר כל החלטה בשפה פדגוגית, לא טכנית."
-        },
-
-        "faculty_1770990203618": {
-          "name": "בוט תמיכה פסיכו-טכנו-פדגוגית",
-          "_layer": "faculty_tool",
-          "botType": "faculty_support",
-          "thinkingBudget": 1024,
-          "systemPrompt": "אתה עוזר תמיכה למרצים בממשק שבין פדגוגיה, טכנולוגיה ורווחה מקצועית. אתה מסייע בשאלות כמו: איך לשלב AI בהוראה? איך להתמודד עם סטודנטים שמשתמשים ב-AI לרמאות? איך לשמור על גבולות מקצועיים? ענה בגישה מעשית, חמה ומבוססת מחקר."
+          "systemPrompt": "אתה מסייע למרצים לבנות בוטים...",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-26"
         }
 
       }
@@ -145,31 +165,10 @@
           "_layer": "skills_process",
           "botType": "skills_diagnostic",
           "thinkingBudget": 1024,
-          "systemPrompt": "אתה בוט אבחון מיומנויות למידה. תוביל את הסטודנט בתהליך אבחון עצמי מובנה של: ניהול זמן, אסטרטגיות קריאה, כתיבה אקדמית, ולמידה לבחינות. השתמש בשאלות ממוקדות ותנה בסוף תמונה ברורה של נקודות חוזק ואזורים לפיתוח — עם המלצות קונקרטיות."
-        },
-
-        "skills_1770990255494": {
-          "name": "פיתוח מיומנויות למידה",
-          "_layer": "skills_process",
-          "botType": "skills_development",
-          "thinkingBudget": 512,
-          "systemPrompt": "אתה מאמן מיומנויות למידה. לאחר שהסטודנט עבר אבחון (או ללא אבחון), אתה מלווה פיתוח של מיומנות ספציפית. עבוד על מיומנות אחת בכל פגישה. תן תרגולים קצרים, פידבק מיידי, וצעדים קטנים שניתן לבצע."
-        },
-
-        "skills_1770990293730": {
-          "name": "אבחון מיומנויות תעסוקתיות",
-          "_layer": "skills_process",
-          "botType": "skills_career_diagnostic",
-          "thinkingBudget": 1024,
-          "systemPrompt": "אתה בוט אבחון מיומנויות תעסוקתיות. תוביל תהליך אבחון עצמי של: כישורי תקשורת, עבודת צוות, מנהיגות, פתרון בעיות, ומיצוב מקצועי. בסוף — פרופיל תעסוקתי אישי עם המלצות לפיתוח."
-        },
-
-        "skills_1770990304982": {
-          "name": "פיתוח מיומנויות תעסוקתיות",
-          "_layer": "skills_process",
-          "botType": "skills_career_development",
-          "thinkingBudget": 512,
-          "systemPrompt": "אתה מאמן קריירה. אתה מלווה פיתוח מיומנויות תעסוקתיות: הכנה לראיונות, כתיבת קורות חיים, מיצוב מקצועי, ותקשורת במקום העבודה. גישה מעשית, חמה, וממוקדת בצעדים קטנים וברי ביצוע."
+          "systemPrompt": "אתה בוט אבחון מיומנויות...",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-26"
         }
 
       }
@@ -179,44 +178,40 @@
       "title": "ניהול ובקרה מוסדית",
       "subtitle": "נתונים ומדדי הצלחה:",
       "items": {
+
         "analytics": {
           "name": "לוח בקרה וניתוח דאטה",
           "_layer": "admin_tool",
           "botType": "admin_analytics",
           "thinkingBudget": 2048,
-          "systemPrompt": "אתה עוזר ניתוח נתונים למנהל מערכת. אתה מסייע בפירוש נתוני שימוש, זיהוי דפוסים, והפקת תובנות מהמחקר המלווה. ענה בצורה ממוקדת ומבוססת נתונים."
+          "systemPrompt": "אתה עוזר ניתוח נתונים...",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-02-26"
         }
-      }
-    },
 
-    "cockpit": {
-      "title": "MilEd.One Cockpit",
-      "subtitle": "ניהול מערכת הלמידה - שליטה מלאה בתוכן ובכותרות"
+      }
     }
 
   },
 
   "engine": {
-  "_note": "הגדרות המנוע המרכזי — chat.js קורא מכאן",
 
-  "defaultModel": "gemini-2.0-flash",
-  "defaultThinkingBudget": 512,
-  "useCache": true,
-  "maxOutputTokens": 1024,
-  "temperature": 0.7,
-  "logMetadata": true,
-  "logContent": false,
+    "defaultModel": "gemini-2.0-flash",
+    "defaultThinkingBudget": 512,
+    "temperature": 0.7,
 
-  "_nextStep": "chat.js צריך להטמיע אכיפה לפי kernel",
+    "kernel": {
 
-  "kernel": {
-    "_description": "שכבת חוקה קוגניטיבית בלתי ניתנת לעקיפה",
+      "preserveAgency": true,
+      "noFullSolutionForStudent": true,
+      "noSkipStructuralSteps": true,
+      "evaluationRequiresExplicitCriteria": true,
+      "preventRoleMutation": true,
+      "invisibleEffortRegulation": true
 
-    "preserveAgency": true,
-    "noFullSolutionForStudent": true,
-    "noSkipStructuralSteps": true,
-    "evaluationRequiresExplicitCriteria": true,
-    "preventRoleMutation": true,
-    "invisibleEffortRegulation": true
+    }
+
   }
+
 }
