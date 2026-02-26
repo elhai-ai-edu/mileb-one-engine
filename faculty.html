@@ -138,6 +138,10 @@ let CONFIG=null;
 
 let USER=null;
 
+/* EXPORT SUPPORT — added */
+const currentFacultyId =
+    localStorage.getItem("facultyId") || null;
+
 
 
 /* =====================================================
@@ -204,6 +208,55 @@ async function loadConfig()
 
 
 /* =====================================================
+   EXPORT FULL SYSTEM PROMPT — added
+===================================================== */
+
+async function exportSystemPrompt(botType, facultyId=null)
+{
+    try
+    {
+        const res=await fetch(
+            "/.netlify/functions/chat?exportPrompt=true",
+            {
+                method:"POST",
+                headers:
+                {
+                    "Content-Type":"application/json"
+                },
+                body:JSON.stringify(
+                {
+                    botType,
+                    facultyId
+                })
+            });
+
+        const data=await res.json();
+
+        if(!data.fullSystemPrompt)
+        {
+            alert("לא ניתן לייצא את ה-System Prompt");
+            return;
+        }
+
+        await navigator.clipboard.writeText(
+            data.fullSystemPrompt
+        );
+
+        alert(
+        "ה-System Prompt המלא הועתק ללוח.\n\n"+
+        "ניתן כעת להדביק אותו ב-GPT או בכל מערכת אחרת."
+        );
+    }
+    catch(e)
+    {
+        console.error(e);
+        alert("שגיאה בייצוא");
+    }
+}
+
+
+
+/* =====================================================
    init page
 ===================================================== */
 
@@ -233,6 +286,13 @@ function initPage()
             continue;
 
 
+        const wrapper=document.createElement("div");
+
+        wrapper.style.display="flex";
+        wrapper.style.flexDirection="column";
+        wrapper.style.gap="8px";
+
+
         const a=document.createElement("a");
 
         a.className="btn";
@@ -241,7 +301,27 @@ function initPage()
 
         a.innerText=bot.name;
 
-        container.appendChild(a);
+
+        const exportBtn=document.createElement("button");
+
+        exportBtn.innerText="ייצוא System Prompt";
+
+        exportBtn.style.padding="6px 12px";
+        exportBtn.style.borderRadius="8px";
+        exportBtn.style.border="none";
+        exportBtn.style.cursor="pointer";
+        exportBtn.style.background="#2c3e50";
+        exportBtn.style.color="white";
+
+        exportBtn.onclick=()=>
+            exportSystemPrompt(bot.botType,currentFacultyId);
+
+
+        wrapper.appendChild(a);
+
+        wrapper.appendChild(exportBtn);
+
+        container.appendChild(wrapper);
     }
 }
 
