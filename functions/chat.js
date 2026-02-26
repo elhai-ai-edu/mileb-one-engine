@@ -1,7 +1,7 @@
-// functions/chat.js — MilEd.One v4.9
+// functions/chat.js — MilEd.One v5.0
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing
 // + Hard guards + Config cache TTL + Safe OpenRouter handling + Engine-config driven params
-// + Full System Prompt Export Support
+// + Full System Prompt Export Support + Public/Private Kernel Separation
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -192,8 +192,11 @@ const DEFAULT_PROMPT =
   "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
 
 
+
 // ─────────────────────────────────────────
-// BUILD FULL SYSTEM PROMPT (EXPORT SUPPORT)
+// BUILD FULL SYSTEM PROMPT
+// runtime = public + private
+// export  = public only (handled outside)
 // ─────────────────────────────────────────
 
 function buildFullSystemPrompt(engine, botConfig) {
@@ -201,7 +204,13 @@ function buildFullSystemPrompt(engine, botConfig) {
   if (!botConfig)
     return null;
 
-  const kernel = engine?.kernel || {};
+  const publicKernel  = engine?.kernel?.public  || {};
+  const privateKernel = engine?.kernel?.private || {};
+
+  const kernel = {
+    ...publicKernel,
+    ...privateKernel
+  };
 
   let kernelBlock = "";
 
@@ -232,6 +241,7 @@ function buildFullSystemPrompt(engine, botConfig) {
 }
 
 
+
 // ─────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────
@@ -259,13 +269,9 @@ exports.handler = async (event) => {
 
   try {
 
-    // ───────────────── EXPORT FLAG ─────────────────
-
     const exportPrompt =
       event.queryStringParameters?.exportPrompt === "true";
 
-
-    // ───────────────── INPUT ─────────────────
 
     const {
       message   = "שלום",
@@ -286,8 +292,6 @@ exports.handler = async (event) => {
 
     const context = { facultyId, classId, studentId };
 
-
-    // ───────────────── CONFIG ─────────────────
 
     const config = await loadConfig();
 
@@ -314,12 +318,22 @@ exports.handler = async (event) => {
     const engine = config.engine || {};
 
 
+
     // ───────────────── EXPORT MODE ─────────────────
+    // export = public kernel only
 
     if (exportPrompt) {
 
+      const publicEngine = {
+        ...engine,
+        kernel: {
+          public: engine?.kernel?.public || {},
+          private: {}
+        }
+      };
+
       const fullPrompt =
-        buildFullSystemPrompt(engine, botConfig);
+        buildFullSystemPrompt(publicEngine, botConfig);
 
       return {
 
@@ -341,7 +355,8 @@ exports.handler = async (event) => {
     }
 
 
-    const systemPrompt = botConfig.systemPrompt || DEFAULT_PROMPT;
+
+    const privateKernel = engine?.kernel?.private || {};
 
     const model = selectModel(botConfig.botType);
 
@@ -350,13 +365,9 @@ exports.handler = async (event) => {
     const logContent  = engine.logContent ?? false;
 
 
-    // ───────────────── KERNEL ─────────────────
-
     const finalSystemPrompt =
       buildFullSystemPrompt(engine, botConfig);
 
-
-    // ───────────────── HISTORY ─────────────────
 
     const trimmedHistory =
       history
@@ -364,9 +375,8 @@ exports.handler = async (event) => {
         .slice(-14);
 
 
-    // ───────────────── PRE GUARD ─────────────────
 
-    if (engine.kernel?.noFullSolutionForStudent &&
+    if (privateKernel.noFullSolutionForStudent &&
         detectFullSolutionRequest(message)) {
 
       return {
@@ -390,7 +400,6 @@ exports.handler = async (event) => {
     }
 
 
-    // ───────────────── BUILD MESSAGES ─────────────────
 
     const messages = [
 
@@ -405,8 +414,6 @@ exports.handler = async (event) => {
 
     ];
 
-
-    // ───────────────── OPENROUTER CALL ─────────────────
 
     const response = await fetch(OPENROUTER_URL, {
 
@@ -436,33 +443,8 @@ exports.handler = async (event) => {
     let raw;
     let data;
 
-    try {
-
-      raw = await response.text();
-      data = JSON.parse(raw);
-
-    } catch {
-
-      console.error("INVALID JSON FROM OPENROUTER");
-      throw new Error("Invalid upstream response");
-
-    }
-
-    if (!response.ok) {
-
-      console.error("OPENROUTER ERROR:", raw.slice(0, 500));
-
-      return {
-
-        statusCode: 502,
-        headers,
-        body: JSON.stringify({
-          error: "Upstream model error"
-        })
-
-      };
-
-    }
+    raw = await response.text();
+    data = JSON.parse(raw);
 
 
     let reply =
@@ -470,60 +452,13 @@ exports.handler = async (event) => {
       || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
 
 
-    if (engine.kernel?.noFullSolutionForStudent &&
+    if (privateKernel.noFullSolutionForStudent &&
         looksLikeFullAnswer(reply)) {
 
       reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
 
     }
 
-
-    // ───────────────── LOGGING ─────────────────
-
-    const { isQuestion, wordCount } =
-      analyzeMessage(message);
-
-    const logEntry = {
-
-      timestamp: new Date().toISOString(),
-
-      studentId,
-      facultyId,
-      classId,
-      sessionId,
-
-      botType,
-      botName: botConfig.name,
-
-      scope: botConfig.scope,
-      owner: botConfig.owner,
-
-      layer: botConfig._layer,
-
-      model,
-
-      isThinking: model === MODEL_THINKING,
-
-      messageWordCount: wordCount,
-      messageIsQuestion: isQuestion,
-
-      replyLength: reply.length,
-
-      tokensUsed: data.usage || null
-
-    };
-
-    if (logContent) {
-
-      logEntry.messageContent = message;
-      logEntry.replyPreview   = reply.slice(0, 200);
-
-    }
-
-    console.log("RESEARCH_LOG:", JSON.stringify(logEntry));
-
-
-    // ───────────────── RESPONSE ─────────────────
 
     return {
 
