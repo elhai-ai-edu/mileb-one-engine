@@ -1,6 +1,7 @@
-// functions/chat.js — MilEd.One v4.8
+// functions/chat.js — MilEd.One v4.9
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing
 // + Hard guards + Config cache TTL + Safe OpenRouter handling + Engine-config driven params
+// + Full System Prompt Export Support
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -26,10 +27,12 @@ const THINKING_BOT_TYPES = [
 ];
 
 function selectModel(botType) {
+
   if (botType && THINKING_BOT_TYPES.includes(botType))
     return MODEL_THINKING;
 
   return MODEL_FAST;
+
 }
 
 
@@ -53,8 +56,10 @@ async function loadConfig() {
     const res = await fetch(`${SITE_URL}/config.json`);
 
     if (!res.ok) {
+
       console.error("CONFIG LOAD FAILED:", res.status);
       return null;
+
     }
 
     cachedConfig = await res.json();
@@ -188,6 +193,46 @@ const DEFAULT_PROMPT =
 
 
 // ─────────────────────────────────────────
+// BUILD FULL SYSTEM PROMPT (EXPORT SUPPORT)
+// ─────────────────────────────────────────
+
+function buildFullSystemPrompt(engine, botConfig) {
+
+  if (!botConfig)
+    return null;
+
+  const kernel = engine?.kernel || {};
+
+  let kernelBlock = "";
+
+  if (kernel.preserveAgency)
+    kernelBlock += "שמור על סוכנות הלומד. ";
+
+  if (kernel.noFullSolutionForStudent)
+    kernelBlock += "אל תפתור משימות במלואן עבור סטודנט. ";
+
+  if (kernel.noSkipStructuralSteps)
+    kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
+
+  if (kernel.evaluationRequiresExplicitCriteria)
+    kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
+
+  if (kernel.preventRoleMutation)
+    kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
+
+  if (kernel.invisibleEffortRegulation)
+    kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
+
+  const systemPrompt =
+    botConfig.systemPrompt || DEFAULT_PROMPT;
+
+  return kernelBlock
+    ? kernelBlock + "\n\n" + systemPrompt
+    : systemPrompt;
+}
+
+
+// ─────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────
 
@@ -213,6 +258,12 @@ exports.handler = async (event) => {
     };
 
   try {
+
+    // ───────────────── EXPORT FLAG ─────────────────
+
+    const exportPrompt =
+      event.queryStringParameters?.exportPrompt === "true";
+
 
     // ───────────────── INPUT ─────────────────
 
@@ -247,7 +298,6 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: "Configuration load failed" })
       };
 
-
     const botConfig = findBot(config, botType, context);
 
     if (!botConfig)
@@ -261,11 +311,39 @@ exports.handler = async (event) => {
       };
 
 
+    const engine = config.engine || {};
+
+
+    // ───────────────── EXPORT MODE ─────────────────
+
+    if (exportPrompt) {
+
+      const fullPrompt =
+        buildFullSystemPrompt(engine, botConfig);
+
+      return {
+
+        statusCode: 200,
+        headers,
+
+        body: JSON.stringify({
+
+          botType,
+          botName: botConfig.name,
+          scope: botConfig.scope,
+          owner: botConfig.owner,
+          fullSystemPrompt: fullPrompt
+
+        })
+
+      };
+
+    }
+
+
     const systemPrompt = botConfig.systemPrompt || DEFAULT_PROMPT;
 
     const model = selectModel(botConfig.botType);
-
-    const engine = config.engine || {};
 
     const temperature = engine.temperature ?? 0.7;
     const maxTokens   = engine.maxOutputTokens ?? 1024;
@@ -274,33 +352,8 @@ exports.handler = async (event) => {
 
     // ───────────────── KERNEL ─────────────────
 
-    const kernel = engine.kernel || {};
-
-    let kernelBlock = "";
-
-    if (kernel.preserveAgency)
-      kernelBlock += "שמור על סוכנות הלומד. ";
-
-    if (kernel.noFullSolutionForStudent)
-      kernelBlock += "אל תפתור משימות במלואן עבור סטודנט. ";
-
-    if (kernel.noSkipStructuralSteps)
-      kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
-
-    if (kernel.evaluationRequiresExplicitCriteria)
-      kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
-
-    if (kernel.preventRoleMutation)
-      kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
-
-    if (kernel.invisibleEffortRegulation)
-      kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
-
-
     const finalSystemPrompt =
-      kernelBlock
-        ? kernelBlock + "\n\n" + systemPrompt
-        : systemPrompt;
+      buildFullSystemPrompt(engine, botConfig);
 
 
     // ───────────────── HISTORY ─────────────────
@@ -313,7 +366,7 @@ exports.handler = async (event) => {
 
     // ───────────────── PRE GUARD ─────────────────
 
-    if (kernel.noFullSolutionForStudent &&
+    if (engine.kernel?.noFullSolutionForStudent &&
         detectFullSolutionRequest(message)) {
 
       return {
@@ -417,7 +470,7 @@ exports.handler = async (event) => {
       || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
 
 
-    if (kernel.noFullSolutionForStudent &&
+    if (engine.kernel?.noFullSolutionForStudent &&
         looksLikeFullAnswer(reply)) {
 
       reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
