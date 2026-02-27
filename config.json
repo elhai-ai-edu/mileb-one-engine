@@ -34,25 +34,25 @@
     "main_subtitle": "פורטל MilEd.One לחדשנות פדגוגית",
     "cards": {
       "courses": {
-        "title": "📚 קורסים אקדמיים",
-        "desc": "לסטודנטים: סוכני קידום למידה מבוססי AI",
+        "title": "📚 קידום למידה",
+        "desc": " סוכני קידום למידה מבוססי AI",
         "url": "/students.html",
         "color": "courses"
       },
       "skills": {
-        "title": "🔍 אבחון ומיומנויות",
+        "title": "🔍 אבחון וקידום מיומנויות",
         "desc": "אבחון ופיתוח מיומנויות למידה ותעסוקה",
         "url": "/skills.html",
         "color": "skills"
       },
       "faculty": {
-        "title": "💡 חדשנות וסגל",
+        "title": "💡קידום הוראה",
         "desc": "למרצים: כלים מבוססי AI לקידום ההוראה",
         "url": "/faculty.html",
         "color": "faculty"
       },
       "admin": {
-        "title": "📊 בקרה וניהול",
+        "title": "📊 קידום ניהול",
         "desc": "להנהלה: ניתוח נתונים ומבט מוסדי",
         "url": "/admin.html",
         "color": "admin"
@@ -76,20 +76,20 @@
       },
 
       "presentation": {
-        "name": "🎤 בוט מצגות",
+        "name": "🎤 בוט פרזנטציות",
         "botType": "universal_presentation",
         "thinkingBudget": 1024,
-        "systemPrompt": "אתה מלווה בנייה של מצגות...",
+        "systemPrompt": "אתה מלווה בנייה של פרזנטציות...",
         "scope": "global",
         "owner": "system",
         "createdAt": "2026-02-26"
       },
 
       "academic_writing": {
-        "name": "✍️ כתיבה אקדמית",
+        "name": "✍️ קריאה וכתיבה אקדמית",
         "botType": "universal_writing",
         "thinkingBudget": 1024,
-        "systemPrompt": "אתה מלווה כתיבה אקדמית...",
+        "systemPrompt": "אתה מקדם לימוד קריאה וכתיבה אקדמית...",
         "scope": "global",
         "owner": "system",
         "createdAt": "2026-02-26"
