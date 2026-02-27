@@ -295,33 +295,34 @@ exports.handler = async (event) => {
         body: JSON.stringify({ error: "botType required" })
       };
 
-    const context = { facultyId, classId, studentId };
+const context = { facultyId, classId, studentId };
 
+// ─── LOAD CONFIG ───
+const config = await loadConfig();
 
-    const config = await loadConfig();
+if (!config)
+  return {
+    statusCode: 500,
+    headers,
+    body: JSON.stringify({ error: "Configuration load failed" })
+  };
 
-    if (!config)
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: "Configuration load failed" })
-      };
+const botConfig = findBot(config, botType, context);
 
-    const botConfig = findBot(config, botType, context);
+if (!botConfig)
+  return {
+    statusCode: 403,
+    headers,
+    body: JSON.stringify({
+      error: "Access denied or bot not found",
+      botType
+    })
+  };
+// ─── FUNCTION POLICY RESOLUTION ───
+const functionPolicies = config.functionPolicies || {};
+const policy = functionPolicies[botConfig.function] || {};
 
-    if (!botConfig)
-      return {
-        statusCode: 403,
-        headers,
-        body: JSON.stringify({
-          error: "Access denied or bot not found",
-          botType
-        })
-      };
-
-
-    const engine = config.engine || {};
-
+const engine = config.engine || {};
 
 
     // ───────────────── EXPORT MODE ─────────────────
