@@ -212,15 +212,48 @@ function buildFullSystemPrompt(engine, botConfig) {
 
   const publicKernel  = engine?.kernel?.public  || {};
   const privateKernel = engine?.kernel?.private || {};
-// ─── EFFECTIVE FUNCTION POLICY ───
-const effectiveNoFullSolution =
-  (policy.allowFullSolution === false) ||
-  !!privateKernel.noFullSolutionForStudent;
-  const kernel = {
+
+  const mergedKernel = {
     ...publicKernel,
     ...privateKernel
   };
 
+  let kernelBlock = "";
+
+  if (mergedKernel.preserveAgency)
+    kernelBlock += "שמור על סוכנות הלומד. ";
+
+  if (mergedKernel.noFullSolutionForStudent)
+    kernelBlock += "אל תפתור משימות במלואן עבור לומד. ";
+
+  if (mergedKernel.noSkipStructuralSteps)
+    kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
+
+  if (mergedKernel.evaluationRequiresExplicitCriteria)
+    kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
+
+  if (mergedKernel.preventRoleMutation)
+    kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
+
+  if (mergedKernel.invisibleEffortRegulation)
+    kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
+
+  const systemPrompt =
+    botConfig.systemPrompt || DEFAULT_PROMPT;
+
+  // ─── FINAL STRUCTURE ───
+  // 1. kernel.txt (constitution layer)
+  // 2. config kernel (public + private)
+  // 3. bot-specific system prompt
+
+  return [
+    kernel.trim(),
+    kernelBlock.trim(),
+    systemPrompt.trim()
+  ]
+  .filter(Boolean)
+  .join("\n\n");
+}
   let kernelBlock = "";
 
   if (kernel.preserveAgency)
