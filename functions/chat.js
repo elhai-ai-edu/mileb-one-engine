@@ -28,9 +28,10 @@ const THINKING_BOT_TYPES = [
   "task_final_project",
   "skills_diagnostic",
   "skills_career_diagnostic",
-  "admin_analytics"
+  "admin_analytics",
+  "skills_learning_full",
+  "skills_employability_full"
 ];
-
 function selectModel(botType) {
 
   if (botType && THINKING_BOT_TYPES.includes(botType))
@@ -211,7 +212,10 @@ function buildFullSystemPrompt(engine, botConfig) {
 
   const publicKernel  = engine?.kernel?.public  || {};
   const privateKernel = engine?.kernel?.private || {};
-
+// ─── EFFECTIVE FUNCTION POLICY ───
+const effectiveNoFullSolution =
+  (policy.allowFullSolution === false) ||
+  !!privateKernel.noFullSolutionForStudent;
   const kernel = {
     ...publicKernel,
     ...privateKernel
@@ -382,8 +386,8 @@ const engine = config.engine || {};
 
 
 
-    if (privateKernel.noFullSolutionForStudent &&
-        detectFullSolutionRequest(message)) {
+   if (effectiveNoFullSolution &&
+    detectFullSolutionRequest(message)) {
 
       return {
 
@@ -458,8 +462,8 @@ const engine = config.engine || {};
       || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
 
 
-    if (privateKernel.noFullSolutionForStudent &&
-        looksLikeFullAnswer(reply)) {
+   if (effectiveNoFullSolution &&
+    looksLikeFullAnswer(reply)) {
 
       reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
 
