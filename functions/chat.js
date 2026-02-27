@@ -1,3 +1,8 @@
+import fs from "fs";
+import path from "path";
+
+const kernelPath = path.resolve(process.cwd(), "kernel.txt");
+const kernel = fs.readFileSync(kernelPath, "utf8");
 // functions/chat.js — MilEd.One v5.0
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing
 // + Hard guards + Config cache TTL + Safe OpenRouter handling + Engine-config driven params
