@@ -212,11 +212,10 @@ function buildFullSystemPrompt(engine, botConfig) {
 
   const publicKernel  = engine?.kernel?.public  || {};
   const privateKernel = engine?.kernel?.private || {};
-
-  const mergedKernel = {
-    ...publicKernel,
-    ...privateKernel
-  };
+ const mergedKernel = {
+  ...privateKernel,
+  ...publicKernel   // public אחרון = גובר
+};
 
   let kernelBlock = "";
 
@@ -253,33 +252,6 @@ function buildFullSystemPrompt(engine, botConfig) {
   ]
   .filter(Boolean)
   .join("\n\n");
-}
-  let kernelBlock = "";
-
-  if (kernel.preserveAgency)
-    kernelBlock += "שמור על סוכנות הלומד. ";
-
-  if (kernel.noFullSolutionForStudent)
-    kernelBlock += "אל תפתור משימות במלואן עבור סטודנט. ";
-
-  if (kernel.noSkipStructuralSteps)
-    kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
-
-  if (kernel.evaluationRequiresExplicitCriteria)
-    kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
-
-  if (kernel.preventRoleMutation)
-    kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
-
-  if (kernel.invisibleEffortRegulation)
-    kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
-
-  const systemPrompt =
-    botConfig.systemPrompt || DEFAULT_PROMPT;
-
-  return kernelBlock
-    ? kernelBlock + "\n\n" + systemPrompt
-    : systemPrompt;
 }
 
 
@@ -398,9 +370,13 @@ const engine = config.engine || {};
     }
 
 
-
-    const privateKernel = engine?.kernel?.private || {};
-
+   const privateKernel = engine?.kernel?.private || {};
+   const effectiveNoFullSolution =
+  privateKernel.noFullSolutionForStudent === true ||
+  policy.allowFullSolution !== true;
+    const effectivePolicies = {
+  allowFullSolution: policy.allowFullSolution ?? false,
+};
     const model = selectModel(botConfig.botType);
 
     const temperature = engine.temperature ?? 0.7;
@@ -486,8 +462,14 @@ const engine = config.engine || {};
     let raw;
     let data;
 
-    raw = await response.text();
-    data = JSON.parse(raw);
+  raw = await response.text();
+
+if (!response.ok) {
+  console.error("LLM ERROR:", response.status, raw);
+  throw new Error("LLM request failed");
+}
+
+data = JSON.parse(raw);
 
 
     let reply =
