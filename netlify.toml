@@ -6,7 +6,7 @@
   command = ""
 
 [functions]
-  included_files = ["config.json"]
+  included_files = ["config.json", "kernel.txt"]
 
 [[headers]]
   for = "/*"
