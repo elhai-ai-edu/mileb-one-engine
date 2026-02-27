@@ -68,6 +68,7 @@
       "support": {
         "name": "🤝 בוט תמיכה",
         "botType": "universal_support",
+        "function": "learning",
         "thinkingBudget": 512,
         "systemPrompt": "אתה בוט תמיכה חם ואמפתי לסטודנטים...",
         "scope": "global",
@@ -78,6 +79,7 @@
       "presentation": {
         "name": "🎤 בוט פרזנטציות",
         "botType": "universal_presentation",
+        "function": "learning",
         "thinkingBudget": 1024,
         "systemPrompt": "אתה מלווה בנייה של פרזנטציות...",
         "scope": "global",
@@ -88,6 +90,7 @@
       "academic_writing": {
         "name": "✍️ קריאה וכתיבה אקדמית",
         "botType": "universal_writing",
+        "function": "learning",
         "thinkingBudget": 1024,
         "systemPrompt": "אתה מקדם לימוד קריאה וכתיבה אקדמית...",
         "scope": "global",
@@ -98,6 +101,7 @@
       "research_skills": {
         "name": "🔬 מיומנויות מחקר",
         "botType": "universal_research",
+        "function": "learning",
         "thinkingBudget": 1024,
         "systemPrompt": "אתה מלווה פיתוח מיומנויות מחקר...",
         "scope": "global",
@@ -119,6 +123,7 @@
           "name": "עברית מתקדמים - אופטומטריה",
           "_layer": "course_general",
           "botType": "socratic_student",
+          "function": "learning",
           "thinkingBudget": 512,
           "systemPrompt": "אתה מלווה לימודי סוקרטי...",
           "scope": "global",
@@ -130,6 +135,7 @@
           "name": "פרויקט גמר - עברית אופטומטריה",
           "_layer": "course_task",
           "botType": "task_final_project",
+          "function": "learning",
           "thinkingBudget": 1024,
           "systemPrompt": "אתה מלווה פרויקט גמר...",
           "scope": "course_specific",
@@ -149,6 +155,7 @@
           "name": "בוט בנייה ושיפור מערכי שיעור",
           "_layer": "faculty_tool",
           "botType": "faculty_lesson_builder",
+          "function": "teaching",
           "thinkingBudget": 2048,
           "systemPrompt": "אתה עוזר פדגוגי מקצועי למרצים...",
           "scope": "global",
@@ -160,6 +167,7 @@
           "name": "בוט בונה בוטים פדגוגיים",
           "_layer": "faculty_tool",
           "botType": "faculty_bot_builder",
+          "function": "teaching",
           "thinkingBudget": 2048,
           "systemPrompt": "אתה מסייע למרצים לבנות בוטים...",
           "scope": "global",
@@ -170,25 +178,37 @@
       }
     },
 
-    "skills": {
-      "title": "אבחון ופיתוח מיומנויות",
-      "subtitle": "בחר תהליך עבודה:",
-      "items": {
+"skills": {
+  "title": "אבחון ופיתוח מיומנויות",
+  "subtitle": "בחר תהליך עבודה:",
+  "items": {
 
-        "diagnostic": {
-          "name": "אבחון מיומנויות למידה",
-          "_layer": "skills_process",
-          "botType": "skills_diagnostic",
-          "thinkingBudget": 1024,
-          "systemPrompt": "אתה בוט אבחון מיומנויות...",
-          "scope": "global",
-          "owner": "system",
-          "createdAt": "2026-02-26"
-        }
-
-      }
+    "learning_skills_full": {
+      "name": "📘 אבחון וקידום מיומנויות למידה",
+      "_layer": "skills_process",
+      "botType": "skills_learning_full",
+      "function": "learning",
+      "thinkingBudget": 1024,
+      "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו תהליך קידום מיומנויות למידה באופן מדורג.",
+      "scope": "global",
+      "owner": "system",
+      "createdAt": "2026-02-27"
     },
 
+    "employability_skills_full": {
+      "name": "💼 אבחון וקידום מיומנויות תעסוקתיות",
+      "_layer": "skills_process",
+      "botType": "skills_employability_full",
+      "function": "learning",
+      "thinkingBudget": 1024,
+      "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו קידום מיומנויות תעסוקתיות.",
+      "scope": "global",
+      "owner": "system",
+      "createdAt": "2026-02-27"
+    }
+
+  }
+},
     "admin": {
       "title": "ניהול ובקרה מוסדית",
       "subtitle": "נתונים ומדדי הצלחה:",
@@ -198,6 +218,7 @@
           "name": "לוח בקרה וניתוח דאטה",
           "_layer": "admin_tool",
           "botType": "admin_analytics",
+          "function": "institutional",
           "thinkingBudget": 2048,
           "systemPrompt": "אתה עוזר ניתוח נתונים...",
           "scope": "institution",
