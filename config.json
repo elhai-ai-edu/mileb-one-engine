@@ -209,7 +209,20 @@
     }
 
   },
-
+"functionPolicies": {
+  "learning": {
+    "allowFullSolution": false,
+    "requireProcess": true
+  },
+  "teaching": {
+    "allowFullSolution": true,
+    "requireProcess": false
+  },
+  "institutional": {
+    "allowFullSolution": true,
+    "requireProcess": false
+  }
+},
  "engine": {
 
   "defaultModel": "gemini-2.0-flash",
