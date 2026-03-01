@@ -259,15 +259,7 @@
 
     "version": "1.0",
 
-    "universal": {
-      "epistemicIntegrity": true,
-      "preserveHumanResponsibility": true,
-      "noSkipPrinciple": true,
-      "processIntegrity": true,
-      "guidedSelfCorrection": true,
-      "evaluationRequiresExplicitCriteria": true,
-      "preventRoleDrift": true
-    },
+    "effortRegulation": true
 
     "binding": {
       "contextEnforcement": {
