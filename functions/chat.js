@@ -212,10 +212,12 @@ function buildFullSystemPrompt(engine, botConfig) {
   const kernelConfig = engine?.kernel || {};
 
   const universal = kernelConfig.universal || {};
-  const binding = kernelConfig.binding?.contextEnforcement || {};
-  const contextType = botConfig.function || "learning";
+ const binding = kernelConfig.binding?.contextEnforcement || {};
+const contextType = botConfig.function || "learning";
+const phase = botConfig.phase || "development";
 
-  const contextRules = binding[contextType] || {};
+const contextRules =
+  binding[contextType]?.[phase] || {};
 
   let kernelBlock = "";
 
@@ -377,7 +379,10 @@ const engine = config.engine || {};
 const kernelConfig = engine?.kernel || {};
 const binding = kernelConfig.binding?.contextEnforcement || {};
 const contextType = botConfig.function || "learning";
-const contextRules = binding[contextType] || {};
+const phase = botConfig.phase || "development";
+
+const contextRules =
+  binding[contextType]?.[phase] || {};
 
 // האם ההקשר מחייב לא לפתור מלא
 const noFullSolutionByContext =
