@@ -123,8 +123,61 @@
       "subtitle": "בחרו את הקורס שלכם:",
       "items": {
 
+        
+        "course_academic_writing": {
+          "name": "✍️ קורס קריאה וכתיבה אקדמית",
+          "_layer": "course_general",
+          "botType": "course_academic_writing",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה תהליך כתיבה אקדמית באופן סוקרטי ומובנה.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        
+        "course_qualitative_research": {
+          "name": "🔎 בוט מחקר איכותני",
+          "_layer": "course_general",
+          "botType": "course_qualitative_research",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה תהליך מחקר איכותני משלב שאלת המחקר ועד ניתוח הממצאים.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+
+        "course_gerontology": {
+          "name": "👵 קורס גרונטולוגיה",
+          "_layer": "course_general",
+          "botType": "course_gerontology",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה לימודי גרונטולוגיה תוך עידוד חשיבה ביקורתית ויישומית.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+
+        "course_interpersonal_communication": {
+          "name": "💬 מיומנויות תקשורת בין אישית",
+          "_layer": "course_general",
+          "botType": "course_interpersonal_communication",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 512,
+          "systemPrompt": "אתה מסייע בפיתוח מיומנויות תקשורת בין אישית באמצעות תרגול ושאלות עומק.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        
         "hebrew_optometry": {
-          "name": "עברית מתקדמים - אופטומטריה",
+          "name": "עברית מתקדמים ",
           "_layer": "course_general",
           "botType": "socratic_student",
           "function": "learning",
@@ -137,7 +190,7 @@
         },
 
         "hebrew_optometry_final": {
-          "name": "פרויקט גמר - עברית אופטומטריה",
+          "name": "פרויקט גמר סמסטר ב - עברית מתקדמים",
           "_layer": "course_task",
           "botType": "task_final_project",
           "function": "learning",
@@ -147,6 +200,19 @@
           "scope": "course_specific",
           "owner": "system",
           "createdAt": "2026-02-26"
+        },
+       
+        "course_intro_social_science_mechina": {
+          "name": "🌍 מבוא למדעי החברה – מכינת מגזר",
+          "_layer": "course_general",
+          "botType": "course_intro_social_science_mechina",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 512,
+          "systemPrompt": "אתה מלווה לימודי מבוא למדעי החברה במכינה באופן מותאם ושיטתי.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
         }
 
       }
@@ -157,6 +223,32 @@
       "subtitle": "כלים פדגוגיים מבוססי AI:",
       "items": {
 
+        "faculty_support_extended": {
+          "name": "🧑‍🏫 בוט תמיכה למרצים",
+          "_layer": "faculty_tool",
+          "botType": "faculty_support_extended",
+          "function": "teaching",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה מרצים בהתמודדות עם אתגרים פדגוגיים יומיומיים.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+
+        "faculty_assessment_model_builder": {
+          "name": " בוט הערכת תוצרי למידה",
+          "_layer": "faculty_tool",
+          "botType": "faculty_assessment_model_builder",
+          "function": "teaching",
+          "phase": "design",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מסייע למרצים, להעריך עבודות של סטודנטים, באופן קוהרנטי ומבוסס קריטריונים.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+      },
+        
         "pedagogical_transformation": {
           "name": "בוט בנייה ושיפור מערכי שיעור",
           "_layer": "faculty_tool",
@@ -177,7 +269,7 @@
           "function": "teaching",
           "phase": "design",
           "thinkingBudget": 2048,
-          "systemPrompt": "אתה מסייע למרצים לבנות בוטים...",
+          "systemPrompt": "אתה מסייע למרצים לבנות בוטים פדגוגיים...",
           "scope": "global",
           "owner": "system",
           "createdAt": "2026-02-26"
@@ -224,6 +316,44 @@
       "subtitle": "נתונים ומדדי הצלחה:",
       "items": {
 
+        "institutional_skill_dashboard": {
+          "name": "📈 דשבורד מיומנויות מוסדי",
+          "_layer": "admin_tool",
+          "botType": "institutional_skill_dashboard",
+          "function": "institutional",
+          "phase": "analytics",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מסייע בניתוח מגמות מיומנויות ברמה מוסדית.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+      
+      "institutional_faculty_usage_analytics": {
+          "name": "📊 אנליטיקת שימוש מרצים",
+          "_layer": "admin_tool",
+          "botType": "institutional_faculty_usage_analytics",
+          "function": "institutional",
+          "phase": "analytics",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מנתח דפוסי שימוש של מרצים בכלי המערכת.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+      
+      "institutional_student_progress_tracker": {
+          "name": "🎯 מעקב התקדמות סטודנטים",
+          "_layer": "admin_tool",
+          "botType": "institutional_student_progress_tracker",
+          "function": "institutional",
+          "phase": "analytics",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מסייע בניתוח והצגת התקדמות סטודנטים לאורך זמן.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
         "analytics": {
           "name": "לוח בקרה וניתוח דאטה",
           "_layer": "admin_tool",
