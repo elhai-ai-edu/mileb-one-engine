@@ -207,58 +207,63 @@ const DEFAULT_PROMPT =
 
 function buildFullSystemPrompt(engine, botConfig) {
 
-  if (!botConfig)
-    return null;
+  if (!botConfig) return null;
 
   const kernelConfig = engine?.kernel || {};
+
   const universal = kernelConfig.universal || {};
   const binding = kernelConfig.binding?.contextEnforcement || {};
+  const contextType = botConfig.function || "learning";
 
-  const context = botConfig.function || "learning";
-  const enforcement = binding[context] || {};
+  const contextRules = binding[contextType] || {};
 
   let kernelBlock = "";
 
-  // ─── UNIVERSAL PRINCIPLES ───
+  // ─── UNIVERSAL LAYER ───
 
   if (universal.epistemicIntegrity)
-    kernelBlock += "שמור על יושרה אפיסטמית. אין להמציא מידע או להציג השערה כעובדה. ";
+    kernelBlock += "שמור על יושרה אפיסטמית מלאה. אל תציג השערות כעובדות וסמן אי־ודאות. ";
 
-  if (universal.decisionSupportOnly)
-    kernelBlock += "ספק תמיכה והכוונה בלבד, לא קבלת החלטות פורמליות במקום אדם. ";
+  if (universal.preserveHumanResponsibility)
+    kernelBlock += "הבוט אינו מחליף אחריות אנושית ואינו מקבל החלטות פורמליות. ";
 
-  if (universal.roleStability)
-    kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
+  if (universal.noSkipPrinciple)
+    kernelBlock += "אין לדלג על שלבים מבניים הכרחיים בתהליך למידה. ";
 
-  if (universal.explicitCriteriaRequired)
+  if (universal.processIntegrity)
+    kernelBlock += "התהליך קודם לתשובה. אין לעבור שלב ללא עיבוד מוקדם. ";
+
+  if (universal.guidedSelfCorrection)
+    kernelBlock += "אפשר תיקון עצמי לפני מתן פתרון ישיר. ";
+
+  if (universal.evaluationRequiresExplicitCriteria)
     kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
 
-  // ─── CONTEXT ENFORCEMENT ───
+  if (universal.preventRoleDrift)
+    kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
 
-  if (enforcement.noStructuralSkip === "strict")
-    kernelBlock += "אין לדלג על שלבים מבניים בתהליך הלמידה. ";
+  // ─── CONTEXT LAYER ───
 
-  if (enforcement.processIntegrity === "strict")
-    kernelBlock += "התהליך קודם לתשובה כאשר מדובר במשימת למידה. ";
+  if (contextRules.noFullSolution)
+    kernelBlock += "אל תפתור משימות במלואן עבור לומד. ";
 
-  if (enforcement.effortRegulation === "strict")
-    kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
+  if (contextRules.effortRegulation)
+    kernelBlock += "ויסות מאמץ צריך להיות מדורג ותואם לרמת המשתמש. ";
 
-  if (enforcement.guidedSelfCorrection === "strict")
-    kernelBlock += "הנחה את הלומד דרך רמזים לפני מתן פתרון מלא. ";
+  if (contextRules.cognitiveLoadAwareness)
+    kernelBlock += "התאם עומס קוגניטיבי לרמת המשתמש והקשר השימוש. ";
 
   const systemPrompt =
     botConfig.systemPrompt || DEFAULT_PROMPT;
 
   return [
-    kernel.trim(),
-    kernelBlock.trim(),
-    systemPrompt.trim()
+    kernel.trim(),        // Constitution layer
+    kernelBlock.trim(),   // Policy layer
+    systemPrompt.trim()   // Bot layer
   ]
   .filter(Boolean)
   .join("\n\n");
 }
-
 
 // ─────────────────────────────────────────
 // MAIN HANDLER
@@ -341,46 +346,47 @@ const engine = config.engine || {};
     // ───────────────── EXPORT MODE ─────────────────
     // export = public kernel only
 
-    if (exportPrompt) {
+   if (exportPrompt) {
 
-      const publicEngine = {
-        ...engine,
-        kernel: {
-          public: engine?.kernel?.public || {},
-          private: {}
-        }
-      };
-
-      const fullPrompt =
-        buildFullSystemPrompt(publicEngine, botConfig);
-
-      return {
-
-        statusCode: 200,
-        headers,
-
-        body: JSON.stringify({
-
-          botType,
-          botName: botConfig.name,
-          scope: botConfig.scope,
-          owner: botConfig.owner,
-          fullSystemPrompt: fullPrompt
-
-        })
-
-      };
-
+  const exportEngine = {
+    ...engine,
+    kernel: {
+      ...(engine?.kernel || {}),
+      private: {} // export never includes private
     }
+  };
+
+  const fullPrompt =
+    buildFullSystemPrompt(exportEngine, botConfig);
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      botType,
+      botName: botConfig.name,
+      scope: botConfig.scope,
+      owner: botConfig.owner,
+      fullSystemPrompt: fullPrompt
+    })
+  };
+}
+
+  // ─── CONTEXT-BASED ENFORCEMENT ───
+
+const kernelConfig = engine?.kernel || {};
+const binding = kernelConfig.binding?.contextEnforcement || {};
+const contextType = botConfig.function || "learning";
+const contextRules = binding[contextType] || {};
+
+// האם ההקשר מחייב לא לפתור מלא
+const noFullSolutionByContext =
+  contextRules.noFullSolution === true;
 
 
-   const privateKernel = engine?.kernel?.private || {};
-   const effectiveNoFullSolution =
-  privateKernel.noFullSolutionForStudent === true ||
-  policy.allowFullSolution !== true;
-    const effectivePolicies = {
-  allowFullSolution: policy.allowFullSolution ?? false,
-};
+// ההחלטה הסופית
+const effectiveNoFullSolution =
+  noFullSolutionByContext;
     const model = selectModel(botConfig.botType);
 
     const temperature = engine.temperature ?? 0.7;
