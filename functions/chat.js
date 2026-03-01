@@ -338,11 +338,6 @@ if (!botConfig)
       botType
     })
   };
-// ─── FUNCTION POLICY RESOLUTION ───
-const functionPolicies = config.functionPolicies || {};
-const policy = functionPolicies[botConfig.function] || {};
-
-const engine = config.engine || {};
 
 
     // ───────────────── EXPORT MODE ─────────────────
