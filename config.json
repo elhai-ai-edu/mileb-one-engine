@@ -69,6 +69,7 @@
         "name": "🤝 בוט תמיכה",
         "botType": "universal_support",
         "function": "learning",
+        "phase": "development",
         "thinkingBudget": 512,
         "systemPrompt": "אתה בוט תמיכה חם ואמפתי לסטודנטים...",
         "scope": "global",
@@ -80,6 +81,7 @@
         "name": "🎤 בוט פרזנטציות",
         "botType": "universal_presentation",
         "function": "learning",
+        "phase": "development",
         "thinkingBudget": 1024,
         "systemPrompt": "אתה מלווה בנייה של פרזנטציות...",
         "scope": "global",
@@ -91,6 +93,7 @@
         "name": "✍️ קריאה וכתיבה אקדמית",
         "botType": "universal_writing",
         "function": "learning",
+        "phase": "development",
         "thinkingBudget": 1024,
         "systemPrompt": "אתה מקדם לימוד קריאה וכתיבה אקדמית...",
         "scope": "global",
@@ -102,6 +105,7 @@
         "name": "🔬 מיומנויות מחקר",
         "botType": "universal_research",
         "function": "learning",
+        "phase": "development",
         "thinkingBudget": 1024,
         "systemPrompt": "אתה מלווה פיתוח מיומנויות מחקר...",
         "scope": "global",
@@ -124,6 +128,7 @@
           "_layer": "course_general",
           "botType": "socratic_student",
           "function": "learning",
+          "phase": "development",
           "thinkingBudget": 512,
           "systemPrompt": "אתה מלווה לימודי סוקרטי...",
           "scope": "global",
@@ -136,6 +141,7 @@
           "_layer": "course_task",
           "botType": "task_final_project",
           "function": "learning",
+          "phase": "development",
           "thinkingBudget": 1024,
           "systemPrompt": "אתה מלווה פרויקט גמר...",
           "scope": "course_specific",
@@ -156,6 +162,7 @@
           "_layer": "faculty_tool",
           "botType": "faculty_lesson_builder",
           "function": "teaching",
+          "phase": "design",
           "thinkingBudget": 2048,
           "systemPrompt": "אתה עוזר פדגוגי מקצועי למרצים...",
           "scope": "global",
@@ -168,6 +175,7 @@
           "_layer": "faculty_tool",
           "botType": "faculty_bot_builder",
           "function": "teaching",
+          "phase": "design",
           "thinkingBudget": 2048,
           "systemPrompt": "אתה מסייע למרצים לבנות בוטים...",
           "scope": "global",
@@ -188,6 +196,7 @@
       "_layer": "skills_process",
       "botType": "skills_learning_full",
       "function": "learning",
+      "phase": "diagnostic",
       "thinkingBudget": 1024,
       "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו תהליך קידום מיומנויות למידה באופן מדורג.",
       "scope": "global",
@@ -200,6 +209,7 @@
       "_layer": "skills_process",
       "botType": "skills_employability_full",
       "function": "learning",
+      "phase": "diagnostic",
       "thinkingBudget": 1024,
       "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו קידום מיומנויות תעסוקתיות.",
       "scope": "global",
@@ -219,6 +229,7 @@
           "_layer": "admin_tool",
           "botType": "admin_analytics",
           "function": "institutional",
+          "phase": "analytics",
           "thinkingBudget": 2048,
           "systemPrompt": "אתה עוזר ניתוח נתונים...",
           "scope": "institution",
@@ -230,20 +241,7 @@
     }
 
   },
-"functionPolicies": {
-  "learning": {
-    "allowFullSolution": false,
-    "requireProcess": true
-  },
-  "teaching": {
-    "allowFullSolution": true,
-    "requireProcess": false
-  },
-  "institutional": {
-    "allowFullSolution": true,
-    "requireProcess": false
-  }
-},
+
 "engine": {
 
   "defaultModel": "gemini-2.0-flash",
@@ -259,7 +257,7 @@
 
     "version": "1.0",
 
-    "effortRegulation": true
+    "effortRegulation": true,
 
     "binding": {
       "contextEnforcement": {
