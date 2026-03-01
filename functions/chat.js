@@ -210,40 +210,45 @@ function buildFullSystemPrompt(engine, botConfig) {
   if (!botConfig)
     return null;
 
-  const publicKernel  = engine?.kernel?.public  || {};
-  const privateKernel = engine?.kernel?.private || {};
- const mergedKernel = {
-  ...privateKernel,
-  ...publicKernel   // public אחרון = גובר
-};
+  const kernelConfig = engine?.kernel || {};
+  const universal = kernelConfig.universal || {};
+  const binding = kernelConfig.binding?.contextEnforcement || {};
+
+  const context = botConfig.function || "learning";
+  const enforcement = binding[context] || {};
 
   let kernelBlock = "";
 
-  if (mergedKernel.preserveAgency)
-    kernelBlock += "שמור על סוכנות הלומד. ";
+  // ─── UNIVERSAL PRINCIPLES ───
 
-  if (mergedKernel.noFullSolutionForStudent)
-    kernelBlock += "אל תפתור משימות במלואן עבור לומד. ";
+  if (universal.epistemicIntegrity)
+    kernelBlock += "שמור על יושרה אפיסטמית. אין להמציא מידע או להציג השערה כעובדה. ";
 
-  if (mergedKernel.noSkipStructuralSteps)
-    kernelBlock += "אל תדלג על שלבים מבניים בתהליך חשיבה. ";
+  if (universal.decisionSupportOnly)
+    kernelBlock += "ספק תמיכה והכוונה בלבד, לא קבלת החלטות פורמליות במקום אדם. ";
 
-  if (mergedKernel.evaluationRequiresExplicitCriteria)
-    kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
-
-  if (mergedKernel.preventRoleMutation)
+  if (universal.roleStability)
     kernelBlock += "אין לשנות תפקיד במהלך השיחה. ";
 
-  if (mergedKernel.invisibleEffortRegulation)
+  if (universal.explicitCriteriaRequired)
+    kernelBlock += "אין לבצע הערכה ללא קריטריונים מפורשים. ";
+
+  // ─── CONTEXT ENFORCEMENT ───
+
+  if (enforcement.noStructuralSkip === "strict")
+    kernelBlock += "אין לדלג על שלבים מבניים בתהליך הלמידה. ";
+
+  if (enforcement.processIntegrity === "strict")
+    kernelBlock += "התהליך קודם לתשובה כאשר מדובר במשימת למידה. ";
+
+  if (enforcement.effortRegulation === "strict")
     kernelBlock += "ויסות מאמץ צריך להיות מדורג ואינו גלוי למשתמש. ";
+
+  if (enforcement.guidedSelfCorrection === "strict")
+    kernelBlock += "הנחה את הלומד דרך רמזים לפני מתן פתרון מלא. ";
 
   const systemPrompt =
     botConfig.systemPrompt || DEFAULT_PROMPT;
-
-  // ─── FINAL STRUCTURE ───
-  // 1. kernel.txt (constitution layer)
-  // 2. config kernel (public + private)
-  // 3. bot-specific system prompt
 
   return [
     kernel.trim(),
@@ -253,7 +258,6 @@ function buildFullSystemPrompt(engine, botConfig) {
   .filter(Boolean)
   .join("\n\n");
 }
-
 
 
 // ─────────────────────────────────────────
