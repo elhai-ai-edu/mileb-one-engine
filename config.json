@@ -261,36 +261,51 @@
 
     "universal": {
       "epistemicIntegrity": true,
-      "decisionSupportOnly": true,
-      "noStructuralSkip": true,
+      "preserveHumanResponsibility": true,
+      "noSkipPrinciple": true,
       "processIntegrity": true,
-      "effortRegulation": true,
       "guidedSelfCorrection": true,
-      "explicitCriteriaRequired": true,
-      "guardNonDisclosure": true,
-      "roleStability": true
+      "evaluationRequiresExplicitCriteria": true,
+      "preventRoleDrift": true
     },
 
     "binding": {
       "contextEnforcement": {
+
         "learning": {
-          "noStructuralSkip": "strict",
-          "processIntegrity": "strict",
-          "effortRegulation": "strict",
-          "guidedSelfCorrection": "strict"
+          "diagnostic": {
+            "noFullSolution": false,
+            "processIntegrity": "strict",
+            "effortRegulation": "minimal",
+            "guidedSelfCorrection": "disabled"
+          },
+          "development": {
+            "noFullSolution": true,
+            "processIntegrity": "strict",
+            "effortRegulation": "strict",
+            "guidedSelfCorrection": "strict"
+          },
+          "reflection": {
+            "noFullSolution": true,
+            "processIntegrity": "soft",
+            "effortRegulation": "adaptive",
+            "guidedSelfCorrection": "optional"
+          }
         },
+
         "teaching": {
-          "noStructuralSkip": "soft",
-          "processIntegrity": "soft",
-          "effortRegulation": "adaptive",
-          "guidedSelfCorrection": "optional"
+          "design": {
+            "noFullSolution": false,
+            "effortRegulation": "minimal"
+          }
         },
+
         "institutional": {
-          "noStructuralSkip": "soft",
-          "processIntegrity": "soft",
-          "effortRegulation": "minimal",
-          "guidedSelfCorrection": "disabled"
+          "analytics": {
+            "noFullSolution": false
+          }
         }
+
       }
     },
 
@@ -299,5 +314,4 @@
     }
 
   }
-
 }
