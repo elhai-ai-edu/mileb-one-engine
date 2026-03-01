@@ -244,12 +244,10 @@
     "requireProcess": false
   }
 },
- "engine": {
+"engine": {
 
   "defaultModel": "gemini-2.0-flash",
-
   "defaultThinkingBudget": 512,
-
   "temperature": 0.7,
 
   "_kernelExport": {
@@ -259,24 +257,45 @@
 
   "kernel": {
 
-    "public": {
+    "version": "1.0",
 
-      "preserveAgency": true,
+    "universal": {
+      "epistemicIntegrity": true,
+      "decisionSupportOnly": true,
+      "noStructuralSkip": true,
+      "processIntegrity": true,
+      "effortRegulation": true,
+      "guidedSelfCorrection": true,
+      "explicitCriteriaRequired": true,
+      "guardNonDisclosure": true,
+      "roleStability": true
+    },
 
-      "noSkipStructuralSteps": true,
-
-      "evaluationRequiresExplicitCriteria": true
-
+    "binding": {
+      "contextEnforcement": {
+        "learning": {
+          "noStructuralSkip": "strict",
+          "processIntegrity": "strict",
+          "effortRegulation": "strict",
+          "guidedSelfCorrection": "strict"
+        },
+        "teaching": {
+          "noStructuralSkip": "soft",
+          "processIntegrity": "soft",
+          "effortRegulation": "adaptive",
+          "guidedSelfCorrection": "optional"
+        },
+        "institutional": {
+          "noStructuralSkip": "soft",
+          "processIntegrity": "soft",
+          "effortRegulation": "minimal",
+          "guidedSelfCorrection": "disabled"
+        }
+      }
     },
 
     "private": {
-
-      "noFullSolutionForStudent": true,
-
-      "preventRoleMutation": true,
-
       "invisibleEffortRegulation": true
-
     }
 
   }
