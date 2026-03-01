@@ -197,6 +197,19 @@ function looksLikeFullAnswer(reply) {
 const DEFAULT_PROMPT =
   "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
 
+// ─────────────────────────────────────────
+// CONTEXT RESOLUTION (Single Source of Truth)
+// ─────────────────────────────────────────
+
+function resolveContextRules(engine, botConfig) {
+
+  const kernelConfig = engine?.kernel || {};
+  const binding = kernelConfig.binding?.contextEnforcement || {};
+  const contextType = botConfig.function || "learning";
+  const phase = botConfig.phase || "development";
+
+  return binding[contextType]?.[phase] || {};
+}
 
 
 // ─────────────────────────────────────────
@@ -212,12 +225,7 @@ function buildFullSystemPrompt(engine, botConfig) {
   const kernelConfig = engine?.kernel || {};
 
   const universal = kernelConfig.universal || {};
- const binding = kernelConfig.binding?.contextEnforcement || {};
-const contextType = botConfig.function || "learning";
-const phase = botConfig.phase || "development";
-
-const contextRules =
-  binding[contextType]?.[phase] || {};
+const contextRules = resolveContextRules(engine, botConfig);
 
   let kernelBlock = "";
 
@@ -339,6 +347,8 @@ if (!botConfig)
     })
   };
 
+const engine = config.engine || {};
+
 
     // ───────────────── EXPORT MODE ─────────────────
     // export = public kernel only
@@ -369,15 +379,10 @@ if (!botConfig)
   };
 }
 
-  // ─── CONTEXT-BASED ENFORCEMENT ───
 
-const kernelConfig = engine?.kernel || {};
-const binding = kernelConfig.binding?.contextEnforcement || {};
-const contextType = botConfig.function || "learning";
-const phase = botConfig.phase || "development";
+// ─── CONTEXT-BASED ENFORCEMENT ───
 
-const contextRules =
-  binding[contextType]?.[phase] || {};
+const contextRules = resolveContextRules(engine, botConfig);
 
 // האם ההקשר מחייב לא לפתור מלא
 const noFullSolutionByContext =
@@ -391,8 +396,6 @@ const effectiveNoFullSolution =
 
     const temperature = engine.temperature ?? 0.7;
     const maxTokens   = engine.maxOutputTokens ?? 1024;
-    const logContent  = engine.logContent ?? false;
-
 
     const finalSystemPrompt =
       buildFullSystemPrompt(engine, botConfig);
