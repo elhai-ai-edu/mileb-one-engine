@@ -429,9 +429,9 @@
       }
     },
 
-    "private": {
-      "invisibleEffortRegulation": true
-    }
+   "private": {
+  "invisibleEffortRegulation": true
+}
 
-  }
+}
 }
