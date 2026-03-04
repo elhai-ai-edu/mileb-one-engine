@@ -10,7 +10,7 @@
 
 <style>
 
-body {
+body{
 font-family:'Segoe UI',Tahoma,sans-serif;
 background:#f4f7f6;
 margin:0;
@@ -20,7 +20,7 @@ justify-content:center;
 min-height:100vh;
 }
 
-.portal-container {
+.portal-container{
 max-width:800px;
 width:90%;
 background:white;
@@ -30,7 +30,7 @@ box-shadow:0 10px 30px rgba(0,0,0,0.05);
 text-align:center;
 }
 
-.brand {
+.brand{
 color:#000;
 font-size:1.2rem;
 margin-bottom:10px;
@@ -38,62 +38,46 @@ font-weight:300;
 display:block;
 }
 
-.main-title {
+.main-title{
 color:#003366;
 font-size:2.2rem;
 margin-bottom:10px;
 font-weight:700;
 }
 
-.subtitle {
+.subtitle{
 color:#7f8c8d;
 font-size:1.2rem;
 margin-bottom:40px;
 }
 
-.course-grid {
+.course-grid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:20px;
 }
 
-.course-card {
-
+.course-card{
 padding:25px;
-
 border-radius:15px;
-
 text-decoration:none;
-
 color:white;
-
 background:#3498db;
-
 transition:all 0.3s ease;
-
 display:flex;
-
 align-items:center;
-
 justify-content:center;
-
 font-weight:600;
-
 font-size:1.2rem;
-
 }
 
-.course-card:hover {
-
+.course-card:hover{
 transform:translateY(-5px);
-
 box-shadow:0 5px 15px rgba(0,0,0,0.1);
-
 background:#2980b9;
-
 }
 
-.back-link {
+.back-link{
 display:block;
 margin-top:30px;
 color:#7f8c8d;
@@ -102,9 +86,7 @@ font-size:0.9rem;
 }
 
 @media(max-width:600px){
-
 .course-grid{grid-template-columns:1fr;}
-
 }
 
 </style>
@@ -129,9 +111,8 @@ font-size:0.9rem;
 
 <script>
 
-
 // ─────────────────────────────
-// studentId session
+// studentId
 // ─────────────────────────────
 
 let studentId = sessionStorage.getItem("studentId");
@@ -144,30 +125,71 @@ sessionStorage.setItem("studentId",studentId);
 
 }
 
+// ─────────────────────────────
+// sessionId
+// ─────────────────────────────
+
+let sessionId = sessionStorage.getItem("sessionId");
+
+if(!sessionId){
+
+sessionId = "class_"+Math.random().toString(36).slice(2,8);
+
+sessionStorage.setItem("sessionId",sessionId);
+
+}
 
 // ─────────────────────────────
-// access control for student layer
+// student access control
 // ─────────────────────────────
 
 function studentHasAccess(tool){
 
 const scope = tool.scope || "global";
 
-
 if(scope==="global") return true;
-
 if(scope==="institution") return true;
-
 if(scope==="course_specific") return true;
 
-
 if(scope==="faculty_private") return false;
-
 
 return false;
 
 }
 
+// ─────────────────────────────
+// join classroom
+// ─────────────────────────────
+
+async function joinClassroom(){
+
+try{
+
+await fetch('/.netlify/functions/classroom',{
+
+method:'POST',
+
+headers:{
+'Content-Type':'application/json'
+},
+
+body:JSON.stringify({
+
+action:"join",
+sessionId,
+studentId
+
+})
+
+});
+
+}catch(err){
+
+console.error("join error",err);
+
+}
+
+}
 
 // ─────────────────────────────
 // load config
@@ -177,14 +199,14 @@ fetch('/config.json')
 
 .then(res=>res.json())
 
-.then(data=>{
+.then(async data=>{
 
 const branch = data.branches.courses;
 
 document.getElementById("title").innerText = branch.title;
-
 document.getElementById("subtitle").innerText = branch.subtitle;
 
+await joinClassroom();
 
 const list=document.getElementById("course-list");
 
@@ -193,10 +215,9 @@ for(const [id,info] of Object.entries(branch.items)){
 if(!studentHasAccess(info))
 continue;
 
-
 const a=document.createElement("a");
 
-a.href=`/chat.html?classId=${id}`;
+a.href=`/chat.html?classId=${id}&sessionId=${sessionId}&studentId=${studentId}`;
 
 a.className="course-card";
 
@@ -215,7 +236,6 @@ console.error(err);
 document.getElementById("subtitle").innerText="שגיאה בטעינת קורסים";
 
 });
-
 
 </script>
 
