@@ -126,6 +126,14 @@ let currentBotType = null;
 fetch('/config.json')
 .then(r=>r.json())
 .then(config=>{
+  // classroom mode: botType comes directly from URL
+  const urlBotType = params.get('botType');
+  if(urlBotType){
+    currentBotType = urlBotType;
+    document.getElementById('course-title').textContent = urlBotType;
+    return;
+  }
+  // normal mode: find by classId
   for(let branch in config.branches){
     const item = config.branches[branch].items?.[classId];
     if(item){
@@ -135,7 +143,6 @@ fetch('/config.json')
     }
   }
 });
-
 async function sendMessage(){
   if(!currentBotType){ alert("המערכת עדיין נטענת"); return; }
   const text = input.value.trim();
