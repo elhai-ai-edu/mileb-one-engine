@@ -1,213 +1,401 @@
 // netlify/functions/classroom.js — MilEd.One
-// Classroom sync layer: teacher broadcast + student polling + answer collection
-// Uses Firebase Realtime DB. Fits existing chat.js architecture exactly.
-//
-// ENV VARS needed in Netlify:
-//   FIREBASE_DB_URL           = https://your-project-default-rtdb.firebaseio.com
-//   FIREBASE_SERVICE_ACCOUNT  = (JSON string of your Firebase service account key)
 
 import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getDatabase }                   from "firebase-admin/database";
-
-// ─────────────────────────────────────────
-// FIREBASE INIT (singleton)
-// ─────────────────────────────────────────
+import { getDatabase } from "firebase-admin/database";
 
 function getDB() {
+
   if (!getApps().length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+    const serviceAccount =
+      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
     initializeApp({
       credential: cert(serviceAccount),
-      databaseURL: process.env.FIREBASE_DB_URL,
+      databaseURL: process.env.FIREBASE_DB_URL
     });
+
   }
+
   return getDatabase();
+
 }
 
-// ─────────────────────────────────────────
-// CORS HEADERS (same as chat.js)
-// ─────────────────────────────────────────
-
 const headers = {
-  "Access-Control-Allow-Origin":  "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-  "Content-Type": "application/json",
+
+  "Access-Control-Allow-Origin":"*",
+  "Access-Control-Allow-Headers":"Content-Type",
+  "Access-Control-Allow-Methods":"POST, GET, OPTIONS",
+  "Content-Type":"application/json"
+
 };
 
-function ok(body)  { return { statusCode: 200, headers, body: JSON.stringify(body) }; }
-function err(msg)  { return { statusCode: 400, headers, body: JSON.stringify({ error: msg }) }; }
+function ok(body){
 
-// ─────────────────────────────────────────
-// MAIN HANDLER
-// ─────────────────────────────────────────
+  return {
+    statusCode:200,
+    headers,
+    body:JSON.stringify(body)
+  };
 
-export async function handler(event) {
+}
 
-  if (event.httpMethod === "OPTIONS")
-    return { statusCode: 200, headers, body: "" };
+function err(msg){
+
+  return {
+    statusCode:400,
+    headers,
+    body:JSON.stringify({error:msg})
+  };
+
+}
+
+export async function handler(event){
+
+  if(event.httpMethod === "OPTIONS")
+    return {statusCode:200,headers,body:""};
 
   const db = getDB();
 
-  // ── GET: student polls for teacher broadcast ──────────────────────────────
-  // GET /classroom?action=poll&sessionId=abc123&studentId=s_xyz
-  if (event.httpMethod === "GET") {
-    const { action, sessionId, studentId, facultyId } = event.queryStringParameters || {};
+  let body = {};
 
-    if (!sessionId) return err("sessionId required");
-
-    const sessionRef = db.ref(`sessions/${sessionId}`);
-    const snap = await sessionRef.once("value");
-    const session = snap.val();
-
-    if (!session) return ok({ broadcast: null, steps: [], sessionActive: false });
-
-    // Teacher dashboard: get all student answers
-    if (action === "dashboard" && facultyId) {
-      const answers = session.answers || {};
-      const students = Object.entries(answers).map(([sid, data]) => ({
-        studentId: sid,
-        steps: data.steps || [],
-        lastUpdated: data.lastUpdated || null,
-      }));
-      return ok({
-        sessionId,
-        broadcast: session.broadcast || null,
-        currentStep: session.currentStep || 1,
-        lockedSteps: session.lockedSteps || [],
-        students,
-      });
-    }
-
-    // Student poll: get broadcast + step status
-    const studentLocked = (session.lockedSteps || []).includes(studentId);
-    const currentStep = session.currentStep || 1;
-
-    return ok({
-      broadcast:     session.broadcast || null,
-      broadcastedAt: session.broadcastedAt || null,
-      currentStep,
-      stepLocked:    studentLocked,
-      sessionActive: session.active !== false,
-    });
+  try{
+    body = JSON.parse(event.body || "{}");
+  }
+  catch{
+    return err("Invalid JSON");
   }
 
-  // ── POST ─────────────────────────────────────────────────────────────────
-  if (event.httpMethod !== "POST")
-    return { statusCode: 405, headers, body: JSON.stringify({ error: "Method not allowed" }) };
-
-  const body = JSON.parse(event.body || "{}");
   const { action, sessionId } = body;
 
-  if (!sessionId) return err("sessionId required");
+  if(event.httpMethod === "GET"){
 
-  const sessionRef = db.ref(`sessions/${sessionId}`);
+    const { action, sessionId, studentId, facultyId } =
+      event.queryStringParameters || {};
 
-  // ── action: open — teacher opens a classroom session ─────────────────────
-  // { action: "open", sessionId, facultyId, botType, classId, broadcast? }
-  if (action === "open") {
+    if(!sessionId) return err("sessionId required");
+
+    const snap =
+      await db.ref(`sessions/${sessionId}`).once("value");
+
+    const session = snap.val();
+
+    if(!session)
+      return ok({broadcast:null,sessionActive:false});
+
+    if(action === "dashboard" && facultyId){
+
+      if(session.facultyId !== facultyId)
+        return err("not session owner");
+
+      const answers = session.answers || {};
+
+      const students =
+        Object.entries(answers).map(([sid,data])=>({
+
+          studentId:sid,
+          steps:data.steps || {},
+          state:data.state || "idle",
+          lastUpdated:data.lastUpdated || null,
+          lastSeen:data.lastSeen || null
+
+        }));
+
+      const stats = {
+        chatting:0,
+        writing:0,
+        submitted:0,
+        idle:0
+      };
+
+      students.forEach(s=>{
+        if(stats[s.state] !== undefined)
+          stats[s.state]++;
+      });
+
+      const online =
+        students.filter(s =>
+          Date.now() - (s.lastSeen || 0) < 15000
+        ).length;
+
+      return ok({
+
+        sessionId,
+        broadcast:session.broadcast || null,
+        currentStep:session.currentStep || 1,
+        stepVersion:session.stepVersion || 0,
+        lockedSteps:session.lockedSteps || [],
+        students,
+        onlineStudents:online,
+        stateStats:stats
+
+      });
+
+    }
+
+    if(studentId){
+
+      await db.ref(
+        `sessions/${sessionId}/answers/${studentId}/lastSeen`
+      ).set(Date.now());
+
+    }
+
+    const studentLocked =
+      studentId &&
+      (session.lockedSteps || []).includes(studentId);
+
+    return ok({
+
+      broadcast:session.broadcast || null,
+      broadcastedAt:session.broadcastedAt || null,
+      currentStep:session.currentStep || 1,
+      stepVersion:session.stepVersion || 0,
+      stepLocked:studentLocked,
+      sessionActive:session.active !== false
+
+    });
+
+  }
+
+  if(event.httpMethod !== "POST")
+    return {
+      statusCode:405,
+      headers,
+      body:JSON.stringify({error:"Method not allowed"})
+    };
+
+  if(!sessionId) return err("sessionId required");
+
+  const sessionRef =
+    db.ref(`sessions/${sessionId}`);
+
+  if(action === "open"){
+
     const { facultyId, botType, classId, broadcast } = body;
-    if (!facultyId) return err("facultyId required to open session");
+
+    if(!facultyId) return err("facultyId required");
+
+    const existing =
+      await sessionRef.once("value");
+
+    if(existing.exists())
+      return err("session already exists");
 
     await sessionRef.set({
+
       facultyId,
-      botType:       botType   || null,
-      classId:       classId   || null,
-      broadcast:     broadcast || null,
-      broadcastedAt: broadcast ? Date.now() : null,
-      currentStep:   1,
-      lockedSteps:   [],
-      active:        true,
-      openedAt:      Date.now(),
-      answers:       {},
+      botType:botType || null,
+      classId:classId || null,
+      broadcast:broadcast || null,
+      broadcastedAt:broadcast ? Date.now() : null,
+      currentStep:1,
+      stepVersion:0,
+      lockedSteps:[],
+      active:true,
+      openedAt:Date.now(),
+      answers:{}
+
     });
 
-    return ok({ ok: true, action: "open", sessionId });
+    return ok({ok:true,action:"open",sessionId});
+
   }
 
-  // ── action: broadcast — teacher sends text to all students ───────────────
-  // { action: "broadcast", sessionId, facultyId, text, step? }
-  if (action === "broadcast") {
-    const { facultyId, text, step } = body;
-    if (!facultyId) return err("facultyId required");
-    if (!text)      return err("text required");
+  const snap =
+    await sessionRef.once("value");
+
+  const session = snap.val() || {};
+
+  const facultyId = body.facultyId;
+
+  const teacherActions =
+    ["broadcast","lock","unlock","close","set_step"];
+
+  if(teacherActions.includes(action)){
+
+    if(!facultyId) return err("facultyId required");
+
+    if(session.facultyId !== facultyId)
+      return err("not session owner");
+
+  }
+
+  if(action === "set_step"){
+
+    const step = Number(body.step);
+
+    if(!Number.isFinite(step))
+      return err("invalid step");
+
+    const versionSnap =
+      await sessionRef.child("stepVersion")
+      .transaction(v => (typeof v === "number" ? v+1 : 1));
+
+    const stepVersion =
+      versionSnap.snapshot.val();
 
     await sessionRef.update({
-      broadcast:     text,
-      broadcastedAt: Date.now(),
-      currentStep:   step || 1,
+
+      currentStep:step,
+      stepVersion,
+      stepUpdatedAt:Date.now()
+
     });
 
-    return ok({ ok: true, action: "broadcast", sessionId });
+    return ok({ok:true,step,stepVersion});
+
   }
 
-  // ── action: unlock — teacher unlocks next step for a student ─────────────
-  // { action: "unlock", sessionId, facultyId, studentId }
-  if (action === "unlock") {
-    const { facultyId, studentId } = body;
-    if (!facultyId)  return err("facultyId required");
-    if (!studentId)  return err("studentId required");
+  if(action === "broadcast"){
 
-    const snap = await sessionRef.once("value");
-    const session = snap.val() || {};
-    const locked = (session.lockedSteps || []).filter(id => id !== studentId);
+    const { text, step } = body;
 
-    await sessionRef.update({ lockedSteps: locked });
+    if(!text) return err("text required");
 
-    return ok({ ok: true, action: "unlock", studentId });
+    const update = {
+
+      broadcast:text,
+      broadcastedAt:Date.now()
+
+    };
+
+    if(step !== undefined)
+      update.currentStep = step;
+
+    await sessionRef.update(update);
+
+    return ok({ok:true,action:"broadcast"});
+
   }
 
-  // ── action: lock — teacher locks a student ───────────────────────────────
-  if (action === "lock") {
-    const { facultyId, studentId } = body;
-    if (!facultyId)  return err("facultyId required");
-    if (!studentId)  return err("studentId required");
+  if(action === "lock"){
 
-    const snap = await sessionRef.once("value");
-    const session = snap.val() || {};
-    const locked = [...new Set([...(session.lockedSteps || []), studentId])];
-
-    await sessionRef.update({ lockedSteps: locked });
-
-    return ok({ ok: true, action: "lock", studentId });
-  }
-
-  // ── action: submit — student submits a step answer ───────────────────────
-  // { action: "submit", sessionId, studentId, step, content }
-  if (action === "submit") {
-    const { studentId, step, content } = body;
-    if (!studentId) return err("studentId required");
-    if (!content)   return err("content required");
-
-    const stepNum = step || 1;
-
-    await db.ref(`sessions/${sessionId}/answers/${studentId}/steps/${stepNum - 1}`).set({
-      step:        stepNum,
-      content,
-      submittedAt: Date.now(),
-    });
-
-    await db.ref(`sessions/${sessionId}/answers/${studentId}/lastUpdated`).set(Date.now());
-
-    return ok({ ok: true, action: "submit", step: stepNum });
-  }
-// ── action: join — student announces presence ─────────────────────────────
-  if (action === "join") {
     const { studentId } = body;
-    if (!studentId) return err("studentId required");
 
-    await db.ref(`sessions/${sessionId}/answers/${studentId}`).transaction(current => {
-      if (current) return current; // already exists, don't overwrite
-      return { steps: [], joinedAt: Date.now(), lastUpdated: Date.now() };
+    if(!studentId)
+      return err("studentId required");
+
+    const locked =
+      [...new Set([...(session.lockedSteps || []),studentId])];
+
+    await sessionRef.update({lockedSteps:locked});
+
+    return ok({ok:true});
+
+  }
+
+  if(action === "unlock"){
+
+    const { studentId } = body;
+
+    if(!studentId)
+      return err("studentId required");
+
+    const locked =
+      (session.lockedSteps || [])
+      .filter(id => id !== studentId);
+
+    await sessionRef.update({lockedSteps:locked});
+
+    return ok({ok:true});
+
+  }
+
+  if(action === "submit"){
+
+    const { studentId, step, content } = body;
+
+    if(!studentId)
+      return err("studentId required");
+
+    if(!content)
+      return err("content required");
+
+    const stepNum = Number(step) || 1;
+
+    await db.ref(
+      `sessions/${sessionId}/answers/${studentId}/steps/${stepNum}`
+    ).set({
+
+      step:stepNum,
+      content,
+      submittedAt:Date.now()
+
     });
 
-    return ok({ ok: true, action: "join", studentId });
+    await db.ref(
+      `sessions/${sessionId}/answers/${studentId}/state`
+    ).set("submitted");
+
+    await db.ref(
+      `sessions/${sessionId}/answers/${studentId}/lastUpdated`
+    ).set(Date.now());
+
+    return ok({ok:true,step:stepNum});
+
   }
-  // ── action: close — teacher closes session ───────────────────────────────
-  if (action === "close") {
-    await sessionRef.update({ active: false, closedAt: Date.now() });
-    return ok({ ok: true, action: "close", sessionId });
+
+  if(action === "state"){
+
+    const { studentId, state } = body;
+
+    if(!studentId) return err("studentId required");
+    if(!state) return err("state required");
+
+    await db.ref(
+      `sessions/${sessionId}/answers/${studentId}/state`
+    ).set(state);
+
+    await db.ref(
+      `sessions/${sessionId}/answers/${studentId}/lastSeen`
+    ).set(Date.now());
+
+    return ok({ok:true,state});
+
+  }
+
+  if(action === "join"){
+
+    const { studentId } = body;
+
+    if(!studentId) return err("studentId required");
+
+    await db.ref(
+      `sessions/${sessionId}/answers/${studentId}`
+    ).transaction(current => {
+
+      if(current) return current;
+
+      return {
+
+        steps:{},
+        joinedAt:Date.now(),
+        lastUpdated:Date.now(),
+        lastSeen:Date.now(),
+        state:"idle"
+
+      };
+
+    });
+
+    return ok({ok:true});
+
+  }
+
+  if(action === "close"){
+
+    await sessionRef.update({
+
+      active:false,
+      closedAt:Date.now()
+
+    });
+
+    return ok({ok:true});
+
   }
 
   return err(`Unknown action: ${action}`);
+
 }
