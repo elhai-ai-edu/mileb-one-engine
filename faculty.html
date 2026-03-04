@@ -4,105 +4,91 @@
 <head>
 
 <meta charset="UTF-8">
-
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>MilEd.One - סגל</title>
 
 <style>
 
-body
-{
-    font-family:'Segoe UI',sans-serif;
-    background:#f4f7f6;
-    margin:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-height:100vh;
+body{
+font-family:'Segoe UI',sans-serif;
+background:#f4f7f6;
+margin:0;
+display:flex;
+align-items:center;
+justify-content:center;
+min-height:100vh;
 }
 
-.container
-{
-    max-width:800px;
-    width:90%;
-    background:white;
-    padding:40px;
-    border-radius:20px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.05);
-    text-align:center;
+.container{
+max-width:800px;
+width:90%;
+background:white;
+padding:40px;
+border-radius:20px;
+box-shadow:0 10px 30px rgba(0,0,0,0.05);
+text-align:center;
 }
 
-h1
-{
-    color:#9b59b6;
-    font-size:2.2rem;
-    margin-bottom:10px;
+h1{
+color:#9b59b6;
+font-size:2.2rem;
+margin-bottom:10px;
 }
 
-.subtitle
-{
-    color:#7f8c8d;
-    margin-bottom:30px;
+.subtitle{
+color:#7f8c8d;
+margin-bottom:30px;
 }
 
-.grid
-{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
+.grid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:20px;
 }
 
-.btn
-{
-    padding:25px;
-    border-radius:15px;
-    text-decoration:none;
-    color:white;
-    background:#9b59b6;
-    font-weight:bold;
-    transition:0.3s;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+.btn{
+padding:25px;
+border-radius:15px;
+text-decoration:none;
+color:white;
+background:#9b59b6;
+font-weight:bold;
+transition:0.3s;
+display:flex;
+align-items:center;
+justify-content:center;
 }
 
-.btn:hover
-{
-    transform:translateY(-3px);
-    background:#8e44ad;
+.btn:hover{
+transform:translateY(-3px);
+background:#8e44ad;
 }
 
-.back-btn
-{
-    display:inline-block;
-    margin-top:40px;
-    color:#7f8c8d;
-    text-decoration:none;
-    font-weight:bold;
+.back-btn{
+display:inline-block;
+margin-top:40px;
+color:#7f8c8d;
+text-decoration:none;
+font-weight:bold;
 }
 
-.error
-{
-    color:#e74c3c;
-    margin-top:20px;
+.error{
+color:#e74c3c;
+margin-top:20px;
 }
 
-@media (max-width:600px)
-{
-    .grid
-    {
-        grid-template-columns:1fr;
-    }
+@media (max-width:600px){
+.grid{
+grid-template-columns:1fr;
+}
 }
 
 </style>
 
 </head>
 
-
 <body>
-
 
 <div class="container">
 
@@ -110,9 +96,7 @@ h1
 MilEd.One
 </span>
 
-<h1 id="title">
-טוען...
-</h1>
+<h1 id="title">טוען...</h1>
 
 <p id="subtitle" class="subtitle"></p>
 
@@ -120,226 +104,249 @@ MilEd.One
 
 <div id="error" class="error"></div>
 
-<a href="/" class="back-btn">
-→ חזרה לדף הבית
-</a>
+<a href="/" class="back-btn">→ חזרה לדף הבית</a>
 
 </div>
 
-
 <script>
 
-
 /* =====================================================
-   state
+   STATE
 ===================================================== */
 
 let CONFIG=null;
-
 let USER=null;
 
-/* EXPORT SUPPORT — added */
-const currentFacultyId =
-    localStorage.getItem("facultyId") || null;
-
-
 
 /* =====================================================
-   auth check
+   facultyId
 ===================================================== */
 
-function checkAuth()
-{
-    const token=localStorage.getItem("miled_token");
+let facultyId = localStorage.getItem("facultyId");
 
-    const role=localStorage.getItem("miled_role");
+if(!facultyId){
 
-    const name=localStorage.getItem("miled_user");
+facultyId="f_"+Math.random().toString(36).slice(2,8);
 
-    if(!token || role!=="faculty")
-    {
-        document.getElementById("error").innerText=
-        "גישה מוגבלת לסגל בלבד";
+localStorage.setItem("facultyId",facultyId);
 
-        return false;
-    }
-
-    USER=
-    {
-        token,
-        role,
-        name
-    };
-
-    return true;
 }
 
 
-
 /* =====================================================
-   load config with TTL protection
+   AUTH
 ===================================================== */
 
-async function loadConfig()
-{
-    try
-    {
-        const res=
-        await fetch('/config.json?ts='+Date.now());
+function checkAuth(){
 
-        if(!res.ok)
-            throw new Error("config load failed");
+const token=localStorage.getItem("miled_token");
+const role=localStorage.getItem("miled_role");
+const name=localStorage.getItem("miled_user");
 
-        CONFIG=
-        await res.json();
+if(!token || role!=="faculty"){
 
-        initPage();
-    }
+document.getElementById("error").innerText=
+"גישה מוגבלת לסגל בלבד";
 
-    catch(err)
-    {
-        console.error(err);
+return false;
 
-        document.getElementById("error").innerText=
-        "שגיאה בטעינת המערכת";
-    }
+}
+
+USER={token,role,name};
+
+return true;
+
 }
 
 
-
 /* =====================================================
-   EXPORT FULL SYSTEM PROMPT — added
+   LOAD CONFIG
 ===================================================== */
 
-async function exportSystemPrompt(botType, facultyId=null)
-{
-    try
-    {
-        const res=await fetch(
-            "/.netlify/functions/chat?exportPrompt=true",
-            {
-                method:"POST",
-                headers:
-                {
-                    "Content-Type":"application/json"
-                },
-                body:JSON.stringify(
-                {
-                    botType,
-                    facultyId
-                })
-            });
+async function loadConfig(){
 
-        const data=await res.json();
+try{
 
-        if(!data.fullSystemPrompt)
-        {
-            alert("לא ניתן לייצא את ה-System Prompt");
-            return;
-        }
+const res=await fetch('/config.json?ts='+Date.now());
 
-        await navigator.clipboard.writeText(
-            data.fullSystemPrompt
-        );
+if(!res.ok)
+throw new Error("config load failed");
 
-        alert(
-        "ה-System Prompt המלא הועתק ללוח.\n\n"+
-        "ניתן כעת להדביק אותו ב-GPT או בכל מערכת אחרת."
-        );
-    }
-    catch(e)
-    {
-        console.error(e);
-        alert("שגיאה בייצוא");
-    }
+CONFIG=await res.json();
+
+initPage();
+
+}
+
+catch(err){
+
+console.error(err);
+
+document.getElementById("error").innerText=
+"שגיאה בטעינת המערכת";
+
+}
+
 }
 
 
-
 /* =====================================================
-   init page
+   OPEN CLASSROOM SESSION
 ===================================================== */
 
-function initPage()
-{
-    const faculty=CONFIG.branches.faculty;
+async function openClassroomSession(classId){
 
-    document.getElementById("title").innerText=
-        faculty.title;
+const sessionId="session_"+Math.random().toString(36).slice(2,8);
 
-    document.getElementById("subtitle").innerText=
-        faculty.subtitle;
+try{
 
+await fetch('/.netlify/functions/classroom',{
 
-    const container=
-        document.getElementById("list");
+method:'POST',
 
+headers:{
+'Content-Type':'application/json'
+},
 
-    for(let id in faculty.items)
-    {
-        const bot=faculty.items[id];
+body:JSON.stringify({
 
+action:"open",
+sessionId,
+facultyId
 
-        /* private bot guard */
+})
 
-        if(bot.private && USER.role!=="faculty")
-            continue;
+});
 
+window.location.href=
+`/chat.html?classId=${classId}&sessionId=${sessionId}&facultyId=${facultyId}`;
 
-        const wrapper=document.createElement("div");
+}
 
-        wrapper.style.display="flex";
-        wrapper.style.flexDirection="column";
-        wrapper.style.gap="8px";
+catch(err){
 
+console.error(err);
 
-        const a=document.createElement("a");
+alert("שגיאה בפתיחת הכיתה");
 
-        a.className="btn";
+}
 
-        a.href="/chat.html?class="+id;
-
-        a.innerText=bot.name;
-
-
-        const exportBtn=document.createElement("button");
-
-        exportBtn.innerText="ייצוא System Prompt";
-
-        exportBtn.style.padding="6px 12px";
-        exportBtn.style.borderRadius="8px";
-        exportBtn.style.border="none";
-        exportBtn.style.cursor="pointer";
-        exportBtn.style.background="#2c3e50";
-        exportBtn.style.color="white";
-
-        exportBtn.onclick=()=>
-            exportSystemPrompt(bot.botType,currentFacultyId);
-
-
-        wrapper.appendChild(a);
-
-        wrapper.appendChild(exportBtn);
-
-        container.appendChild(wrapper);
-    }
 }
 
 
-
 /* =====================================================
-   start
+   EXPORT SYSTEM PROMPT
 ===================================================== */
 
-if(checkAuth())
+async function exportSystemPrompt(botType){
+
+try{
+
+const res=await fetch(
+"/.netlify/functions/chat?exportPrompt=true",
 {
-    loadConfig();
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({botType,facultyId})
+});
+
+const data=await res.json();
+
+if(!data.fullSystemPrompt){
+
+alert("לא ניתן לייצא");
+
+return;
+
+}
+
+await navigator.clipboard.writeText(data.fullSystemPrompt);
+
+alert("System Prompt הועתק ללוח");
+
+}
+
+catch(e){
+
+console.error(e);
+
+alert("שגיאה בייצוא");
+
+}
+
 }
 
 
+/* =====================================================
+   INIT PAGE
+===================================================== */
+
+function initPage(){
+
+const faculty=CONFIG.branches.faculty;
+
+document.getElementById("title").innerText=faculty.title;
+
+document.getElementById("subtitle").innerText=faculty.subtitle;
+
+const container=document.getElementById("list");
+
+for(let id in faculty.items){
+
+const bot=faculty.items[id];
+
+const wrapper=document.createElement("div");
+
+wrapper.style.display="flex";
+wrapper.style.flexDirection="column";
+wrapper.style.gap="8px";
+
+
+const a=document.createElement("button");
+
+a.className="btn";
+
+a.innerText=bot.name;
+
+a.onclick=()=>openClassroomSession(id);
+
+
+const exportBtn=document.createElement("button");
+
+exportBtn.innerText="ייצוא System Prompt";
+
+exportBtn.style.padding="6px 12px";
+exportBtn.style.borderRadius="8px";
+exportBtn.style.border="none";
+exportBtn.style.cursor="pointer";
+exportBtn.style.background="#2c3e50";
+exportBtn.style.color="white";
+
+exportBtn.onclick=()=>
+exportSystemPrompt(bot.botType);
+
+
+wrapper.appendChild(a);
+wrapper.appendChild(exportBtn);
+
+container.appendChild(wrapper);
+
+}
+
+}
+
+
+/* =====================================================
+   START
+===================================================== */
+
+if(checkAuth()){
+
+loadConfig();
+
+}
 
 </script>
-
 
 </body>
 </html>
