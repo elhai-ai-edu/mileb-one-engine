@@ -191,7 +191,18 @@ export async function handler(event) {
 
     return ok({ ok: true, action: "submit", step: stepNum });
   }
+// ── action: join — student announces presence ─────────────────────────────
+  if (action === "join") {
+    const { studentId } = body;
+    if (!studentId) return err("studentId required");
 
+    await db.ref(`sessions/${sessionId}/answers/${studentId}`).transaction(current => {
+      if (current) return current; // already exists, don't overwrite
+      return { steps: [], joinedAt: Date.now(), lastUpdated: Date.now() };
+    });
+
+    return ok({ ok: true, action: "join", studentId });
+  }
   // ── action: close — teacher closes session ───────────────────────────────
   if (action === "close") {
     await sessionRef.update({ active: false, closedAt: Date.now() });
