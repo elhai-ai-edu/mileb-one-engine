@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="he">
+
+<head>
+<meta charset="UTF-8">
+<title>MilEd Classroom</title>
+</head>
+
+<body>
+
+<h2>הגשת תוצר</h2>
+
+<textarea id="studentText"
+placeholder="כתוב כאן את התוצר שלך">
+</textarea>
+
+<br>
+
+<button onclick="submitAssignment()">
+הגש למרצה
+</button>
+
+<script>
+
+async function submitAssignment(){
+
+const text =
+document.getElementById("studentText").value;
+
+await fetch("/api/submit",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+text:text,
+student:"student1"
+})
+});
+
+alert("העבודה הוגשה");
+
+}
+
+</script>
+
+</body>
+</html>
