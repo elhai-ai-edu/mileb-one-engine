@@ -6,452 +6,728 @@
 <title>MilEd Workspace</title>
 
 <style>
-  body{font-family:'Segoe UI',Tahoma,sans-serif;margin:0;background:#f4f7f6;}
-  .workspace{max-width:1100px;margin:auto;padding:30px;}
+body{font-family:'Segoe UI',Tahoma,sans-serif;margin:0;background:#f4f7f6;}
 
-  header{
-    background:white;padding:20px;border-radius:12px;margin-bottom:20px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.05);
-  }
-  header h2{margin:0;color:#003366;}
-  header p{color:#555;margin-top:8px;white-space:pre-wrap;line-height:1.6;}
-  .meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
-  .pill{
-    background:#f0f4f8;color:#34495e;border-radius:999px;
-    padding:6px 12px;font-size:.85rem;font-weight:600;
-  }
-  .pill.ok{background:#e8f8ef;color:#1e7e34;}
-  .pill.warn{background:#fff7e6;color:#8a5a00;}
-  .pill.lock{background:#ffecec;color:#a00000;}
+.workspace{max-width:1100px;margin:auto;padding:30px;}
 
-  .main{display:grid;grid-template-columns:280px 1fr;gap:20px;height:65vh;}
-  .tasks{
-    background:white;border-radius:12px;padding:20px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.05);
-    overflow:auto;
-  }
-  .tasks h3{margin:0 0 10px;color:#003366;font-size:1rem;}
-  .task{
-    padding:10px 12px;border-radius:10px;margin-bottom:8px;background:#f1f1f1;
-    cursor:pointer;display:flex;justify-content:space-between;align-items:center;
-    border:1px solid transparent;
-  }
-  .task:hover{border-color:#d0d7de;}
-  .task.active{background:#3498db;color:white;}
-  .task .num{font-weight:800;}
-  .task .label{font-weight:700;font-size:.95rem;}
-  .task .status{font-size:.75rem;opacity:.9;font-weight:700;}
+header{
+background:white;
+padding:20px;
+border-radius:12px;
+margin-bottom:20px;
+box-shadow:0 3px 10px rgba(0,0,0,0.05);
+}
 
-  .work{
-    background:white;border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:10px;
-    box-shadow:0 3px 10px rgba(0,0,0,0.05);position:relative;
-  }
-  textarea{
-    flex:1;resize:none;padding:12px;font-family:inherit;font-size:1rem;
-    border-radius:10px;border:1px solid #ddd;line-height:1.55;
-  }
+header h2{margin:0;color:#003366;}
+header p{color:#555;margin-top:8px;white-space:pre-wrap;line-height:1.6;}
 
-  .actions{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;}
-  button.submit{
-    background:#27ae60;color:white;border:none;padding:10px 14px;border-radius:10px;
-    cursor:pointer;font-weight:800;
-  }
-  button.submit:disabled{opacity:.55;cursor:not-allowed;}
-  .save-indicator{font-size:.85rem;color:#7f8c8d;font-weight:700;}
+.meta-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
 
-  /* lock overlay */
-  .lock-overlay{
-    display:none;
-    position:absolute;inset:12px;
-    background:rgba(255,245,245,.92);
-    border:2px solid #e74c3c;border-radius:12px;
-    padding:16px;
-    text-align:center;
-    color:#c0392b;font-weight:800;
-  }
+.pill{
+background:#f0f4f8;
+color:#34495e;
+border-radius:999px;
+padding:6px 12px;
+font-size:.85rem;
+font-weight:600;
+}
 
-  #ai-button{
-    position:fixed;bottom:30px;right:30px;width:60px;height:60px;border-radius:50%;
-    background:#3498db;color:white;font-size:18px;border:none;cursor:pointer;
-    box-shadow:0 12px 24px rgba(0,0,0,.12);
-  }
+.pill.ok{background:#e8f8ef;color:#1e7e34;}
+.pill.warn{background:#fff7e6;color:#8a5a00;}
+.pill.lock{background:#ffecec;color:#a00000;}
+
+.main{
+display:grid;
+grid-template-columns:280px 1fr;
+gap:20px;
+height:65vh;
+}
+
+.tasks{
+background:white;
+border-radius:12px;
+padding:20px;
+box-shadow:0 3px 10px rgba(0,0,0,0.05);
+overflow:auto;
+}
+
+.tasks h3{margin:0 0 10px;color:#003366;font-size:1rem;}
+
+.task{
+padding:10px 12px;
+border-radius:10px;
+margin-bottom:8px;
+background:#f1f1f1;
+cursor:pointer;
+display:flex;
+justify-content:space-between;
+align-items:center;
+border:1px solid transparent;
+}
+
+.task:hover{border-color:#d0d7de;}
+.task.active{background:#3498db;color:white;}
+
+.task .num{font-weight:800;}
+.task .label{font-weight:700;font-size:.95rem;}
+.task .status{font-size:.75rem;font-weight:700;opacity:.9;}
+
+.work{
+background:white;
+border-radius:12px;
+padding:20px;
+display:flex;
+flex-direction:column;
+gap:10px;
+box-shadow:0 3px 10px rgba(0,0,0,0.05);
+position:relative;
+}
+
+textarea{
+flex:1;
+resize:none;
+padding:12px;
+font-family:inherit;
+font-size:1rem;
+border-radius:10px;
+border:1px solid #ddd;
+line-height:1.55;
+}
+
+.actions{
+display:flex;
+gap:10px;
+align-items:center;
+justify-content:space-between;
+flex-wrap:wrap;
+}
+
+button.submit{
+background:#27ae60;
+color:white;
+border:none;
+padding:10px 14px;
+border-radius:10px;
+cursor:pointer;
+font-weight:800;
+}
+
+button.submit:disabled{
+opacity:.55;
+cursor:not-allowed;
+}
+
+.save-indicator{
+font-size:.85rem;
+color:#7f8c8d;
+font-weight:700;
+}
+
+.lock-overlay{
+display:none;
+position:absolute;
+inset:12px;
+background:rgba(255,245,245,.92);
+border:2px solid #e74c3c;
+border-radius:12px;
+padding:16px;
+text-align:center;
+color:#c0392b;
+font-weight:800;
+}
+
+#ai-button{
+position:fixed;
+bottom:30px;
+right:30px;
+width:60px;
+height:60px;
+border-radius:50%;
+background:#3498db;
+color:white;
+font-size:18px;
+border:none;
+cursor:pointer;
+box-shadow:0 12px 24px rgba(0,0,0,.12);
+}
+
+/* AI panel */
+
+#ai-panel{
+position:fixed;
+bottom:100px;
+right:30px;
+width:340px;
+height:420px;
+background:white;
+border-radius:12px;
+box-shadow:0 10px 30px rgba(0,0,0,0.2);
+display:none;
+flex-direction:column;
+overflow:hidden;
+z-index:999;
+}
+
+.ai-header{
+background:#003366;
+color:white;
+padding:10px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-weight:bold;
+}
+
+.ai-controls button{
+background:none;
+border:none;
+color:white;
+cursor:pointer;
+font-size:16px;
+margin-left:6px;
+}
+
+#ai-chat{
+flex:1;
+padding:10px;
+overflow:auto;
+font-size:14px;
+line-height:1.5;
+}
+
+.ai-message{
+margin-bottom:8px;
+padding:6px 8px;
+border-radius:6px;
+}
+
+.ai-user{background:#e8f4fd;}
+.ai-bot{background:#f1f1f1;}
+
+.ai-input-row{
+display:flex;
+border-top:1px solid #eee;
+}
+
+#ai-input{
+flex:1;
+padding:8px;
+border:none;
+font-size:14px;
+}
+
+#ai-send{
+background:#3498db;
+border:none;
+color:white;
+padding:8px 14px;
+cursor:pointer;
+}
+
+#ai-panel.expanded{
+width:50vw;
+height:80vh;
+bottom:10vh;
+right:5vw;
+}
 </style>
 </head>
 
 <body>
+
 <div class="workspace">
 
-  <header>
-    <h2 id="courseTitle">טוען קורס…</h2>
-    <p id="broadcastText">טוען הנחיות…</p>
+<header>
 
-    <div class="meta-row">
-      <span class="pill" id="stepPill">שלב: 1</span>
-      <span class="pill" id="sessionPill">Session: —</span>
-      <span class="pill" id="autosavePill">AutoSave: —</span>
-    </div>
-  </header>
+<h2 id="courseTitle">טוען קורס…</h2>
 
-  <div class="main">
+<p id="broadcastText">טוען הנחיות…</p>
 
-    <aside class="tasks">
-      <h3>משימות</h3>
-      <div id="taskList"></div>
-    </aside>
-
-    <section class="work">
-      <div id="lockOverlay" class="lock-overlay">🔒 השלב נעול — המרצה יפתח אותו בקרוב</div>
-
-      <textarea id="studentText" placeholder="כתוב כאן את הטקסט שלך…"></textarea>
-
-      <div class="actions">
-        <button class="submit" id="submitBtn" onclick="submitWork()">📤 שלח למרצה</button>
-        <span class="save-indicator" id="saveIndicator">—</span>
-      </div>
-    </section>
-
-  </div>
+<div class="meta-row">
+<span class="pill" id="stepPill">שלב: 1</span>
+<span class="pill" id="sessionPill">Session: —</span>
+<span class="pill" id="autosavePill">AutoSave: —</span>
 </div>
 
-<button id="ai-button" onclick="openAI()">AI</button>
+</header>
+
+<div class="main">
+
+<aside class="tasks">
+<h3>משימות</h3>
+<div id="taskList"></div>
+</aside>
+
+<section class="work">
+
+<div id="lockOverlay" class="lock-overlay">
+🔒 השלב נעול — המרצה יפתח אותו בקרוב
+</div>
+
+<textarea id="studentText" placeholder="כתוב כאן את הטקסט שלך…"></textarea>
+
+<div class="actions">
+<button class="submit" id="submitBtn" onclick="submitWork()">📤 שלח למרצה</button>
+<span class="save-indicator" id="saveIndicator">—</span>
+</div>
+
+</section>
+
+</div>
+
+</div>
+
+<button id="ai-button">AI</button>
+
+<div id="ai-panel">
+
+<div class="ai-header">
+
+<span>AI Assistant</span>
+
+<div class="ai-controls">
+<button id="ai-expand">⤢</button>
+<button id="ai-close">✕</button>
+</div>
+
+</div>
+
+<div id="ai-chat"></div>
+
+<div class="ai-input-row">
+<input id="ai-input" placeholder="שאל את ה-AI..." />
+<button id="ai-send">שלח</button>
+</div>
+
+</div>
 
 <script>
-/* =====================================================
-   PARAMS + IDENTITIES
-===================================================== */
-const params = new URLSearchParams(location.search);
 
-const classId   = params.get("classId") || "";            // key in config.branches.courses.items
-let   botType   = params.get("botType") || "";            // resolved from config if missing
-const sessionId = params.get("sessionId") || "";          // classroom session (optional)
+/* PARAMETERS */
 
-// studentId persisted
-let studentId = sessionStorage.getItem("studentId");
+const params=new URLSearchParams(location.search);
+
+const classId=params.get("classId")||"";
+let botType=params.get("botType")||"";
+const sessionId=params.get("sessionId")||"";
+
+/* STUDENT ID */
+
+let studentId=localStorage.getItem("studentId");
+
 if(!studentId){
-  studentId = "s_" + Math.random().toString(36).slice(2,10);
-  sessionStorage.setItem("studentId", studentId);
+
+studentId="s_"+Math.random().toString(36).slice(2,10);
+
+localStorage.setItem("studentId",studentId);
+
 }
 
-/* =====================================================
-   TASK MODEL (v1)
-   later: load from config/course metadata if you want
-===================================================== */
-const TASKS = [
-  { step: 1, label: "בחירת נושא" },
-  { step: 2, label: "שאלת מחקר" },
-  { step: 3, label: "מקורות" },
-  { step: 4, label: "טיוטה" }
+/* TASKS */
+
+const TASKS=[
+{step:1,label:"בחירת נושא"},
+{step:2,label:"שאלת מחקר"},
+{step:3,label:"מקורות"},
+{step:4,label:"טיוטה"}
 ];
 
-/* =====================================================
-   LOCAL STORAGE (autosave)
-===================================================== */
-const STORAGE_VERSION = 1;
+let taskStatus={};
+
+/* STORAGE */
+
+const STORAGE_VERSION=1;
+
 function storageKey(){
-  return `miled_ws_${classId || "noClass"}_${studentId}_v${STORAGE_VERSION}`;
+return`miled_ws_${classId}_${studentId}_v${STORAGE_VERSION}`;
 }
 
 function loadDraft(){
-  try{
-    const raw = localStorage.getItem(storageKey());
-    if(!raw) return null;
-    return JSON.parse(raw);
-  }catch(e){
-    console.warn("draft parse error", e);
-    return null;
-  }
+
+try{
+const raw=localStorage.getItem(storageKey());
+if(!raw)return null;
+return JSON.parse(raw);
+}catch(e){
+return null;
 }
 
-function saveDraft(partial){
-  const prev = loadDraft() || {};
-  const next = {
-    ...prev,
-    ...partial,
-    classId,
-    botType,
-    studentId,
-    sessionId: sessionId || null,
-    version: STORAGE_VERSION,
-    updatedAt: Date.now()
-  };
-  localStorage.setItem(storageKey(), JSON.stringify(next));
-  return next;
 }
 
-/* =====================================================
-   UI STATE
-===================================================== */
-let currentStep = 1;
-let isLocked = false;
+function saveDraft(data){
 
-const elTaskList      = document.getElementById("taskList");
-const elText          = document.getElementById("studentText");
-const elSubmit        = document.getElementById("submitBtn");
-const elLockOverlay   = document.getElementById("lockOverlay");
-const elBroadcastText = document.getElementById("broadcastText");
-const elCourseTitle   = document.getElementById("courseTitle");
-const elStepPill      = document.getElementById("stepPill");
-const elSessionPill   = document.getElementById("sessionPill");
-const elAutosavePill  = document.getElementById("autosavePill");
-const elSaveIndicator = document.getElementById("saveIndicator");
+const prev=loadDraft()||{};
 
-/* =====================================================
-   RENDER TASK LIST + ACTIVE STEP
-===================================================== */
+const next={
+...prev,
+...data,
+classId,
+studentId,
+updatedAt:Date.now()
+};
+
+localStorage.setItem(storageKey(),JSON.stringify(next));
+
+return next;
+
+}
+
+/* STATE */
+
+let currentStep=1;
+let isLocked=false;
+
+const elTaskList=document.getElementById("taskList");
+const elText=document.getElementById("studentText");
+const elSubmit=document.getElementById("submitBtn");
+const elLockOverlay=document.getElementById("lockOverlay");
+
+const elBroadcastText=document.getElementById("broadcastText");
+const elCourseTitle=document.getElementById("courseTitle");
+
+const elStepPill=document.getElementById("stepPill");
+const elSessionPill=document.getElementById("sessionPill");
+const elAutosavePill=document.getElementById("autosavePill");
+
+const elSaveIndicator=document.getElementById("saveIndicator");
+
+/* TASK RENDER */
+
 function renderTasks(){
-  elTaskList.innerHTML = TASKS.map(t => {
-    const active = (t.step === currentStep);
-    return `
-      <div class="task ${active ? "active" : ""}" onclick="setStep(${t.step})">
-        <span class="num">${t.step}.</span>
-        <span class="label">${t.label}</span>
-        <span class="status">${active ? "פעיל" : ""}</span>
-      </div>
-    `;
-  }).join("");
+
+elTaskList.innerHTML=TASKS.map(t=>{
+
+const active=t.step===currentStep;
+const status=taskStatus[t.step]||"";
+
+let statusLabel="";
+
+if(status==="working")statusLabel="● בעבודה";
+if(status==="submitted")statusLabel="✔ הוגש";
+
+return`
+<div class="task ${active?"active":""}" onclick="setStep(${t.step})">
+<span class="num">${t.step}.</span>
+<span class="label">${t.label}</span>
+<span class="status">${statusLabel}</span>
+</div>
+`;
+
+}).join("");
+
 }
 
-/* =====================================================
-   STEP SET (local)
-   note: classroom-controlled step comes from poll() when sessionId exists
-===================================================== */
 function setStep(step){
-  // in classroom session, step is dictated by teacher (currentStep)
-  if(sessionId){
-    alert("במצב שיעור פעיל — המרצה קובע את השלב 🙂");
-    return;
-  }
-  currentStep = step;
-  elStepPill.textContent = `שלב: ${currentStep}`;
-  renderTasks();
-  saveDraft({ currentStep });
-}
-window.setStep = setStep;
 
-/* =====================================================
-   LOCK STATE
-===================================================== */
-function applyLockState(){
-  elLockOverlay.style.display = isLocked ? "block" : "none";
-  elText.disabled   = isLocked;
-  elSubmit.disabled = isLocked;
-
-  if(isLocked){
-    elAutosavePill.textContent = "AutoSave: נעול";
-    elAutosavePill.className = "pill lock";
-  }else{
-    elAutosavePill.textContent = "AutoSave: פעיל";
-    elAutosavePill.className = "pill ok";
-  }
+if(sessionId){
+alert("במצב שיעור פעיל המרצה קובע את השלב");
+return;
 }
 
-/* =====================================================
-   CONFIG RESOLUTION: courseTitle + botType
-===================================================== */
-async function loadConfigAndResolve(){
-  try{
-    const res = await fetch("/config.json?ts=" + Date.now());
-    const config = await res.json();
+currentStep=step;
 
-    const course = config?.branches?.courses?.items?.[classId] || null;
+elStepPill.textContent=`שלב: ${currentStep}`;
 
-    if(course){
-      elCourseTitle.textContent = course.name || "קורס";
-      if(!botType) botType = course.botType || "";
-    }else{
-      elCourseTitle.textContent = "קורס";
-    }
+renderTasks();
 
-  }catch(e){
-    console.warn("config load failed", e);
-    elCourseTitle.textContent = "קורס";
-  }
+saveDraft({currentStep});
+
 }
 
-/* =====================================================
-   CLASSROOM JOIN + POLL (if sessionId exists)
-===================================================== */
-let pollTimer = null;
+/* AUTOSAVE */
+
+let saveTimer=null;
+
+function scheduleAutosave(){
+
+if(isLocked)return;
+
+taskStatus[currentStep]="working";
+
+elSaveIndicator.textContent="כותב...";
+
+clearTimeout(saveTimer);
+
+saveTimer=setTimeout(()=>{
+
+elSaveIndicator.textContent="שומר...";
+
+const draft=saveDraft({
+text:elText.value,
+currentStep,
+taskStatus
+});
+
+elSaveIndicator.textContent=
+`נשמר (${new Date(draft.updatedAt).toLocaleTimeString("he-IL")})`;
+
+},350);
+
+}
+
+elText.addEventListener("input",scheduleAutosave);
+
+/* RESTORE */
+
+function restoreDraft(){
+
+const draft=loadDraft();
+
+if(!draft)return;
+
+if(draft.text)elText.value=draft.text;
+
+if(draft.currentStep)currentStep=draft.currentStep;
+
+if(draft.taskStatus)taskStatus=draft.taskStatus;
+
+}
+
+/* CLASSROOM */
 
 async function classroomJoin(){
-  if(!sessionId) return;
-  try{
-    await fetch("/.netlify/functions/classroom", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ action:"join", sessionId, studentId })
-    });
-  }catch(e){
-    console.warn("join failed", e);
-  }
+
+if(!sessionId)return;
+
+await fetch("/.netlify/functions/classroom",{
+
+method:"POST",
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+action:"join",
+sessionId,
+studentId
+})
+
+});
+
 }
 
 async function pollClassroom(){
-  if(!sessionId) return;
-  try{
-    const url = `/.netlify/functions/classroom?action=poll&sessionId=${encodeURIComponent(sessionId)}&studentId=${encodeURIComponent(studentId)}`;
-    const res = await fetch(url);
-    const data = await res.json();
 
-    // broadcast = teacher instructions
-    if(data.broadcast){
-      elBroadcastText.textContent = data.broadcast;
-    }else{
-      elBroadcastText.textContent = "אין כרגע שידור מהמרצה. בחר משימה והתחל לעבוד.";
-    }
+if(!sessionId)return;
 
-    // step
-    const newStep = data.currentStep || 1;
-    if(newStep !== currentStep){
-      currentStep = newStep;
-      elStepPill.textContent = `שלב: ${currentStep}`;
-      renderTasks();
-      saveDraft({ currentStep }); // keep local in sync
-    }
+const res=await fetch(
+`/.netlify/functions/classroom?action=poll&sessionId=${sessionId}&studentId=${studentId}`
+);
 
-    // lock
-    const newLocked = data.stepLocked === true;
-    if(newLocked !== isLocked){
-      isLocked = newLocked;
-      applyLockState();
-    }
+const data=await res.json();
 
-    // session active
-    if(data.sessionActive === false){
-      clearInterval(pollTimer);
-      elSessionPill.textContent = "Session: הסתיים";
-      elSessionPill.className = "pill warn";
-    }
+if(data.broadcast)elBroadcastText.textContent=data.broadcast;
 
-  }catch(e){
-    console.warn("poll failed", e);
-  }
+const newStep=data.currentStep||1;
+
+if(newStep!==currentStep){
+
+currentStep=newStep;
+
+renderTasks();
+
 }
 
-/* =====================================================
-   AUTOSAVE (debounced)
-===================================================== */
-let saveTimer = null;
-function scheduleAutosave(){
-  if(isLocked) return;
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    const draft = saveDraft({ text: elText.value, currentStep });
-    elSaveIndicator.textContent = `נשמר אוטומטית (${new Date(draft.updatedAt).toLocaleTimeString("he-IL")})`;
-  }, 350);
+const newLocked=data.stepLocked===true;
+
+if(newLocked!==isLocked){
+
+isLocked=newLocked;
+
+elLockOverlay.style.display=isLocked?"block":"none";
+
+elText.disabled=isLocked;
+
+elSubmit.disabled=isLocked;
+
 }
 
-elText.addEventListener("input", scheduleAutosave);
-
-/* =====================================================
-   RESTORE DRAFT ON LOAD
-===================================================== */
-function restoreDraft(){
-  const draft = loadDraft();
-  if(!draft) return;
-
-  if(typeof draft.text === "string" && draft.text.trim()){
-    elText.value = draft.text;
-    elSaveIndicator.textContent = `שוחזר טיוטה (${new Date(draft.updatedAt).toLocaleTimeString("he-IL")})`;
-  }
-
-  if(!sessionId && typeof draft.currentStep === "number"){
-    currentStep = draft.currentStep;
-  }
 }
 
-/* =====================================================
-   SUBMIT
-===================================================== */
+/* SUBMIT */
+
 async function submitWork(){
-  const text = elText.value.trim();
-  if(!text){
-    alert("כתוב משהו לפני שליחה");
-    return;
-  }
 
-  // always autosave before submit
-  saveDraft({ text, currentStep });
+const text=elText.value.trim();
 
-  if(!sessionId){
-    alert("אין Session פעיל. כדי להגיש למרצה דרך הדשבורד — התחבר לשיעור פעיל.");
-    return;
-  }
-
-  try{
-    await fetch("/.netlify/functions/classroom", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({
-        action: "submit",
-        sessionId,
-        studentId,
-        step: currentStep,
-        content: text,
-        // future-proof fields (won't break classroom.js even if ignored)
-        assignmentId: classId || null,
-        version: STORAGE_VERSION
-      })
-    });
-
-    alert("העבודה נשלחה למרצה ✅");
-
-  }catch(e){
-    console.error(e);
-    alert("שגיאה בשליחה — נסה שוב");
-  }
+if(!text){
+alert("כתוב משהו לפני שליחה");
+return;
 }
-window.submitWork = submitWork;
 
-/* =====================================================
-   OPEN AI (chat)
-===================================================== */
-function openAI(){
-  // keep draft safe
-  saveDraft({ text: elText.value, currentStep });
+taskStatus[currentStep]="submitted";
 
-  const q = new URLSearchParams();
-  if(botType) q.set("botType", botType);
-  if(classId) q.set("classId", classId);
-  if(sessionId) q.set("sessionId", sessionId);
-  q.set("studentId", studentId);
-  q.set("step", String(currentStep));
+saveDraft({text,currentStep,taskStatus});
 
-  location.href = `/chat.html?${q.toString()}`;
+if(!sessionId){
+alert("אין session פעיל");
+return;
 }
-window.openAI = openAI;
 
-/* =====================================================
-   INIT
-===================================================== */
+await fetch("/.netlify/functions/classroom",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+
+action:"submit",
+
+sessionId,
+
+studentId,
+
+step:currentStep,
+
+content:text,
+
+assignmentId:classId,
+
+version:STORAGE_VERSION
+
+})
+
+});
+
+alert("העבודה נשלחה למרצה");
+
+}
+
+/* AI PANEL */
+
+const aiButton=document.getElementById("ai-button");
+
+const aiPanel=document.getElementById("ai-panel");
+
+const aiChat=document.getElementById("ai-chat");
+
+const aiInput=document.getElementById("ai-input");
+
+const aiSend=document.getElementById("ai-send");
+
+const aiClose=document.getElementById("ai-close");
+
+const aiExpand=document.getElementById("ai-expand");
+
+aiButton.onclick=()=>{
+
+aiPanel.style.display="flex";
+
+aiInput.focus();
+
+};
+
+aiClose.onclick=()=>{
+
+aiPanel.style.display="none";
+
+};
+
+aiExpand.onclick=()=>{
+
+aiPanel.classList.toggle("expanded");
+
+};
+
+aiSend.onclick=sendAI;
+
+aiInput.addEventListener("keydown",e=>{
+if(e.key==="Enter")sendAI();
+});
+
+async function sendAI(){
+
+const message=aiInput.value.trim();
+
+if(!message)return;
+
+addMessage(message,"user");
+
+aiInput.value="";
+
+const task=TASKS.find(t=>t.step===currentStep);
+
+try{
+
+const res=await fetch("/.netlify/functions/chat",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+
+message,
+
+botType,
+
+classId,
+
+studentId,
+
+step:currentStep,
+
+taskLabel:task?task.label:"",
+
+workspaceText:elText.value
+
+})
+
+});
+
+const data=await res.json();
+
+addMessage(data.reply||"תגובה ריקה","bot");
+
+}catch(err){
+
+addMessage("שגיאה בחיבור ל-AI","bot");
+
+}
+
+}
+
+function addMessage(text,type){
+
+const div=document.createElement("div");
+
+div.className=`ai-message ai-${type}`;
+
+div.textContent=text;
+
+aiChat.appendChild(div);
+
+aiChat.scrollTop=aiChat.scrollHeight;
+
+}
+
+/* INIT */
+
 (async function init(){
-  // pills
-  elSessionPill.textContent = sessionId ? `Session: ${sessionId}` : "Session: —";
-  elAutosavePill.textContent = "AutoSave: פעיל";
-  elAutosavePill.className = "pill ok";
 
-  await loadConfigAndResolve();
+elAutosavePill.textContent="AutoSave: פעיל";
 
-  // restore local state
-  restoreDraft();
+restoreDraft();
 
-  // initial UI
-  elStepPill.textContent = `שלב: ${currentStep}`;
-  renderTasks();
+renderTasks();
 
-  // classroom mode
-  if(sessionId){
-    await classroomJoin();
-    await pollClassroom();
-    pollTimer = setInterval(pollClassroom, 4000);
-  }else{
-    // no classroom: show default instructions
-    elBroadcastText.textContent = "בחר משימה משמאל, כתוב טיוטה, ובמידת הצורך לחץ על AI.";
-  }
+if(sessionId){
 
-  // lock state (default)
-  applyLockState();
+await classroomJoin();
+
+await pollClassroom();
+
+setInterval(pollClassroom,4000);
+
+}else{
+
+elBroadcastText.textContent=
+"בחר משימה משמאל, כתוב טיוטה ולחץ על AI לעזרה";
+
+}
+
 })();
+
 </script>
+
 </body>
 </html>
