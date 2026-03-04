@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -68,357 +69,156 @@ button:disabled { background: #ccc; }
 
 </header>
 
-
 <div id="chat-window">
-
 <div id="welcome-msg" class="message ai">
 שלום! איך אוכל לעזור?
 </div>
-
 </div>
-
 
 <div class="input-area">
-
 <input id="user-input" placeholder="כתוב שאלה..." onkeypress="handleKey(event)">
-
 <button id="voice-btn">🎤</button>
-
 <button id="send-btn" onclick="sendMessage()">שלח</button>
-
-<!-- EXPORT BUTTON — ADDED -->
 <button onclick="exportPrompt()">ייצא prompt</button>
-
 </div>
-
 
 <script>
 
-// ─────────────────────────────
-// EXPORT STATE — ADDED
-// ─────────────────────────────
-
 window.__LAST_EXPORT_PROMPT = null;
 
-
-// ─────────────────────────────
-// session identifiers
-// ─────────────────────────────
-
 let studentId = sessionStorage.getItem('studentId');
-
 if (!studentId){
-
-studentId = 's_' + Math.random().toString(36).slice(2,10);
-
-sessionStorage.setItem('studentId', studentId);
-
+  studentId = 's_' + Math.random().toString(36).slice(2,10);
+  sessionStorage.setItem('studentId', studentId);
 }
-
 
 let sessionId = sessionStorage.getItem('sessionId');
-
 if (!sessionId){
-
-sessionId = 'sess_' + Math.random().toString(36).slice(2,10);
-
-sessionStorage.setItem('sessionId', sessionId);
-
+  sessionId = 'sess_' + Math.random().toString(36).slice(2,10);
+  sessionStorage.setItem('sessionId', sessionId);
 }
-
-
-// facultyId (null לסטודנט)
 
 let facultyId = sessionStorage.getItem('facultyId') || null;
 
-
-// ─────────────────────────────
-// query params
-// ─────────────────────────────
-
 const params = new URLSearchParams(window.location.search);
-
 const classId = params.get('classId');
 
-
-// ─────────────────────────────
-// chat state
-// ─────────────────────────────
-
 const chatWindow = document.getElementById('chat-window');
-
 const input = document.getElementById('user-input');
-
 const sendBtn = document.getElementById('send-btn');
-
 const historyKey = `history_${classId}`;
-
 let chatHistory = JSON.parse(sessionStorage.getItem(historyKey) || '[]');
 
-
-// ─────────────────────────────
-// render message
-// ─────────────────────────────
-
 function renderMessage(role, content){
-
-const div = document.createElement('div');
-
-div.className = 'message ' + (role === 'user' ? 'user' : 'ai');
-
-div.innerHTML = role === 'user' ? content : marked.parse(content);
-
-return div;
-
+  const div = document.createElement('div');
+  div.className = 'message ' + (role === 'user' ? 'user' : 'ai');
+  div.innerHTML = role === 'user' ? content : marked.parse(content);
+  return div;
 }
-
-
-// restore history
 
 if(chatHistory.length>0){
-
-document.getElementById('welcome-msg')?.remove();
-
-chatHistory.forEach(m => chatWindow.appendChild(renderMessage(m.role, m.content)));
-
+  document.getElementById('welcome-msg')?.remove();
+  chatHistory.forEach(m => chatWindow.appendChild(renderMessage(m.role, m.content)));
 }
-
-
-// ─────────────────────────────
-// load config
-// ─────────────────────────────
 
 let currentBotType = null;
 
 fetch('/config.json')
-
 .then(r=>r.json())
-
 .then(config=>{
-
-for(let branch in config.branches){
-
-const item = config.branches[branch].items?.[classId];
-
-if(item){
-
-currentBotType = item.botType;
-
-document.getElementById('course-title').textContent = item.name;
-
-break;
-
-}
-
-}
-
+  for(let branch in config.branches){
+    const item = config.branches[branch].items?.[classId];
+    if(item){
+      currentBotType = item.botType;
+      document.getElementById('course-title').textContent = item.name;
+      break;
+    }
+  }
 });
-
-
-// ─────────────────────────────
-// send message
-// ─────────────────────────────
 
 async function sendMessage(){
+  if(!currentBotType){ alert("המערכת עדיין נטענת"); return; }
+  const text = input.value.trim();
+  if(!text) return;
 
-if(!currentBotType){
+  chatWindow.appendChild(renderMessage('user',text));
+  input.value="";
+  sendBtn.disabled=true;
 
-alert("המערכת עדיין נטענת");
+  const loading = document.createElement('div');
+  loading.className='message ai loading-text';
+  loading.innerText='חושב...';
+  chatWindow.appendChild(loading);
 
-return;
+  try{
+    const response = await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        message:text,
+        botType:currentBotType,
+        classId:classId,
+        studentId:studentId,
+        facultyId:facultyId,
+        sessionId:sessionId,
+        history:chatHistory
+      })
+    });
 
+    if(response.status===403){
+      loading.remove();
+      chatWindow.appendChild(renderMessage('assistant',"אין לך הרשאה להשתמש בכלי זה"));
+      return;
+    }
+
+    const data = await response.json();
+
+    if(data.exportPrompt)
+      window.__LAST_EXPORT_PROMPT = data.exportPrompt;
+
+    loading.remove();
+    const reply = data.reply || "שגיאה";
+    chatWindow.appendChild(renderMessage('assistant',reply));
+
+    chatHistory.push({role:'user',content:text});
+    chatHistory.push({role:'assistant',content:reply});
+    sessionStorage.setItem(historyKey, JSON.stringify(chatHistory));
+
+  }catch(e){
+    loading.remove();
+    chatWindow.appendChild(renderMessage('assistant',"שגיאת חיבור לשרת"));
+  }
+
+  sendBtn.disabled=false;
 }
-
-const text = input.value.trim();
-
-if(!text) return;
-
-
-chatWindow.appendChild(renderMessage('user',text));
-
-
-input.value="";
-
-sendBtn.disabled=true;
-
-
-const loading = document.createElement('div');
-
-loading.className='message ai loading-text';
-
-loading.innerText='חושב...';
-
-chatWindow.appendChild(loading);
-
-
-try{
-
-
-const response = await fetch('/api/chat',{
-
-method:'POST',
-
-headers:{'Content-Type':'application/json'},
-
-body:JSON.stringify({
-
-message:text,
-
-botType:currentBotType,
-
-classId:classId,
-
-studentId:studentId,
-
-facultyId:facultyId,
-
-sessionId:sessionId,
-
-history:chatHistory
-
-})
-
-});
-
-
-// authorization guard
-
-if(response.status===403){
-
-loading.remove();
-
-chatWindow.appendChild(renderMessage(
-
-'assistant',
-
-"אין לך הרשאה להשתמש בכלי זה"
-
-));
-
-return;
-
-}
-
-
-const data = await response.json();
-
-
-// SAVE PROMPT FOR EXPORT — ADDED
-if(data.exportPrompt)
-window.__LAST_EXPORT_PROMPT = data.exportPrompt;
-
-
-loading.remove();
-
-
-const reply = data.reply || "שגיאה";
-
-
-chatWindow.appendChild(renderMessage('assistant',reply));
-
-
-chatHistory.push({role:'user',content:text});
-
-chatHistory.push({role:'assistant',content:reply});
-
-sessionStorage.setItem(historyKey, JSON.stringify(chatHistory));
-
-
-}catch(e){
-
-loading.remove();
-
-chatWindow.appendChild(renderMessage(
-
-'assistant',
-
-"שגיאת חיבור לשרת"
-
-));
-
-}
-
-
-sendBtn.disabled=false;
-
-}
-
-
-// enter key
 
 function handleKey(e){
-
-if(e.key==="Enter") sendMessage();
-
+  if(e.key==="Enter") sendMessage();
 }
-
-
-// ─────────────────────────────
-// EXPORT FUNCTION — ADDED
-// ─────────────────────────────
 
 function exportPrompt(){
-
-if(!window.__LAST_EXPORT_PROMPT){
-
-alert("אין prompt לייצוא עדיין");
-
-return;
-
-}
-
-const botName =
-document.getElementById("course-title")?.innerText
-|| "MilEd Bot";
-
-const now =
-new Date().toISOString();
-
-const content =
-`MilEd.One — Prompt Export
-================================
-
-Bot name: ${botName}
-Exported at: ${now}
-
---------------------------------
-SYSTEM PROMPT
---------------------------------
-
-${window.__LAST_EXPORT_PROMPT}
-
---------------------------------
-Generated via MilEd.One
---------------------------------
-`;
-
-const blob =
-new Blob([content], {type:"text/plain;charset=utf-8"});
-
-const url =
-URL.createObjectURL(blob);
-
-const a =
-document.createElement("a");
-
-a.href=url;
-
-a.download=
-botName.replace(/\s+/g,"_")+"_prompt.txt";
-
-document.body.appendChild(a);
-
-a.click();
-
-document.body.removeChild(a);
-
-URL.revokeObjectURL(url);
-
+  if(!window.__LAST_EXPORT_PROMPT){ alert("אין prompt לייצוא עדיין"); return; }
+  const botName = document.getElementById("course-title")?.innerText || "MilEd Bot";
+  const now = new Date().toISOString();
+  const content = `MilEd.One — Prompt Export\n================================\n\nBot name: ${botName}\nExported at: ${now}\n\n--------------------------------\nSYSTEM PROMPT\n--------------------------------\n\n${window.__LAST_EXPORT_PROMPT}\n\n--------------------------------\nGenerated via MilEd.One\n--------------------------------\n`;
+  const blob = new Blob([content], {type:"text/plain;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href=url;
+  a.download=botName.replace(/\s+/g,"_")+"_prompt.txt";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 </script>
 
+<!-- Classroom sync — active only when sessionId exists in URL -->
+<script src="/classroom-inject.js"></script>
 
 </body>
-
 </html>
+```
+
+השינוי היחיד — שתי שורות לפני `</body>` בתחתית.
