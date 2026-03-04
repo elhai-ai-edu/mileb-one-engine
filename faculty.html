@@ -110,17 +110,8 @@ MilEd.One
 
 <script>
 
-/* =====================================================
-   STATE
-===================================================== */
-
 let CONFIG=null;
 let USER=null;
-
-
-/* =====================================================
-   facultyId
-===================================================== */
 
 let facultyId = localStorage.getItem("facultyId");
 
@@ -131,11 +122,6 @@ facultyId="f_"+Math.random().toString(36).slice(2,8);
 localStorage.setItem("facultyId",facultyId);
 
 }
-
-
-/* =====================================================
-   AUTH
-===================================================== */
 
 function checkAuth(){
 
@@ -157,11 +143,6 @@ USER={token,role,name};
 return true;
 
 }
-
-
-/* =====================================================
-   LOAD CONFIG
-===================================================== */
 
 async function loadConfig(){
 
@@ -189,14 +170,21 @@ document.getElementById("error").innerText=
 
 }
 
-
-/* =====================================================
-   OPEN CLASSROOM SESSION
-===================================================== */
-
 async function openClassroomSession(classId){
 
-const sessionId="session_"+Math.random().toString(36).slice(2,8);
+let sessionId =
+localStorage.getItem("session_"+classId);
+
+if(sessionId){
+
+window.location.href=
+`/workspace.html?classId=${classId}&sessionId=${sessionId}&facultyId=${facultyId}`;
+
+return;
+
+}
+
+sessionId="session_"+Math.random().toString(36).slice(2,8);
 
 try{
 
@@ -212,14 +200,17 @@ body:JSON.stringify({
 
 action:"open",
 sessionId,
-facultyId
+facultyId,
+classId
 
 })
 
 });
 
+localStorage.setItem("session_"+classId,sessionId);
+
 window.location.href=
-`/chat.html?classId=${classId}&sessionId=${sessionId}&facultyId=${facultyId}`;
+`/workspace.html?classId=${classId}&sessionId=${sessionId}&facultyId=${facultyId}`;
 
 }
 
@@ -232,54 +223,6 @@ alert("שגיאה בפתיחת הכיתה");
 }
 
 }
-
-
-/* =====================================================
-   EXPORT SYSTEM PROMPT
-===================================================== */
-
-async function exportSystemPrompt(botType){
-
-try{
-
-const res=await fetch(
-"/.netlify/functions/chat?exportPrompt=true",
-{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({botType,facultyId})
-});
-
-const data=await res.json();
-
-if(!data.fullSystemPrompt){
-
-alert("לא ניתן לייצא");
-
-return;
-
-}
-
-await navigator.clipboard.writeText(data.fullSystemPrompt);
-
-alert("System Prompt הועתק ללוח");
-
-}
-
-catch(e){
-
-console.error(e);
-
-alert("שגיאה בייצוא");
-
-}
-
-}
-
-
-/* =====================================================
-   INIT PAGE
-===================================================== */
 
 function initPage(){
 
@@ -301,44 +244,32 @@ wrapper.style.display="flex";
 wrapper.style.flexDirection="column";
 wrapper.style.gap="8px";
 
-
 const a=document.createElement("button");
 
 a.className="btn";
 
-a.innerText=bot.name;
+const activeSession =
+localStorage.getItem("session_"+id);
+
+if(activeSession){
+
+a.innerText="🟢 "+bot.name;
+
+}else{
+
+a.innerText="⚪ "+bot.name;
+
+}
 
 a.onclick=()=>openClassroomSession(id);
 
-
-const exportBtn=document.createElement("button");
-
-exportBtn.innerText="ייצוא System Prompt";
-
-exportBtn.style.padding="6px 12px";
-exportBtn.style.borderRadius="8px";
-exportBtn.style.border="none";
-exportBtn.style.cursor="pointer";
-exportBtn.style.background="#2c3e50";
-exportBtn.style.color="white";
-
-exportBtn.onclick=()=>
-exportSystemPrompt(bot.botType);
-
-
 wrapper.appendChild(a);
-wrapper.appendChild(exportBtn);
 
 container.appendChild(wrapper);
 
 }
 
 }
-
-
-/* =====================================================
-   START
-===================================================== */
 
 if(checkAuth()){
 
