@@ -279,7 +279,8 @@ const contextRules = resolveContextRules(engine, botConfig);
 // MAIN HANDLER
 // ─────────────────────────────────────────
 
-export async function handler(event) {
+exports.handler = async (event) => {
+
   const headers = {
 
     "Access-Control-Allow-Origin":  "*",
@@ -288,6 +289,15 @@ export async function handler(event) {
     "Content-Type": "application/json"
 
   };
+
+  // בדיקת GET פשוטה
+  if (event.httpMethod === "GET") {
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ status: "MilEd chat engine running" })
+    };
+  }
 
   if (event.httpMethod === "OPTIONS")
     return { statusCode: 200, headers, body: "" };
