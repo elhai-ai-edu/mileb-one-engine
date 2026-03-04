@@ -279,8 +279,7 @@ const contextRules = resolveContextRules(engine, botConfig);
 // MAIN HANDLER
 // ─────────────────────────────────────────
 
-exports.handler = async (event) => {
-
+export async function handler(event) {
   const headers = {
 
     "Access-Control-Allow-Origin":  "*",
