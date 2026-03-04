@@ -429,9 +429,10 @@
       }
     },
 
-   "private": {
+  "private": {
   "invisibleEffortRegulation": true
 }
 
-}
+    }
+  }
 }
