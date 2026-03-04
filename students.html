@@ -6,12 +6,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>MilEd.One - פורטל סטודנטים</title>
+<title>MilEd.One - סטודנטים</title>
 
 <style>
 
 body{
-font-family:'Segoe UI',Tahoma,sans-serif;
+font-family:'Segoe UI',sans-serif;
 background:#f4f7f6;
 margin:0;
 display:flex;
@@ -20,7 +20,7 @@ justify-content:center;
 min-height:100vh;
 }
 
-.portal-container{
+.container{
 max-width:800px;
 width:90%;
 background:white;
@@ -30,63 +30,58 @@ box-shadow:0 10px 30px rgba(0,0,0,0.05);
 text-align:center;
 }
 
-.brand{
-color:#000;
-font-size:1.2rem;
-margin-bottom:10px;
-font-weight:300;
-display:block;
-}
-
-.main-title{
-color:#003366;
+h1{
+color:#3498db;
 font-size:2.2rem;
 margin-bottom:10px;
-font-weight:700;
 }
 
 .subtitle{
 color:#7f8c8d;
-font-size:1.2rem;
-margin-bottom:40px;
+margin-bottom:30px;
 }
 
-.course-grid{
+.grid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:20px;
 }
 
-.course-card{
+.btn{
 padding:25px;
 border-radius:15px;
 text-decoration:none;
 color:white;
 background:#3498db;
-transition:all 0.3s ease;
+font-weight:bold;
+transition:0.3s;
 display:flex;
 align-items:center;
 justify-content:center;
-font-weight:600;
-font-size:1.2rem;
 }
 
-.course-card:hover{
-transform:translateY(-5px);
-box-shadow:0 5px 15px rgba(0,0,0,0.1);
+.btn:hover{
+transform:translateY(-3px);
 background:#2980b9;
 }
 
-.back-link{
-display:block;
-margin-top:30px;
+.back-btn{
+display:inline-block;
+margin-top:40px;
 color:#7f8c8d;
 text-decoration:none;
-font-size:0.9rem;
+font-weight:bold;
 }
 
-@media(max-width:600px){
-.course-grid{grid-template-columns:1fr;}
+.error{
+color:#e74c3c;
+margin-top:20px;
+}
+
+@media (max-width:600px){
+.grid{
+grid-template-columns:1fr;
+}
 }
 
 </style>
@@ -95,147 +90,101 @@ font-size:0.9rem;
 
 <body>
 
-<div class="portal-container">
+<div class="container">
 
-<span class="brand">MilEd.One</span>
+<span style="font-weight:300;color:#000;">
+MilEd.One
+</span>
 
-<h1 id="title" class="main-title">פורטל סטודנטים</h1>
+<h1 id="title">טוען...</h1>
 
-<p id="subtitle" class="subtitle">טוען קורסים...</p>
+<p id="subtitle" class="subtitle"></p>
 
-<div id="course-list" class="course-grid"></div>
+<div id="list" class="grid"></div>
 
-<a href="/" class="back-link">← חזרה לדף הבית</a>
+<div id="error" class="error"></div>
+
+<a href="/" class="back-btn">→ חזרה לדף הבית</a>
 
 </div>
 
 <script>
 
-// ─────────────────────────────
-// studentId
-// ─────────────────────────────
+let CONFIG=null;
 
-let studentId = sessionStorage.getItem("studentId");
+/* student id */
+
+let studentId = localStorage.getItem("studentId");
 
 if(!studentId){
 
-studentId = "s_"+Math.random().toString(36).slice(2,10);
+studentId="s_"+Math.random().toString(36).slice(2,8);
 
-sessionStorage.setItem("studentId",studentId);
-
-}
-
-// ─────────────────────────────
-// sessionId
-// ─────────────────────────────
-
-let sessionId = sessionStorage.getItem("sessionId");
-
-if(!sessionId){
-
-sessionId = "class_"+Math.random().toString(36).slice(2,8);
-
-sessionStorage.setItem("sessionId",sessionId);
+localStorage.setItem("studentId",studentId);
 
 }
 
-// ─────────────────────────────
-// student access control
-// ─────────────────────────────
+/* load config */
 
-function studentHasAccess(tool){
-
-const scope = tool.scope || "global";
-
-if(scope==="global") return true;
-if(scope==="institution") return true;
-if(scope==="course_specific") return true;
-
-if(scope==="faculty_private") return false;
-
-return false;
-
-}
-
-// ─────────────────────────────
-// join classroom
-// ─────────────────────────────
-
-async function joinClassroom(){
+async function loadConfig(){
 
 try{
 
-await fetch('/.netlify/functions/classroom',{
+const res=await fetch('/config.json?ts='+Date.now());
 
-method:'POST',
+if(!res.ok)
+throw new Error("config load failed");
 
-headers:{
-'Content-Type':'application/json'
-},
+CONFIG=await res.json();
 
-body:JSON.stringify({
-
-action:"join",
-sessionId,
-studentId
-
-})
-
-});
-
-}catch(err){
-
-console.error("join error",err);
+initPage();
 
 }
 
-}
-
-// ─────────────────────────────
-// load config
-// ─────────────────────────────
-
-fetch('/config.json')
-
-.then(res=>res.json())
-
-.then(async data=>{
-
-const branch = data.branches.courses;
-
-document.getElementById("title").innerText = branch.title;
-document.getElementById("subtitle").innerText = branch.subtitle;
-
-await joinClassroom();
-
-const list=document.getElementById("course-list");
-
-for(const [id,info] of Object.entries(branch.items)){
-
-if(!studentHasAccess(info))
-continue;
-
-const a=document.createElement("a");
-
-a.href=`/chat.html?classId=${id}&sessionId=${sessionId}&studentId=${studentId}`;
-
-a.className="course-card";
-
-a.innerText=info.name;
-
-list.appendChild(a);
-
-}
-
-})
-
-.catch(err=>{
+catch(err){
 
 console.error(err);
 
-document.getElementById("subtitle").innerText="שגיאה בטעינת קורסים";
+document.getElementById("error").innerText=
+"שגיאה בטעינת המערכת";
 
-});
+}
+
+}
+
+/* init page */
+
+function initPage(){
+
+const students=CONFIG.branches.students;
+
+document.getElementById("title").innerText=students.title;
+
+document.getElementById("subtitle").innerText=students.subtitle;
+
+const container=document.getElementById("list");
+
+for(let id in students.items){
+
+const bot=students.items[id];
+
+const a=document.createElement("a");
+
+a.className="btn";
+
+a.innerText=bot.name;
+
+a.href=`/workspace.html?classId=${id}&studentId=${studentId}`;
+
+container.appendChild(a);
+
+}
+
+}
+
+/* start */
+
+loadConfig();
 
 </script>
 
