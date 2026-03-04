@@ -146,8 +146,15 @@
     }
   }
 
-  const pollTimer = setInterval(poll, 4000);
-  poll(); // immediate first call
+  // announce student joined
+fetch('/.netlify/functions/classroom', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: 'join', sessionId, studentId }),
+});
+
+const pollTimer = setInterval(poll, 4000);
+poll();
 
   // ── Submit button: send last bot reply as answer ─────────────
   submitBtn.addEventListener('click', async () => {
