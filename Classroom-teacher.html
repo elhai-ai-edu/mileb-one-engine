@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MilEd.One – כיתה חכמה</title>
+<style>
+/* ── same design language as existing MilEd.One pages ── */
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:#f4f7f6;margin:0;padding:20px;}
+.top-bar{display:flex;align-items:center;justify-content:space-between;
+  background:white;border-radius:15px;padding:16px 24px;margin-bottom:20px;
+  box-shadow:0 4px 12px rgba(0,0,0,.06);}
+.brand{font-weight:300;color:#000;font-size:1rem;}
+.top-bar h1{color:#003366;font-size:1.4rem;font-weight:700;margin:0;}
+.session-badge{background:#27ae60;color:white;padding:6px 14px;border-radius:20px;font-size:.85rem;font-weight:600;}
+.session-badge.closed{background:#e74c3c;}
+
+.grid{display:grid;grid-template-columns:340px 1fr;gap:20px;}
+
+/* ── LEFT PANEL: controls ── */
+.panel{background:white;border-radius:15px;padding:24px;box-shadow:0 4px 12px rgba(0,0,0,.06);}
+.panel h2{color:#003366;font-size:1.1rem;margin:0 0 16px;}
+
+.field{margin-bottom:14px;}
+.field label{display:block;color:#555;font-size:.85rem;margin-bottom:4px;font-weight:600;}
+.field select,.field textarea,.field input{
+  width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;
+  font-family:inherit;font-size:.95rem;resize:vertical;box-sizing:border-box;}
+.field textarea{height:90px;}
+
+.btn{width:100%;padding:12px;border:none;border-radius:10px;font-size:1rem;
+  font-weight:700;cursor:pointer;transition:.2s;margin-top:6px;}
+.btn-green{background:#27ae60;color:white;}
+.btn-green:hover{background:#219a52;}
+.btn-blue{background:#2980b9;color:white;}
+.btn-blue:hover{background:#2471a3;}
+.btn-red{background:#e74c3c;color:white;}
+.btn-red:hover{background:#c0392b;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.session-id-box{background:#f0f4f8;border-radius:8px;padding:10px 14px;
+  font-size:.8rem;color:#555;margin-top:10px;word-break:break-all;}
+.session-id-box strong{color:#003366;}
+
+/* ── RIGHT PANEL: live view ── */
+.live-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.live-header h2{color:#003366;font-size:1.1rem;margin:0;}
+.live-count{background:#f0f4f8;color:#555;padding:4px 12px;border-radius:20px;font-size:.85rem;}
+
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+
+.student-card{background:#f9f9f9;border:1px solid #e0e0e0;border-radius:12px;padding:16px;}
+.student-card.has-answer{border-color:#27ae60;background:#f0fdf4;}
+.student-card.locked{border-color:#e74c3c;background:#fff5f5;}
+
+.student-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.student-id{font-size:.8rem;color:#888;font-weight:600;}
+.student-status{font-size:.75rem;padding:3px 8px;border-radius:10px;}
+.status-waiting{background:#fef3c7;color:#92400e;}
+.status-done{background:#d1fae5;color:#065f46;}
+.status-locked{background:#fee2e2;color:#991b1b;}
+
+.steps-list{display:flex;flex-direction:column;gap:6px;}
+.step-item{background:white;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;}
+.step-label{font-size:.75rem;font-weight:700;color:#003366;margin-bottom:3px;}
+.step-content{font-size:.85rem;color:#333;line-height:1.45;
+  max-height:80px;overflow:hidden;text-overflow:ellipsis;}
+
+.card-actions{display:flex;gap:6px;margin-top:10px;}
+.card-btn{flex:1;padding:6px;border:none;border-radius:6px;font-size:.8rem;
+  font-weight:600;cursor:pointer;transition:.2s;}
+.card-btn-unlock{background:#d1fae5;color:#065f46;}
+.card-btn-unlock:hover{background:#a7f3d0;}
+.card-btn-lock{background:#fee2e2;color:#991b1b;}
+.card-btn-lock:hover{background:#fecaca;}
+
+.empty-state{text-align:center;padding:40px;color:#aaa;grid-column:1/-1;}
+.empty-state p{font-size:1rem;margin-top:8px;}
+
+.broadcast-preview{background:#e8f4fd;border-radius:10px;padding:12px 14px;
+  margin-top:12px;font-size:.9rem;color:#1a3a5c;line-height:1.5;}
+.broadcast-preview strong{display:block;font-size:.75rem;color:#2980b9;margin-bottom:4px;}
+
+@media(max-width:800px){.grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div>
+    <span class="brand">MilEd.One</span>
+    <h1>כיתה חכמה — לוח מרצה</h1>
+  </div>
+  <div id="sessionBadge" class="session-badge closed">אין שיעור פעיל</div>
+</div>
+
+<div class="grid">
+
+  <!-- LEFT: Controls -->
+  <div class="panel">
+    <h2>🎛️ שליטת מרצה</h2>
+
+    <div class="field">
+      <label>בחר בוט / קורס</label>
+      <select id="botSelect"><option value="">טוען...</option></select>
+    </div>
+
+    <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
+    <button class="btn btn-red"   id="closeBtn" onclick="closeSession()" disabled style="margin-top:8px;">■ סגור שיעור</button>
+
+    <div id="sessionInfo" style="display:none">
+      <div class="session-id-box">
+        <strong>קוד שיעור לתלמידים:</strong><br>
+        <span id="sessionIdDisplay"></span>
+      </div>
+    </div>
+
+    <hr style="margin:20px 0;border:none;border-top:1px solid #eee;">
+
+    <h2>📡 שדר לכיתה</h2>
+
+    <div class="field">
+      <label>טקסט / שאלה / מאמר</label>
+      <textarea id="broadcastText" placeholder="הכנס טקסט, שאלה, או קטע מאמר שכל התלמידים יראו..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>שלב מספר</label>
+      <input type="number" id="stepNum" value="1" min="1" max="10" style="width:80px;">
+    </div>
+
+    <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+
+    <div id="broadcastPreview" style="display:none" class="broadcast-preview">
+      <strong>⚡ שודר לתלמידים:</strong>
+      <span id="broadcastPreviewText"></span>
+    </div>
+  </div>
+
+  <!-- RIGHT: Live view -->
+  <div class="panel">
+    <div class="live-header">
+      <h2>👥 מצב הכיתה בזמן אמת</h2>
+      <span class="live-count"><span id="studentCount">0</span> תלמידים</span>
+    </div>
+
+    <div id="studentGrid" class="student-grid">
+      <div class="empty-state">
+        <div style="font-size:2rem">📭</div>
+        <p>פתח שיעור כדי לראות את התלמידים</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+const facultyId = sessionStorage.getItem("facultyId") || "f_" + Math.random().toString(36).slice(2,8);
+sessionStorage.setItem("facultyId", facultyId);
+
+let sessionId   = null;
+let pollTimer   = null;
+let currentBot  = null;
+
+// ─────────────────────────────────────────
+// LOAD CONFIG → populate bot selector
+// ─────────────────────────────────────────
+fetch('/config.json').then(r => r.json()).then(config => {
+  const sel = document.getElementById('botSelect');
+  sel.innerHTML = '<option value="">— בחר בוט —</option>';
+
+  // faculty tools
+  for (const [id, bot] of Object.entries(config.branches?.faculty?.items || {})) {
+    const opt = document.createElement('option');
+    opt.value = bot.botType;
+    opt.textContent = bot.name;
+    sel.appendChild(opt);
+  }
+
+  // courses
+  for (const [id, bot] of Object.entries(config.branches?.courses?.items || {})) {
+    const opt = document.createElement('option');
+    opt.value = bot.botType;
+    opt.textContent = "📚 " + bot.name;
+    sel.appendChild(opt);
+  }
+}).catch(e => console.error("Config load error:", e));
+
+// ─────────────────────────────────────────
+// OPEN SESSION
+// ─────────────────────────────────────────
+async function openSession() {
+  currentBot = document.getElementById('botSelect').value;
+  if (!currentBot) { alert("בחר בוט/קורס תחילה"); return; }
+
+  sessionId = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+
+  const res = await callClassroom({ action: "open", sessionId, facultyId, botType: currentBot });
+  if (!res.ok) { alert("שגיאה בפתיחת שיעור"); return; }
+
+  document.getElementById('sessionBadge').textContent = "✅ שיעור פעיל";
+  document.getElementById('sessionBadge').className   = "session-badge";
+  document.getElementById('sessionInfo').style.display = "block";
+  document.getElementById('sessionIdDisplay').textContent = sessionId;
+  document.getElementById('openBtn').disabled   = true;
+  document.getElementById('closeBtn').disabled  = false;
+  document.getElementById('broadcastBtn').disabled = false;
+
+  // Share URL for students
+  const studentURL = `${location.origin}/chat.html?sessionId=${sessionId}&botType=${currentBot}`;
+  document.getElementById('sessionIdDisplay').innerHTML =
+    `<a href="${studentURL}" target="_blank" style="color:#2980b9;word-break:break-all">${studentURL}</a>`;
+
+  startPolling();
+}
+
+// ─────────────────────────────────────────
+// BROADCAST
+// ─────────────────────────────────────────
+async function broadcast() {
+  const text = document.getElementById('broadcastText').value.trim();
+  const step = parseInt(document.getElementById('stepNum').value) || 1;
+  if (!text) { alert("הכנס טקסט לשידור"); return; }
+
+  await callClassroom({ action: "broadcast", sessionId, facultyId, text, step });
+
+  const preview = document.getElementById('broadcastPreview');
+  document.getElementById('broadcastPreviewText').textContent = text.slice(0, 120) + (text.length > 120 ? "..." : "");
+  preview.style.display = "block";
+}
+
+// ─────────────────────────────────────────
+// CLOSE SESSION
+// ─────────────────────────────────────────
+async function closeSession() {
+  if (!confirm("לסגור את השיעור?")) return;
+  await callClassroom({ action: "close", sessionId, facultyId });
+
+  clearInterval(pollTimer);
+  document.getElementById('sessionBadge').textContent = "■ שיעור הסתיים";
+  document.getElementById('sessionBadge').className   = "session-badge closed";
+  document.getElementById('openBtn').disabled  = false;
+  document.getElementById('closeBtn').disabled = true;
+  document.getElementById('broadcastBtn').disabled = true;
+}
+
+// ─────────────────────────────────────────
+// LIVE POLLING (every 4 seconds)
+// ─────────────────────────────────────────
+function startPolling() {
+  pollTimer = setInterval(fetchDashboard, 4000);
+  fetchDashboard();
+}
+
+async function fetchDashboard() {
+  try {
+    const res = await fetch(
+      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}`
+    );
+    const data = await res.json();
+    renderDashboard(data);
+  } catch(e) { console.error("poll error:", e); }
+}
+
+function renderDashboard(data) {
+  const grid = document.getElementById('studentGrid');
+  const students = data.students || [];
+
+  document.getElementById('studentCount').textContent = students.length;
+
+  if (students.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div style="font-size:2rem">⏳</div>
+      <p>ממתין לתלמידים להתחבר...</p></div>`;
+    return;
+  }
+
+  const locked = data.lockedSteps || [];
+
+  grid.innerHTML = students.map(s => {
+    const isLocked  = locked.includes(s.studentId);
+    const hasAnswer = s.steps && s.steps.length > 0;
+    const cardClass = isLocked ? "locked" : hasAnswer ? "has-answer" : "";
+    const statusClass = isLocked ? "status-locked" : hasAnswer ? "status-done" : "status-waiting";
+    const statusText  = isLocked ? "🔒 נעול" : hasAnswer ? "✅ הגיש" : "⏳ ממתין";
+
+    const stepsHtml = (s.steps || []).map(st => `
+      <div class="step-item">
+        <div class="step-label">שלב ${st.step}</div>
+        <div class="step-content">${escapeHtml(st.content || "")}</div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="student-card ${cardClass}">
+        <div class="student-top">
+          <span class="student-id">👤 ${s.studentId.slice(0,10)}</span>
+          <span class="student-status ${statusClass}">${statusText}</span>
+        </div>
+        <div class="steps-list">${stepsHtml || '<div style="color:#aaa;font-size:.8rem">טרם הגיש</div>'}</div>
+        <div class="card-actions">
+          <button class="card-btn card-btn-unlock" onclick="unlockStudent('${s.studentId}')">🔓 פתח שלב</button>
+          <button class="card-btn card-btn-lock"   onclick="lockStudent('${s.studentId}')">🔒 נעל</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────
+// LOCK / UNLOCK
+// ─────────────────────────────────────────
+async function unlockStudent(studentId) {
+  await callClassroom({ action: "unlock", sessionId, facultyId, studentId });
+}
+async function lockStudent(studentId) {
+  await callClassroom({ action: "lock", sessionId, facultyId, studentId });
+}
+
+// ─────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────
+async function callClassroom(body) {
+  const res = await fetch('/.netlify/functions/classroom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
