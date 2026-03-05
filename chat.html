@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
@@ -16,7 +15,27 @@
 
 <body>
 
-<header>
+
+<!-- Sidebar -->
+
+<div class="sidebar">
+
+<h2>MilEd.One</h2>
+
+<a href="/students.html">קורסים</a>
+<a href="/skills.html">מיומנויות</a>
+<a href="/faculty.html">הוראה</a>
+<a href="/admin.html">ניהול</a>
+
+</div>
+
+
+<!-- Main -->
+
+<div class="main">
+
+
+<div class="topbar">
 
 <div class="nav-links">
 <a href="/students.html" class="nav-btn btn-courses">📚 הקורסים שלי</a>
@@ -27,7 +46,11 @@
 
 <div>MilEd.One</div>
 
-</header>
+</div>
+
+
+<div class="container">
+
 
 <div id="chat-window">
 <div id="welcome-msg" class="message ai">
@@ -35,12 +58,18 @@
 </div>
 </div>
 
+
 <div class="input-area">
 <input id="user-input" placeholder="כתוב שאלה..." onkeypress="handleKey(event)">
 <button id="voice-btn">🎤</button>
 <button id="send-btn" onclick="sendMessage()">שלח</button>
 <button onclick="exportPrompt()">ייצא prompt</button>
 </div>
+
+
+</div>
+</div>
+
 
 <script>
 
@@ -86,14 +115,13 @@ let currentBotType = null;
 fetch('/config.json')
 .then(r=>r.json())
 .then(config=>{
-  // classroom mode: botType comes directly from URL
   const urlBotType = params.get('botType');
   if(urlBotType){
     currentBotType = urlBotType;
     document.getElementById('course-title').textContent = urlBotType;
     return;
   }
-  // normal mode: find by classId
+
   for(let branch in config.branches){
     const item = config.branches[branch].items?.[classId];
     if(item){
@@ -103,21 +131,30 @@ fetch('/config.json')
     }
   }
 });
+
 async function sendMessage(){
-  if(!currentBotType){ alert("המערכת עדיין נטענת"); return; }
+
+  if(!currentBotType){
+    alert("המערכת עדיין נטענת");
+    return;
+  }
+
   const text = input.value.trim();
   if(!text) return;
 
   chatWindow.appendChild(renderMessage('user',text));
+
   input.value="";
   sendBtn.disabled=true;
 
   const loading = document.createElement('div');
   loading.className='message ai loading-text';
   loading.innerText='חושב...';
+
   chatWindow.appendChild(loading);
 
   try{
+
     const response = await fetch('/api/chat',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -133,9 +170,11 @@ async function sendMessage(){
     });
 
     if(response.status===403){
+
       loading.remove();
       chatWindow.appendChild(renderMessage('assistant',"אין לך הרשאה להשתמש בכלי זה"));
       return;
+
     }
 
     const data = await response.json();
@@ -144,19 +183,26 @@ async function sendMessage(){
       window.__LAST_EXPORT_PROMPT = data.exportPrompt;
 
     loading.remove();
+
     const reply = data.reply || "שגיאה";
+
     chatWindow.appendChild(renderMessage('assistant',reply));
 
     chatHistory.push({role:'user',content:text});
     chatHistory.push({role:'assistant',content:reply});
+
     sessionStorage.setItem(historyKey, JSON.stringify(chatHistory));
 
-  }catch(e){
+  }
+  catch(e){
+
     loading.remove();
     chatWindow.appendChild(renderMessage('assistant',"שגיאת חיבור לשרת"));
+
   }
 
   sendBtn.disabled=false;
+
 }
 
 function handleKey(e){
@@ -164,19 +210,46 @@ function handleKey(e){
 }
 
 function exportPrompt(){
-  if(!window.__LAST_EXPORT_PROMPT){ alert("אין prompt לייצוא עדיין"); return; }
+
+  if(!window.__LAST_EXPORT_PROMPT){
+    alert("אין prompt לייצוא עדיין");
+    return;
+  }
+
   const botName = document.getElementById("course-title")?.innerText || "MilEd Bot";
   const now = new Date().toISOString();
-  const content = `MilEd.One — Prompt Export\n================================\n\nBot name: ${botName}\nExported at: ${now}\n\n--------------------------------\nSYSTEM PROMPT\n--------------------------------\n\n${window.__LAST_EXPORT_PROMPT}\n\n--------------------------------\nGenerated via MilEd.One\n--------------------------------\n`;
+
+  const content = `MilEd.One — Prompt Export
+================================
+
+Bot name: ${botName}
+Exported at: ${now}
+
+--------------------------------
+SYSTEM PROMPT
+--------------------------------
+
+${window.__LAST_EXPORT_PROMPT}
+
+--------------------------------
+Generated via MilEd.One
+--------------------------------
+`;
+
   const blob = new Blob([content], {type:"text/plain;charset=utf-8"});
   const url = URL.createObjectURL(blob);
+
   const a = document.createElement("a");
+
   a.href=url;
   a.download=botName.replace(/\s+/g,"_")+"_prompt.txt";
+
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+
   URL.revokeObjectURL(url);
+
 }
 
 </script>
@@ -186,5 +259,3 @@ function exportPrompt(){
 
 </body>
 </html>
-```
-
