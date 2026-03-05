@@ -409,7 +409,10 @@ aiPanel.classList.toggle("expanded");
 aiSend.onclick=sendAI;
 
 aiInput.addEventListener("keydown",e=>{
-if(e.key==="Enter")sendAI();
+if(e.key==="Enter" && !e.shiftKey){
+e.preventDefault();
+sendAI();
+}
 });
 
 async function sendAI(){
