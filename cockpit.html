@@ -8,25 +8,22 @@
 
 <title>MilEd.One Cockpit v2 – System Manager</title>
 
-
 </head>
 
 <body>
 
-<div class="cockpit">
+<div class="panel">
 
 <div class="userbar">
-
 משתמש נוכחי:
 <span id="currentUser"></span>
-
 </div>
 
 <h1>MilEd Cockpit v2</h1>
 
 <div id="editor"></div>
 
-<button class="save" onclick="saveConfig()">
+<button class="btn btn-blue" onclick="saveConfig()">
 שמור config לשרת
 </button>
 
@@ -35,7 +32,6 @@
 <script>
 
 let config={}
-
 let currentUser=null
 
 const branchKeys=["courses","faculty","skills","admin"]
@@ -59,17 +55,9 @@ render()
 
 async function getCurrentUser(){
 
-/*
-בעתיד יגיע מהשרת
-כרגע mock
-*/
-
 return{
-
 id:"faculty_123",
-
 role:"faculty"
-
 }
 
 }
@@ -86,11 +74,11 @@ const branch=config.branches[branchKey]
 
 let html=`
 
-<div class="section">
+<div class="panel">
 
 <h2>${branch.title}</h2>
 
-<button class="add"
+<button class="btn btn-green"
 onclick="addTool('${branchKey}')">
 
 + הוסף כלי חדש
@@ -117,84 +105,93 @@ function renderTool(branch,id,tool){
 
 return`
 
-<div class="tool">
+<div class="panel">
 
+<div class="field">
 <label>name</label>
 
 <input
 value="${tool.name||''}"
 onchange="update('${branch}','${id}','name',this.value)">
+</div>
 
+<div class="field">
 <label>botType</label>
 
 <input
 value="${tool.botType||''}"
 onchange="update('${branch}','${id}','botType',this.value)">
+</div>
 
+<div class="field">
 <label>systemPrompt</label>
 
 <textarea
 onchange="update('${branch}','${id}','systemPrompt',this.value)">
-
 ${tool.systemPrompt||''}
-
 </textarea>
+</div>
 
+<div class="field">
 <label>thinkingBudget</label>
 
 <input type="number"
-
 value="${tool.thinkingBudget||512}"
-
 onchange="update('${branch}','${id}','thinkingBudget',parseInt(this.value))">
+</div>
 
+<div class="field">
 <label>scope (תחום הרשאה)</label>
 
 <select
 onchange="update('${branch}','${id}','scope',this.value)">
 
 <option ${tool.scope==="global"?"selected":""}>global</option>
-
 <option ${tool.scope==="faculty_private"?"selected":""}>faculty_private</option>
-
 <option ${tool.scope==="institution"?"selected":""}>institution</option>
-
 <option ${tool.scope==="course_specific"?"selected":""}>course_specific</option>
 
 </select>
+</div>
 
+<div class="field">
 <label>visibility (רמת חשיפה)</label>
 
 <select
 onchange="update('${branch}','${id}','visibility',this.value)">
 
 <option ${tool.visibility==="system"?"selected":""}>system</option>
-
 <option ${tool.visibility==="faculty"?"selected":""}>faculty</option>
-
 <option ${tool.visibility==="institution"?"selected":""}>institution</option>
 
 </select>
+</div>
 
+<div class="field">
 <label>owner (בעלים)</label>
 
 <input
 value="${tool.owner||''}"
 onchange="update('${branch}','${id}','owner',this.value)">
+</div>
 
+<div class="field">
 <label>createdBy</label>
 
 <input
 value="${tool.createdBy||''}"
 onchange="update('${branch}','${id}','createdBy',this.value)">
+</div>
 
+<div class="field">
 <label>version</label>
 
 <input
 value="${tool.version||'1.0'}"
 onchange="update('${branch}','${id}','version',this.value)">
+</div>
 
-<button class="delete"
+<button class="btn btn-red"
 onclick="deleteTool('${branch}','${id}')">
 
 מחק
@@ -208,9 +205,7 @@ onclick="deleteTool('${branch}','${id}')">
 }
 
 function update(branch,id,key,value){
-
 config.branches[branch].items[id][key]=value
-
 }
 
 function addTool(branch){
@@ -220,25 +215,15 @@ const id="tool_"+Date.now()
 config.branches[branch].items[id]={
 
 id:id,
-
 name:"כלי חדש",
-
 botType:"",
-
 systemPrompt:"",
-
 thinkingBudget:512,
-
 scope:"faculty_private",
-
 visibility:"faculty",
-
 owner:currentUser.id,
-
 createdBy:currentUser.id,
-
 createdAt:new Date().toISOString(),
-
 version:"1.0"
 
 }
