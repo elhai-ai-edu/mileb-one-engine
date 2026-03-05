@@ -15,21 +15,23 @@
 
 <body>
 
-<div class="container">
+<div class="panel">
 
-<span style="font-weight:300;color:#000;">
+<span>
 MilEd.One
 </span>
 
 <h1 id="title">טוען...</h1>
 
-<p id="subtitle" class="subtitle"></p>
+<p id="subtitle"></p>
 
 <div id="list" class="grid"></div>
 
-<div id="error" class="error"></div>
+<div id="error"></div>
 
-<a href="/" class="back-btn">→ חזרה לדף הבית</a>
+<br>
+
+<a href="/" class="btn btn-blue">← חזרה לדף הבית</a>
 
 </div>
 
@@ -164,10 +166,6 @@ for(let id in faculty.items){
 const bot=faculty.items[id];
 
 const wrapper=document.createElement("div");
-
-wrapper.style.display="flex";
-wrapper.style.flexDirection="column";
-wrapper.style.gap="8px";
 
 const a=document.createElement("button");
 
