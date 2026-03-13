@@ -124,6 +124,34 @@ onchange="update('${branch}','${id}','botType',this.value)">
 </div>
 
 <div class="field">
+<label>botCategory</label>
+
+<select
+onchange="update('${branch}','${id}','botCategory',this.value)">
+
+<option value="universal" ${tool.botCategory==="universal"?"selected":""}>universal</option>
+<option value="course" ${tool.botCategory==="course"?"selected":""}>course</option>
+<option value="task" ${tool.botCategory==="task"?"selected":""}>task</option>
+
+</select>
+</div>
+
+<div class="field">
+<label>processMode</label>
+
+<select
+onchange="update('${branch}','${id}','processMode',this.value)">
+
+<option value="guided" ${tool.processMode==="guided"?"selected":""}>guided</option>
+<option value="adaptive" ${tool.processMode==="adaptive"?"selected":""}>adaptive</option>
+<option value="gated" ${tool.processMode==="gated"?"selected":""}>gated</option>
+
+</select>
+</div>
+
+${tool.botCategory==="task" ? renderStagesEditor(branch,id,tool) : ""}
+
+<div class="field">
 <label>systemPrompt</label>
 
 <textarea
@@ -217,6 +245,9 @@ config.branches[branch].items[id]={
 id:id,
 name:"כלי חדש",
 botType:"",
+botCategory:"course",
+processMode:"guided",
+stages:[],
 systemPrompt:"",
 thinkingBudget:512,
 scope:"faculty_private",
@@ -255,6 +286,87 @@ body:JSON.stringify(config)
 })
 
 alert("config נשמר בהצלחה")
+
+}
+
+function renderStagesEditor(branch,id,tool){
+
+let html=`
+
+<div class="panel">
+
+<h3>Stage Workflow</h3>
+
+<button class="btn btn-green"
+onclick="addStage('${branch}','${id}')">
+
++ הוסף שלב
+
+</button>
+
+`
+
+tool.stages=tool.stages||[]
+
+tool.stages.forEach((stage,index)=>{
+
+html+=`
+
+<div class="field">
+
+<label>Stage ID</label>
+
+<input
+value="${stage.id||''}"
+onchange="updateStage('${branch}','${id}',${index},'id',this.value)">
+
+<label>Stage Title</label>
+
+<input
+value="${stage.title||''}"
+onchange="updateStage('${branch}','${id}',${index},'title',this.value)">
+
+<button class="btn btn-red"
+onclick="deleteStage('${branch}','${id}',${index})">
+
+מחק
+
+</button>
+
+</div>
+
+`
+
+})
+
+html+="</div>"
+
+return html
+
+}
+
+function addStage(branch,id){
+
+config.branches[branch].items[id].stages.push({
+ id:"stage_"+Date.now(),
+ title:"שלב חדש"
+})
+
+render()
+
+}
+
+function updateStage(branch,id,index,key,value){
+
+config.branches[branch].items[id].stages[index][key]=value
+
+}
+
+function deleteStage(branch,id,index){
+
+config.branches[branch].items[id].stages.splice(index,1)
+
+render()
 
 }
 
