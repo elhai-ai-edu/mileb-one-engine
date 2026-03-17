@@ -372,6 +372,16 @@
 
   },
 
+  "admin_password": "miled2026",
+
+  "faculty_users": {
+    "elhai": {
+      "password": "teach1",
+      "id": "f_elhai",
+      "name": "נחום"
+    }
+  },
+
 "engine": {
 
   "defaultModel": "gemini-2.0-flash",
