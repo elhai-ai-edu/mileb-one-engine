@@ -10,104 +10,129 @@
 
 <body>
 
-<div class="panel">
+<div class="panel" style="max-width:500px;text-align:center;">
 
-  <span style="font-size:1.5rem;">MilEd.One</span>
-  <h1>ברוכים הבאים</h1>
-  <p>בחר את סוג המשתמש שלך:</p>
+  <span style="font-size:1.5rem;letter-spacing:2px;">MilEd.One</span>
+  <h1 id="h-title">טוען...</h1>
+  <p id="h-subtitle"></p>
 
-  <div class="grid">
+  <div class="grid" style="grid-template-columns:1fr;gap:16px;margin-top:30px;">
 
-    <a href="/students.html" class="btn btn-blue" onclick="setRole('student')">
-      <h3>🎓 סטודנט</h3>
-      <p>קורסים ומיומנויות</p>
-    </a>
-
-    <div class="btn" onclick="loginFaculty()" style="cursor:pointer;">
-      <h3>🧑‍🏫 מרצה</h3>
-      <p>הוראה, קורסים וכלי מחקר</p>
+    <div class="btn" onclick="enterAsStudent()" style="cursor:pointer;text-align:right;">
+      <h3 style="margin:0 0 4px 0;">🎓 סטודנט</h3>
+      <p style="margin:0;opacity:.7;font-size:14px;">קורסים ומיומנויות</p>
     </div>
 
-    <div class="btn" onclick="loginAdmin()" style="cursor:pointer;">
-      <h3>📊 הנהלה</h3>
-      <p>ניתוח נתונים ומבט מוסדי</p>
+    <div class="btn" onclick="enterAsFaculty()" style="cursor:pointer;text-align:right;">
+      <h3 style="margin:0 0 4px 0;">🧑‍🏫 מרצה</h3>
+      <p style="margin:0;opacity:.7;font-size:14px;">הוראה, קורסים וכלי מחקר</p>
+    </div>
+
+    <div class="btn" onclick="enterAsAdmin()" style="cursor:pointer;text-align:right;">
+      <h3 style="margin:0 0 4px 0;">📊 הנהלה</h3>
+      <p style="margin:0;opacity:.7;font-size:14px;">ניתוח נתונים ומבט מוסדי</p>
     </div>
 
   </div>
+
+  <div id="error" style="color:red;margin-top:16px;font-size:14px;"></div>
 
 </div>
 
 <script>
 
-// ─────────────────────────────
-// טבלת מרצים (זמני — יועבר ל-config בהמשך)
-// ─────────────────────────────
-
-const FACULTY_USERS = {
-  "elhai":    { password: "teach1", id: "f_elhai",   name: "נחום" },
-  "faculty2": { password: "teach2", id: "f_faculty2", name: "מרצה 2" }
-};
-
-const ADMIN_PASSWORD = "miled2026";
+let CONFIG = null;
 
 // ─────────────────────────────
-// סטודנט
+// טעינת config
 // ─────────────────────────────
 
-function setRole(role) {
-  sessionStorage.setItem("miled_role", role);
-}
+async function loadConfig() {
+  const res = await fetch('/config.json?ts=' + Date.now());
+  CONFIG = await res.json();
 
-// ─────────────────────────────
-// מרצה
-// ─────────────────────────────
-
-function loginFaculty() {
-  const username = prompt("שם משתמש:");
-  if (!username) return;
-
-  const password = prompt("סיסמה:");
-  if (!password) return;
-
-  const user = FACULTY_USERS[username.trim()];
-
-  if (user && user.password === password.trim()) {
-    sessionStorage.setItem("miled_role",     "faculty");
-    sessionStorage.setItem("faculty_auth",   "true");
-    sessionStorage.setItem("facultyId",      user.id);
-    sessionStorage.setItem("facultyName",    user.name);
-    window.location.href = "/faculty.html";
-  } else {
-    alert("שם משתמש או סיסמה שגויים");
-  }
-}
-
-// ─────────────────────────────
-// הנהלה
-// ─────────────────────────────
-
-function loginAdmin() {
-  const input = prompt("סיסמת הנהלה:");
-  if (!input) return;
-
-  if (input.trim() === ADMIN_PASSWORD) {
-    sessionStorage.setItem("miled_role",       "admin");
-    sessionStorage.setItem("institutionRole",  "admin");
-    window.location.href = "/admin.html";
-  } else {
-    alert("סיסמה שגויה");
-  }
+  document.getElementById('h-title').innerText =
+    CONFIG.home?.main_title || 'ברוכים הבאים';
+  document.getElementById('h-subtitle').innerText =
+    CONFIG.home?.main_subtitle || '';
 }
 
 // ─────────────────────────────
 // אם כבר מחובר — הפנה ישירות
 // ─────────────────────────────
 
-const role = sessionStorage.getItem("miled_role");
-if (role === "faculty") window.location.href = "/faculty.html";
-if (role === "admin")   window.location.href = "/admin.html";
+function checkExistingSession() {
+  const role = sessionStorage.getItem("miled_role");
+  if (role === "student")  window.location.href = "/students.html";
+  if (role === "faculty")  window.location.href = "/faculty.html";
+  if (role === "admin")    window.location.href = "/admin.html";
+}
+
+// ─────────────────────────────
+// סטודנט — כניסה ישירה
+// ─────────────────────────────
+
+function enterAsStudent() {
+  sessionStorage.setItem("miled_role", "student");
+  window.location.href = "/students.html";
+}
+
+// ─────────────────────────────
+// מרצה — שם משתמש + סיסמה מ-config
+// ─────────────────────────────
+
+function enterAsFaculty() {
+  if (!CONFIG) { alert("המערכת עדיין נטענת, נסה שוב"); return; }
+
+  const users = CONFIG.faculty_users || {};
+
+  const username = prompt("שם משתמש:");
+  if (!username) return;
+
+  const password = prompt("סיסמה:");
+  if (!password) return;
+
+  const user = users[username.trim()];
+
+  if (user && user.password === password.trim()) {
+    sessionStorage.setItem("miled_role",   "faculty");
+    sessionStorage.setItem("faculty_auth", "true");
+    sessionStorage.setItem("facultyId",    user.id);
+    sessionStorage.setItem("facultyName",  user.name);
+    window.location.href = "/faculty.html";
+  } else {
+    document.getElementById("error").innerText = "שם משתמש או סיסמה שגויים";
+  }
+}
+
+// ─────────────────────────────
+// הנהלה — סיסמה מ-config
+// ─────────────────────────────
+
+function enterAsAdmin() {
+  if (!CONFIG) { alert("המערכת עדיין נטענת, נסה שוב"); return; }
+
+  const adminPassword = CONFIG.admin_password || "miled2026";
+
+  const input = prompt("סיסמת הנהלה:");
+  if (!input) return;
+
+  if (input.trim() === adminPassword) {
+    sessionStorage.setItem("miled_role",      "admin");
+    sessionStorage.setItem("institutionRole", "admin");
+    window.location.href = "/admin.html";
+  } else {
+    document.getElementById("error").innerText = "סיסמה שגויה";
+  }
+}
+
+// ─────────────────────────────
+// התחלה
+// ─────────────────────────────
+
+checkExistingSession();
+loadConfig();
 
 </script>
-
 </body>
 </html>
