@@ -165,7 +165,7 @@ poll();
 
     // Get last assistant message from chat history
     const msgs = document.querySelectorAll(
-      '.assistant-msg, .bot-message, [data-role="assistant"], .message.bot'
+      '.assistant-msg, .bot-message, [data-role="assistant"], .message.ai'
     );
     const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1].textContent.trim() : '';
 
