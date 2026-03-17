@@ -18,10 +18,10 @@
 
   <div class="grid" style="grid-template-columns:1fr;gap:16px;margin-top:30px;">
 
-    <div class="btn" onclick="enterAsStudent()" style="cursor:pointer;text-align:right;">
+    <a href="/students.html" class="btn" style="text-align:right;">
       <h3 style="margin:0 0 4px 0;">🎓 סטודנט</h3>
       <p style="margin:0;opacity:.7;font-size:14px;">קורסים ומיומנויות</p>
-    </div>
+    </a>
 
     <div class="btn" onclick="enterAsFaculty()" style="cursor:pointer;text-align:right;">
       <h3 style="margin:0 0 4px 0;">🧑‍🏫 מרצה</h3>
@@ -43,82 +43,41 @@
 
 let CONFIG = null;
 
-// ─────────────────────────────
-// טעינת config
-// ─────────────────────────────
-
 async function loadConfig() {
   const res = await fetch('/config.json?ts=' + Date.now());
   CONFIG = await res.json();
-
-  document.getElementById('h-title').innerText =
-    CONFIG.home?.main_title || 'ברוכים הבאים';
-  document.getElementById('h-subtitle').innerText =
-    CONFIG.home?.main_subtitle || '';
+  document.getElementById('h-title').innerText = CONFIG.home?.main_title || 'ברוכים הבאים';
+  document.getElementById('h-subtitle').innerText = CONFIG.home?.main_subtitle || '';
 }
-
-// ─────────────────────────────
-// אם כבר מחובר — הפנה ישירות
-// ─────────────────────────────
-
-function checkExistingSession() {
-  const role = sessionStorage.getItem("miled_role");
-  if (role === "student")  window.location.href = "/students.html";
-  if (role === "faculty")  window.location.href = "/faculty.html";
-  if (role === "admin")    window.location.href = "/admin.html";
-}
-
-// ─────────────────────────────
-// סטודנט — כניסה ישירה
-// ─────────────────────────────
-
-function enterAsStudent() {
-  sessionStorage.setItem("miled_role", "student");
-  window.location.href = "/students.html";
-}
-
-// ─────────────────────────────
-// מרצה — שם משתמש + סיסמה מ-config
-// ─────────────────────────────
 
 function enterAsFaculty() {
-  if (!CONFIG) { alert("המערכת עדיין נטענת, נסה שוב"); return; }
+  if (!CONFIG) { alert("המערכת עדיין נטענת"); return; }
 
   const users = CONFIG.faculty_users || {};
-
   const username = prompt("שם משתמש:");
   if (!username) return;
-
   const password = prompt("סיסמה:");
   if (!password) return;
 
   const user = users[username.trim()];
-
   if (user && user.password === password.trim()) {
-    sessionStorage.setItem("miled_role",   "faculty");
+    sessionStorage.setItem("facultyId",   user.id);
+    sessionStorage.setItem("facultyName", user.name);
     sessionStorage.setItem("faculty_auth", "true");
-    sessionStorage.setItem("facultyId",    user.id);
-    sessionStorage.setItem("facultyName",  user.name);
     window.location.href = "/faculty.html";
   } else {
     document.getElementById("error").innerText = "שם משתמש או סיסמה שגויים";
   }
 }
 
-// ─────────────────────────────
-// הנהלה — סיסמה מ-config
-// ─────────────────────────────
-
 function enterAsAdmin() {
-  if (!CONFIG) { alert("המערכת עדיין נטענת, נסה שוב"); return; }
+  if (!CONFIG) { alert("המערכת עדיין נטענת"); return; }
 
   const adminPassword = CONFIG.admin_password || "miled2026";
-
   const input = prompt("סיסמת הנהלה:");
   if (!input) return;
 
   if (input.trim() === adminPassword) {
-    sessionStorage.setItem("miled_role",      "admin");
     sessionStorage.setItem("institutionRole", "admin");
     window.location.href = "/admin.html";
   } else {
@@ -126,11 +85,6 @@ function enterAsAdmin() {
   }
 }
 
-// ─────────────────────────────
-// התחלה
-// ─────────────────────────────
-
-checkExistingSession();
 loadConfig();
 
 </script>
