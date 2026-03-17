@@ -65,18 +65,19 @@ MilEd.One - הנהלה
 // institution identity (temporary mock)
 // ─────────────────────────────
 
-let institutionRole=sessionStorage.getItem("institutionRole");
+const ADMIN_PASSWORD = "miled-admin2026";
 
+let institutionRole = sessionStorage.getItem("institutionRole");
 
-// demo fallback
-// later replace with real login system
-
-if(!institutionRole){
-
-institutionRole="guest";
-
+if (!institutionRole) {
+  const input = prompt("הזן סיסמת הנהלה:");
+  if (input && input.trim() === ADMIN_PASSWORD) {
+    institutionRole = "admin";
+    sessionStorage.setItem("institutionRole", "admin");
+  } else {
+    institutionRole = "guest";
+  }
 }
-
 
 // ─────────────────────────────
 // access control
