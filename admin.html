@@ -65,7 +65,7 @@ MilEd.One - הנהלה
 // institution identity (temporary mock)
 // ─────────────────────────────
 
-const ADMIN_PASSWORD = "miled-admin2026";
+const ADMIN_PASSWORD = "miled2026";
 
 let institutionRole = sessionStorage.getItem("institutionRole");
 
@@ -76,9 +76,13 @@ if (!institutionRole) {
     sessionStorage.setItem("institutionRole", "admin");
   } else {
     institutionRole = "guest";
+    document.getElementById("no-access").style.display = "block";
+    document.getElementById("title").innerText = "גישה נדחתה";
+    document.getElementById("subtitle").innerText = "";
+    // עצור כאן — אל תטען config
+    throw new Error("access denied");
   }
 }
-
 // ─────────────────────────────
 // access control
 // ─────────────────────────────
