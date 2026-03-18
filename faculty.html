@@ -76,6 +76,17 @@ if (!facultyId) {
   localStorage.setItem("facultyId", facultyId);
 }
 
+// כפתור קוקפיט לסופר אדמין בלבד
+if (sessionStorage.getItem("facultyRole") === "superadmin") {
+  const container = document.getElementById("list");
+  const a = document.createElement("a");
+  a.className = "btn";
+  a.href = "/cockpit.html";
+  a.innerText = "⚙️ קוקפיט מנהל מערכת";
+  a.style.borderTop = "2px solid #6C63FF";
+  container.appendChild(a);
+}
+  
 // ─────────────────────────────
 // טעינת config
 // ─────────────────────────────
