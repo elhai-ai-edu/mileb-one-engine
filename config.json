@@ -406,10 +406,11 @@
     "bots": {
       "main": { "botType": "course_academic_writing", "label": "✍️ בוט כתיבה אקדמית" }
     },
-    "universal_bots": ["support", "presentation"]
-  },
-  
-  "engine": {
+   "universal_bots": ["support", "presentation"]
+  }
+},
+
+"engine": {
     "defaultModel": "gemini-2.0-flash",
     "defaultThinkingBudget": 512,
     "temperature": 0.7,
@@ -460,4 +461,4 @@
       }
     }
   }
-},
+}
