@@ -419,8 +419,9 @@ const effectiveNoFullSolution =
     const temperature = engine.temperature ?? 0.7;
     const maxTokens   = engine.maxOutputTokens ?? 1024;
 
-    const finalSystemPrompt =
-      buildFullSystemPrompt(engine, botConfig);
+    const hebrewLevel = body.hebrewLevel || null;
+const finalSystemPrompt =
+  buildFullSystemPrompt(engine, botConfig, hebrewLevel);
 
 
     const trimmedHistory =
