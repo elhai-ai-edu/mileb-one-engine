@@ -65,7 +65,7 @@ async function loadConfig() {
 // ─────────────────────────────
 
 function renderCourses() {
-  const courses = CONFIG.courses || {};
+  const courses = CONFIG.my_courses || {};
   const container = document.getElementById("course-list");
   container.innerHTML = "";
 
@@ -81,6 +81,11 @@ function renderCourses() {
   }
 }
 
+function openCourse(courseId) {
+  const course = CONFIG.my_courses[courseId];
+  if (!course) return;
+  
+  // 
 // ─────────────────────────────
 // פותח מרחב קורס
 // ─────────────────────────────
