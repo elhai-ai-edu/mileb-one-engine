@@ -133,17 +133,64 @@
           "owner": "system",
           "createdAt": "2026-03-02"
         },
-        "course_gerontology": {
-          "name": "👵 קורס גרונטולוגיה",
-          "_layer": "course_general",
-          "botType": "course_gerontology",
-          "function": "learning",
-          "phase": "development",
-          "thinkingBudget": 1024,
-          "systemPrompt": "אתה מלווה לימודי גרונטולוגיה תוך עידוד חשיבה ביקורתית ויישומית.",
-          "scope": "global",
-          "owner": "system",
-          "createdAt": "2026-03-02"
+       "gerontology_mechina": {
+  "name": "מבוא לגרונטולוגיה — מכינה",
+  "language": "he",
+  "hebrew_level": "he_b1_haredi",
+  "course_units": {
+    "semester_a": {
+      "label": "סמסטר א",
+      "units": [
+        { "id": 1, "label": "חשיבה מדעית ויסודות הפיזיקה, כימיה וביולוגיה" },
+        { "id": 2, "label": "מעגל החיים — מלידה עד מוות" },
+        { "id": 3, "label": "תהליכי גדילה והתפתחות לאורך החיים" },
+        { "id": 4, "label": "הזיקנה — תהליכים וקידום חיים בריאים" },
+        { "id": 5, "label": "מיומנויות תקשורת בין אישית והקשבה אמפטית" }
+      ],
+      "project": {
+        "name": "פרויקט ראיון חיים — סמסטר א",
+        "stages": [
+          { "id": 1, "label": "בחירת שאלות לראיון" },
+          { "id": 2, "label": "מציאת מרואיין וקביעת מועד" },
+          { "id": 3, "label": "קיום הראיון והקלטה" },
+          { "id": 4, "label": "תימלול וסידור" },
+          { "id": 5, "label": "ניתוח תימות מרכזיות" },
+          { "id": 6, "label": "חיבור תימות לחיים" },
+          { "id": 7, "label": "כתיבת ראיון במבט לאחור" },
+          { "id": 8, "label": "סידור המסמך הסופי" }
+        ]
+      }
+    },
+    "semester_b": {
+      "label": "סמסטר ב",
+      "units": [
+        { "id": 1, "label": "תיאוריות פסיכולוגיות התפתחותיות לאורך החיים" },
+        { "id": 2, "label": "החיים כרצף שינויים — חוסן וצמיחה" }
+      ],
+      "project": {
+        "name": "פרויקט ראיון חיים — סמסטר ב",
+        "stages": [
+          { "id": 1, "label": "בחירת שאלות על שינוי ועמידות" },
+          { "id": 2, "label": "מציאת מרואיין וקביעת מועד" },
+          { "id": 3, "label": "קיום הראיון והקלטה" },
+          { "id": 4, "label": "תימלול וסידור" },
+          { "id": 5, "label": "ניתוח תימות שינוי והתמודדות" },
+          { "id": 6, "label": "חיבור לתיאוריות פסיכולוגיות" },
+          { "id": 7, "label": "כתיבה וסיכום" },
+          { "id": 8, "label": "סידור המסמך הסופי" }
+        ]
+      }
+    }
+  },
+  "bots": {
+    "main": { "botType": "course_gerontology", "label": "🤖 בוט הקורס" },
+    "research": { "botType": "course_qualitative_research", "label": "🔎 מחקר איכותני" }
+  },
+  "universal_bots": ["support", "presentation", "research_skills"]
+}
+
+feat(config): add full course_units and project stages to gerontology
+          
         },
         "course_interpersonal_communication": {
           "name": "💬 מיומנויות תקשורת בין אישית",
