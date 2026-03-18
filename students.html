@@ -85,19 +85,20 @@ function openCourse(courseId) {
   document.getElementById("view-course").style.display  = "block";
   document.getElementById("course-name").innerText = course.name;
 
-  // בוטים ייעודיים של הקורס
-  const courseBots = document.getElementById("course-bots");
-  courseBots.innerHTML = "";
+ // בוטים ייעודיים של הקורס
+const courseBots = document.getElementById("course-bots");
+courseBots.innerHTML = "";
 
-  for (let botKey in course.bots) {
-    const botType = course.bots[botKey];
-    const botConfig = findBotByType(botType);
-    const a = document.createElement("a");
-    a.className = "btn";
+for (let botKey in course.bots) {
+  const bot = course.bots[botKey];
+  const botType = bot.botType || bot;
+  const label   = bot.label  || botKey;
+  const a = document.createElement("a");
+  a.className = "btn";
   a.href = `/workspace.html?courseId=${courseId}`;
-    a.innerText = botConfig ? botConfig.name : botKey;
-    courseBots.appendChild(a);
-  }
+  a.innerText = label;
+  courseBots.appendChild(a);
+}
 
   // בוטים כלליים
   const universalBots = document.getElementById("universal-bots");
