@@ -1,53 +1,458 @@
-"my_courses": {
-  "hebrew_advanced_optics": {
-    "name": "עברית מתקדמים א׳ — אופטיקה",
-    "language": "ar",
-    "bots": {
-      "main": "socratic_student",
-      "final_project": "task_final_project"
-    },
-    "universal_bots": ["support", "presentation"]
+{
+  "system_version": "4.2",
+
+  "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
+
+  "_systemPromptExport": {
+    "_description": "שכבת הגדרת ייצוא prompt מלא ל-LLM חיצוני (System Prompt Export Layer)",
+    "includeKernelInExport": true,
+    "exportMode": "merged",
+    "exportStructure": {
+      "header": "## System Identity",
+      "kernelSection": "## Core Pedagogical Kernel",
+      "botSection": "## Bot Specific Instructions"
+    }
   },
-  "hebrew_advanced_management": {
-    "name": "עברית מתקדמים א׳ — ניהול",
-    "language": "ar",
-    "bots": {
-      "main": "socratic_student",
-      "final_project": "task_final_project"
-    },
-    "universal_bots": ["support", "presentation"]
+
+  "toolGovernance": {
+    "_description": "שכבת הרשאות ובקרה על כלי המערכת (Tool Governance Layer)",
+    "scopes": ["global", "faculty_private", "institution", "course_specific"],
+    "defaultScope": "global",
+    "defaultOwner": "system"
   },
-  "gerontology_mechina": {
-    "name": "מבוא לגרונטולוגיה — מכינה",
-    "language": "he",
-    "bots": {
-      "main": "course_gerontology",
-      "research": "course_qualitative_research"
-    },
-    "universal_bots": ["support", "presentation", "research_skills"]
+
+  "home": {
+    "main_title": "ברוכים הבאים למערכת הלמידה",
+    "main_subtitle": "פורטל MilEd.One לחדשנות פדגוגית",
+    "cards": {
+      "courses": {
+        "title": "📚 קידום למידה",
+        "desc": "סוכני קידום למידה מבוססי AI",
+        "url": "/students.html",
+        "color": "courses"
+      },
+      "skills": {
+        "title": "🔍 אבחון וקידום מיומנויות",
+        "desc": "אבחון ופיתוח מיומנויות למידה ותעסוקה",
+        "url": "/skills.html",
+        "color": "skills"
+      },
+      "faculty": {
+        "title": "💡קידום הוראה",
+        "desc": "למרצים: כלים מבוססי AI לקידום ההוראה",
+        "url": "/faculty.html",
+        "color": "faculty"
+      },
+      "admin": {
+        "title": "📊 קידום ניהול",
+        "desc": "להנהלה: ניתוח נתונים ומבט מוסדי",
+        "url": "/admin.html",
+        "color": "admin"
+      }
+    }
   },
-  "social_science_mechina_ar": {
-    "name": "מבוא למדעי החברה — מכינה ערבית",
-    "language": "ar",
-    "bots": {
-      "main": "course_intro_social_science_mechina"
-    },
-    "universal_bots": ["support", "presentation"]
+
+  "universal": {
+    "_note": "כלים אוניברסליים (Universal Tools Layer)",
+    "title": "🛠️ כלים כלליים",
+    "items": {
+      "support": {
+        "name": "🤝 בוט תמיכה",
+        "botType": "universal_support",
+        "function": "learning",
+        "phase": "development",
+        "thinkingBudget": 512,
+        "systemPrompt": "אתה בוט תמיכה חם ואמפתי לסטודנטים...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
+      },
+      "presentation": {
+        "name": "🎤 בוט פרזנטציות",
+        "botType": "universal_presentation",
+        "function": "learning",
+        "phase": "development",
+        "thinkingBudget": 1024,
+        "systemPrompt": "אתה מלווה בנייה של פרזנטציות...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
+      },
+      "academic_writing": {
+        "name": "✍️ קריאה וכתיבה אקדמית",
+        "botType": "universal_writing",
+        "function": "learning",
+        "phase": "development",
+        "thinkingBudget": 1024,
+        "systemPrompt": "אתה מקדם לימוד קריאה וכתיבה אקדמית...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
+      },
+      "research_skills": {
+        "name": "🔬 מיומנויות מחקר",
+        "botType": "universal_research",
+        "function": "learning",
+        "phase": "development",
+        "thinkingBudget": 1024,
+        "systemPrompt": "אתה מלווה פיתוח מיומנויות מחקר...",
+        "scope": "global",
+        "owner": "system",
+        "createdAt": "2026-02-26"
+      }
+    }
   },
-  "academic_writing_ar": {
-    "name": "קריאה וכתיבה אקדמית — ערבית",
-    "language": "ar",
-    "bots": {
-      "main": "course_academic_writing"
+
+  "branches": {
+
+    "courses": {
+      "title": "פורטל סטודנטים",
+      "subtitle": "בחרו את הקורס שלכם:",
+      "items": {
+        "course_academic_writing": {
+          "name": "✍️ קורס קריאה וכתיבה אקדמית",
+          "_layer": "course_general",
+          "botType": "course_academic_writing",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה תהליך כתיבה אקדמית באופן סוקרטי ומובנה.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "course_qualitative_research": {
+          "name": "🔎 בוט מחקר איכותני",
+          "_layer": "course_general",
+          "botType": "course_qualitative_research",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה תהליך מחקר איכותני משלב שאלת המחקר ועד ניתוח הממצאים.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "course_gerontology": {
+          "name": "👵 קורס גרונטולוגיה",
+          "_layer": "course_general",
+          "botType": "course_gerontology",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה לימודי גרונטולוגיה תוך עידוד חשיבה ביקורתית ויישומית.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "course_interpersonal_communication": {
+          "name": "💬 מיומנויות תקשורת בין אישית",
+          "_layer": "course_general",
+          "botType": "course_interpersonal_communication",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 512,
+          "systemPrompt": "אתה מסייע בפיתוח מיומנויות תקשורת בין אישית באמצעות תרגול ושאלות עומק.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "hebrew_optometry": {
+          "name": "עברית מתקדמים",
+          "_layer": "course_general",
+          "botType": "socratic_student",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 512,
+          "systemPrompt": "אתה מלווה לימודי סוקרטי...",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-26"
+        },
+        "hebrew_optometry_final": {
+          "name": "פרויקט גמר סמסטר ב - עברית מתקדמים",
+          "_layer": "course_task",
+          "botType": "task_final_project",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה פרויקט גמר...",
+          "scope": "course_specific",
+          "owner": "system",
+          "createdAt": "2026-02-26"
+        },
+        "course_intro_social_science_mechina": {
+          "name": "🌍 מבוא למדעי החברה – מכינת מגזר",
+          "_layer": "course_general",
+          "botType": "course_intro_social_science_mechina",
+          "function": "learning",
+          "phase": "development",
+          "thinkingBudget": 512,
+          "systemPrompt": "אתה מלווה לימודי מבוא למדעי החברה במכינה באופן מותאם ושיטתי.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        }
+      }
     },
-    "universal_bots": ["support", "presentation"]
+
+    "faculty": {
+      "title": "פורטל סגל ומרצים",
+      "subtitle": "כלים פדגוגיים מבוססי AI:",
+      "items": {
+        "faculty_support_extended": {
+          "name": "🧑‍🏫 בוט תמיכה למרצים",
+          "_layer": "faculty_tool",
+          "botType": "faculty_support_extended",
+          "function": "teaching",
+          "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה מרצים בהתמודדות עם אתגרים פדגוגיים יומיומיים.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "faculty_assessment_model_builder": {
+          "name": "בוט הערכת תוצרי למידה",
+          "_layer": "faculty_tool",
+          "botType": "faculty_assessment_model_builder",
+          "function": "teaching",
+          "phase": "design",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מסייע למרצים, להעריך עבודות של סטודנטים, באופן קוהרנטי ומבוסס קריטריונים.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "pedagogical_transformation": {
+          "name": "בוט בנייה ושיפור מערכי שיעור",
+          "_layer": "faculty_tool",
+          "botType": "faculty_lesson_builder",
+          "function": "teaching",
+          "phase": "design",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה עוזר פדגוגי מקצועי למרצים...",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-26"
+        },
+        "faculty_bot_builder": {
+          "name": "בוט בונה בוטים פדגוגיים",
+          "_layer": "faculty_tool",
+          "botType": "faculty_bot_builder",
+          "function": "teaching",
+          "phase": "design",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מסייע למרצים לבנות בוטים פדגוגיים...",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-26"
+        }
+      }
+    },
+
+    "skills": {
+      "title": "אבחון ופיתוח מיומנויות",
+      "subtitle": "בחר תהליך עבודה:",
+      "items": {
+        "learning_skills_full": {
+          "name": "📘 אבחון וקידום מיומנויות למידה",
+          "_layer": "skills_process",
+          "botType": "skills_learning_full",
+          "function": "learning",
+          "phase": "diagnostic",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו תהליך קידום מיומנויות למידה באופן מדורג.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-27"
+        },
+        "employability_skills_full": {
+          "name": "💼 אבחון וקידום מיומנויות תעסוקתיות",
+          "_layer": "skills_process",
+          "botType": "skills_employability_full",
+          "function": "learning",
+          "phase": "diagnostic",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו קידום מיומנויות תעסוקתיות.",
+          "scope": "global",
+          "owner": "system",
+          "createdAt": "2026-02-27"
+        }
+      }
+    },
+
+    "admin": {
+      "title": "ניהול ובקרה מוסדית",
+      "subtitle": "נתונים ומדדי הצלחה:",
+      "items": {
+        "institutional_skill_dashboard": {
+          "name": "📈 דשבורד מיומנויות מוסדי",
+          "_layer": "admin_tool",
+          "botType": "institutional_skill_dashboard",
+          "function": "institutional",
+          "phase": "analytics",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מסייע בניתוח מגמות מיומנויות ברמה מוסדית.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "institutional_faculty_usage_analytics": {
+          "name": "📊 אנליטיקת שימוש מרצים",
+          "_layer": "admin_tool",
+          "botType": "institutional_faculty_usage_analytics",
+          "function": "institutional",
+          "phase": "analytics",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מנתח דפוסי שימוש של מרצים בכלי המערכת.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "institutional_student_progress_tracker": {
+          "name": "🎯 מעקב התקדמות סטודנטים",
+          "_layer": "admin_tool",
+          "botType": "institutional_student_progress_tracker",
+          "function": "institutional",
+          "phase": "analytics",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה מסייע בניתוח והצגת התקדמות סטודנטים לאורך זמן.",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-03-02"
+        },
+        "analytics": {
+          "name": "לוח בקרה וניתוח דאטה",
+          "_layer": "admin_tool",
+          "botType": "admin_analytics",
+          "function": "institutional",
+          "phase": "analytics",
+          "thinkingBudget": 2048,
+          "systemPrompt": "אתה עוזר ניתוח נתונים...",
+          "scope": "institution",
+          "owner": "system",
+          "createdAt": "2026-02-26"
+        }
+      }
+    }
+
   },
-  "academic_writing_he": {
-    "name": "קריאה וכתיבה אקדמית — עברית",
-    "language": "he",
-    "bots": {
-      "main": "course_academic_writing"
+
+  "admin_password": "miled2026",
+
+  "faculty_users": {
+    "elhai": {
+      "password": "teach1",
+      "id": "f_elhai",
+      "name": "נחום",
+      "role": "superadmin"
+    }
+  },
+
+  "my_courses": {
+    "hebrew_advanced_optics": {
+      "name": "עברית מתקדמים א׳ — אופטיקה",
+      "language": "ar",
+      "bots": {
+        "main": "socratic_student",
+        "final_project": "task_final_project"
+      },
+      "universal_bots": ["support", "presentation"]
     },
-    "universal_bots": ["support", "presentation"]
+    "hebrew_advanced_management": {
+      "name": "עברית מתקדמים א׳ — ניהול",
+      "language": "ar",
+      "bots": {
+        "main": "socratic_student",
+        "final_project": "task_final_project"
+      },
+      "universal_bots": ["support", "presentation"]
+    },
+    "gerontology_mechina": {
+      "name": "מבוא לגרונטולוגיה — מכינה",
+      "language": "he",
+      "bots": {
+        "main": "course_gerontology",
+        "research": "course_qualitative_research"
+      },
+      "universal_bots": ["support", "presentation", "research_skills"]
+    },
+    "social_science_mechina_ar": {
+      "name": "מבוא למדעי החברה — מכינה ערבית",
+      "language": "ar",
+      "bots": {
+        "main": "course_intro_social_science_mechina"
+      },
+      "universal_bots": ["support", "presentation"]
+    },
+    "academic_writing_ar": {
+      "name": "קריאה וכתיבה אקדמית — ערבית",
+      "language": "ar",
+      "bots": {
+        "main": "course_academic_writing"
+      },
+      "universal_bots": ["support", "presentation"]
+    },
+    "academic_writing_he": {
+      "name": "קריאה וכתיבה אקדמית — עברית",
+      "language": "he",
+      "bots": {
+        "main": "course_academic_writing"
+      },
+      "universal_bots": ["support", "presentation"]
+    }
+  },
+
+  "engine": {
+    "defaultModel": "gemini-2.0-flash",
+    "defaultThinkingBudget": 512,
+    "temperature": 0.7,
+    "_kernelExport": {
+      "_description": "הגדרת האם kernel הוא חלק מה-System Prompt המלא",
+      "includeInSystemPrompt": true
+    },
+    "kernel": {
+      "version": "1.0",
+      "effortRegulation": true,
+      "binding": {
+        "contextEnforcement": {
+          "learning": {
+            "diagnostic": {
+              "noFullSolution": false,
+              "processIntegrity": "strict",
+              "effortRegulation": "minimal",
+              "guidedSelfCorrection": "disabled"
+            },
+            "development": {
+              "noFullSolution": true,
+              "processIntegrity": "strict",
+              "effortRegulation": "strict",
+              "guidedSelfCorrection": "strict"
+            },
+            "reflection": {
+              "noFullSolution": true,
+              "processIntegrity": "soft",
+              "effortRegulation": "adaptive",
+              "guidedSelfCorrection": "optional"
+            }
+          },
+          "teaching": {
+            "design": {
+              "noFullSolution": false,
+              "effortRegulation": "minimal"
+            }
+          },
+          "institutional": {
+            "analytics": {
+              "noFullSolution": false
+            }
+          }
+        }
+      },
+      "private": {
+        "invisibleEffortRegulation": true
+      }
+    }
   }
 }
