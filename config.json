@@ -350,60 +350,84 @@
     }
   },
 
-  "my_courses": {
-    "hebrew_advanced_optics": {
-      "name": "עברית מתקדמים א׳ — אופטיקה",
-      "language": "ar",
-      "bots": {
-        "main": "socratic_student",
-        "final_project": "task_final_project"
-      },
-      "universal_bots": ["support", "presentation"]
+ "my_courses": {
+  "hebrew_advanced_optics": {
+    "name": "עברית מתקדמים א׳ — אופטיקה",
+    "language": "ar",
+    "hebrew_level": "he_a2_arabic",
+    "bots": {
+      "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
+      "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
     },
-    "hebrew_advanced_management": {
-      "name": "עברית מתקדמים א׳ — ניהול",
-      "language": "ar",
-      "bots": {
-        "main": "socratic_student",
-        "final_project": "task_final_project"
-      },
-      "universal_bots": ["support", "presentation"]
-    },
-    "gerontology_mechina": {
-      "name": "מבוא לגרונטולוגיה — מכינה",
-      "language": "he",
-      "bots": {
-        "main": "course_gerontology",
-        "research": "course_qualitative_research"
-      },
-      "universal_bots": ["support", "presentation", "research_skills"]
-    },
-    "social_science_mechina_ar": {
-      "name": "מבוא למדעי החברה — מכינה ערבית",
-      "language": "ar",
-      "bots": {
-        "main": "course_intro_social_science_mechina"
-      },
-      "universal_bots": ["support", "presentation"]
-    },
-    "academic_writing_ar": {
-      "name": "קריאה וכתיבה אקדמית — ערבית",
-      "language": "ar",
-      "bots": {
-        "main": "course_academic_writing"
-      },
-      "universal_bots": ["support", "presentation"]
-    },
-    "academic_writing_he": {
-      "name": "קריאה וכתיבה אקדמית — עברית",
-      "language": "he",
-      "bots": {
-        "main": "course_academic_writing"
-      },
-      "universal_bots": ["support", "presentation"]
-    }
+    "universal_bots": ["support", "presentation"]
   },
-
+  "hebrew_advanced_management": {
+    "name": "עברית מתקדמים א׳ — ניהול",
+    "language": "ar",
+    "hebrew_level": "he_a2_arabic",
+    "bots": {
+      "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
+      "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+    },
+    "universal_bots": ["support", "presentation"]
+  },
+  "gerontology_mechina": {
+    "name": "מבוא לגרונטולוגיה — מכינה",
+    "language": "he",
+    "hebrew_level": "he_b1_haredi",
+    "bots": {
+      "main": { "botType": "course_gerontology", "label": "🤖 בוט הקורס" },
+      "research": { "botType": "course_qualitative_research", "label": "🔎 מחקר איכותני" }
+    },
+    "universal_bots": ["support", "presentation", "research_skills"]
+  },
+  "social_science_mechina_ar": {
+    "name": "מבוא למדעי החברה — מכינה ערבית",
+    "language": "ar",
+    "hebrew_level": "he_a1_arabic",
+    "bots": {
+      "main": { "botType": "course_intro_social_science_mechina", "label": "🤖 בוט הקורס" }
+    },
+    "universal_bots": ["support", "presentation"]
+  },
+  "academic_writing_ar": {
+    "name": "קריאה וכתיבה אקדמית — ערבית",
+    "language": "ar",
+    "hebrew_level": "he_a1_arabic",
+    "bots": {
+      "main": { "botType": "course_academic_writing", "label": "✍️ בוט כתיבה אקדמית" }
+    },
+    "universal_bots": ["support", "presentation"]
+  },
+  "academic_writing_he": {
+    "name": "קריאה וכתיבה אקדמית — עברית",
+    "language": "he",
+    "hebrew_level": "he_b1_haredi",
+    "bots": {
+      "main": { "botType": "course_academic_writing", "label": "✍️ בוט כתיבה אקדמית" }
+    },
+    "universal_bots": ["support", "presentation"]
+  }
+},
+  "hebrew_advanced_optics": {
+  "hebrew_level": "he_a2_arabic", ...
+},
+"hebrew_advanced_management": {
+  "hebrew_level": "he_a2_arabic", ...
+},
+"gerontology_mechina": {
+  "hebrew_level": "he_b1_haredi", ...
+},
+"social_science_mechina_ar": {
+  "hebrew_level": "he_a1_arabic", ...
+},
+"academic_writing_ar": {
+  "hebrew_level": "he_a1_arabic", ...
+},
+"academic_writing_he": {
+  "hebrew_level": "he_b1_haredi", ...
+}
+  
   "engine": {
     "defaultModel": "gemini-2.0-flash",
     "defaultThinkingBudget": 512,
