@@ -68,7 +68,7 @@ const ADMIN_PASSWORD = "miled2026";
 
 let institutionRole = sessionStorage.getItem("institutionRole");
 
-if (!institutionRole) {
+if (!institutionRole || institutionRole !== "admin") {
   const input = prompt("הזן סיסמת הנהלה:");
   if (input && input.trim() === ADMIN_PASSWORD) {
     institutionRole = "admin";
@@ -78,10 +78,13 @@ if (!institutionRole) {
     document.getElementById("no-access").style.display = "block";
     document.getElementById("title").innerText = "גישה נדחתה";
     document.getElementById("subtitle").innerText = "";
-    // עצור כאן — אל תטען config
     throw new Error("access denied");
   }
 }
+
+
+feat: superadmin role + single login full access
+  
 // ─────────────────────────────
 // access control
 // ─────────────────────────────
