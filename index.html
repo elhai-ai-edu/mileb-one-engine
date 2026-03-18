@@ -23,12 +23,14 @@
       <p style="margin:0;opacity:.7;font-size:14px;">קורסים ומיומנויות</p>
     </a>
 
-    <div class="btn" onclick="enterAsFaculty()" style="cursor:pointer;text-align:right;">
+    <div id="faculty-btn" class="btn" onclick="enterAsFaculty()"
+         style="cursor:pointer;text-align:right;opacity:0.5;">
       <h3 style="margin:0 0 4px 0;">🧑‍🏫 מרצה</h3>
       <p style="margin:0;opacity:.7;font-size:14px;">הוראה, קורסים וכלי מחקר</p>
     </div>
 
-    <div class="btn" onclick="enterAsAdmin()" style="cursor:pointer;text-align:right;">
+    <div id="admin-btn" class="btn" onclick="enterAsAdmin()"
+         style="cursor:pointer;text-align:right;opacity:0.5;">
       <h3 style="margin:0 0 4px 0;">📊 הנהלה</h3>
       <p style="margin:0;opacity:.7;font-size:14px;">ניתוח נתונים ומבט מוסדי</p>
     </div>
@@ -48,10 +50,12 @@ async function loadConfig() {
   CONFIG = await res.json();
   document.getElementById('h-title').innerText = CONFIG.home?.main_title || 'ברוכים הבאים';
   document.getElementById('h-subtitle').innerText = CONFIG.home?.main_subtitle || '';
+  document.getElementById('faculty-btn').style.opacity = "1";
+  document.getElementById('admin-btn').style.opacity = "1";
 }
 
 function enterAsFaculty() {
-  if (!CONFIG) { alert("המערכת עדיין נטענת"); return; }
+  if (!CONFIG) { alert("המערכת עדיין נטענת — נסה שוב"); return; }
 
   const users = CONFIG.faculty_users || {};
   const username = prompt("שם משתמש:");
@@ -60,18 +64,14 @@ function enterAsFaculty() {
   if (!password) return;
 
   const user = users[username.trim()];
-
   if (user && user.password === password.trim()) {
     sessionStorage.setItem("facultyId",    user.id);
     sessionStorage.setItem("facultyName",  user.name);
     sessionStorage.setItem("faculty_auth", "true");
     sessionStorage.setItem("facultyRole",  user.role || "faculty");
-
-    // superadmin — גישה לכל כולל הנהלה
     if (user.role === "superadmin") {
       sessionStorage.setItem("institutionRole", "admin");
     }
-
     window.location.href = "/faculty.html";
   } else {
     document.getElementById("error").innerText = "שם משתמש או סיסמה שגויים";
@@ -79,7 +79,7 @@ function enterAsFaculty() {
 }
 
 function enterAsAdmin() {
-  if (!CONFIG) { alert("המערכת עדיין נטענת"); return; }
+  if (!CONFIG) { alert("המערכת עדיין נטענת — נסה שוב"); return; }
 
   const adminPassword = CONFIG.admin_password || "miled2026";
   const input = prompt("סיסמת הנהלה:");
