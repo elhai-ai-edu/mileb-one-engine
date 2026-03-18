@@ -60,10 +60,6 @@ async function loadConfig() {
   renderCourses();
 }
 
-// ─────────────────────────────
-// מציג רשימת קורסים
-// ─────────────────────────────
-
 function renderCourses() {
   const courses = CONFIG.my_courses || {};
   const container = document.getElementById("course-list");
@@ -83,15 +79,6 @@ function renderCourses() {
 
 function openCourse(courseId) {
   const course = CONFIG.my_courses[courseId];
-  if (!course) return;
-  
-  // 
-// ─────────────────────────────
-// פותח מרחב קורס
-// ─────────────────────────────
-
-function openCourse(courseId) {
-  const course = CONFIG.courses[courseId];
   if (!course) return;
 
   document.getElementById("view-courses").style.display = "none";
@@ -127,10 +114,6 @@ function openCourse(courseId) {
   });
 }
 
-// ─────────────────────────────
-// מוצא בוט לפי botType בכל הענפים
-// ─────────────────────────────
-
 function findBotByType(botType) {
   for (let branch in CONFIG.branches) {
     for (let id in CONFIG.branches[branch].items) {
@@ -140,10 +123,6 @@ function findBotByType(botType) {
   }
   return null;
 }
-
-// ─────────────────────────────
-// חזרה לרשימת קורסים
-// ─────────────────────────────
 
 function showCourses() {
   document.getElementById("view-courses").style.display = "block";
