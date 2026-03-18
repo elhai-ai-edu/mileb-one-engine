@@ -374,14 +374,14 @@
 
   "admin_password": "miled2026",
 
-  "faculty_users": {
-    "elhai": {
-      "password": "teach1",
-      "id": "f_elhai",
-      "name": "נחום"
-    }
-  },
-
+ "faculty_users": {
+  "elhai": {
+    "password": "teach1",
+    "id": "f_elhai",
+    "name": "נחום",
+    "role": "superadmin"
+  }
+},
 "engine": {
 
   "defaultModel": "gemini-2.0-flash",
