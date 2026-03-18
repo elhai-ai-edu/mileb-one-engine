@@ -60,10 +60,18 @@ function enterAsFaculty() {
   if (!password) return;
 
   const user = users[username.trim()];
+
   if (user && user.password === password.trim()) {
-    sessionStorage.setItem("facultyId",   user.id);
-    sessionStorage.setItem("facultyName", user.name);
+    sessionStorage.setItem("facultyId",    user.id);
+    sessionStorage.setItem("facultyName",  user.name);
     sessionStorage.setItem("faculty_auth", "true");
+    sessionStorage.setItem("facultyRole",  user.role || "faculty");
+
+    // superadmin — גישה לכל כולל הנהלה
+    if (user.role === "superadmin") {
+      sessionStorage.setItem("institutionRole", "admin");
+    }
+
     window.location.href = "/faculty.html";
   } else {
     document.getElementById("error").innerText = "שם משתמש או סיסמה שגויים";
