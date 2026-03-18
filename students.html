@@ -94,7 +94,7 @@ function openCourse(courseId) {
     const botConfig = findBotByType(botType);
     const a = document.createElement("a");
     a.className = "btn";
-    a.href = `/chat.html?botType=${botType}`;
+  a.href = `/workspace.html?courseId=${courseId}`;
     a.innerText = botConfig ? botConfig.name : botKey;
     courseBots.appendChild(a);
   }
