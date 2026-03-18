@@ -410,22 +410,22 @@
   }
 },
   "hebrew_advanced_optics": {
-  "hebrew_level": "he_a2_arabic", ...
+  "hebrew_level": "he_a2_arabic", 
 },
 "hebrew_advanced_management": {
-  "hebrew_level": "he_a2_arabic", ...
+  "hebrew_level": "he_a2_arabic", 
 },
 "gerontology_mechina": {
-  "hebrew_level": "he_b1_haredi", ...
+  "hebrew_level": "he_b1_haredi", 
 },
 "social_science_mechina_ar": {
-  "hebrew_level": "he_a1_arabic", ...
+  "hebrew_level": "he_a1_arabic", 
 },
 "academic_writing_ar": {
-  "hebrew_level": "he_a1_arabic", ...
+  "hebrew_level": "he_a1_arabic", 
 },
 "academic_writing_he": {
-  "hebrew_level": "he_b1_haredi", ...
+  "hebrew_level": "he_b1_haredi", 
 }
   
   "engine": {
