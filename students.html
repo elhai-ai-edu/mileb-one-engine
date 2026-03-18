@@ -19,34 +19,16 @@
 <div class="main">
 
   <div class="topbar">
-    <span id="topbar-title">MilEd.One - הקורסים שלי</span>
+    <span>MilEd.One - הקורסים שלי</span>
   </div>
 
   <div class="container">
-
-    <!-- מצב 1: רשימת קורסים -->
-    <div id="view-courses">
-      <span style="font-weight:300;color:#000;">MilEd.One</span>
-      <h1>הקורסים שלי</h1>
-      <p>בחר קורס להיכנס למרחב הלמידה</p>
-      <div id="course-list" class="grid"></div>
-    </div>
-
-    <!-- מצב 2: מרחב קורס -->
-    <div id="view-course" style="display:none;">
-      <a href="#" onclick="showCourses()" style="color:#6C63FF;font-size:14px;">← חזרה לקורסים</a>
-      <h1 id="course-name"></h1>
-
-      <h3 style="margin-top:24px;">🤖 בוטים של הקורס</h3>
-      <div id="course-bots" class="grid"></div>
-
-      <h3 style="margin-top:24px;border-top:1px solid #eee;padding-top:16px;">🛠️ כלים כלליים</h3>
-      <div id="universal-bots" class="grid"></div>
-    </div>
-
+    <span style="font-weight:300;color:#000;">MilEd.One</span>
+    <h1>הקורסים שלי</h1>
+    <p>בחר קורס להיכנס למרחב הלמידה</p>
+    <div id="course-list" class="grid"></div>
     <br>
     <a href="/" onclick="sessionStorage.clear()" class="btn btn-blue">← חזרה למסך הבית</a>
-
   </div>
 </div>
 
@@ -69,65 +51,11 @@ function renderCourses() {
     const course = courses[id];
     const a = document.createElement("a");
     a.className = "btn";
-    a.href = "#";
-    a.onclick = (e) => { e.preventDefault(); openCourse(id); };
+    a.href = `/workspace.html?courseId=${id}`;
     a.innerHTML = `<h3 style="margin:0 0 4px 0;">${course.name}</h3>
                    <p style="margin:0;opacity:.7;font-size:13px;">לחץ להיכנס למרחב הקורס</p>`;
     container.appendChild(a);
   }
-}
-
-function openCourse(courseId) {
-  const course = CONFIG.my_courses[courseId];
-  if (!course) return;
-
-  document.getElementById("view-courses").style.display = "none";
-  document.getElementById("view-course").style.display  = "block";
-  document.getElementById("course-name").innerText = course.name;
-
- // בוטים ייעודיים של הקורס
-const courseBots = document.getElementById("course-bots");
-courseBots.innerHTML = "";
-
-for (let botKey in course.bots) {
-  const bot = course.bots[botKey];
-  const botType = bot.botType || bot;
-  const label   = bot.label  || botKey;
-  const a = document.createElement("a");
-  a.className = "btn";
-  a.href = `/workspace.html?courseId=${courseId}`;
-  a.innerText = label;
-  courseBots.appendChild(a);
-}
-
-  // בוטים כלליים
-  const universalBots = document.getElementById("universal-bots");
-  universalBots.innerHTML = "";
-
-  (course.universal_bots || []).forEach(botKey => {
-    const botConfig = CONFIG.universal?.items?.[botKey];
-    if (!botConfig) return;
-    const a = document.createElement("a");
-    a.className = "btn";
-    a.href = `/chat.html?botType=${botConfig.botType}`;
-    a.innerText = botConfig.name;
-    universalBots.appendChild(a);
-  });
-}
-
-function findBotByType(botType) {
-  for (let branch in CONFIG.branches) {
-    for (let id in CONFIG.branches[branch].items) {
-      const bot = CONFIG.branches[branch].items[id];
-      if (bot.botType === botType) return bot;
-    }
-  }
-  return null;
-}
-
-function showCourses() {
-  document.getElementById("view-courses").style.display = "block";
-  document.getElementById("view-course").style.display  = "none";
 }
 
 loadConfig();
@@ -136,3 +64,4 @@ loadConfig();
 
 </body>
 </html>
+
