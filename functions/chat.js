@@ -211,21 +211,19 @@ function resolveContextRules(engine, botConfig) {
   return binding[contextType]?.[phase] || {};
 }
 
-
 // ─────────────────────────────────────────
 // BUILD FULL SYSTEM PROMPT
 // runtime = public + private
 // export  = public only (handled outside)
 // ─────────────────────────────────────────
 
-function buildFullSystemPrompt(engine, botConfig) {
+function buildFullSystemPrompt(engine, botConfig, hebrewLevel = null) {
 
   if (!botConfig) return null;
 
   const kernelConfig = engine?.kernel || {};
-
   const universal = kernelConfig.universal || {};
-const contextRules = resolveContextRules(engine, botConfig);
+  const contextRules = resolveContextRules(engine, botConfig);
 
   let kernelBlock = "";
 
@@ -263,18 +261,33 @@ const contextRules = resolveContextRules(engine, botConfig);
   if (contextRules.cognitiveLoadAwareness)
     kernelBlock += "התאם עומס קוגניטיבי לרמת המשתמש והקשר השימוש. ";
 
-  const systemPrompt =
-    botConfig.systemPrompt || DEFAULT_PROMPT;
+  // ─── BOT LAYER ───
+
+  const systemPrompt = botConfig.systemPrompt || DEFAULT_PROMPT;
+
+  // ─── HEBREW LEVEL LAYER ───
+
+  const hebrewInstructions = {
+    "he_a1_arabic": "הסטודנט דובר ערבית/צרפתית ברמת עברית A1. השתמש במשפטים קצרים, מילים פשוטות, והימנע ממושגים מורכבים.",
+    "he_a2_arabic": "הסטודנט דובר ערבית/צרפתית ברמת עברית A2. שפה פשוטה אך אפשר להכניס מושגים אקדמיים בסיסיים.",
+    "he_b1_haredi": "הסטודנט דובר עברית מקהילה חרדית עם אוצר מילים מוגבל. הימנע מסלנג ומושגים כלליים לא דתיים, השתמש בשפה ברורה ופשוטה.",
+    "he_standard": "הסטודנט דובר עברית ברמה רגילה."
+  };
+
+  const hebrewBlock = hebrewLevel && hebrewInstructions[hebrewLevel]
+    ? hebrewInstructions[hebrewLevel]
+    : "";
 
   return [
     kernel.trim(),        // Constitution layer
     kernelBlock.trim(),   // Policy layer
-    systemPrompt.trim()   // Bot layer
+    systemPrompt.trim(),  // Bot layer
+    hebrewBlock           // Hebrew level layer
   ]
   .filter(Boolean)
   .join("\n\n");
-}
 
+}
 // ─────────────────────────────────────────
 // MAIN HANDLER
 // ─────────────────────────────────────────
