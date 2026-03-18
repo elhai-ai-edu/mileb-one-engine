@@ -33,22 +33,12 @@
     <div id="list" class="grid"></div>
     <div id="error" style="color:red;margin-top:16px;"></div>
     <br>
- <a href="/" onclick="sessionStorage.clear()" class="btn btn-blue">← חזרה למסך הבית</a>
+    <a href="/" onclick="sessionStorage.clear()" class="btn btn-blue">← חזרה למסך הבית</a>
 
   </div>
 </div>
 
 <script>
-
-// ─────────────────────────────
-// סיסמה — שנה כאן
-// ─────────────────────────────
-
-const FACULTY_PASSWORD = "miled2026";
-
-// ─────────────────────────────
-// בדיקת גישה
-// ─────────────────────────────
 
 function checkAuth() {
   const saved = sessionStorage.getItem("faculty_auth");
@@ -57,7 +47,7 @@ function checkAuth() {
   const input = prompt("הזן סיסמת סגל:");
   if (!input) return false;
 
-  if (input.trim() === FACULTY_PASSWORD) {
+  if (input.trim() === "miled2026") {
     sessionStorage.setItem("faculty_auth", "true");
     return true;
   }
@@ -65,31 +55,6 @@ function checkAuth() {
   document.getElementById("error").innerText = "סיסמה שגויה";
   return false;
 }
-
-// ─────────────────────────────
-// faculty id
-// ─────────────────────────────
-
-let facultyId = localStorage.getItem("facultyId");
-if (!facultyId) {
-  facultyId = "f_" + Math.random().toString(36).slice(2, 8);
-  localStorage.setItem("facultyId", facultyId);
-}
-
-// כפתור קוקפיט לסופר אדמין בלבד
-if (sessionStorage.getItem("facultyRole") === "superadmin") {
-  const container = document.getElementById("list");
-  const a = document.createElement("a");
-  a.className = "btn";
-  a.href = "/cockpit.html";
-  a.innerText = "⚙️ קוקפיט מנהל מערכת";
-  a.style.borderTop = "2px solid #6C63FF";
-  container.appendChild(a);
-}
-  
-// ─────────────────────────────
-// טעינת config
-// ─────────────────────────────
 
 async function loadConfig() {
   try {
@@ -119,11 +84,20 @@ function initPage(CONFIG) {
     a.href = `/chat.html?classId=${id}`;
     container.appendChild(a);
   }
-}
 
-// ─────────────────────────────
-// התחלה
-// ─────────────────────────────
+  // כפתור קוקפיט — רק לסופר אדמין, אחרי כל הכלים
+  if (sessionStorage.getItem("facultyRole") === "superadmin") {
+    const divider = document.createElement("div");
+    divider.style.cssText = "grid-column:1/-1;border-top:1px solid #eee;margin-top:8px;padding-top:8px;";
+    container.appendChild(divider);
+
+    const a = document.createElement("a");
+    a.className = "btn";
+    a.href = "/cockpit.html";
+    a.innerText = "⚙️ קוקפיט מנהל מערכת";
+    container.appendChild(a);
+  }
+}
 
 if (checkAuth()) {
   loadConfig();
@@ -133,4 +107,3 @@ if (checkAuth()) {
 
 </body>
 </html>
-```
