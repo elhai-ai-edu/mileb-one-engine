@@ -188,8 +188,6 @@
   },
   "universal_bots": ["support", "presentation", "research_skills"]
 }
-
-feat(config): add full course_units and project stages to gerontology
           
         },
         "course_interpersonal_communication": {
