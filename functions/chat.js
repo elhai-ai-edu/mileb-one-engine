@@ -440,14 +440,23 @@ exports.handler = async (event) => {
     }
 
     // ─── SAVE SESSION & LOG CONVERSATION ───
-    const saveData = { lastBotType: botType, lastActive: Date.now() };
-    if (sessionUpdate) Object.assign(saveData, sessionUpdate);
+const saveData = { lastBotType: botType, lastActive: Date.now() };
+if (sessionUpdate) Object.assign(saveData, sessionUpdate);
 
-    await Promise.all([
-      saveSessionContext(studentId, courseId, saveData),
-      logMessage(sessionId, "user",      message),
-      logMessage(sessionId, "assistant", reply)
-    ]);
+// שמור את ה-history המעודכן (14 הודעות אחרונות)
+const updatedHistory = [
+  ...trimmedHistory,
+  { role: "user",      content: message },
+  { role: "assistant", content: reply   }
+].slice(-14);
+
+saveData.history = updatedHistory;
+
+await Promise.all([
+  saveSessionContext(studentId, courseId, saveData),
+  logMessage(sessionId, "user",      message),
+  logMessage(sessionId, "assistant", reply)
+]);
 
     return {
       statusCode: 200,
