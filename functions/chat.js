@@ -353,20 +353,26 @@ exports.handler = async (event) => {
       };
     }
 
-    // ─── LOAD SESSION CONTEXT ───
-    const courseId   = classId;
-    const sessionCtx = await loadSessionContext(studentId, courseId);
+ // ─── LOAD SESSION CONTEXT ───
+const courseId   = classId;
+const sessionCtx = await loadSessionContext(studentId, courseId);
 
-    let contextBlock = "";
-    if (sessionCtx) {
-      const parts = [];
-      if (sessionCtx.studentName) parts.push(`שם הסטודנט: ${sessionCtx.studentName}`);
-      if (sessionCtx.gender)      parts.push(`פנייה: ${sessionCtx.gender}`);
-      if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
-      if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
-      if (parts.length > 0)
-        contextBlock = "## הקשר מהשיחה הקודמת\n" + parts.join("\n");
-    }
+let contextBlock  = "";
+let savedHistory  = [];
+
+if (sessionCtx) {
+  const parts = [];
+  if (sessionCtx.studentName) parts.push(`שם הסטודנט: ${sessionCtx.studentName}`);
+  if (sessionCtx.gender)      parts.push(`פנייה: ${sessionCtx.gender}`);
+  if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
+  if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
+  if (parts.length > 0)
+    contextBlock = "## הקשר מהשיחה הקודמת\n" + parts.join("\n");
+
+  // שחזר history אם הגיע ריק מה-frontend
+  if (Array.isArray(sessionCtx.history) && sessionCtx.history.length > 0)
+    savedHistory = sessionCtx.history;
+}
 
     // ─── CONTEXT-BASED ENFORCEMENT ───
     const contextRules            = resolveContextRules(engine, botConfig);
