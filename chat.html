@@ -15,9 +15,6 @@
 
 <body>
 
-
-<!-- Sidebar -->
-
 <div class="sidebar">
 
 <h2>MilEd.One</h2>
@@ -29,10 +26,7 @@
 <a href="/" onclick="sessionStorage.clear()" style="margin-top:20px;color:#999;font-size:13px;">← יציאה</a>
 </div>
 
-<!-- Main -->
-
 <div class="main">
-
 
 <div class="topbar">
 
@@ -47,16 +41,10 @@
 
 </div>
 
-
 <div class="container">
 
-
 <div id="chat-window">
-<div id="welcome-msg" class="message ai">
-שלום! איך אוכל לעזור?
 </div>
-</div>
-
 
 <div class="input-area">
 <input id="user-input" placeholder="כתוב שאלה..." onkeypress="handleKey(event)">
@@ -65,10 +53,8 @@
 <button onclick="exportPrompt()">ייצא prompt</button>
 </div>
 
-
 </div>
 </div>
-
 
 <script>
 
@@ -80,6 +66,7 @@ if (!studentId){
   sessionStorage.setItem('studentId', studentId);
 }
 
+// sessionId — גנרי לכל session
 let sessionId = sessionStorage.getItem('sessionId');
 if (!sessionId){
   sessionId = 'sess_' + Math.random().toString(36).slice(2,10);
@@ -88,14 +75,14 @@ if (!sessionId){
 
 let facultyId = sessionStorage.getItem('facultyId') || null;
 
-const params = new URLSearchParams(window.location.search);
+const params  = new URLSearchParams(window.location.search);
 const classId = params.get('classId');
 
 const chatWindow = document.getElementById('chat-window');
-const input = document.getElementById('user-input');
-const sendBtn = document.getElementById('send-btn');
+const input      = document.getElementById('user-input');
+const sendBtn    = document.getElementById('send-btn');
 const historyKey = `history_${classId}`;
-let chatHistory = JSON.parse(sessionStorage.getItem(historyKey) || '[]');
+let chatHistory  = JSON.parse(sessionStorage.getItem(historyKey) || '[]');
 
 function renderMessage(role, content){
   const div = document.createElement('div');
@@ -104,124 +91,162 @@ function renderMessage(role, content){
   return div;
 }
 
-if(chatHistory.length>0){
-  document.getElementById('welcome-msg')?.remove();
+if (chatHistory.length > 0){
   chatHistory.forEach(m => chatWindow.appendChild(renderMessage(m.role, m.content)));
 }
 
 let currentBotType = null;
 
 fetch('/config.json')
-.then(r=>r.json())
-.then(config=>{
+.then(r => r.json())
+.then(config => {
   const urlBotType = params.get('botType');
-  if(urlBotType){
+  if (urlBotType){
     currentBotType = urlBotType;
     document.getElementById('course-title').textContent = urlBotType;
+    if (chatHistory.length === 0) triggerBotOpening();
     return;
   }
 
-  for(let branch in config.branches){
+  for (let branch in config.branches){
     const item = config.branches[branch].items?.[classId];
-    if(item){
+    if (item){
       currentBotType = item.botType;
       document.getElementById('course-title').textContent = item.name;
       break;
     }
   }
+
+  if (currentBotType && chatHistory.length === 0) triggerBotOpening();
 });
+
+// ─────────────────────────────
+// פתיחת שיחה אוטומטית — kernel v2.0
+// ─────────────────────────────
+
+async function triggerBotOpening() {
+  const loading = document.createElement('div');
+  loading.className = 'message ai';
+  loading.innerText = '...';
+  chatWindow.appendChild(loading);
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message:         '__INIT__',
+        botType:         currentBotType,
+        classId:         classId,
+        studentId:       studentId,
+        facultyId:       facultyId,
+        sessionId:       sessionId,
+        history:         [],
+        isNewBotSession: true
+      })
+    });
+
+    const data = await res.json();
+    loading.remove();
+
+    if (data.reply) {
+      chatWindow.appendChild(renderMessage('assistant', data.reply));
+      chatHistory.push({ role: 'assistant', content: data.reply });
+      sessionStorage.setItem(historyKey, JSON.stringify(chatHistory));
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+  } catch(e) {
+    loading.remove();
+    chatWindow.appendChild(renderMessage('assistant', 'שגיאת חיבור לשרת'));
+  }
+}
+
+// ─────────────────────────────
+// שליחת הודעה
+// ─────────────────────────────
 
 async function sendMessage(){
 
-  if(!currentBotType){
+  if (!currentBotType){
     alert("המערכת עדיין נטענת");
     return;
   }
 
   const text = input.value.trim();
-  if(!text) return;
+  if (!text) return;
 
-  chatWindow.appendChild(renderMessage('user',text));
-
-  input.value="";
-  sendBtn.disabled=true;
+  chatWindow.appendChild(renderMessage('user', text));
+  input.value = "";
+  sendBtn.disabled = true;
 
   const loading = document.createElement('div');
-  loading.className='message ai loading-text';
-  loading.innerText='חושב...';
-
+  loading.className = 'message ai loading-text';
+  loading.innerText = 'חושב...';
   chatWindow.appendChild(loading);
+  chatWindow.scrollTop = chatWindow.scrollHeight;
 
-  try{
+  try {
 
-    const response = await fetch('/api/chat',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        message:text,
-        botType:currentBotType,
-        classId:classId,
-        studentId:studentId,
-        facultyId:facultyId,
-        sessionId:sessionId,
-        history:chatHistory
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message:   text,
+        botType:   currentBotType,
+        classId:   classId,
+        studentId: studentId,
+        facultyId: facultyId,
+        sessionId: sessionId,
+        history:   chatHistory
       })
     });
 
-    if(response.status===403){
-
+    if (response.status === 403){
       loading.remove();
-      chatWindow.appendChild(renderMessage('assistant',"אין לך הרשאה להשתמש בכלי זה"));
+      chatWindow.appendChild(renderMessage('assistant', "אין לך הרשאה להשתמש בכלי זה"));
       return;
-
     }
 
     const data = await response.json();
 
-    if(data.exportPrompt)
+    if (data.exportPrompt)
       window.__LAST_EXPORT_PROMPT = data.exportPrompt;
 
     loading.remove();
 
     const reply = data.reply || "שגיאה";
+    chatWindow.appendChild(renderMessage('assistant', reply));
 
-    chatWindow.appendChild(renderMessage('assistant',reply));
-
-    chatHistory.push({role:'user',content:text});
-    chatHistory.push({role:'assistant',content:reply});
-
+    chatHistory.push({ role: 'user',      content: text  });
+    chatHistory.push({ role: 'assistant', content: reply });
     sessionStorage.setItem(historyKey, JSON.stringify(chatHistory));
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
-  }
-  catch(e){
-
+  } catch(e) {
     loading.remove();
-    chatWindow.appendChild(renderMessage('assistant',"שגיאת חיבור לשרת"));
-
+    chatWindow.appendChild(renderMessage('assistant', "שגיאת חיבור לשרת"));
   }
 
-  sendBtn.disabled=false;
-
+  sendBtn.disabled = false;
 }
 
 function handleKey(e){
-
-  if(e.key === "Enter" && !e.shiftKey){
+  if (e.key === "Enter" && !e.shiftKey){
     e.preventDefault();
     sendMessage();
   }
-
 }
 
 function exportPrompt(){
 
-  if(!window.__LAST_EXPORT_PROMPT){
+  if (!window.__LAST_EXPORT_PROMPT){
     alert("אין prompt לייצוא עדיין");
     return;
   }
 
   const botName = document.getElementById("course-title")?.innerText || "MilEd Bot";
-  const now = new Date().toISOString();
+  const now     = new Date().toISOString();
 
   const content = `MilEd.One — Prompt Export
 ================================
@@ -240,26 +265,22 @@ Generated via MilEd.One
 --------------------------------
 `;
 
-  const blob = new Blob([content], {type:"text/plain;charset=utf-8"});
-  const url = URL.createObjectURL(blob);
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
-
-  a.href=url;
-  a.download=botName.replace(/\s+/g,"_")+"_prompt.txt";
-
+  a.href     = url;
+  a.download = botName.replace(/\s+/g, "_") + "_prompt.txt";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-
   URL.revokeObjectURL(url);
-
 }
 
 </script>
 
-<!-- Classroom sync — active only when sessionId exists in URL -->
 <script src="/classroom-inject.js"></script>
 
 </body>
 </html>
+
