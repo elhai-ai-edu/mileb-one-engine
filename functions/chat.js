@@ -1,17 +1,16 @@
-הנה `chat.js` v5.3 — רק שני השינויים המבוקשים, שאר הקוד זהה לחלוטין:
-
-```javascript
 import fs from "fs";
 import path from "path";
 
 const kernelPath = path.resolve(process.cwd(), "kernel.txt");
 const kernel = fs.readFileSync(kernelPath, "utf8");
-// functions/chat.js — MilEd.One v5.3
+// functions/chat.js — MilEd.One v5.5
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing
 // + Hard guards + Config cache TTL + Safe OpenRouter handling + Engine-config driven params
 // + Full System Prompt Export Support + Public/Private Kernel Separation
 // + Firebase session memory + Conversation logging
 // + Automatic session extraction via %%SESSION_UPDATE%% protocol
+// + Persist and restore chat history via Firebase
+// + isNewBotSession guard — prevent loading stale history on bot switch
 
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
@@ -316,14 +315,15 @@ exports.handler = async (event) => {
     const exportPrompt = event.queryStringParameters?.exportPrompt === "true";
 
     const {
-      message      = "שלום",
-      history      = [],
-      botType      = null,
-      studentId    = "anonymous",
-      facultyId    = null,
-      classId      = null,
-      sessionId    = null,
-      hebrewLevel  = null
+      message          = "שלום",
+      history          = [],
+      botType          = null,
+      studentId        = "anonymous",
+      facultyId        = null,
+      classId          = null,
+      sessionId        = null,
+      hebrewLevel      = null,
+      isNewBotSession  = false          // ← חדש: מונע טעינת history ישן בהחלפת בוט
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -353,26 +353,26 @@ exports.handler = async (event) => {
       };
     }
 
- // ─── LOAD SESSION CONTEXT ───
-const courseId   = classId;
-const sessionCtx = await loadSessionContext(studentId, courseId);
+    // ─── LOAD SESSION CONTEXT ───
+    const courseId   = classId;
+    const sessionCtx = await loadSessionContext(studentId, courseId);
 
-let contextBlock  = "";
-let savedHistory  = [];
+    let contextBlock  = "";
+    let savedHistory  = [];
 
-if (sessionCtx) {
-  const parts = [];
-  if (sessionCtx.studentName) parts.push(`שם הסטודנט: ${sessionCtx.studentName}`);
-  if (sessionCtx.gender)      parts.push(`פנייה: ${sessionCtx.gender}`);
-  if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
-  if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
-  if (parts.length > 0)
-    contextBlock = "## הקשר מהשיחה הקודמת\n" + parts.join("\n");
+    if (sessionCtx) {
+      const parts = [];
+      if (sessionCtx.studentName) parts.push(`שם הסטודנט: ${sessionCtx.studentName}`);
+      if (sessionCtx.gender)      parts.push(`פנייה: ${sessionCtx.gender}`);
+      if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
+      if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
+      if (parts.length > 0)
+        contextBlock = "## הקשר מהשיחה הקודמת\n" + parts.join("\n");
 
-  // שחזר history אם הגיע ריק מה-frontend
-  if (Array.isArray(sessionCtx.history) && sessionCtx.history.length > 0)
-    savedHistory = sessionCtx.history;
-}
+      // שחזר history אם הגיע ריק מה-frontend
+      if (Array.isArray(sessionCtx.history) && sessionCtx.history.length > 0)
+        savedHistory = sessionCtx.history;
+    }
 
     // ─── CONTEXT-BASED ENFORCEMENT ───
     const contextRules            = resolveContextRules(engine, botConfig);
@@ -384,12 +384,14 @@ if (sessionCtx) {
 
     const finalSystemPrompt = buildFullSystemPrompt(engine, botConfig, hebrewLevel, contextBlock);
 
-   // אם ה-frontend שלח history — השתמש בו, אחרת טען מ-Firebase
-const effectiveHistory = (history && history.length > 0) ? history : savedHistory;
+    // אם ה-frontend שלח history — השתמש בו, אחרת טען מ-Firebase (אם לא בוט חדש)
+    const effectiveHistory = (history && history.length > 0)
+      ? history
+      : (isNewBotSession ? [] : savedHistory);  // ← חדש: מניעת טעינת history ישן
 
-const trimmedHistory = effectiveHistory
-  .filter(m => m && typeof m.content === "string")
-  .slice(-14);
+    const trimmedHistory = effectiveHistory
+      .filter(m => m && typeof m.content === "string")
+      .slice(-14);
 
     if (effectiveNoFullSolution && detectFullSolutionRequest(message)) {
       return {
@@ -449,23 +451,23 @@ const trimmedHistory = effectiveHistory
     }
 
     // ─── SAVE SESSION & LOG CONVERSATION ───
-const saveData = { lastBotType: botType, lastActive: Date.now() };
-if (sessionUpdate) Object.assign(saveData, sessionUpdate);
+    const saveData = { lastBotType: botType, lastActive: Date.now() };
+    if (sessionUpdate) Object.assign(saveData, sessionUpdate);
 
-// שמור את ה-history המעודכן (14 הודעות אחרונות)
-const updatedHistory = [
-  ...trimmedHistory,
-  { role: "user",      content: message },
-  { role: "assistant", content: reply   }
-].slice(-14);
+    // שמור את ה-history המעודכן (14 הודעות אחרונות)
+    const updatedHistory = [
+      ...trimmedHistory,
+      { role: "user",      content: message },
+      { role: "assistant", content: reply   }
+    ].slice(-14);
 
-saveData.history = updatedHistory;
+    saveData.history = updatedHistory;
 
-await Promise.all([
-  saveSessionContext(studentId, courseId, saveData),
-  logMessage(sessionId, "user",      message),
-  logMessage(sessionId, "assistant", reply)
-]);
+    await Promise.all([
+      saveSessionContext(studentId, courseId, saveData),
+      logMessage(sessionId, "user",      message),
+      logMessage(sessionId, "assistant", reply)
+    ]);
 
     return {
       statusCode: 200,
@@ -483,4 +485,3 @@ await Promise.all([
   }
 
 };
-
