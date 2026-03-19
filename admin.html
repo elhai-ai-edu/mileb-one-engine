@@ -8,14 +8,12 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-  
+
 <title>MilEd.One - הנהלה</title>
 
 </head>
 
 <body>
-
-<!-- Sidebar -->
 
 <div class="sidebar">
 
@@ -28,15 +26,11 @@
 
 </div>
 
-
-<!-- Main -->
-
 <div class="main">
 
 <div class="topbar">
 MilEd.One - הנהלה
 </div>
-
 
 <div class="container">
 
@@ -48,7 +42,7 @@ MilEd.One - הנהלה
 
 <div id="list" class="grid"></div>
 
-<div id="no-access" class="hidden" style="display:none">
+<div id="no-access" style="display:none">
 אין לך הרשאה לצפות בכלי הנהלה
 </div>
 
@@ -59,9 +53,56 @@ MilEd.One - הנהלה
 
 <script>
 
+// ─────────────────────────────
+// הסכמת פרטיות — חד-פעמית
+// ─────────────────────────────
+
+function checkPrivacyConsent() {
+  if (localStorage.getItem("miled_privacy_consent") === "true") return true;
+
+  const modal = document.createElement("div");
+  modal.style.cssText = `
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.5);z-index:9999;
+    display:flex;align-items:center;justify-content:center;
+  `;
+
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%;text-align:right;direction:rtl;">
+      <h2 style="margin-top:0;font-size:20px;">הסכמה לשימוש במערכת</h2>
+      <p style="color:#555;line-height:1.7;font-size:14px;">
+        מערכת MilEd.One שומרת את תוכן השיחות עם הבוטים למטרות פיתוח ושיפור המערכת.
+        המידע מאוחסן בצורה מאובטחת ואינו מועבר לגורמים חיצוניים.
+        שיחות נשמרות תחת מזהה אנונימי בלבד.
+      </p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button id="privacy-decline" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px;">
+          לא מסכים/ה
+        </button>
+        <button id="privacy-accept" style="padding:10px 20px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">
+          מסכים/ה ומאשר/ת
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("privacy-accept").onclick = () => {
+    localStorage.setItem("miled_privacy_consent", "true");
+    modal.remove();
+    initAdmin();
+  };
+
+  document.getElementById("privacy-decline").onclick = () => {
+    window.location.href = "/";
+  };
+
+  return false;
+}
 
 // ─────────────────────────────
-// institution identity (temporary mock)
+// institution identity
 // ─────────────────────────────
 
 const ADMIN_PASSWORD = "miled2026";
@@ -82,100 +123,66 @@ if (!institutionRole || institutionRole !== "admin") {
   }
 }
 
-  
 // ─────────────────────────────
 // access control
 // ─────────────────────────────
 
-function hasInstitutionAccess(tool){
-
-const scope=tool.scope||"global";
-
-
-if(scope==="global")
-return true;
-
-
-if(scope==="institution")
-return institutionRole==="admin";
-
-
-return false;
-
+function hasInstitutionAccess(tool) {
+  const scope = tool.scope || "global";
+  if (scope === "global")      return true;
+  if (scope === "institution") return institutionRole === "admin";
+  return false;
 }
-
 
 // ─────────────────────────────
-// load config
+// טעינת config
 // ─────────────────────────────
 
-fetch('/config.json')
+function loadConfig() {
+  fetch('/config.json')
+    .then(r => r.json())
+    .then(data => {
+      const admin = data.branches.admin;
+      document.getElementById('title').innerText    = admin.title;
+      document.getElementById('subtitle').innerText = admin.subtitle;
 
-.then(r=>r.json())
+      const list = document.getElementById('list');
+      let visibleCount = 0;
 
-.then(data=>{
+      for (let id in admin.items) {
+        const tool = admin.items[id];
+        if (!hasInstitutionAccess(tool)) continue;
+        visibleCount++;
+        const a = document.createElement('a');
+        a.className = 'btn';
+        a.href = `/chat.html?classId=${id}`;
+        a.innerText = tool.name;
+        list.appendChild(a);
+      }
 
-const admin=data.branches.admin;
-
-document.getElementById('title').innerText=admin.title;
-
-document.getElementById('subtitle').innerText=admin.subtitle;
-
-
-const list=document.getElementById('list');
-
-let visibleCount=0;
-
-
-for(let id in admin.items){
-
-const tool=admin.items[id];
-
-
-if(!hasInstitutionAccess(tool))
-continue;
-
-
-visibleCount++;
-
-
-const a=document.createElement('a');
-
-a.className='btn';
-
-a.href=`/chat.html?classId=${id}`;
-
-a.innerText=tool.name;
-
-list.appendChild(a);
-
+      if (visibleCount === 0) {
+        document.getElementById("no-access").style.display = "block";
+      }
+    })
+    .catch(err => {
+      console.error("config load error:", err);
+      document.getElementById('title').innerText    = "שגיאה";
+      document.getElementById('subtitle').innerText = "לא ניתן לטעון";
+    });
 }
 
+// ─────────────────────────────
+// כניסה ראשית
+// ─────────────────────────────
 
-// no access fallback
-
-if(visibleCount===0){
-
-document.getElementById("no-access").style.display="block";
-
+function initAdmin() {
+  loadConfig();
 }
 
-
-})
-
-.catch(err=>{
-
-console.error("config load error:",err);
-
-document.getElementById('title').innerText="שגיאה";
-
-document.getElementById('subtitle').innerText="לא ניתן לטעון";
-
-});
-
+if (checkPrivacyConsent()) initAdmin();
 
 </script>
 
 </body>
-
 </html>
+
