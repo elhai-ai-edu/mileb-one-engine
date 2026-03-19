@@ -63,7 +63,7 @@
         </div>
 
         <div id="chat-window" style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px;">
-          <div class="message ai">שלום! בחר בוט מהתפריט כדי להתחיל.</div>
+          <div class="message ai">בחר בוט מהתפריט כדי להתחיל.</div>
         </div>
 
         <div style="padding:10px;border-top:1px solid #eee;display:flex;gap:8px;">
@@ -102,12 +102,12 @@ if (!studentId) {
   sessionStorage.setItem("studentId", studentId);
 }
 
-let CONFIG        = null;
-let currentCourse = null;
+let CONFIG         = null;
+let currentCourse  = null;
 let currentBotType = null;
-let chatHistory   = [];
-let saveTimer     = null;
-let isLocked      = false;
+let chatHistory    = [];
+let saveTimer      = null;
+let isLocked       = false;
 
 // ─────────────────────────────
 // טעינת config
@@ -169,24 +169,63 @@ function renderBotMenu() {
 }
 
 // ─────────────────────────────
-// בחירת בוט פעיל
+// בחירת בוט פעיל ← שינוי 1
 // ─────────────────────────────
 
 let activeBotLink = null;
 
 function selectBot(botType, label, linkEl) {
   currentBotType = botType;
-  chatHistory = [];
+  chatHistory    = [];
 
   document.getElementById("active-bot-name").innerText = label;
-  document.getElementById("chat-window").innerHTML =
-    `<div class="message ai">שלום! אני ${label}. איך אוכל לעזור?</div>`;
+  document.getElementById("chat-window").innerHTML     = "";  // ← ריק, הבוט יפתח
 
   if (activeBotLink) activeBotLink.style.background = "";
   activeBotLink = linkEl;
   linkEl.style.background = "#e6e9ff";
 
   document.getElementById("user-input").focus();
+  triggerBotOpening();  // ← הבוט פותח את השיחה
+}
+
+// ─────────────────────────────
+// פתיחת שיחה אוטומטית ← שינוי 2
+// ─────────────────────────────
+
+async function triggerBotOpening() {
+  const chatWindow = document.getElementById("chat-window");
+  const loading    = document.createElement("div");
+  loading.className = "message ai";
+  loading.innerText = "...";
+  chatWindow.appendChild(loading);
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message:         "__INIT__",
+        botType:         currentBotType,
+        courseId:        courseId,
+        hebrewLevel:     currentCourse.hebrew_level || null,
+        studentId,
+        sessionId,
+        history:         [],
+        isNewBotSession: true
+      })
+    });
+    const data = await res.json();
+    loading.remove();
+    if (data.reply) {
+      chatWindow.appendChild(renderMessage("assistant", data.reply));
+      chatHistory.push({ role: "assistant", content: data.reply });
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+  } catch(e) {
+    loading.remove();
+    chatWindow.appendChild(renderMessage("assistant", "שגיאת חיבור לשרת"));
+  }
 }
 
 // ─────────────────────────────
@@ -211,7 +250,7 @@ async function sendMessage() {
 
   const chatWindow = document.getElementById("chat-window");
   chatWindow.appendChild(renderMessage("user", text));
-  document.getElementById("user-input").value = "";
+  document.getElementById("user-input").value  = "";
   document.getElementById("send-btn").disabled = true;
 
   const loading = document.createElement("div");
@@ -225,14 +264,14 @@ async function sendMessage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message:          text,
-        botType:          currentBotType,
-        courseId:         courseId,
-        hebrewLevel:      currentCourse.hebrew_level || null,
+        message:         text,
+        botType:         currentBotType,
+        courseId:        courseId,
+        hebrewLevel:     currentCourse.hebrew_level || null,
         studentId,
         sessionId,
         history:          chatHistory,
-        isNewBotSession:  chatHistory.length === 0   // ← חדש: מסמן שיחה חדשה עם בוט
+        isNewBotSession:  chatHistory.length === 0
       })
     });
 
@@ -289,7 +328,6 @@ async function submitWork() {
   const text = document.getElementById("student-text").value.trim();
   if (!text) { alert("כתוב משהו לפני שליחה"); return; }
 
-  // שליחה למרצה רק אם יש שיעור פעיל מה-URL
   if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
 
   await fetch("/.netlify/functions/classroom", {
