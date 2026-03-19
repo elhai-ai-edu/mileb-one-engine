@@ -82,10 +82,10 @@
 
 <script>
 
-const params    = new URLSearchParams(location.search);
-const courseId  = params.get("courseId") || "";
+const params   = new URLSearchParams(location.search);
+const courseId = params.get("courseId") || "";
 
-// sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי
+// sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי לכל קורס בנפרד
 const urlSessionId = params.get("sessionId") || "";
 let sessionId = urlSessionId;
 if (!sessionId) {
@@ -95,18 +95,19 @@ if (!sessionId) {
     sessionStorage.setItem("sessionId_" + courseId, sessionId);
   }
 }
+
 let studentId = sessionStorage.getItem("studentId");
 if (!studentId) {
   studentId = "s_" + Math.random().toString(36).slice(2, 10);
   sessionStorage.setItem("studentId", studentId);
 }
 
-let CONFIG       = null;
+let CONFIG        = null;
 let currentCourse = null;
 let currentBotType = null;
-let chatHistory  = [];
-let saveTimer    = null;
-let isLocked     = false;
+let chatHistory   = [];
+let saveTimer     = null;
+let isLocked      = false;
 
 // ─────────────────────────────
 // טעינת config
@@ -128,8 +129,8 @@ async function init() {
   renderBotMenu();
   restoreDraft();
 
-  // כניסה לכיתה אם יש sessionId
-  if (sessionId) classroomJoin();
+  // כניסה לכיתה רק אם יש sessionId מה-URL (שיעור פעיל)
+  if (urlSessionId) classroomJoin();
 }
 
 // ─────────────────────────────
@@ -140,9 +141,8 @@ function renderBotMenu() {
   const botMenu = document.getElementById("bot-menu");
   botMenu.innerHTML = "";
 
-  // בוטים ייעודיים של הקורס
   for (let key in currentCourse.bots) {
-    const bot = currentCourse.bots[key];
+    const bot     = currentCourse.bots[key];
     const botType = bot.botType || bot;
     const label   = bot.label  || key;
     const a = document.createElement("a");
@@ -153,7 +153,6 @@ function renderBotMenu() {
     botMenu.appendChild(a);
   }
 
-  // בוטים כלליים
   const universalMenu = document.getElementById("universal-menu");
   universalMenu.innerHTML = "";
 
@@ -226,13 +225,13 @@ async function sendMessage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        message: text,
-        botType: currentBotType,
-        courseId: courseId,
+        message:     text,
+        botType:     currentBotType,
+        courseId:    courseId,
         hebrewLevel: currentCourse.hebrew_level || null,
         studentId,
         sessionId,
-        history: chatHistory
+        history:     chatHistory
       })
     });
 
@@ -241,7 +240,7 @@ async function sendMessage() {
 
     const reply = data.reply || "שגיאה";
     chatWindow.appendChild(renderMessage("assistant", reply));
-    chatHistory.push({ role: "user", content: text });
+    chatHistory.push({ role: "user",      content: text  });
     chatHistory.push({ role: "assistant", content: reply });
     chatWindow.scrollTop = chatWindow.scrollHeight;
 
@@ -289,17 +288,18 @@ async function submitWork() {
   const text = document.getElementById("student-text").value.trim();
   if (!text) { alert("כתוב משהו לפני שליחה"); return; }
 
-  if (!sessionId) { alert("אין שיעור פעיל כרגע"); return; }
+  // שליחה למרצה רק אם יש שיעור פעיל מה-URL
+  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
 
   await fetch("/.netlify/functions/classroom", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      action: "submit",
+      action:    "submit",
       sessionId,
       studentId,
-      step: 1,
-      content: text
+      step:      1,
+      content:   text
     })
   });
 
