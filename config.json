@@ -1,5 +1,5 @@
 {
-  "system_version": "4.2",
+  "system_version": "4.3",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "_systemPromptExport": {
@@ -18,17 +18,6 @@
     "scopes": ["global", "faculty_private", "institution", "course_specific"],
     "defaultScope": "global",
     "defaultOwner": "system"
-  },
-
-  "home": {
-    "main_title": "ברוכים הבאים למערכת הלמידה",
-    "main_subtitle": "פורטל MilEd.One לחדשנות פדגוגית",
-    "cards": {
-      "courses": { "title": "📚 קידום למידה", "desc": "סוכני קידום למידה מבוססי AI", "url": "/students.html", "color": "courses" },
-      "skills": { "title": "🔍 אבחון וקידום מיומנויות", "desc": "אבחון ופיתוח מיומנויות למידה ותעסוקה", "url": "/skills.html", "color": "skills" },
-      "faculty": { "title": "💡קידום הוראה", "desc": "למרצים: כלים מבוססי AI לקידום ההוראה", "url": "/faculty.html", "color": "faculty" },
-      "admin": { "title": "📊 קידום ניהול", "desc": "להנהלה: ניתוח נתונים ומבט מוסדי", "url": "/admin.html", "color": "admin" }
-    }
   },
 
   "universal": {
@@ -86,29 +75,17 @@
           "thinkingBudget": 1024, "systemPrompt": "אתה מלווה לימודי גרונטולוגיה תוך עידוד חשיבה ביקורתית ויישומית.",
           "scope": "global", "owner": "system", "createdAt": "2026-03-02"
         },
-        "course_interpersonal_communication": {
-          "name": "💬 מיומנויות תקשורת בין אישית", "_layer": "course_general",
-          "botType": "course_interpersonal_communication", "function": "learning", "phase": "development",
-          "thinkingBudget": 512, "systemPrompt": "אתה מסייע בפיתוח מיומנויות תקשורת בין אישית באמצעות תרגול ושאלות עומק.",
-          "scope": "global", "owner": "system", "createdAt": "2026-03-02"
-        },
-         "socratic_student": {
-          "name": "עברית מתקדמים — בוט חקר",
-          "_layer": "course_general",
-          "botType": "socratic_student",
-          "function": "learning",
-          "phase": "development",
-          "thinkingBudget": 1024,
-          "scope": "global",
-          "owner": "system",
-          "createdAt": "2026-02-26",
+        "socratic_student": {
+          "name": "עברית מתקדמים — בוט חקר", "_layer": "course_general",
+          "botType": "socratic_student", "function": "learning", "phase": "development",
+          "thinkingBudget": 1024, "scope": "global", "owner": "system", "createdAt": "2026-02-26",
           "systemPrompt": "אתה מלווה תהליך חקר ופתרון בעיות בקורס עברית מתקדמים. הסטודנטים יכולים לבחור בעיה מכל תחום. תפקידך: לשאול שאלות שמובילות לחשיבה — לא לתת תשובות.\n\nשלבי התהליך:\nשלב 1 — בחירת בעיה: שאל 'מה הבעיה שבחרת?' ו'למה היא מעניינת אותך?' — אל תמשיך בלי שניהם.\nשלב 2 — הבנת הבעיה: שאל 'מי סובל מהבעיה?' ו'מה גרם לה?'\nשלב 3 — פתרונות: שאל 'מצאת פתרון ראשון — מה יתרונותיו וחסרונותיו?' — חזור על כך לפתרון שני.\nשלב 4 — בחירה: שאל 'למה הפתרון שבחרת עדיף? מה הסיכון בו?'\nשלב 5 — הכנה להצגה: שאל 'הסבר את הבעיה בשתי משפטים. עכשיו את הפתרון.'\n\nכללי שפה:\n- עברית פשוטה, משפטים קצרים.\n- שאלה אחת בכל פעם.\n- אם התשובה קצרה — בקש הרחבה.\n- אם כללית — בקש דוגמה קונקרטית.\n- אם הסטודנט כותב בערבית — ענה בעברית ובקש שינסה בעברית.\n- אם מבקש 'תכתוב לי' — השב: 'אני כאן לעזור לך לחשוב. מה אתה כבר יודע על זה?'"
         },
         "task_final_project": {
-          "name": "פרויקט גמר", "_layer": "course_task",
+          "name": "פרויקט גמר — עברית מתקדמים", "_layer": "course_task",
           "botType": "task_final_project", "function": "learning", "phase": "development",
-          "thinkingBudget": 1024, "systemPrompt": "אתה מלווה פרויקט גמר...",
-          "scope": "global", "owner": "system", "createdAt": "2026-02-26"
+          "thinkingBudget": 1024, "scope": "global", "owner": "system", "createdAt": "2026-02-26",
+          "systemPrompt": "אתה מלווה פרויקט גמר בקורס עברית מתקדמים. הסטודנט בחר בעיה, חקר פתרונות, וכתב מסמך מסכם. כעת הוא מתכונן להצגה בפני הכיתה.\n\nתפקידך: לעזור לסטודנט לתרגל את ההצגה בצורה סוקרטית.\n\nשאל את הסטודנט שאלות כמו:\n- 'הסבר לי את הבעיה שבחרת בשתי משפטים.'\n- 'למה הפתרון שבחרת עדיף על האחרים?'\n- 'מה הסיכון בפתרון שלך?'\n- 'מה תגיד אם הקהל ישאל: למה לא פתרון אחר?'\n\nכללי שפה:\n- עברית פשוטה, משפטים קצרים.\n- שאלה אחת בכל פעם.\n- עודד, אל תבקר."
         },
         "course_intro_social_science_mechina": {
           "name": "🌍 מבוא למדעי החברה – מכינת מגזר", "_layer": "course_general",
@@ -132,7 +109,7 @@
         "faculty_assessment_model_builder": {
           "name": "בוט הערכת תוצרי למידה", "_layer": "faculty_tool",
           "botType": "faculty_assessment_model_builder", "function": "teaching", "phase": "design",
-          "thinkingBudget": 2048, "systemPrompt": "אתה מסייע למרצים, להעריך עבודות של סטודנטים, באופן קוהרנטי ומבוסס קריטריונים.",
+          "thinkingBudget": 2048, "systemPrompt": "אתה מסייע למרצים להעריך עבודות של סטודנטים באופן קוהרנטי ומבוסס קריטריונים.",
           "scope": "institution", "owner": "system", "createdAt": "2026-03-02"
         },
         "pedagogical_transformation": {
@@ -214,7 +191,6 @@
   },
 
   "my_courses": {
-
     "hebrew_advanced_optics": {
       "name": "עברית מתקדמים א׳ — אופטיקה",
       "language": "ar",
@@ -399,7 +375,6 @@
       },
       "universal_bots": ["support", "presentation", "research_skills"]
     }
-
   },
 
   "engine": {
