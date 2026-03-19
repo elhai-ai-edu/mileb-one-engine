@@ -1,13 +1,17 @@
+הנה `chat.js` v5.3 — רק שני השינויים המבוקשים, שאר הקוד זהה לחלוטין:
+
+```javascript
 import fs from "fs";
 import path from "path";
 
 const kernelPath = path.resolve(process.cwd(), "kernel.txt");
 const kernel = fs.readFileSync(kernelPath, "utf8");
-// functions/chat.js — MilEd.One v5.2
+// functions/chat.js — MilEd.One v5.3
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing
 // + Hard guards + Config cache TTL + Safe OpenRouter handling + Engine-config driven params
 // + Full System Prompt Export Support + Public/Private Kernel Separation
 // + Firebase session memory + Conversation logging
+// + Automatic session extraction via %%SESSION_UPDATE%% protocol
 
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
@@ -279,7 +283,7 @@ function buildFullSystemPrompt(engine, botConfig, hebrewLevel = null, contextBlo
     kernelBlock.trim(),   // Policy layer
     systemPrompt.trim(),  // Bot layer
     hebrewBlock,          // Hebrew level layer
-    contextBlock          // Session context layer ← חדש
+    contextBlock          // Session context layer
   ].filter(Boolean).join("\n\n");
 
 }
@@ -423,12 +427,24 @@ exports.handler = async (event) => {
     if (effectiveNoFullSolution && looksLikeFullAnswer(reply))
       reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
 
+    // ─── EXTRACT SESSION UPDATE ───
+    let sessionUpdate = null;
+    const sessionMatch = reply.match(/%%SESSION_UPDATE%%([\s\S]*?)%%END%%/);
+    if (sessionMatch) {
+      try {
+        sessionUpdate = JSON.parse(sessionMatch[1].trim());
+        reply = reply.replace(/%%SESSION_UPDATE%%[\s\S]*?%%END%%/, "").trim();
+      } catch(e) {
+        console.error("SESSION UPDATE PARSE ERROR:", e.message);
+      }
+    }
+
     // ─── SAVE SESSION & LOG CONVERSATION ───
+    const saveData = { lastBotType: botType, lastActive: Date.now() };
+    if (sessionUpdate) Object.assign(saveData, sessionUpdate);
+
     await Promise.all([
-      saveSessionContext(studentId, courseId, {
-        lastBotType: botType,
-        lastActive:  Date.now()
-      }),
+      saveSessionContext(studentId, courseId, saveData),
       logMessage(sessionId, "user",      message),
       logMessage(sessionId, "assistant", reply)
     ]);
@@ -438,7 +454,8 @@ exports.handler = async (event) => {
       headers,
       body: JSON.stringify({
         reply, botType, botName: botConfig.name, model,
-        isThinking: model === MODEL_THINKING
+        isThinking:    model === MODEL_THINKING,
+        sessionUpdate
       })
     };
 
@@ -448,3 +465,4 @@ exports.handler = async (event) => {
   }
 
 };
+
