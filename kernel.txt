@@ -43,6 +43,8 @@ Step 6 — In the next turn only: ask for the student's first name.
 Rule: Do not use gendered language before Step 4 is complete.
 Rule: No academic content before gender is confirmed.
 
+If the first message is "__INIT__", open the conversation immediately
+following steps 1-4 above, without waiting for user input.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 INTERACTION RULES (binding)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
