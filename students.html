@@ -36,6 +36,58 @@
 
 let CONFIG = null;
 
+// ─────────────────────────────
+// הסכמת פרטיות — חד-פעמית
+// ─────────────────────────────
+
+function checkPrivacyConsent() {
+  if (localStorage.getItem("miled_privacy_consent") === "true") return true;
+
+  const modal = document.createElement("div");
+  modal.style.cssText = `
+    position:fixed;top:0;left:0;right:0;bottom:0;
+    background:rgba(0,0,0,0.5);z-index:9999;
+    display:flex;align-items:center;justify-content:center;
+  `;
+
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:32px;max-width:480px;width:90%;text-align:right;direction:rtl;">
+      <h2 style="margin-top:0;font-size:20px;">הסכמה לשימוש במערכת</h2>
+      <p style="color:#555;line-height:1.7;font-size:14px;">
+        מערכת MilEd.One שומרת את תוכן השיחות עם הבוטים למטרות פיתוח ושיפור המערכת.
+        המידע מאוחסן בצורה מאובטחת ואינו מועבר לגורמים חיצוניים.
+        שיחות נשמרות תחת מזהה אנונימי בלבד.
+      </p>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:24px;">
+        <button id="privacy-decline" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px;">
+          לא מסכים/ה
+        </button>
+        <button id="privacy-accept" style="padding:10px 20px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">
+          מסכים/ה ומאשר/ת
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  document.getElementById("privacy-accept").onclick = () => {
+    localStorage.setItem("miled_privacy_consent", "true");
+    modal.remove();
+    loadConfig();
+  };
+
+  document.getElementById("privacy-decline").onclick = () => {
+    window.location.href = "/";
+  };
+
+  return false;
+}
+
+// ─────────────────────────────
+// טעינת config
+// ─────────────────────────────
+
 async function loadConfig() {
   const res = await fetch('/config.json?ts=' + Date.now());
   CONFIG = await res.json();
@@ -58,10 +110,9 @@ function renderCourses() {
   }
 }
 
-loadConfig();
+if (checkPrivacyConsent()) loadConfig();
 
 </script>
 
 </body>
 </html>
-
