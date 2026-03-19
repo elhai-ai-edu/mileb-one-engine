@@ -373,7 +373,16 @@ exports.handler = async (event) => {
       if (Array.isArray(sessionCtx.history) && sessionCtx.history.length > 0)
         savedHistory = sessionCtx.history;
     }
-
+    
+    // ─── LOG SESSION METADATA (once per session) ───
+    if (sessionId) {
+      await getDB().ref(`conversations/${sessionId}`).update({
+        studentId,
+        courseId,
+        botType,
+        updatedAt: Date.now()
+      });
+    }
     // ─── CONTEXT-BASED ENFORCEMENT ───
     const contextRules            = resolveContextRules(engine, botConfig);
     const effectiveNoFullSolution = contextRules.noFullSolution === true;
