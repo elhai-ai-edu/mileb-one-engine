@@ -84,8 +84,17 @@
 
 const params    = new URLSearchParams(location.search);
 const courseId  = params.get("courseId") || "";
-const sessionId = params.get("sessionId") || "";
 
+// sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי
+const urlSessionId = params.get("sessionId") || "";
+let sessionId = urlSessionId;
+if (!sessionId) {
+  sessionId = sessionStorage.getItem("sessionId_" + courseId);
+  if (!sessionId) {
+    sessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    sessionStorage.setItem("sessionId_" + courseId, sessionId);
+  }
+}
 let studentId = sessionStorage.getItem("studentId");
 if (!studentId) {
   studentId = "s_" + Math.random().toString(36).slice(2, 10);
