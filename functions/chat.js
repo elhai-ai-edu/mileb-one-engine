@@ -3,7 +3,7 @@ import path from "path";
 
 const kernelPath = path.resolve(process.cwd(), "kernel.txt");
 const kernel = fs.readFileSync(kernelPath, "utf8");
-// functions/chat.js — MilEd.One v5.0
+// functions/chat.js — MilEd.One v5.1
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing
 // + Hard guards + Config cache TTL + Safe OpenRouter handling + Engine-config driven params
 // + Full System Prompt Export Support + Public/Private Kernel Separation
@@ -327,15 +327,16 @@ exports.handler = async (event) => {
     const exportPrompt =
       event.queryStringParameters?.exportPrompt === "true";
 
-
+    // ── שינוי: הוספת hebrewLevel ל-destructuring ──
     const {
-      message   = "שלום",
-      history   = [],
-      botType   = null,
-      studentId = "anonymous",
-      facultyId = null,
-      classId   = null,
-      sessionId = null
+      message      = "שלום",
+      history      = [],
+      botType      = null,
+      studentId    = "anonymous",
+      facultyId    = null,
+      classId      = null,
+      sessionId    = null,
+      hebrewLevel  = null          // ← תוקן
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -414,22 +415,20 @@ const noFullSolutionByContext =
 // ההחלטה הסופית
 const effectiveNoFullSolution =
   noFullSolutionByContext;
+
     const model = selectModel(botConfig.botType);
 
     const temperature = engine.temperature ?? 0.7;
     const maxTokens   = engine.maxOutputTokens ?? 1024;
 
-    const hebrewLevel = body.hebrewLevel || null;
-const finalSystemPrompt =
-  buildFullSystemPrompt(engine, botConfig, hebrewLevel);
-
+    // ── שינוי: hebrewLevel כבר מוגדר מה-destructuring, שורה הבעייתית הוסרה ──
+    const finalSystemPrompt =
+      buildFullSystemPrompt(engine, botConfig, hebrewLevel);
 
     const trimmedHistory =
       history
         .filter(m => m && typeof m.content === "string")
         .slice(-14);
-
-
 
    if (effectiveNoFullSolution &&
     detectFullSolutionRequest(message)) {
@@ -454,8 +453,6 @@ const finalSystemPrompt =
 
     }
 
-
-
     const messages = [
 
       { role: "system", content: finalSystemPrompt },
@@ -468,7 +465,6 @@ const finalSystemPrompt =
       { role: "user", content: message }
 
     ];
-
 
     const response = await fetch(OPENROUTER_URL, {
 
@@ -494,7 +490,6 @@ const finalSystemPrompt =
 
     });
 
-
     let raw;
     let data;
 
@@ -507,11 +502,9 @@ if (!response.ok) {
 
 data = JSON.parse(raw);
 
-
     let reply =
       data.choices?.[0]?.message?.content
       || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
-
 
    if (effectiveNoFullSolution &&
     looksLikeFullAnswer(reply)) {
@@ -519,7 +512,6 @@ data = JSON.parse(raw);
       reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
 
     }
-
 
     return {
 
@@ -537,7 +529,6 @@ data = JSON.parse(raw);
       })
 
     };
-
 
   } catch (err) {
 
