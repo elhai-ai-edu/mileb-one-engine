@@ -384,9 +384,12 @@ if (sessionCtx) {
 
     const finalSystemPrompt = buildFullSystemPrompt(engine, botConfig, hebrewLevel, contextBlock);
 
-    const trimmedHistory = history
-      .filter(m => m && typeof m.content === "string")
-      .slice(-14);
+   // אם ה-frontend שלח history — השתמש בו, אחרת טען מ-Firebase
+const effectiveHistory = (history && history.length > 0) ? history : savedHistory;
+
+const trimmedHistory = effectiveHistory
+  .filter(m => m && typeof m.content === "string")
+  .slice(-14);
 
     if (effectiveNoFullSolution && detectFullSolutionRequest(message)) {
       return {
