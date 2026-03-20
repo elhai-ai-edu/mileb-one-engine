@@ -15,6 +15,13 @@
     X-Frame-Options = "DENY"
     X-Content-Type-Options = "nosniff"
 
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+    Access-Control-Allow-Methods = "GET, POST, OPTIONS"
+
 [[redirects]]
   from = "/api/architect/*"
   to   = "/.netlify/functions/architect_api"
