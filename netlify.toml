@@ -16,6 +16,11 @@
     X-Content-Type-Options = "nosniff"
 
 [[redirects]]
+  from = "/api/architect/*"
+  to   = "/.netlify/functions/architect_api"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200

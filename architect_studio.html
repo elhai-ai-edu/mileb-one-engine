@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<title>MilEd.One — Architect Studio</title>
+<style>
+
+/* ─── Reset & Base ─── */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: 'Inter', sans-serif;
+  background: #f0f2f8;
+  margin: 0;
+  color: #1e2740;
+  min-height: 100vh;
+}
+
+/* ─── Header ─── */
+.studio-header {
+  background: linear-gradient(135deg, #6C63FF 0%, #4f46e5 60%, #2563eb 100%);
+  color: white;
+  padding: 0 40px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 4px 20px rgba(108,99,255,0.3);
+}
+.studio-header .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.studio-header .brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.studio-header .brand-sub {
+  font-size: 13px;
+  opacity: 0.75;
+  font-weight: 400;
+}
+.studio-header .header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  opacity: 0.85;
+}
+.step-pill {
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.step-pill.active {
+  background: rgba(255,255,255,0.9);
+  color: #4f46e5;
+}
+
+/* ─── Progress Bar ─── */
+.progress-bar {
+  background: #e5e7eb;
+  height: 4px;
+  position: sticky;
+  top: 64px;
+  z-index: 99;
+}
+.progress-fill {
+  background: linear-gradient(90deg, #6C63FF, #2563eb);
+  height: 100%;
+  width: 33%;
+  transition: width 0.5s ease;
+}
+
+/* ─── Main Layout ─── */
+.studio-body {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+/* ─── Section Cards ─── */
+.section-card {
+  background: white;
+  border-radius: 20px;
+  padding: 36px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.06);
+  margin-bottom: 24px;
+  transition: opacity 0.3s ease;
+}
+.section-card.dimmed {
+  opacity: 0.45;
+  pointer-events: none;
+}
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-sub {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 24px;
+  line-height: 1.6;
+}
+
+/* ─── Intro Cards Grid ─── */
+.intro-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.intro-tile {
+  border-radius: 14px;
+  padding: 20px;
+  background: #f8f9ff;
+  border: 1px solid #e8eaf6;
+}
+.intro-tile .tile-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+.intro-tile h4 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+.intro-tile p {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* ─── Stage Steps ─── */
+.stage-flow {
+  display: flex;
+  gap: 0;
+  margin-bottom: 28px;
+  background: #f8f9ff;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e8eaf6;
+}
+.stage-step {
+  flex: 1;
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 13px;
+  position: relative;
+  border-left: 1px solid #e8eaf6;
+}
+.stage-step:last-child { border-left: none; }
+.stage-step .step-num {
+  display: block;
+  font-weight: 700;
+  color: #6C63FF;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.stage-step .step-label {
+  display: block;
+  font-weight: 500;
+  color: #374151;
+  font-size: 12px;
+}
+
+/* ─── Tally Section ─── */
+.tally-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.tally-option {
+  border-radius: 14px;
+  border: 2px solid #e8eaf6;
+  padding: 24px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: white;
+}
+.tally-option:hover {
+  border-color: #6C63FF;
+  background: #f8f9ff;
+}
+.tally-option .opt-icon { font-size: 32px; margin-bottom: 10px; }
+.tally-option h4 { font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+.tally-option p { font-size: 13px; color: #6b7280; margin: 0; line-height: 1.5; }
+
+/* ─── Tally iframe container ─── */
+.tally-frame-wrap {
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e8eaf6;
+  background: #f8f9ff;
+  min-height: 520px;
+  display: none;
+}
+.tally-frame-wrap iframe {
+  width: 100%;
+  height: 520px;
+  border: none;
+}
+
+/* ─── Complete Questionnaire Button ─── */
+.complete-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* ─── Chat Window ─── */
+.chat-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e8eaf6;
+  overflow: hidden;
+  min-height: 520px;
+}
+.chat-header {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #6C63FF 0%, #4f46e5 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.chat-header .bot-avatar {
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.chat-header .bot-info h4 {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.chat-header .bot-info span {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.chat-status {
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  opacity: 0.85;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+#chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 380px;
+}
+.msg {
+  max-width: 82%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+.msg.ai {
+  background: #f3f4f6;
+  color: #1e2740;
+  align-self: flex-start;
+  border-bottom-right-radius: 4px;
+}
+.msg.ai p { margin: 0 0 8px; }
+.msg.ai p:last-child { margin-bottom: 0; }
+.msg.user {
+  background: linear-gradient(135deg, #6C63FF, #4f46e5);
+  color: white;
+  align-self: flex-end;
+  border-bottom-left-radius: 4px;
+}
+.msg.thinking {
+  background: #f3f4f6;
+  align-self: flex-start;
+  color: #9ca3af;
+  font-style: italic;
+}
+.chat-input-row {
+  padding: 12px 16px;
+  border-top: 1px solid #e8eaf6;
+  display: flex;
+  gap: 10px;
+  background: white;
+}
+#chat-input {
+  flex: 1;
+  border: 1px solid #e8eaf6;
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #1e2740;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  height: 46px;
+}
+#chat-input:focus { border-color: #6C63FF; }
+#send-btn {
+  background: linear-gradient(135deg, #6C63FF, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  height: 46px;
+}
+#send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Stage Tracker (inside chat) ─── */
+.stage-tracker {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8eaf6;
+  background: #fafbff;
+  overflow-x: auto;
+}
+.tracker-step {
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  background: #e8eaf6;
+  color: #6b7280;
+  white-space: nowrap;
+  cursor: default;
+  transition: background 0.3s, color 0.3s;
+}
+.tracker-step.done {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.tracker-step.active {
+  background: #6C63FF;
+  color: white;
+}
+
+/* ─── Export Hub ─── */
+.export-hub {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+.export-card {
+  border-radius: 14px;
+  border: 2px solid #e8eaf6;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color 0.2s;
+}
+.export-card:hover { border-color: #6C63FF; }
+.export-card .ex-icon { font-size: 28px; }
+.export-card h4 { margin: 0; font-size: 15px; font-weight: 600; }
+.export-card p { margin: 0; font-size: 13px; color: #6b7280; line-height: 1.5; }
+.export-card .ex-sub { font-size: 11px; color: #9ca3af; }
+
+/* ─── Buttons ─── */
+.btn {
+  border: none;
+  border-radius: 10px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+  font-family: 'Inter', sans-serif;
+}
+.btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-primary {
+  background: linear-gradient(135deg, #6C63FF, #4f46e5);
+  color: white;
+}
+.btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+.btn-success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+.btn-outline {
+  background: transparent;
+  border: 2px solid #6C63FF;
+  color: #6C63FF;
+}
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── Notices ─── */
+.notice {
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.notice-info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.notice-success { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.notice-warn { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+</style>
+</head>
+
+<body>
+
+<!-- ─── Header ─── -->
+<header class="studio-header">
+  <div class="brand">
+    <div>
+      <div class="brand-name">MilEd.One</div>
+      <div class="brand-sub">Architect Studio</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span id="header-step-1" class="step-pill active">1. רקע</span>
+    <span id="header-step-2" class="step-pill">2. שאלון</span>
+    <span id="header-step-3" class="step-pill">3. בנייה וייצוא</span>
+    <a href="/faculty.html" style="color:white;opacity:0.7;font-size:13px;text-decoration:none;">← פורטל סגל</a>
+  </div>
+</header>
+
+<div class="progress-bar">
+  <div class="progress-fill" id="progress-fill"></div>
+</div>
+
+<!-- ─── Body ─── -->
+<div class="studio-body">
+
+  <!-- ═══════════════════════════════ -->
+  <!-- SECTION 1 — INTRO              -->
+  <!-- ═══════════════════════════════ -->
+  <div class="section-card" id="section-intro">
+
+    <h2 class="section-title">
+      🏗️ ברוכים הבאים ל-Architect Studio
+    </h2>
+    <p class="section-sub">
+      כאן תבנו את הבוט הפדגוגי שלכם — צעד אחר צעד. הארכיטקט ינחה אתכם בתהליך של 4 שלבים,
+      ישאל שאלות ממוקדות, ויייצר עבורכם System Prompt מלא ומוכן להטמעה.
+    </p>
+
+    <div class="intro-grid">
+      <div class="intro-tile">
+        <div class="tile-icon">📋</div>
+        <h4>מה זה בוט פדגוגי?</h4>
+        <p>בוט שפועל על פי כללים פדגוגיים מוגדרים — לא רק "AI שעונה". הוא יודע מתי לא לתת תשובה, איך להנחות ולא לפתור, ומתי לחסום התקדמות.</p>
+      </div>
+      <div class="intro-tile">
+        <div class="tile-icon">🔒</div>
+        <h4>מה נעול תמיד?</h4>
+        <p>7 עקרונות הגרעין (Kernel) של MilEd.One — כולל: לא לדלג על שלבים, לשמור על אחריות הסטודנט, הערכה רק לפי קריטריונים מוגדרים.</p>
+      </div>
+      <div class="intro-tile">
+        <div class="tile-icon">🎛️</div>
+        <h4>מה אתם מגדירים?</h4>
+        <p>תחום הידע, מבנה התהליך, עומק, טון, סוג המשוב, הקהל, שפה, שלב הלמידה, סוג המשימה, ועוד — דרך שאלון של 9 אשכולות.</p>
+      </div>
+      <div class="intro-tile">
+        <div class="tile-icon">📤</div>
+        <h4>מה אתם מקבלים?</h4>
+        <p>System Prompt מלא ב-8 שכבות בעברית, מוכן להטמעה ב-MilEd.One — ואפשרות לייצא גרסה חיצונית ל-ChatGPT / Gemini.</p>
+      </div>
+    </div>
+
+    <div class="stage-flow">
+      <div class="stage-step">
+        <span class="step-num">שלב 1</span>
+        <span class="step-label">קליטת נתונים</span>
+      </div>
+      <div class="stage-step">
+        <span class="step-num">שלב 2</span>
+        <span class="step-label">בחינת עומס פדגוגי</span>
+      </div>
+      <div class="stage-step">
+        <span class="step-num">שלב 3</span>
+        <span class="step-label">הרכבת 8 שכבות</span>
+      </div>
+      <div class="stage-step">
+        <span class="step-num">שלב 4</span>
+        <span class="step-label">ייצוא ושמירה</span>
+      </div>
+    </div>
+
+    <div class="notice notice-info">
+      <strong>לפני שמתחילים:</strong> כדאי לחשוב מראש על מטרת הבוט, סוג הקהל, ומה אתם רוצים שהסטודנטים יחוו בשיחה איתו. זה יעזור לשאלון להיות ממוקד יותר.
+    </div>
+
+    <br>
+    <button class="btn btn-primary" onclick="goToStep(2)">התחל → עבור לשאלון</button>
+
+  </div>
+
+  <!-- ═══════════════════════════════ -->
+  <!-- SECTION 2 — QUESTIONNAIRE      -->
+  <!-- ═══════════════════════════════ -->
+  <div class="section-card dimmed" id="section-questionnaire">
+
+    <h2 class="section-title">📝 שאלון תכנון הבוט</h2>
+    <p class="section-sub">
+      השאלון מכסה 9 אשכולות (A–I): מהמשימה ועד למדיניות הערכה. הוא אורך כ-10 דקות.
+      מלאו אותו בשלמות — כל שדה מוזן ישירות לתהליך הבנייה של הארכיטקט.
+    </p>
+
+    <div class="tally-options" id="tally-options">
+      <div class="tally-option" onclick="openTallyEmbed()">
+        <div class="opt-icon">📋</div>
+        <h4>מלא את השאלון כאן</h4>
+        <p>השאלון ייפתח בתוך עמוד זה. לאחר השלמתו לחצו "המשך לבנייה".</p>
+      </div>
+      <div class="tally-option" onclick="skipToChat()">
+        <div class="opt-icon">💬</div>
+        <h4>התחל שיחה ישירה עם הארכיטקט</h4>
+        <p>אם אתם יודעים מה אתם רוצים — תארו את הבוט שלכם בשפה חופשית. הארכיטקט ישאל את השאלות הנדרשות.</p>
+      </div>
+    </div>
+
+    <!-- Tally iframe (shown after openTallyEmbed) -->
+    <div class="tally-frame-wrap" id="tally-frame-wrap">
+      <iframe
+        id="tally-iframe"
+        src="about:blank"
+        title="שאלון תכנון בוט MilEd.One">
+      </iframe>
+    </div>
+
+    <!-- Complete button row -->
+    <div class="complete-btn-row" id="complete-btn-row" style="display:none;">
+      <button class="btn btn-success" id="btn-complete-questionnaire" onclick="completeQuestionnaire()">סיימתי את השאלון — המשך לבנייה</button>
+      <span id="bootstrap-status" style="font-size:13px;color:#6b7280;">הארכיטקט יטען את התשובות שלכם ויתחיל את השיחה</span>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════ -->
+  <!-- SECTION 3 — CHAT + EXPORT      -->
+  <!-- ═══════════════════════════════ -->
+  <div class="section-card dimmed" id="section-chat">
+
+    <h2 class="section-title">🤖 שיחה עם הארכיטקט</h2>
+    <p class="section-sub">
+      הארכיטקט ינתח את התשובות שלכם, ישאל שאלות ממוקדות לגבי קונפליקטים פדגוגיים,
+      ויבנה System Prompt מלא בסיום השיחה.
+    </p>
+
+    <div class="chat-wrap">
+
+      <div class="chat-header">
+        <div class="bot-avatar">🏗️</div>
+        <div class="bot-info">
+          <h4>בונה הבוטים — Bot Architect</h4>
+          <span>MilEd.One v4.2 · Phase: design · DNA: metacognitive + transformational</span>
+        </div>
+        <div class="chat-status">
+          <div class="status-dot"></div>
+          <span id="chat-status-text">מחכה להתחלת שיחה</span>
+        </div>
+      </div>
+
+      <!-- Stage Tracker -->
+      <div class="stage-tracker">
+        <div class="tracker-step active" id="t-stage-1">1. קליטת נתונים</div>
+        <div class="tracker-step" id="t-stage-2">2. בחינת עומס</div>
+        <div class="tracker-step" id="t-stage-3">3. הרכבת SP</div>
+        <div class="tracker-step" id="t-stage-4">4. ייצוא</div>
+      </div>
+
+      <div id="chat-messages">
+        <div class="msg ai">בחרו בסעיף "התחל שיחה" או השלימו את השאלון כדי לפתוח את הארכיטקט.</div>
+      </div>
+
+      <div class="chat-input-row">
+        <input
+          id="chat-input"
+          type="text"
+          placeholder="כתבו הודעה לארכיטקט..."
+          onkeypress="handleKey(event)"
+          disabled>
+        <button id="send-btn" class="btn btn-primary btn-sm" onclick="sendMessage()" disabled>שלח</button>
+      </div>
+
+    </div>
+
+    <!-- ─── Export Hub ─── -->
+    <h3 style="margin-top:32px;margin-bottom:8px;font-size:16px;font-weight:700;">
+      📦 ייצוא ושמירה
+    </h3>
+    <p style="font-size:13px;color:#6b7280;margin:0 0 16px;">
+      לאחר שהארכיטקט יסיים לבנות את ה-System Prompt, כפתורי הייצוא יתפעלו.
+    </p>
+
+    <div class="export-hub">
+
+      <div class="export-card">
+        <div class="ex-icon">💾</div>
+        <h4>שמירה ל-MilEd.One</h4>
+        <p>שומר את הבוט החדש ישירות ל-config.json של המערכת. הבוט יופיע אצל הסטודנטים בסשן הבא.</p>
+        <span class="ex-sub">מסלול: POST /api/architect/export → Firebase → config.json</span>
+        <button class="btn btn-success" id="btn-save-miled" onclick="saveMiled()" disabled style="margin-top:8px;">
+          💾 שמור ל-MilEd.One
+        </button>
+      </div>
+
+      <div class="export-card">
+        <div class="ex-icon">🌐</div>
+        <h4>ייצוא ל-AI חיצוני</h4>
+        <p>מוריד קובץ טקסט עם ה-System Prompt המותאם ל-ChatGPT / Gemini, כולל "Bridge paragraph" באנגלית.</p>
+        <span class="ex-sub">פורמט: .txt · כולל 7 כללי האכיפה של MilEd Kernel</span>
+        <button class="btn btn-outline" id="btn-export-external" onclick="exportExternal()" disabled style="margin-top:8px;">
+          📥 הורד SP חיצוני
+        </button>
+      </div>
+
+    </div>
+
+    <div id="export-notice" class="notice notice-warn" style="display:none;">
+      ייצוא ה-API עדיין בשלב פיתוח (AR-1). ניתן להעתיק את ה-SP מהשיחה ולשמור ידנית.
+    </div>
+
+  </div>
+
+</div><!-- /studio-body -->
+
+<script>
+// ─────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────
+
+let currentStep    = 1;
+let chatHistory    = [];
+let sessionId      = null;
+let chatEnabled    = false;
+let architectStage = 1;
+const TALLY_URL    = "https://tally.so/r/Ek07No"; // MILED Bot Architect questionnaire
+
+// sessionId — one per browser session for the architect studio
+// If returning from Tally redirect (?sessionId=SUBMISSION_ID), restore that session.
+const _urlSessionId = new URLSearchParams(window.location.search).get("sessionId");
+if (_urlSessionId) {
+  sessionId = _urlSessionId;
+  sessionStorage.setItem("arch_sessionId", sessionId);
+  sessionStorage.setItem("arch_mode", "tally");
+  // Auto-advance to step 3 and trigger bootstrap
+  window.addEventListener("DOMContentLoaded", () => {
+    completeQuestionnaire();
+  }, { once: true });
+} else {
+  sessionId = sessionStorage.getItem("arch_sessionId");
+  if (!sessionId) {
+    sessionId = "arch_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+    sessionStorage.setItem("arch_sessionId", sessionId);
+  }
+}
+
+// ─── Tally postMessage listener ───────────────────────────────────────────
+// Fires when the embedded Tally form is submitted (iframe mode).
+// Extracts submissionId and triggers completeQuestionnaire() automatically.
+window.addEventListener("message", function(e) {
+  if (!e.data || typeof e.data !== "object") return;
+  // Tally sends tally-form-submitted or a payload with formId
+  const isSubmit = e.data.type === "tally-form-submitted"
+    || (e.data.isTally && e.data.event === "submit");
+  if (!isSubmit) return;
+
+  const submissionId = e.data.data?.responseId
+    || e.data.data?.submissionId
+    || e.data.responseId
+    || null;
+
+  if (submissionId) {
+    sessionId = submissionId;
+    sessionStorage.setItem("arch_sessionId", sessionId);
+    sessionStorage.setItem("arch_mode", "tally");
+    sessionStorage.removeItem("arch_bootstrapMessage"); // clear any stale bootstrap
+  }
+  // Trigger bootstrap (with or without submissionId — server will use what it has)
+  completeQuestionnaire();
+});
+
+// ─────────────────────────────────────────────────────
+// STEP NAVIGATION
+// ─────────────────────────────────────────────────────
+
+function goToStep(step) {
+  currentStep = step;
+
+  // Progress bar
+  const fills = { 1: "8%", 2: "50%", 3: "100%" };
+  document.getElementById("progress-fill").style.width = fills[step] || "8%";
+
+  // Header pills
+  ["1","2","3"].forEach(n => {
+    const el = document.getElementById("header-step-" + n);
+    el.classList.toggle("active", parseInt(n) === step);
+  });
+
+  // Section visibility
+  const sections = ["section-intro", "section-questionnaire", "section-chat"];
+  sections.forEach((id, idx) => {
+    const el = document.getElementById(id);
+    el.classList.toggle("dimmed", idx + 1 > step);
+  });
+
+  // Scroll to active section
+  const targets = [null, "section-questionnaire", "section-chat"];
+  if (targets[step - 1]) {
+    document.getElementById(targets[step - 1])
+      .scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  if (step === 3) {
+    initChat();
+  }
+}
+
+// ─────────────────────────────────────────────────────
+// TALLY
+// ─────────────────────────────────────────────────────
+
+function openTallyEmbed() {
+  const wrap = document.getElementById("tally-frame-wrap");
+  const iframe = document.getElementById("tally-iframe");
+
+  if (TALLY_URL) {
+    // Pass studio sessionId as hidden field pre-fill and enable transparent background
+    iframe.src = TALLY_URL + "?session_id=" + encodeURIComponent(sessionId) + "&transparentBackground=1";
+    wrap.style.display = "block";
+  } else {
+    // Placeholder when Tally URL is not yet configured
+    wrap.style.display = "block";
+    wrap.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
+        min-height:300px;color:#6b7280;text-align:center;padding:40px;">
+        <div style="font-size:48px;margin-bottom:16px;">📋</div>
+        <h3 style="margin:0 0 8px;font-size:16px;color:#374151;">השאלון עדיין לא מוגדר</h3>
+        <p style="font-size:14px;max-width:400px;line-height:1.6;">
+          יש להגדיר כתובת Tally בקוד (TALLY_URL). בינתיים ניתן להשתמש בשיחה ישירה עם הארכיטקט.
+        </p>
+        <button class="btn btn-primary" onclick="skipToChat()" style="margin-top:20px;">
+          עבור לשיחה ישירה →
+        </button>
+      </div>`;
+  }
+
+  // Show the "done with questionnaire" button
+  document.getElementById("complete-btn-row").style.display = "flex";
+  document.getElementById("tally-options").style.display = "none";
+}
+
+function skipToChat() {
+  goToStep(3);
+  // Store that we're using free-form input (no Tally data)
+  sessionStorage.setItem("arch_mode", "freeform");
+}
+
+async function completeQuestionnaire() {
+  const btn    = document.getElementById("btn-complete-questionnaire");
+  const status = document.getElementById("bootstrap-status");
+  btn.disabled = true;
+  status.textContent = "טוען נתוני שאלון...";
+
+  try {
+    const res = await fetch("/api/architect/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId })
+    });
+    const data = await res.json();
+
+    if (data.ok && data.bootstrapMessage) {
+      sessionStorage.setItem("arch_bootstrapMessage", data.bootstrapMessage);
+      sessionStorage.setItem("arch_mode", "tally");
+      status.textContent = `נטענו ${data.stressTestCount ?? 0} בדיקות עיצוביות. מתחיל שיחה...`;
+    } else {
+      // Bootstrap failed or session not found (Tally webhook may not have fired yet) — fall back to freeform
+      console.warn("BOOTSTRAP: session not found or failed, falling back to freeform.", data.error);
+      sessionStorage.removeItem("arch_bootstrapMessage");
+      sessionStorage.setItem("arch_mode", "freeform");
+      status.textContent = "לא נמצאו נתוני שאלון — ממשיך בשיחה חופשית.";
+    }
+  } catch (e) {
+    console.warn("BOOTSTRAP: network error, falling back to freeform:", e.message);
+    sessionStorage.removeItem("arch_bootstrapMessage");
+    sessionStorage.setItem("arch_mode", "freeform");
+    status.textContent = "שגיאת רשת — ממשיך בשיחה חופשית.";
+  }
+
+  goToStep(3);
+}
+
+// ─────────────────────────────────────────────────────
+// CHAT ENGINE
+// ─────────────────────────────────────────────────────
+
+function initChat() {
+  const input  = document.getElementById("chat-input");
+  const btn    = document.getElementById("send-btn");
+  input.disabled  = false;
+  btn.disabled    = false;
+  chatEnabled  = true;
+
+  document.getElementById("chat-status-text").innerText = "פעיל";
+
+  if (chatHistory.length === 0) {
+    triggerOpening();
+  }
+}
+
+function renderMessage(role, content) {
+  const div = document.createElement("div");
+  div.className = "msg " + (role === "user" ? "user" : "ai");
+  if (role === "user") {
+    div.textContent = content;
+  } else {
+    div.innerHTML = typeof marked !== "undefined" ? marked.parse(content) : content;
+  }
+  return div;
+}
+
+async function triggerOpening() {
+  const messages = document.getElementById("chat-messages");
+  messages.innerHTML = "";
+
+  const thinking = document.createElement("div");
+  thinking.className = "msg thinking";
+  thinking.textContent = "הארכיטקט מתחיל...";
+  messages.appendChild(thinking);
+
+  const mode            = sessionStorage.getItem("arch_mode") || "tally";
+  const bootstrapMsg    = sessionStorage.getItem("arch_bootstrapMessage");
+  const initMsg = mode === "freeform"
+    ? "__INIT_FREEFORM__"
+    : (bootstrapMsg || "__INIT__");
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message:         initMsg,
+        botType:         "bot_architect",
+        classId:         "architect_studio",
+        studentId:       "faculty_" + sessionId,
+        sessionId,
+        history:         [],
+        isNewBotSession: true
+      })
+    });
+
+    const data = await res.json();
+    thinking.remove();
+
+    if (data.reply) {
+      messages.appendChild(renderMessage("assistant", data.reply));
+      chatHistory.push({ role: "assistant", content: data.reply });
+    }
+  } catch (e) {
+    thinking.remove();
+    messages.appendChild(renderMessage("assistant",
+      "שגיאת חיבור לשרת. אנא רענן את הדף ונסה שוב."));
+  }
+
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function sendMessage() {
+  if (!chatEnabled) return;
+  const inputEl = document.getElementById("chat-input");
+  const text    = inputEl.value.trim();
+  if (!text) return;
+
+  const messages = document.getElementById("chat-messages");
+  const btn      = document.getElementById("send-btn");
+
+  messages.appendChild(renderMessage("user", text));
+  inputEl.value   = "";
+  btn.disabled    = true;
+  inputEl.disabled = true;
+
+  chatHistory.push({ role: "user", content: text });
+
+  const thinking = document.createElement("div");
+  thinking.className = "msg thinking";
+  thinking.textContent = "הארכיטקט חושב...";
+  messages.appendChild(thinking);
+  messages.scrollTop = messages.scrollHeight;
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message:   text,
+        botType:   "bot_architect",
+        classId:   "architect_studio",
+        studentId: "faculty_" + sessionId,
+        sessionId,
+        history:   chatHistory.slice(-20)
+      })
+    });
+
+    const data = await res.json();
+    thinking.remove();
+
+    if (data.reply) {
+      messages.appendChild(renderMessage("assistant", data.reply));
+      chatHistory.push({ role: "assistant", content: data.reply });
+      detectArchitectStage(data.reply);
+    }
+  } catch (e) {
+    thinking.remove();
+    messages.appendChild(renderMessage("assistant",
+      "שגיאת תקשורת — אנא נסה שוב."));
+  }
+
+  btn.disabled     = false;
+  inputEl.disabled = false;
+  inputEl.focus();
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function handleKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) sendMessage();
+}
+
+// ─────────────────────────────────────────────────────
+// STAGE TRACKER — auto-advance based on keywords
+// ─────────────────────────────────────────────────────
+
+function detectArchitectStage(reply) {
+  // Stage 2: Stress Test questions detected
+  if (architectStage === 1 &&
+     (reply.includes("Stress Test") || reply.includes("בדיקת עומס") ||
+      reply.includes("ST-") || reply.includes("קונפליקט"))) {
+    advanceArchitectStage(2);
+  }
+  // Stage 3: SP assembly started
+  if (architectStage <= 2 &&
+     (reply.includes("שכבה 1") || reply.includes("Layer 1") ||
+      reply.includes("מרכיב את ה-SP") || reply.includes("## זהות"))) {
+    advanceArchitectStage(3);
+  }
+  // Stage 4: Export ready
+  if (architectStage <= 3 &&
+     (reply.includes("Export") || reply.includes("ייצוא") ||
+      reply.includes("config.json") || reply.includes("MILED ENFORCEMENT BRIDGE"))) {
+    advanceArchitectStage(4);
+    enableExport();
+  }
+}
+
+function advanceArchitectStage(stage) {
+  architectStage = stage;
+  ["1","2","3","4"].forEach(n => {
+    const el = document.getElementById("t-stage-" + n);
+    const num = parseInt(n);
+    if (num < stage)       el.className = "tracker-step done";
+    else if (num === stage) el.className = "tracker-step active";
+    else                   el.className = "tracker-step";
+  });
+}
+
+// ─────────────────────────────────────────────────────
+// EXPORT
+// ─────────────────────────────────────────────────────
+
+function enableExport() {
+  document.getElementById("btn-save-miled").disabled     = false;
+  document.getElementById("btn-export-external").disabled = false;
+}
+
+function showNotice(text, type) {
+  const el = document.getElementById("export-notice");
+  el.style.display = "block";
+  el.className = "notice " + (type === "success" ? "notice-success" : "notice-warn");
+  el.textContent = text;
+}
+
+function extractConfigSnippet() {
+  for (let i = chatHistory.length - 1; i >= 0; i--) {
+    if (chatHistory[i].role !== "assistant") continue;
+    const match = chatHistory[i].content.match(/```json\s*([\s\S]*?)```/);
+    if (match) {
+      try { return JSON.parse(match[1].trim()); } catch { continue; }
+    }
+  }
+  return null;
+}
+
+function extractExternalSP() {
+  for (let i = chatHistory.length - 1; i >= 0; i--) {
+    const m = chatHistory[i];
+    if (m.role !== "assistant") continue;
+    if (m.content.includes("MILED ENFORCEMENT BRIDGE") ||
+        (m.content.includes("## זהות") && m.content.length > 500)) return m.content;
+  }
+  return null;
+}
+
+async function saveMiled() {
+  const configSnippet = extractConfigSnippet();
+  if (!configSnippet) {
+    showNotice("לא נמצא קטע JSON תקין בשיחה. המשיכו את השיחה עם הארכיטקט עד שלב 4.", "warn");
+    return;
+  }
+  const externalSP = extractExternalSP();
+
+  // Inject credentials form if not already present
+  if (!document.getElementById("creds-form")) {
+    const hub = document.querySelector(".export-hub");
+    const formEl = document.createElement("div");
+    formEl.id = "creds-form";
+    formEl.style.cssText = "margin-top:16px;padding:16px;background:#1e2a3a;border-radius:8px;border:1px solid #2d3f55;";
+    formEl.innerHTML = `
+      <p style="margin:0 0 10px;font-size:13px;color:#a0aec0;">הזינו פרטי כניסה לאישור השמירה</p>
+      <input id="creds-user" type="text" placeholder="שם משתמש" autocomplete="username"
+        style="width:100%;box-sizing:border-box;padding:8px 10px;margin-bottom:8px;border-radius:6px;border:1px solid #2d3f55;background:#0f1923;color:#e2e8f0;font-size:13px;" />
+      <input id="creds-pass" type="password" placeholder="סיסמה" autocomplete="current-password"
+        style="width:100%;box-sizing:border-box;padding:8px 10px;margin-bottom:12px;border-radius:6px;border:1px solid #2d3f55;background:#0f1923;color:#e2e8f0;font-size:13px;" />
+      <button onclick="submitSaveMiled()"
+        style="width:100%;padding:9px;border-radius:6px;border:none;background:#38a169;color:white;font-size:14px;font-weight:600;cursor:pointer;">
+        אשר ושמור
+      </button>
+      <span id="creds-status" style="display:block;margin-top:8px;font-size:12px;color:#fc8181;"></span>
+    `;
+    hub.appendChild(formEl);
+  }
+
+  window._pendingExport = { configSnippet, externalSP };
+}
+
+async function submitSaveMiled() {
+  const username = document.getElementById("creds-user").value.trim();
+  const password = document.getElementById("creds-pass").value;
+  const statusEl = document.getElementById("creds-status");
+
+  if (!username || !password) {
+    statusEl.textContent = "נא למלא שם משתמש וסיסמה.";
+    return;
+  }
+
+  const { configSnippet, externalSP } = window._pendingExport || {};
+  if (!configSnippet) {
+    statusEl.textContent = "שגיאה: אין נתוני בוט לשמירה.";
+    return;
+  }
+
+  statusEl.style.color = "#a0aec0";
+  statusEl.textContent = "שומר...";
+
+  try {
+    const res = await fetch("/api/architect/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessionId,
+        configSnippet,
+        externalSP: externalSP || null,
+        requesterUsername: username,
+        requesterPassword: password
+      })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      document.getElementById("creds-form").style.display = "none";
+      document.getElementById("btn-save-miled").disabled = true;
+      showNotice("הבוט נשמר בהצלחה! botId: " + data.botId + " — " + data.message, "success");
+    } else {
+      statusEl.style.color = "#fc8181";
+      if (data.validationErrors && data.validationErrors.length) {
+        const list = data.validationErrors
+          .map(e => `• <strong>${e.layer}</strong>: ${e.error} (שדה: ${e.field})`)
+          .join("<br>");
+        statusEl.innerHTML = "שגיאות ולידציה:<br>" + list;
+      } else {
+        statusEl.textContent = data.error || "שגיאה בשמירה.";
+      }
+    }
+  } catch (e) {
+    statusEl.style.color = "#fc8181";
+    statusEl.textContent = "שגיאת רשת: " + e.message;
+  }
+}
+
+async function exportExternal() {
+  const spContent = extractExternalSP();
+
+  if (!spContent) {
+    showNotice("לא נמצא System Prompt מוכן לייצוא. המשיכו את השיחה עם הארכיטקט עד שלב 4.", "warn");
+    return;
+  }
+
+  const blob = new Blob([spContent], { type: "text/plain;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = "miled_sp_" + sessionId + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+</script>
+</body>
+</html>

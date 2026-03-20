@@ -158,7 +158,7 @@ function hasAccess(bot, context) {
 // BOT RESOLUTION
 // ─────────────────────────────────────────
 
-function findBot(config, botType, context = {}) {
+async function findBot(config, botType, context = {}) {
   if (!config || !botType) return null;
   for (let id in (config.universal?.items || {})) {
     const bot = config.universal.items[id];
@@ -169,6 +169,20 @@ function findBot(config, botType, context = {}) {
       const bot = config.branches[branch].items[id];
       if (bot.botType === botType && hasAccess(bot, context)) return bot;
     }
+  }
+  // ─── Firebase live_configs fallback (dynamically added bots) ───
+  try {
+    const snap = await getDB().ref("admin/system/live_configs").get();
+    if (snap.exists()) {
+      const live = snap.val();
+      for (const id in live) {
+        const bot = live[id];
+        if (bot.botType === botType && hasAccess(bot, context)) return bot;
+      }
+    }
+  } catch (e) {
+    console.error("FINDBOT: live_configs lookup failed:", e.message);
+    // non-fatal — fall through to return null
   }
   return null;
 }
@@ -323,7 +337,8 @@ exports.handler = async (event) => {
       classId          = null,
       sessionId        = null,
       hebrewLevel      = null,
-      isNewBotSession  = false          // ← חדש: מונע טעינת history ישן בהחלפת בוט
+      currentStep      = null,          // ← active project stage sent by workspace.html
+      isNewBotSession  = false          // ← prevents loading stale history on bot switch
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -336,7 +351,7 @@ exports.handler = async (event) => {
     if (!config)
       return { statusCode: 500, headers, body: JSON.stringify({ error: "Configuration load failed" }) };
 
-    const botConfig = findBot(config, botType, context);
+    const botConfig = await findBot(config, botType, context);
     if (!botConfig)
       return { statusCode: 403, headers, body: JSON.stringify({ error: "Access denied or bot not found", botType }) };
 
@@ -373,7 +388,46 @@ exports.handler = async (event) => {
       if (Array.isArray(sessionCtx.history) && sessionCtx.history.length > 0)
         savedHistory = sessionCtx.history;
     }
+
+    // ─── INJECT CURRENT STEP ───
+    // Adds the active project stage to the context block so the bot can enforce gating.
+    if (currentStep != null) {
+      const stepLine = `שלב נוכחי: ${currentStep}`;
+      contextBlock = contextBlock
+        ? contextBlock + "\n" + stepLine
+        : "## הקשר\n" + stepLine;
+    }
+
+    // ─── INJECT COURSE CONTEXT ───
+    // Tells the bot which course the student is in (e.g. optics vs management).
+    const courseConfig = config.my_courses?.[courseId];
+    if (courseConfig) {
+      const courseLines = [`קורס: ${courseConfig.name}`];
+      if (courseConfig.language)     courseLines.push(`שפת אם: ${courseConfig.language}`);
+      if (courseConfig.hebrew_level) courseLines.push(`רמת עברית: ${courseConfig.hebrew_level}`);
+      contextBlock = [contextBlock, "## הקשר הקורסי\n" + courseLines.join("\n")]
+        .filter(Boolean).join("\n\n");
+    }
     
+    // ─── GENDER GATE ───
+    // If gender is not yet confirmed, block academic messages and redirect to opening.
+    // Short messages (≤ 6 words) are allowed — the student is answering the bot's questions.
+    // __INIT__ always passes through to trigger the opening sequence.
+    const genderConfirmed = !!(sessionCtx?.genderConfirmed);
+    if (message !== "__INIT__" && !genderConfirmed) {
+      const wordCount = message.trim().split(/\s+/).length;
+      if (wordCount > 6) {
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            reply: "לפני שנתחיל, שאלה קטנה — איך תרצה שאפנה אליך? בלשון זכר או נקבה? 🙂",
+            botType, botName: botConfig.name, model: "kernel-guard", isThinking: false
+          })
+        };
+      }
+    }
+
     // ─── LOG SESSION METADATA (once per session) ───
     if (sessionId) {
       await getDB().ref(`conversations/${sessionId}`).update({
@@ -459,9 +513,30 @@ exports.handler = async (event) => {
       }
     }
 
+    // ─── EXTRACT CONTINUATION TOKEN METADATA (MJ-3) ───
+    // Strips the hidden HTML comment from the visible reply and saves it to Firebase.
+    // Format: <!-- META: {"form":"...","name":"...","tone":"...","emotionalTrajectory":"..."} -->
+    let tokenMetadata = null;
+    const metaMatch = reply.match(/<!--\s*META:\s*(\{[\s\S]*?\})\s*-->/);
+    if (metaMatch) {
+      try {
+        tokenMetadata = JSON.parse(metaMatch[1].trim());
+        reply = reply.replace(/<!--\s*META:\s*\{[\s\S]*?\}\s*-->/, "").trim();
+      } catch(e) {
+        console.error("TOKEN META PARSE ERROR:", e.message);
+      }
+    }
+
     // ─── SAVE SESSION & LOG CONVERSATION ───
     const saveData = { lastBotType: botType, lastActive: Date.now() };
     if (sessionUpdate) Object.assign(saveData, sessionUpdate);
+
+    // Derive genderConfirmed and openingComplete from session update fields
+    if (sessionUpdate?.gender)      saveData.genderConfirmed = true;
+    if (sessionUpdate?.studentName) saveData.openingComplete  = true;
+
+    // Persist hidden token metadata if present
+    if (tokenMetadata) saveData.tokenMetadata = tokenMetadata;
 
     // שמור את ה-history המעודכן (14 הודעות אחרונות)
     const updatedHistory = [

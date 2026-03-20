@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Firebase credentials — NEVER commit private keys
+*firebase-adminsdk*.json
+*service-account*.json
+*.key.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Netlify build output
+.netlify/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+*.lnk
+
+# Docs archive (large binary files, not source code)
+docs/archive/
+docs/raw_source_material/

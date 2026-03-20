@@ -108,6 +108,7 @@ let currentBotType = null;
 let chatHistory    = [];
 let saveTimer      = null;
 let isLocked       = false;
+let currentStep    = 1;
 
 // ─────────────────────────────
 // טעינת config
@@ -127,6 +128,7 @@ async function init() {
   document.getElementById("hebrew-level-badge").innerText = currentCourse.hebrew_level || "";
 
   renderBotMenu();
+  renderStageTabs();
   restoreDraft();
 
   // כניסה לכיתה רק אם יש sessionId מה-URL (שיעור פעיל)
@@ -169,6 +171,55 @@ function renderBotMenu() {
 }
 
 // ─────────────────────────────
+// שלבי משימה
+// ─────────────────────────────
+
+function renderStageTabs() {
+  const tabContainer = document.getElementById("task-tabs");
+  tabContainer.innerHTML = "";
+
+  const project = currentCourse?.course_units?.semester_a?.project;
+  if (!project?.stages) return;
+
+  tabContainer.style.overflowX = "auto";
+  tabContainer.style.flexWrap  = "nowrap";
+  tabContainer.style.paddingBottom = "4px";
+
+  project.stages.forEach(stage => {
+    const btn = document.createElement("button");
+    const isActive = stage.id === currentStep;
+    btn.className    = "stage-tab";
+    btn.dataset.step = stage.id;
+    btn.innerText    = stage.id + ". " + stage.label;
+    btn.style.cssText = [
+      "padding:5px 12px",
+      "border-radius:20px",
+      "border:1px solid " + (isActive ? "#5b5fc7" : "#ddd"),
+      "background:" + (isActive ? "#5b5fc7" : "#f5f7fb"),
+      "color:" + (isActive ? "white" : "#555"),
+      "font-size:12px",
+      "cursor:pointer",
+      "white-space:nowrap",
+      "font-family:'Inter',sans-serif"
+    ].join(";");
+    btn.onclick = () => selectStage(stage.id, btn);
+    tabContainer.appendChild(btn);
+  });
+}
+
+function selectStage(stepId, btnEl) {
+  currentStep = stepId;
+  document.querySelectorAll(".stage-tab").forEach(b => {
+    b.style.background = "#f5f7fb";
+    b.style.color      = "#555";
+    b.style.border     = "1px solid #ddd";
+  });
+  btnEl.style.background = "#5b5fc7";
+  btnEl.style.color      = "white";
+  btnEl.style.border     = "1px solid #5b5fc7";
+}
+
+// ─────────────────────────────
 // בחירת בוט פעיל ← שינוי 1
 // ─────────────────────────────
 
@@ -207,8 +258,9 @@ async function triggerBotOpening() {
       body: JSON.stringify({
         message:         "__INIT__",
         botType:         currentBotType,
-        courseId:        courseId,
+        classId:         courseId,
         hebrewLevel:     currentCourse.hebrew_level || null,
+        currentStep,
         studentId,
         sessionId,
         history:         [],
@@ -266,8 +318,9 @@ async function sendMessage() {
       body: JSON.stringify({
         message:         text,
         botType:         currentBotType,
-        courseId:        courseId,
+        classId:         courseId,
         hebrewLevel:     currentCourse.hebrew_level || null,
+        currentStep,
         studentId,
         sessionId,
         history:          chatHistory,
@@ -337,7 +390,7 @@ async function submitWork() {
       action:    "submit",
       sessionId,
       studentId,
-      step:      1,
+      step:      currentStep,
       content:   text
     })
   });

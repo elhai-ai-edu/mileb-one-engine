@@ -1,0 +1,1897 @@
+{
+  "name": "MILED Bot Architect — שאלון בונה הבוטים",
+  "status": "PUBLISHED",
+  "blocks": [
+    {
+      "uuid": "4e546806-9c3b-4a8c-0b60-3de41a076e0f",
+      "type": "FORM_TITLE",
+      "groupUuid": "4e546806-9c3b-4a8c-0b60-3de41a076e0f",
+      "groupType": "FORM_TITLE",
+      "payload": {
+        "html": "<p>MILED Bot Architect — שאלון בונה הבוטים</p>",
+        "button": {
+          "label": "בואו נתחיל →"
+        }
+      }
+    },
+    {
+      "uuid": "9ecb3d2a-1630-4385-5b48-78ad4e4812e4",
+      "type": "HEADING_2",
+      "groupUuid": "9ecb3d2a-1630-4385-5b48-78ad4e4812e4",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>א — זהות הבוט ומשימה</strong></p><p>מי הוא הבוט, מה הוא עושה, ולמי הוא נגיש?</p>"
+      }
+    },
+    {
+      "uuid": "c4baf18e-4245-4534-041a-73e9750d0493",
+      "type": "QUESTION",
+      "groupUuid": "c4baf18e-4245-4534-041a-73e9750d0493",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "שם הבוט / פרסונה",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "8ea3d7ad-256d-433d-71bc-5404fb00332e",
+      "type": "INPUT_TEXT",
+      "groupUuid": "c4baf18e-4245-4534-041a-73e9750d0493",
+      "groupType": "INPUT_TEXT",
+      "payload": {
+        "placeholder": "לדוגמה: נועם, עדי, מנחה הכתיבה"
+      }
+    },
+    {
+      "uuid": "cf5a83af-d88b-4411-005b-ff15fb72ff49",
+      "type": "QUESTION",
+      "groupUuid": "cf5a83af-d88b-4411-005b-ff15fb72ff49",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה תפקיד הבוט במערכת?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "ea8f0e29-6e8e-47fb-a833-693246a167b7",
+      "type": "DROPDOWN",
+      "groupUuid": "cf5a83af-d88b-4411-005b-ff15fb72ff49",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "8a5c50c8-6283-472c-f31e-af03327f64df",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "cf5a83af-d88b-4411-005b-ff15fb72ff49",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "למידה — בוט סטודנט",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "f20df12a-6bd1-42cd-0551-0ea60caa1732",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "cf5a83af-d88b-4411-005b-ff15fb72ff49",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הוראה — בוט סגל",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "19c1b90b-2f5b-41d6-8717-8450458e26a3",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "cf5a83af-d88b-4411-005b-ff15fb72ff49",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מוסדי — בוט ניהולי/כללי",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "type": "QUESTION",
+      "groupUuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהו שלב הלמידה שהבוט מיועד לו?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "9fc7cb8e-6352-41d4-1d4b-6880c686aff2",
+      "type": "DROPDOWN",
+      "groupUuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "d4176619-46ba-4af6-14cb-d5264bdba62d",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אבחוני — מדידה ומיפוי",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "4c6e504e-7149-470d-f879-ae3df13d8031",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "פיתוח — עבודה קוגניטיבית מאומצת",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "31c3fb53-645e-45df-3841-3694fade10b8",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "רפלקציה — שילוב ויצירת משמעות",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "4a528ffb-dfde-4f72-c6a0-c899cacc2a3d",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "עיצוב — בניית פרויקט / ידע",
+        "index": 3,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "f07a9849-09a8-4b11-9350-0aecf551c07e",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b1fabbab-779f-4b2b-aee3-07c99a31b3ac",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אנליטיקה — ניתוח תוצרים",
+        "index": 4,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "37483998-427f-489f-e9a8-d7c1c0406b5d",
+      "type": "QUESTION",
+      "groupUuid": "37483998-427f-489f-e9a8-d7c1c0406b5d",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה המשימה של הבוט? (משפט אחד, תמציתי)",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "a78a02fd-8b1a-4018-14df-51c5855108cd",
+      "type": "TEXTAREA",
+      "groupUuid": "37483998-427f-489f-e9a8-d7c1c0406b5d",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה: ללוות סטודנטים בניסוח שאלת מחקר מדויקת"
+      }
+    },
+    {
+      "uuid": "c57f9db4-6524-4ddd-7e90-9db73883cdd8",
+      "type": "QUESTION",
+      "groupUuid": "c57f9db4-6524-4ddd-7e90-9db73883cdd8",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "לאיזה קהל הבוט נגיש?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "88728b88-cae3-400d-39a1-ce9b01f7b52f",
+      "type": "DROPDOWN",
+      "groupUuid": "c57f9db4-6524-4ddd-7e90-9db73883cdd8",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "3f0a93a8-e983-4bea-eedf-7079054b186b",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "c57f9db4-6524-4ddd-7e90-9db73883cdd8",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "גלובלי — כל סטודנטי המוסד",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "1a3f2998-029e-4599-88a7-57c387182de7",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "c57f9db4-6524-4ddd-7e90-9db73883cdd8",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מוסדי — לפי הרשמה",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "b2d33e6a-a751-4ffe-9a31-32701d11418c",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "c57f9db4-6524-4ddd-7e90-9db73883cdd8",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "פרטי לסגל — לא גלוי לסטודנטים",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "b4350e40-f55b-4e2b-1577-894d242a679a",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "c57f9db4-6524-4ddd-7e90-9db73883cdd8",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "קורס ספציפי",
+        "index": 3,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "5b5a1347-69a9-4ee3-74f0-8d5df5de9e82",
+      "type": "QUESTION",
+      "groupUuid": "5b5a1347-69a9-4ee3-74f0-8d5df5de9e82",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה הבוט לא יכסה? (גבולות תחום — BIND)",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "2fa462bc-ca2b-4171-4c12-d7771fc8bb08",
+      "type": "TEXTAREA",
+      "groupUuid": "5b5a1347-69a9-4ee3-74f0-8d5df5de9e82",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה: הבוט לא יתייחס לשאלות שאינן קשורות לכתיבה אקדמית"
+      }
+    },
+    {
+      "uuid": "39e02397-999b-4986-8fd7-4b5db0186d6c",
+      "type": "QUESTION",
+      "groupUuid": "39e02397-999b-4986-8fd7-4b5db0186d6c",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהי רמת האכיפה הפדגוגית?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "b2d9f31c-84c8-4440-9c73-129512e20a9a",
+      "type": "DROPDOWN",
+      "groupUuid": "39e02397-999b-4986-8fd7-4b5db0186d6c",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "8a690f7b-97d2-4d66-891a-11ff916fc502",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "39e02397-999b-4986-8fd7-4b5db0186d6c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "רכה — מנחה בלבד",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "dea5cca7-3b5a-4889-2c1f-2592499b2f58",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "39e02397-999b-4986-8fd7-4b5db0186d6c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "בינונית — מנחה + מעצורים בסיסיים",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "96561dd1-b136-49fe-a11e-a8874822c4a3",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "39e02397-999b-4986-8fd7-4b5db0186d6c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "קשיחה — No-Skip מלא, אין דילוג",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "de2617c1-53c0-4992-0427-1fd56cfe338b",
+      "type": "HEADING_2",
+      "groupUuid": "de2617c1-53c0-4992-0427-1fd56cfe338b",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ב — קהל יעד והקשר</strong></p><p>מי הסטודנט שיעבוד עם הבוט?</p>"
+      }
+    },
+    {
+      "uuid": "ff4a1f8b-5578-4cee-b3fd-4a136bb36b4d",
+      "type": "QUESTION",
+      "groupUuid": "ff4a1f8b-5578-4cee-b3fd-4a136bb36b4d",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהי רמת העברית של קהל היעד?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "8502edd4-094c-4c43-cab3-f5948bc381d5",
+      "type": "DROPDOWN",
+      "groupUuid": "ff4a1f8b-5578-4cee-b3fd-4a136bb36b4d",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "fead694f-8531-4316-5508-bf6431a13a51",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ff4a1f8b-5578-4cee-b3fd-4a136bb36b4d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "עברית כשפת אם — רמה סטנדרטית",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "d955d9e7-70b8-428d-1dd9-309c7afcd87c",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ff4a1f8b-5578-4cee-b3fd-4a136bb36b4d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "עברית כשפה שנייה — עולים/ערבים (B1)",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "7266187b-faf2-4d29-63d5-6bddce5e6e6b",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ff4a1f8b-5578-4cee-b3fd-4a136bb36b4d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "ערבית כשפת אם — עברית בסיסית (A2)",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "1cbb9ab0-150f-4fed-4ccf-45082c6169ab",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ff4a1f8b-5578-4cee-b3fd-4a136bb36b4d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "ערבית כשפת אם — עברית מינימלית (A1)",
+        "index": 3,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "type": "QUESTION",
+      "groupUuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהי הרמה האקדמית של קהל היעד?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "8ae429e9-cd38-43f4-d480-e3e9420397ff",
+      "type": "DROPDOWN",
+      "groupUuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "d336d5d0-027e-40a6-0644-4c90e06987f9",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שנה א",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "09b86b03-5ac6-441f-6087-c21d5ee0554c",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שנה ב",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "ad6d016d-d9e4-4b8a-85fd-1d7f643661eb",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שנה ג",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "f1b866ef-11df-4370-e184-e3abf24d1b14",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "תואר שני / מחקר",
+        "index": 3,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "b771b5e6-c905-4577-8e3e-1fa32b927814",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "717186df-de11-4fb9-2f18-9b7b356ca9be",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מעורב",
+        "index": 4,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "type": "QUESTION",
+      "groupUuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "אוכלוסיות מיוחדות הדורשות התאמה (בחר הכל שרלוונטי)",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "2450932b-d191-4095-5293-1e833814ef86",
+      "type": "CHECKBOXES",
+      "groupUuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "groupType": "CHECKBOXES",
+      "payload": {}
+    },
+    {
+      "uuid": "63697314-d30e-4719-5fff-e27bf533fb0f",
+      "type": "CHECKBOX",
+      "groupUuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "groupType": "CHECKBOXES",
+      "payload": {
+        "text": "עולים חדשים",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "f880e2a6-e71f-4028-8b5d-218b974b1851",
+      "type": "CHECKBOX",
+      "groupUuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "groupType": "CHECKBOXES",
+      "payload": {
+        "text": "חרדים",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "12cb8fec-0cc9-4211-435d-3dd055c2f5a3",
+      "type": "CHECKBOX",
+      "groupUuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "groupType": "CHECKBOXES",
+      "payload": {
+        "text": "ערבים",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "8c45ad4b-d60a-4f04-624e-8e184ebe1745",
+      "type": "CHECKBOX",
+      "groupUuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "groupType": "CHECKBOXES",
+      "payload": {
+        "text": "חילונים / כללי",
+        "index": 3,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "47388112-7245-45bc-3dfe-c4b6883a4eba",
+      "type": "CHECKBOX",
+      "groupUuid": "e908a7f0-a654-478a-f961-59c2e340bc57",
+      "groupType": "CHECKBOXES",
+      "payload": {
+        "text": "מגוון — ללא התאמה ספציפית",
+        "index": 4,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "16867d45-e33e-4418-08eb-c3861723efb4",
+      "type": "HEADING_2",
+      "groupUuid": "16867d45-e33e-4418-08eb-c3861723efb4",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ג — סגנון האינטראקציה</strong></p><p>כיצד הבוט מתנהל עם הסטודנט?</p>"
+      }
+    },
+    {
+      "uuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "type": "QUESTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהו סגנון האינטראקציה הבסיסי?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "8b8c472b-7f9e-454b-f346-0c7682162f4c",
+      "type": "DROPDOWN",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "c363d7c0-2e35-498b-c649-c878e3aad4ce",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "סוקרטי — שאלות במקום תשובות",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "d2523899-42da-471c-202e-091315e3c265",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "פיגומים — ליווי שלב אחר שלב",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "021cc0b6-9330-4d5c-3e78-49b4dc373aed",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שוער — חסימה עד הוכחת מוכנות",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "fe1b2034-b855-4296-9699-321393637c7e",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אינפורמטיבי — הסבר ומענה",
+        "index": 3,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "692ef215-f503-4c5e-bd08-904b8cfe02f0",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "תמיכה רגשית",
+        "index": 4,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "4d6db13c-98e1-43b7-4577-885e8f50d85b",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מנחה — הכוונה עם גמישות",
+        "index": 5,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "86f8376f-b4b7-412b-c5dd-0d6c2b2d0db4",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "ef2d568d-9a79-4def-7018-6a0528e7ea3c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אדפטיבי — מסתגל לפי הלומד",
+        "index": 6,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "0e561040-15ca-42fa-dae4-2a7a428146a1",
+      "type": "QUESTION",
+      "groupUuid": "0e561040-15ca-42fa-dae4-2a7a428146a1",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "האם הבוט עובד בסשן אחד או לאורך זמן?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "d922cfa6-03ad-4692-8d2d-9ed516195bb9",
+      "type": "DROPDOWN",
+      "groupUuid": "0e561040-15ca-42fa-dae4-2a7a428146a1",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "581d6295-6651-4df0-d515-4c006ca8d929",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0e561040-15ca-42fa-dae4-2a7a428146a1",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "סשן יחיד — ללא זיכרון",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "6d6e6832-5aab-4325-8c58-a6b7cc469d9a",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0e561040-15ca-42fa-dae4-2a7a428146a1",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מרובה סשנים — זיכרון בין מפגשים",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "04b9094d-b6b3-4ed2-a617-a598aa0a9fa9",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0e561040-15ca-42fa-dae4-2a7a428146a1",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "רציף לאורך הקורס",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "756a4c05-e38b-4a91-1a48-6a509635d75d",
+      "type": "QUESTION",
+      "groupUuid": "756a4c05-e38b-4a91-1a48-6a509635d75d",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "האם הבוט צריך לעקוב אחר התקדמות הסטודנט?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "9764fbe1-866d-4e03-ff44-78ce6b731844",
+      "type": "DROPDOWN",
+      "groupUuid": "756a4c05-e38b-4a91-1a48-6a509635d75d",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "2c384f49-a0ba-431a-14bc-ba9619df8290",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "756a4c05-e38b-4a91-1a48-6a509635d75d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "ללא מעקב",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "0055b0fd-60c9-420d-bf0c-096a7eb77c65",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "756a4c05-e38b-4a91-1a48-6a509635d75d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "בסיסי — שמירת שלב נוכחי",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "2a3167d1-f8dd-48cb-f041-02d1f3121772",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "756a4c05-e38b-4a91-1a48-6a509635d75d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מלא — היסטוריה, שלבים, ניסיונות",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "42ea6285-a7ce-4f3c-5318-3857c75498fa",
+      "type": "HEADING_2",
+      "groupUuid": "42ea6285-a7ce-4f3c-5318-3857c75498fa",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ד — פרסונה, קצב ותגובה לתקיעות</strong></p><p>האופי של הבוט ואיך הוא מגיב לקשיים</p>"
+      }
+    },
+    {
+      "uuid": "9419d067-9f01-495a-166d-27dd6acf951e",
+      "type": "QUESTION",
+      "groupUuid": "9419d067-9f01-495a-166d-27dd6acf951e",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "תאר את הפרסונה של הבוט",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "bb55722e-201f-4006-b48e-3d093e978f50",
+      "type": "INPUT_TEXT",
+      "groupUuid": "9419d067-9f01-495a-166d-27dd6acf951e",
+      "groupType": "INPUT_TEXT",
+      "payload": {
+        "placeholder": "לדוגמה: מדריך תומך וסבלני, מאמן מאתגר, חבר לומד שאינו שופט"
+      }
+    },
+    {
+      "uuid": "c8a18c7c-36f8-44ad-533d-0d9858d98f6a",
+      "type": "QUESTION",
+      "groupUuid": "c8a18c7c-36f8-44ad-533d-0d9858d98f6a",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "כתוב את 'משפט הזהות' של הבוט (כיצד הוא מציג את עצמו)",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "e56d9a37-aa27-491f-7c7f-e651404985a8",
+      "type": "TEXTAREA",
+      "groupUuid": "c8a18c7c-36f8-44ad-533d-0d9858d98f6a",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה: אני נועם, מלווה פדגוגי של קורס כתיבה אקדמית. תפקידי: לסייע לך לבנות טיעון מגובה."
+      }
+    },
+    {
+      "uuid": "089da275-54c6-4d68-bc24-cc47fba167d8",
+      "type": "QUESTION",
+      "groupUuid": "089da275-54c6-4d68-bc24-cc47fba167d8",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה הקצב הרצוי?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "1d4b459a-5b57-459d-a959-c86d1ba1db7c",
+      "type": "DROPDOWN",
+      "groupUuid": "089da275-54c6-4d68-bc24-cc47fba167d8",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "c801f75a-5d76-4c17-7701-5d3a52cc3f6c",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "089da275-54c6-4d68-bc24-cc47fba167d8",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מהיר — תגובות תמציתיות, מינימום חכות",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "e3d5c1af-0c51-4966-3a77-f99ff2f99404",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "089da275-54c6-4d68-bc24-cc47fba167d8",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אדפטיבי — לפי המצב",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "1772434b-ca3d-49ae-4b69-39a4c0e57942",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "089da275-54c6-4d68-bc24-cc47fba167d8",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "איטי ומעמיק — זמן לחשיבה",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "e819b152-1a0d-4a7c-8838-2ddcab3d5992",
+      "type": "QUESTION",
+      "groupUuid": "e819b152-1a0d-4a7c-8838-2ddcab3d5992",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה פרוטוקול הטיפול בתקיעות (סטודנט שנתקע)?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "016f60bc-ff28-48fd-1afc-0b7b9255f627",
+      "type": "DROPDOWN",
+      "groupUuid": "e819b152-1a0d-4a7c-8838-2ddcab3d5992",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "878319b2-0dd3-439f-75a3-2793cd8b3206",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "e819b152-1a0d-4a7c-8838-2ddcab3d5992",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "רמז מיידי אחרי ניסיון אחד",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "f7409ffe-3202-433e-2fc1-0565178c948c",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "e819b152-1a0d-4a7c-8838-2ddcab3d5992",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שלושה ניסיונות → רמז ישיר",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "22f6966a-6660-46b3-b33b-e77c5ddd039f",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "e819b152-1a0d-4a7c-8838-2ddcab3d5992",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הפנייה למרצה אחרי תקיעה",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "c1650257-e4f8-4cbb-7478-1baf0293034b",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "e819b152-1a0d-4a7c-8838-2ddcab3d5992",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הצעת פישוט השאלה",
+        "index": 3,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "f59ee4b5-90cf-4a3d-224b-44391e11c227",
+      "type": "HEADING_2",
+      "groupUuid": "f59ee4b5-90cf-4a3d-224b-44391e11c227",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ה — גבולות, אתיקה וסוכנות</strong></p><p>מה הבוט לעולם לא יעשה, ומי מוביל את הלמידה?</p>"
+      }
+    },
+    {
+      "uuid": "d5356bab-ec5d-4caf-eb8a-3bf0afa8d121",
+      "type": "QUESTION",
+      "groupUuid": "d5356bab-ec5d-4caf-eb8a-3bf0afa8d121",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "רשימת Never-Do — מה הבוט לעולם לא יעשה? (BIND — לא ניתן לביטול)",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "29fb65f1-896f-4e11-fb28-b9d24c1ce98c",
+      "type": "TEXTAREA",
+      "groupUuid": "d5356bab-ec5d-4caf-eb8a-3bf0afa8d121",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "שורה לכל איסור. לדוגמה:\nלא יכתוב את העבודה במקום הסטודנט\nלא ייתן תשובה מלאה לשאלת בחינה\nלא יעסוק בנושאים פוליטיים"
+      }
+    },
+    {
+      "uuid": "227902e2-d1b5-4f66-f6b1-ec4ce982ce37",
+      "type": "QUESTION",
+      "groupUuid": "227902e2-d1b5-4f66-f6b1-ec4ce982ce37",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מי מוביל את תהליך הלמידה?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "e4230dc4-1aa9-4083-3b39-4cd843ac6602",
+      "type": "DROPDOWN",
+      "groupUuid": "227902e2-d1b5-4f66-f6b1-ec4ce982ce37",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "0f3bd83d-aa45-4aa4-19b5-d3c0a6addb7b",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "227902e2-d1b5-4f66-f6b1-ec4ce982ce37",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הבוט מוביל — הלומד עוקב",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "bc1b1cbf-3a6c-4888-dacb-072f33a9d4fa",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "227902e2-d1b5-4f66-f6b1-ec4ce982ce37",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שניהם ביחד — שותפות",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "4349a146-e55b-40e0-c8c2-56ec397f2425",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "227902e2-d1b5-4f66-f6b1-ec4ce982ce37",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הלומד מוביל — הבוט מגיב",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "85582d8d-c9b0-4f99-60e4-45c3a931bc9c",
+      "type": "QUESTION",
+      "groupUuid": "85582d8d-c9b0-4f99-60e4-45c3a931bc9c",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "כיצד הבוט מסרב לבקשה שחורגת מתחומו?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "6615d499-0605-43bf-b355-c98fe31a3247",
+      "type": "DROPDOWN",
+      "groupUuid": "85582d8d-c9b0-4f99-60e4-45c3a931bc9c",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "6be5ffc0-9bbd-4743-0262-d1ef6902eeca",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "85582d8d-c9b0-4f99-60e4-45c3a931bc9c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הסבר הגבול + הפניה לחלופה",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "be38d362-880a-4ef6-3b97-bbd67ea92ec7",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "85582d8d-c9b0-4f99-60e4-45c3a931bc9c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הפניה מנומסת ללא הסבר",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "3e13714d-93c4-44bb-3b2f-8f9f9e193fa1",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "85582d8d-c9b0-4f99-60e4-45c3a931bc9c",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הצעת חלופה קרובה יותר",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "4a933b00-4948-4abd-3106-8ae2de96d897",
+      "type": "QUESTION",
+      "groupUuid": "4a933b00-4948-4abd-3106-8ae2de96d897",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מתי הבוט מפנה לגורם אנושי?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "0b797724-ed9f-4bba-7bd5-6fb20124481b",
+      "type": "DROPDOWN",
+      "groupUuid": "4a933b00-4948-4abd-3106-8ae2de96d897",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "7e2637ce-a56d-4404-e593-aaa1b4609311",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "4a933b00-4948-4abd-3106-8ae2de96d897",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "רק במשבר (בטיחות/משפטי)",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "0af5744c-6549-4cf4-ed45-896da069cbd5",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "4a933b00-4948-4abd-3106-8ae2de96d897",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אחרי 3 תקיעות ברצף",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "958f25fe-727a-4814-1213-13c6cd711986",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "4a933b00-4948-4abd-3106-8ae2de96d897",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "כשהסטודנט מבקש",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "d6c429f3-f31f-4884-8ae0-3b4a52a6d15d",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "4a933b00-4948-4abd-3106-8ae2de96d897",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "יזום — מראש לפי שלב",
+        "index": 3,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "93746912-82f0-4081-515e-3b5963e7f5df",
+      "type": "HEADING_2",
+      "groupUuid": "93746912-82f0-4081-515e-3b5963e7f5df",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ו — תהליך וזרימה</strong></p><p>מבנה השלבים שהבוט מנהל</p>"
+      }
+    },
+    {
+      "uuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "type": "QUESTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהו סוג התהליך שהבוט מנהל?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "c0a954dd-1a37-467a-24b0-48880817d07e",
+      "type": "DROPDOWN",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "0bd3dcae-cd11-45eb-4bc3-40553d8dea5b",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "סוקרטי — גילוי מונחה",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "076fb254-1fd3-45fa-4f29-8c176add65d9",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "פיגומים — מדורג ורציף",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "0cc48ae4-e15f-4052-1676-3872a21c744f",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שוער — חסימה עם תנאי יציאה",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "d7353f3b-e2d6-49e5-0ce4-55c4e2089f50",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אינפורמטיבי — הסבר ומענה",
+        "index": 3,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "8108500c-fb2d-4d25-ff46-41fbeeb54ebf",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "רגשי — תמיכה ועיבוד",
+        "index": 4,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "354c7c54-67b3-49d0-fe6d-d85617156a9c",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מנחה — הכוונה גמישה",
+        "index": 5,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "ef634c1c-d2e2-49c3-4060-7015b74006fa",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7bfaa0b9-28a7-421e-f259-db9fa376e715",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אדפטיבי — לפי הסטודנט",
+        "index": 6,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "d2b3636f-eae5-471a-623d-1228a9ccc420",
+      "type": "QUESTION",
+      "groupUuid": "d2b3636f-eae5-471a-623d-1228a9ccc420",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "תאר את שלבי התהליך — מספר, שם, ומטרת כל שלב",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "5ecf6bc3-f047-4c07-db50-0afba1f60735",
+      "type": "TEXTAREA",
+      "groupUuid": "d2b3636f-eae5-471a-623d-1228a9ccc420",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "שלב 1: ניסוח שאלת המחקר — הסטודנט מגיע עם נושא רחב ויוצא עם שאלה ממוקדת\nשלב 2: ..."
+      }
+    },
+    {
+      "uuid": "f72c642b-bbc2-46a2-1f5d-44d7c7e0e61d",
+      "type": "QUESTION",
+      "groupUuid": "f72c642b-bbc2-46a2-1f5d-44d7c7e0e61d",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "אלו שלבים הם חובה — לא ניתן לדלג עליהם? (BIND)",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "7a1038fd-3341-4ebe-451a-ecdd7fc19b20",
+      "type": "TEXTAREA",
+      "groupUuid": "f72c642b-bbc2-46a2-1f5d-44d7c7e0e61d",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה: שלב 1 חובה — הבוט לא יתקדם לשלב 2 ללא אישור שאלת המחקר"
+      }
+    },
+    {
+      "uuid": "48b1d0cc-9920-4433-1619-981edc99eccc",
+      "type": "QUESTION",
+      "groupUuid": "48b1d0cc-9920-4433-1619-981edc99eccc",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה האותות שמעידים שהסטודנט מוכן להתקדם? (קריטריוני שחרור)",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "3fbbeef3-b14e-4ee3-0d72-a6b354c7c696",
+      "type": "TEXTAREA",
+      "groupUuid": "48b1d0cc-9920-4433-1619-981edc99eccc",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה:\n- מסביר את העיקרון במילים שלו\n- מצליח ליישם על דוגמה חדשה\n- מזהה את השגיאה ללא הנחיה"
+      }
+    },
+    {
+      "uuid": "5d250e3a-dab3-4db6-9fb1-06d0d51b012c",
+      "type": "HEADING_2",
+      "groupUuid": "5d250e3a-dab3-4db6-9fb1-06d0d51b012c",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ז — ויסות אדפטיבי</strong></p><p>כיצד הבוט מסתגל לעומס הקוגניטיבי של הסטודנט</p>"
+      }
+    },
+    {
+      "uuid": "b0de779e-5b60-4827-a57d-c45f7f43804e",
+      "type": "QUESTION",
+      "groupUuid": "b0de779e-5b60-4827-a57d-c45f7f43804e",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהו מצב הוויסות האדפטיבי?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "5d5ec44b-aa17-4a94-d391-8545ad0bea94",
+      "type": "DROPDOWN",
+      "groupUuid": "b0de779e-5b60-4827-a57d-c45f7f43804e",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "e19c4a68-b7f6-4734-15c6-8b94f52e55b4",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b0de779e-5b60-4827-a57d-c45f7f43804e",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "קשיח — ללא הקלות",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "d23e42af-be02-4207-9520-c87214bfd073",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b0de779e-5b60-4827-a57d-c45f7f43804e",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אדפטיבי — מוריד רף לפי אותות עומס",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "e2c8482e-9a7f-4eb8-42bb-628eb6c8db11",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "b0de779e-5b60-4827-a57d-c45f7f43804e",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מינימלי — הבוט לא מווסת באופן אקטיבי",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "bbd18a37-5087-4344-a9e9-96a692f0590b",
+      "type": "QUESTION",
+      "groupUuid": "bbd18a37-5087-4344-a9e9-96a692f0590b",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "כיצד הבוט מגיב לעומס קוגניטיבי גבוה?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "5d619613-7efc-46fd-b289-8dfdb4a69cd8",
+      "type": "DROPDOWN",
+      "groupUuid": "bbd18a37-5087-4344-a9e9-96a692f0590b",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "c30d4679-06bd-49f0-458b-3ea539b063ff",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "bbd18a37-5087-4344-a9e9-96a692f0590b",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מאט ועובר לפישוט",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "49c1c314-2d16-46d2-0ed3-a572bc9b308b",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "bbd18a37-5087-4344-a9e9-96a692f0590b",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מציע הפסקה",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "b7f717ad-51a2-416d-d059-02c4946f2117",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "bbd18a37-5087-4344-a9e9-96a692f0590b",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "לא מזהה עומס",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "9853369b-7186-4a81-2ee6-0094e43d1e8d",
+      "type": "QUESTION",
+      "groupUuid": "9853369b-7186-4a81-2ee6-0094e43d1e8d",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מתי הבוט מפעיל טריגר מטאקוגניטיבי?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "6746ac0c-cbd8-44c1-7a6f-17a00a46b808",
+      "type": "DROPDOWN",
+      "groupUuid": "9853369b-7186-4a81-2ee6-0094e43d1e8d",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "6cec47e9-07a4-454e-e9cb-d151ce3e1e17",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "9853369b-7186-4a81-2ee6-0094e43d1e8d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אחרי כל שגיאה",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "5b9f7c3c-0286-452f-041b-0423cafffa73",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "9853369b-7186-4a81-2ee6-0094e43d1e8d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "בסוף כל שלב",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "7126e46c-105f-467c-b7b8-70fd6af07af9",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "9853369b-7186-4a81-2ee6-0094e43d1e8d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "רק לפי בקשה",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "df66e8c4-ff46-427b-14cf-ba18a2a9b0fb",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "9853369b-7186-4a81-2ee6-0094e43d1e8d",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "לא מפעיל",
+        "index": 3,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "2842ce74-f2f3-41e1-305e-1557e0e4c862",
+      "type": "HEADING_2",
+      "groupUuid": "2842ce74-f2f3-41e1-305e-1557e0e4c862",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ח — ידע, קוד ידע, וסגירה</strong></p><p>מה הבוט יודע, מה הוא לא יודע, ואיך הוא סוגר שיחה</p>"
+      }
+    },
+    {
+      "uuid": "d105e254-bdee-462e-acbd-b5e6d2527b5a",
+      "type": "QUESTION",
+      "groupUuid": "d105e254-bdee-462e-acbd-b5e6d2527b5a",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהם תחומי הידע שהבוט מכסה?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "bc03c78d-bae7-4daa-f225-936bf22e5dac",
+      "type": "TEXTAREA",
+      "groupUuid": "d105e254-bdee-462e-acbd-b5e6d2527b5a",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה: מחקר איכותני, ניתוח שיח, ספרות סוציולוגית, כתיבה אקדמית"
+      }
+    },
+    {
+      "uuid": "93a92327-2352-4b46-8d69-d689f2967039",
+      "type": "QUESTION",
+      "groupUuid": "93a92327-2352-4b46-8d69-d689f2967039",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהו ידע/תוכן אסור לשיתוף? (BIND — גם אם הסטודנט מבקש)",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "98a9dc10-05df-4f5a-c798-2b02501c9195",
+      "type": "TEXTAREA",
+      "groupUuid": "93a92327-2352-4b46-8d69-d689f2967039",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה: פתרונות מלאים לתרגילים, ציונים, מידע על סטודנטים אחרים"
+      }
+    },
+    {
+      "uuid": "09f1ab06-1a07-414f-8af9-ca683fd4e1a3",
+      "type": "QUESTION",
+      "groupUuid": "09f1ab06-1a07-414f-8af9-ca683fd4e1a3",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "כיצד הבוט מתמודד עם שאלות שאינו יודע לענות עליהן?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "59735b04-be46-430b-05a3-4b5c1e7d300c",
+      "type": "DROPDOWN",
+      "groupUuid": "09f1ab06-1a07-414f-8af9-ca683fd4e1a3",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "d3be90d0-9c8e-4bc1-a0fe-e44ba879bf44",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "09f1ab06-1a07-414f-8af9-ca683fd4e1a3",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שואל שאלות מבהירות לפני תשובה",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "aefd8abe-c544-4f79-898b-895f16f930c2",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "09f1ab06-1a07-414f-8af9-ca683fd4e1a3",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מפנה למרצה / מקור חיצוני",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "8d7699e4-518e-41cd-eff6-987741cc182d",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "09f1ab06-1a07-414f-8af9-ca683fd4e1a3",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "עונה עם סייגים ברורים",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "922901b6-3b26-469d-2054-8a1d24bc0542",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "09f1ab06-1a07-414f-8af9-ca683fd4e1a3",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מסרב לענות מחוץ לתחום",
+        "index": 3,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "40b743db-f921-49bb-2d71-44b2f4e1da75",
+      "type": "QUESTION",
+      "groupUuid": "40b743db-f921-49bb-2d71-44b2f4e1da75",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה מטרת הסגירה? (מה הסטודנט צריך לצאת איתו מהשיחה)",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "7c90c308-8b58-4e25-5d4d-ac5be4399770",
+      "type": "TEXTAREA",
+      "groupUuid": "40b743db-f921-49bb-2d71-44b2f4e1da75",
+      "groupType": "TEXTAREA",
+      "payload": {
+        "placeholder": "לדוגמה: שאלת מחקר ממוקדת + ידע בצעד הבא"
+      }
+    },
+    {
+      "uuid": "58e599f0-218f-4a79-6c30-aead7ca0b588",
+      "type": "HEADING_2",
+      "groupUuid": "58e599f0-218f-4a79-6c30-aead7ca0b588",
+      "groupType": "HEADING_2",
+      "payload": {
+        "html": "<p><strong>ט — הערכה ומעקב</strong></p><p>האם הבוט מעריך? אם כן — לפי מה?</p>"
+      }
+    },
+    {
+      "uuid": "80c9db5b-500e-4126-4536-42d3071233fe",
+      "type": "QUESTION",
+      "groupUuid": "80c9db5b-500e-4126-4536-42d3071233fe",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהי מדיניות ההערכה של הבוט?",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "d78697b4-1b16-445a-0ea5-b67c49ae2f9d",
+      "type": "DROPDOWN",
+      "groupUuid": "80c9db5b-500e-4126-4536-42d3071233fe",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "1f630310-1a00-46e6-454b-346dca62906c",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "80c9db5b-500e-4126-4536-42d3071233fe",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "ללא הערכה",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "a394f3e2-bef2-4fcf-a6b7-41905761ef1a",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "80c9db5b-500e-4126-4536-42d3071233fe",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "משוב בלבד — ללא ציון",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "bd9feac0-8e0a-45bd-57c0-5ccbfdfc968f",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "80c9db5b-500e-4126-4536-42d3071233fe",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "הערכה לפי רובריקה מאושרת",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "9b658e5e-910d-4414-2cbc-6e1ea8f70ba6",
+      "type": "QUESTION",
+      "groupUuid": "9b658e5e-910d-4414-2cbc-6e1ea8f70ba6",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מה סטטוס הרובריקה? (חובה אם הערכה ≠ ללא)",
+        "isMandatory": true
+      }
+    },
+    {
+      "uuid": "1b4c8034-0e83-4844-d4ec-fe40cd921a92",
+      "type": "DROPDOWN",
+      "groupUuid": "9b658e5e-910d-4414-2cbc-6e1ea8f70ba6",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "7f4f19b4-8e22-4dfb-f8de-2f140f55fece",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "9b658e5e-910d-4414-2cbc-6e1ea8f70ba6",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "אין רובריקה עדיין",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "37d02e25-4cb3-42e1-f1f8-8c8c51d07b83",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "9b658e5e-910d-4414-2cbc-6e1ea8f70ba6",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "טיוטה — עוד לא אושרה",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "ff07026f-4aee-4b50-9c11-e8757610ebaf",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "9b658e5e-910d-4414-2cbc-6e1ea8f70ba6",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מאושרת ומוכנה לשימוש",
+        "index": 2,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "type": "QUESTION",
+      "groupUuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהי הרמה האקדמית לצורכי הערכה?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "7f1432a4-bd0a-4b7d-880a-fee030cb3313",
+      "type": "DROPDOWN",
+      "groupUuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "536d6199-310e-46f3-c2be-57fdb3915551",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "סמסטר ראשון",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "924a91b8-456c-48e5-e555-0e618ac51964",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "סמסטר שני",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "e88d6cb2-ca94-447c-da83-b5a1df233844",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שנה ב",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "fca08637-7d8f-45d8-5abc-7352f5a070b7",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "שנה ג",
+        "index": 3,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "75cf5ae0-106a-4c2a-5ab8-4bfe3cbce585",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "0a513fbd-6734-4e88-0efd-2469ef3ccd72",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "תואר שני",
+        "index": 4,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "7cb7dd0e-f39c-474e-1cc4-ba7d152f8a66",
+      "type": "QUESTION",
+      "groupUuid": "7cb7dd0e-f39c-474e-1cc4-ba7d152f8a66",
+      "groupType": "QUESTION",
+      "payload": {
+        "label": "מהי רמת מעקב הנתונים הנדרשת?",
+        "isMandatory": false
+      }
+    },
+    {
+      "uuid": "09f24c42-1a0f-4145-992e-f1450397fee1",
+      "type": "DROPDOWN",
+      "groupUuid": "7cb7dd0e-f39c-474e-1cc4-ba7d152f8a66",
+      "groupType": "DROPDOWN",
+      "payload": {}
+    },
+    {
+      "uuid": "5c180726-5e09-4770-c5ad-c2b3d2833c0d",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7cb7dd0e-f39c-474e-1cc4-ba7d152f8a66",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "ללא מעקב",
+        "index": 0,
+        "isFirst": true,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "7b992a84-c5ab-423a-11cd-42fe68be97a9",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7cb7dd0e-f39c-474e-1cc4-ba7d152f8a66",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "בסיסי — שלב נוכחי בלבד",
+        "index": 1,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "e2d68519-cc03-4673-36c6-df696a696eee",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7cb7dd0e-f39c-474e-1cc4-ba7d152f8a66",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מלא — היסטוריה מלאה",
+        "index": 2,
+        "isFirst": false,
+        "isLast": false
+      }
+    },
+    {
+      "uuid": "12ca7300-3058-405d-ec41-2f3efd6dcbbf",
+      "type": "DROPDOWN_OPTION",
+      "groupUuid": "7cb7dd0e-f39c-474e-1cc4-ba7d152f8a66",
+      "groupType": "DROPDOWN",
+      "payload": {
+        "text": "מחקרי — לצורך ניתוח מערכתי",
+        "index": 3,
+        "isFirst": false,
+        "isLast": true
+      }
+    },
+    {
+      "uuid": "cb8cb0f5-e699-40ec-bccd-1f82937afa28",
+      "type": "HIDDEN_FIELDS",
+      "groupUuid": "cb8cb0f5-e699-40ec-bccd-1f82937afa28",
+      "groupType": "HIDDEN_FIELDS",
+      "payload": {
+        "hiddenFields": [
+          {
+            "uuid": "eabe5840-52bd-4cfe-741c-95b3849b45a5",
+            "label": "session_id"
+          }
+        ]
+      }
+    }
+  ],
+  "settings": {
+    "language": "he",
+    "redirectOnCompletion": "https://miled.one/architect_studio.html?sessionId={{submission_id}}",
+    "hasProgressBar": true,
+    "hasSelfEmailNotifications": false,
+    "hasPartialSubmissions": false,
+    "saveForLater": false
+  }
+}

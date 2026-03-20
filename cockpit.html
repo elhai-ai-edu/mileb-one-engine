@@ -12,6 +12,33 @@
 
 <body>
 
+<!-- ─── AUTH OVERLAY ─── -->
+<div id="auth-overlay" style="
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(15,15,30,0.94);
+  display:flex;align-items:center;justify-content:center;
+  z-index:999;font-family:'Inter',sans-serif;">
+  <div style="
+    background:white;border-radius:16px;padding:40px 48px;
+    width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+    <h2 style="margin:0 0 6px;font-size:20px;">MilEd Cockpit</h2>
+    <p style="color:#888;font-size:13px;margin:0 0 24px;">כניסה נדרשת</p>
+    <input id="auth-user" type="text" placeholder="שם משתמש" autocomplete="username"
+      style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #ddd;
+             border-radius:8px;font-size:14px;margin-bottom:10px;direction:ltr;">
+    <input id="auth-pass" type="password" placeholder="סיסמה" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')attemptLogin()"
+      style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #ddd;
+             border-radius:8px;font-size:14px;margin-bottom:16px;direction:ltr;">
+    <button onclick="attemptLogin()"
+      style="width:100%;padding:11px;background:#5b5fc7;color:white;border:none;
+             border-radius:8px;font-size:15px;cursor:pointer;">
+      כניסה
+    </button>
+    <p id="auth-error" style="color:#e53;font-size:13px;margin:12px 0 0;min-height:18px;"></p>
+  </div>
+</div>
+
 <div class="panel">
 
 <div class="userbar">
@@ -21,11 +48,79 @@
 
 <h1>MilEd Cockpit v2</h1>
 
-<div id="editor"></div>
+<!-- ─── TAB NAV ─── -->
+<div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #eee;padding-bottom:0;">
+  <button id="tab-btn-config" onclick="switchTab('config')"
+    style="padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;border-bottom:3px solid #5b5fc7;color:#5b5fc7;font-weight:600;">
+    עורך Config
+  </button>
+  <button id="tab-btn-security" onclick="switchTab('security')"
+    style="padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;border-bottom:3px solid transparent;color:#888;">
+    אבטחה
+  </button>
+</div>
 
-<button class="btn btn-blue" onclick="saveConfig()">
-שמור config לשרת
-</button>
+<!-- ─── CONFIG TAB ─── -->
+<div id="tab-config">
+
+  <div id="editor"></div>
+
+  <button class="btn btn-blue" onclick="saveConfig()">
+  שמור config לשרת
+  </button>
+
+</div>
+
+<!-- ─── SECURITY TAB ─── -->
+<div id="tab-security" style="display:none;">
+
+  <div class="panel">
+    <h2>ניהול משתמשי מערכת</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:16px;">שינויים נשמרים ישירות ב-Firebase. נדרש אימות מחדש לכל פעולה.</p>
+
+    <!-- Re-auth -->
+    <div style="background:#f5f7fb;border-radius:10px;padding:16px;margin-bottom:20px;">
+      <p style="font-size:13px;font-weight:600;margin:0 0 10px;">אימות מחדש נדרש לפעולות אבטחה</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="sec-user" type="text" placeholder="שם משתמש" autocomplete="off"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;width:150px;">
+        <input id="sec-pass" type="password" placeholder="סיסמה" autocomplete="off"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;width:150px;">
+        <button class="btn btn-blue" onclick="loadUsers()" style="padding:8px 16px;font-size:13px;">
+          טען משתמשים
+        </button>
+      </div>
+      <p id="sec-msg" style="font-size:13px;color:#e53;margin:8px 0 0;min-height:18px;"></p>
+    </div>
+
+    <!-- Users list -->
+    <div id="users-list" style="margin-bottom:20px;"></div>
+
+    <!-- Create user -->
+    <div id="create-user-form" style="display:none;background:#f0fff4;border:1px solid #c6f6d5;border-radius:10px;padding:16px;">
+      <h3 style="margin:0 0 12px;font-size:14px;">+ הוסף משתמש חדש</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <input id="new-username" type="text" placeholder="שם משתמש (login)" autocomplete="off"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
+        <input id="new-name" type="text" placeholder="שם לתצוגה"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+        <input id="new-password" type="password" placeholder="סיסמה ראשונית"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
+        <select id="new-role"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+          <option value="faculty">faculty</option>
+          <option value="superadmin">superadmin</option>
+        </select>
+      </div>
+      <button class="btn btn-green" onclick="createUser()" style="padding:8px 16px;font-size:13px;">
+        צור משתמש
+      </button>
+      <p id="create-msg" style="font-size:13px;color:#e53;margin:8px 0 0;min-height:18px;"></p>
+    </div>
+
+  </div>
+
+</div>
 
 </div>
 
@@ -36,31 +131,94 @@ let currentUser=null
 
 const branchKeys=["courses","faculty","skills","admin"]
 
-init()
+// ─── AUTH ───
+// Session keys are shared with faculty.html so a superadmin already logged
+// in via the faculty portal bypasses the cockpit overlay automatically.
+
+function isSuperAdminSession(){
+  return sessionStorage.getItem("faculty_auth")  === "true" &&
+         sessionStorage.getItem("facultyRole")    === "superadmin";
+}
+
+async function attemptLogin(){
+  const username = document.getElementById("auth-user").value.trim();
+  const password = document.getElementById("auth-pass").value;
+  document.getElementById("auth-error").innerText = "";
+
+  if(!username || !password){
+    document.getElementById("auth-error").innerText = "יש למלא שם משתמש וסיסמה.";
+    return;
+  }
+
+  try{
+    const res = await fetch("/.netlify/functions/auth",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username,password})
+    });
+    const data = await res.json();
+
+    if(data.ok){
+      // Mirror the same session keys used by faculty.html for consistency
+      sessionStorage.setItem("faculty_auth",  "true");
+      sessionStorage.setItem("facultyRole",   data.user.role);
+      // Cockpit-specific keys (name display, token)
+      sessionStorage.setItem("cockpit_token", data.token);
+      sessionStorage.setItem("cockpit_user",  JSON.stringify(data.user));
+      document.getElementById("auth-overlay").style.display = "none";
+      init();
+    } else {
+      document.getElementById("auth-error").innerText =
+        data.error === "Cockpit access requires superadmin role"
+          ? "גישה לקוקפיט מותרת לסופר-אדמין בלבד."
+          : "פרטים שגויים. נסה שוב.";
+    }
+  } catch(e){
+    document.getElementById("auth-error").innerText = "שגיאת חיבור לשרת.";
+  }
+}
+
+function getCurrentUser(){
+  // Prefer cockpit-specific record; fall back to faculty session keys
+  const stored = sessionStorage.getItem("cockpit_user");
+  if(stored){ try{ return JSON.parse(stored); } catch{} }
+
+  const role = sessionStorage.getItem("facultyRole");
+  if(role) return { id: "faculty", name: "", role };
+
+  return null;
+}
+
+// ─── INIT ───
 
 async function init(){
 
-currentUser=await getCurrentUser()
+  // Accept either a cockpit token OR an active superadmin faculty session
+  const hasCockpitToken   = !!sessionStorage.getItem("cockpit_token");
+  const hasFacultySession = isSuperAdminSession();
 
-document.getElementById("currentUser").innerText=
-currentUser.id+" ("+currentUser.role+")"
+  if(!hasCockpitToken && !hasFacultySession){
+    document.getElementById("auth-overlay").style.display = "flex";
+    return;
+  }
 
-const res=await fetch("/config.json")
+  currentUser = getCurrentUser();
+  if(!currentUser){
+    document.getElementById("auth-overlay").style.display = "flex";
+    return;
+  }
 
-config=await res.json()
+  const displayName = currentUser.name || currentUser.id;
+  document.getElementById("currentUser").innerText =
+    displayName + " (" + currentUser.role + ")";
 
-render()
+  const res=await fetch("/config.json")
+  config=await res.json()
+  render()
 
 }
 
-async function getCurrentUser(){
-
-return{
-id:"faculty_123",
-role:"faculty"
-}
-
-}
+init()
 
 function render(){
 
@@ -368,6 +526,165 @@ config.branches[branch].items[id].stages.splice(index,1)
 
 render()
 
+}
+
+// ─── TAB SWITCHING ───
+
+function switchTab(tab){
+  document.getElementById("tab-config").style.display   = tab === "config"   ? "" : "none";
+  document.getElementById("tab-security").style.display = tab === "security" ? "" : "none";
+
+  document.getElementById("tab-btn-config").style.borderBottomColor   = tab === "config"   ? "#5b5fc7" : "transparent";
+  document.getElementById("tab-btn-config").style.color               = tab === "config"   ? "#5b5fc7" : "#888";
+  document.getElementById("tab-btn-config").style.fontWeight          = tab === "config"   ? "600"     : "400";
+  document.getElementById("tab-btn-security").style.borderBottomColor = tab === "security" ? "#5b5fc7" : "transparent";
+  document.getElementById("tab-btn-security").style.color             = tab === "security" ? "#5b5fc7" : "#888";
+  document.getElementById("tab-btn-security").style.fontWeight        = tab === "security" ? "600"     : "400";
+}
+
+// ─── SECURITY TAB ───
+
+function secCredentials(){
+  return {
+    requesterUsername: document.getElementById("sec-user").value.trim(),
+    requesterPassword: document.getElementById("sec-pass").value
+  };
+}
+
+async function adminAuthCall(body){
+  const res = await fetch("/.netlify/functions/admin-auth", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function loadUsers(){
+  const { requesterUsername, requesterPassword } = secCredentials();
+  document.getElementById("sec-msg").innerText = "";
+  if(!requesterUsername || !requesterPassword){
+    document.getElementById("sec-msg").innerText = "יש למלא שם משתמש וסיסמה.";
+    return;
+  }
+
+  document.getElementById("sec-msg").innerText = "טוען...";
+  try {
+    const data = await adminAuthCall({ action:"list", requesterUsername, requesterPassword });
+    if(!data.ok){
+      document.getElementById("sec-msg").innerText = data.error || "שגיאה";
+      return;
+    }
+    document.getElementById("sec-msg").innerText = "";
+    renderUsers(data.users);
+    document.getElementById("create-user-form").style.display = "";
+  } catch(e){
+    document.getElementById("sec-msg").innerText = "שגיאת חיבור לשרת.";
+  }
+}
+
+function renderUsers(users){
+  const container = document.getElementById("users-list");
+  if(!users.length){
+    container.innerHTML = "<p style='color:#aaa;font-size:13px;'>אין משתמשים.</p>";
+    return;
+  }
+
+  let html = "<table style='width:100%;border-collapse:collapse;font-size:13px;'>" +
+    "<thead><tr style='background:#f5f7fb;'>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>שם משתמש</th>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>שם</th>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>תפקיד</th>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>סיסמה חדשה</th>" +
+    "<th style='padding:8px 12px;border-bottom:1px solid #eee;'></th>" +
+    "</tr></thead><tbody>";
+
+  users.forEach(u => {
+    html += `<tr id="user-row-${u.username}" style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px 12px;direction:ltr;">${u.username}</td>
+      <td style="padding:8px 12px;">${u.name || ""}</td>
+      <td style="padding:8px 12px;">${u.role}</td>
+      <td style="padding:8px 12px;">
+        <input id="pw-${u.username}" type="password" placeholder="סיסמה חדשה"
+          style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;width:140px;direction:ltr;">
+      </td>
+      <td style="padding:8px 12px;white-space:nowrap;">
+        <button class="btn btn-blue" onclick="updatePassword('${u.username}')"
+          style="padding:5px 10px;font-size:12px;margin-left:4px;">עדכן</button>
+        <button class="btn btn-red" onclick="deleteUser('${u.username}')"
+          style="padding:5px 10px;font-size:12px;">מחק</button>
+      </td>
+    </tr>`;
+  });
+
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+async function updatePassword(username){
+  const { requesterUsername, requesterPassword } = secCredentials();
+  const newPassword = document.getElementById("pw-" + username)?.value;
+  if(!newPassword){ alert("יש להזין סיסמה חדשה."); return; }
+
+  try {
+    const data = await adminAuthCall({ action:"update_password", requesterUsername, requesterPassword, username, newPassword });
+    if(data.ok){
+      alert("סיסמה עודכנה בהצלחה.");
+      document.getElementById("pw-" + username).value = "";
+    } else {
+      alert("שגיאה: " + (data.error || "Unknown"));
+    }
+  } catch(e){
+    alert("שגיאת חיבור לשרת.");
+  }
+}
+
+async function deleteUser(username){
+  if(!confirm("למחוק את המשתמש " + username + "? פעולה זו אינה הפיכה.")) return;
+  const { requesterUsername, requesterPassword } = secCredentials();
+
+  try {
+    const data = await adminAuthCall({ action:"delete_user", requesterUsername, requesterPassword, username });
+    if(data.ok){
+      const row = document.getElementById("user-row-" + username);
+      if(row) row.remove();
+      alert("משתמש נמחק.");
+    } else {
+      alert("שגיאה: " + (data.error || "Unknown"));
+    }
+  } catch(e){
+    alert("שגיאת חיבור לשרת.");
+  }
+}
+
+async function createUser(){
+  const { requesterUsername, requesterPassword } = secCredentials();
+  const username = document.getElementById("new-username").value.trim();
+  const name     = document.getElementById("new-name").value.trim();
+  const password = document.getElementById("new-password").value;
+  const role     = document.getElementById("new-role").value;
+
+  document.getElementById("create-msg").innerText = "";
+
+  if(!username || !name || !password){
+    document.getElementById("create-msg").innerText = "יש למלא את כל השדות.";
+    return;
+  }
+
+  try {
+    const data = await adminAuthCall({ action:"create_user", requesterUsername, requesterPassword, username, name, password, role });
+    if(data.ok){
+      alert("משתמש נוצר בהצלחה.");
+      document.getElementById("new-username").value = "";
+      document.getElementById("new-name").value     = "";
+      document.getElementById("new-password").value = "";
+      loadUsers(); // refresh list
+    } else {
+      document.getElementById("create-msg").innerText = data.error || "שגיאה";
+    }
+  } catch(e){
+    document.getElementById("create-msg").innerText = "שגיאת חיבור לשרת.";
+  }
 }
 
 </script>

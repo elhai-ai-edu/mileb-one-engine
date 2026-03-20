@@ -1,0 +1,63 @@
+MILED Bot Architect — Tally Setup Checklist
+============================================
+Generated: 2026-03-20T20:32:34.785Z
+
+Form ID:    Ek07No
+Form URL:   https://tally.so/r/Ek07No
+Webhook:    https://miled.one/api/architect/intake
+Redirect:   https://miled.one/architect_studio.html?sessionId={{submission_id}}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — Update architect_studio.html
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Find this line in architect_studio.html:
+  const TALLY_URL = ""; // TODO: replace with live Tally form URL
+
+Replace with:
+  const TALLY_URL = "https://tally.so/r/Ek07No";
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — Verify form at Tally
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Open: https://app.tally.so/forms/Ek07No/edit
+Check:
+  [ ] All 9 cluster sections visible
+  [ ] Field references set correctly (see scripts/output/form_result.json)
+  [ ] Hidden field "session_id" present
+  [ ] Redirect URL set to: https://miled.one/architect_studio.html?sessionId={{submission_id}}
+  [ ] Form language set to Hebrew
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — Verify webhook at Tally
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Open: https://app.tally.so/forms/Ek07No/settings
+Go to: Integrations > Webhooks
+Check:
+  [ ] Webhook URL: https://miled.one/api/architect/intake
+  [ ] Event: FORM_RESPONSE
+  [ ] Status: Active
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 4 — End-to-end test
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. Open architect_studio.html
+  2. Click "פתח שאלון"
+  3. Fill and submit the form
+  4. Confirm webhook fires → Firebase shows architect_sessions/{submissionId}/parsedVariables
+  5. Click "סיימתי את השאלון — המשך לבנייה"
+  6. Confirm Bot Architect starts Stage 2 (Hebrew briefing summary)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIELD SLUG REFERENCE (all refs in form)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cluster A: cluster_a_name, cluster_a_function, cluster_a_phase, cluster_a_mission,
+           cluster_a_bot_scope, cluster_a_scope_limits, cluster_a_enforcement
+Cluster B: cluster_b_language_mode, cluster_b_audience, cluster_b_population
+Cluster C: cluster_c_interaction, cluster_c_time_horizon, cluster_c_data_tracking
+Cluster D: cluster_d_persona, cluster_d_identity, cluster_d_pacing, cluster_d_stuck
+Cluster E: cluster_e_never_do, cluster_e_agency, cluster_e_refusal, cluster_e_escalation
+Cluster F: cluster_f_process_type, cluster_f_stages, cluster_f_mandatory, cluster_f_readiness
+Cluster G: cluster_g_regulation, cluster_g_overload, cluster_g_metacognitive
+Cluster H: cluster_h_kb_domains, cluster_h_forbidden, cluster_h_uncertainty, cluster_h_closure_goal
+Cluster I: cluster_i_eval_policy, cluster_i_rubric_status, cluster_i_academic_level, cluster_i_data_tracking
+Hidden:    session_id (pre-filled from URL param ?session_id=VALUE)

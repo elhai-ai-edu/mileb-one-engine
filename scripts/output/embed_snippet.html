@@ -1,0 +1,28 @@
+<!-- Tally Embed — MILED Bot Architect -->
+<!-- Add ?session_id=SESSION_ID to URL to pre-fill hidden field -->
+<iframe
+  id="tally-iframe"
+  src="https://tally.so/r/Ek07No?session_id=SESSION_ID_PLACEHOLDER&transparentBackground=1"
+  width="100%"
+  height="600"
+  frameborder="0"
+  marginheight="0"
+  marginwidth="0"
+  title="MILED Bot Architect Questionnaire">
+</iframe>
+
+<!-- Tally postMessage listener (detects form submission in iframe) -->
+<script>
+  window.addEventListener("message", function(e) {
+    if (!e.data || typeof e.data !== "object") return;
+    if (e.data.formId !== "Ek07No") return;
+    if (e.data.type === "tally-form-submitted") {
+      const submissionId = e.data.data?.responseId || e.data.data?.submissionId;
+      // submissionId is the sessionId to use for architect_api.js bootstrap
+      window.dispatchEvent(new CustomEvent("tally-submitted", { detail: { submissionId } }));
+    }
+  });
+</script>
+
+<!-- TALLY_URL for architect_studio.html: -->
+<!-- const TALLY_URL = "https://tally.so/r/Ek07No"; -->

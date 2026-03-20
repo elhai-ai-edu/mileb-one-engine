@@ -1,0 +1,1 @@
+[https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app](https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app)
