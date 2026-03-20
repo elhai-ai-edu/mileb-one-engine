@@ -19,7 +19,7 @@
  * WHAT HAPPENS:
  *   1. GET /forms — verifies API key
  *   2. POST /forms — creates 9-cluster form (40 fields, section headers, hidden session_id)
- *   3. POST /webhooks — attaches webhook → https://miled.one/api/architect/intake
+ *   3. POST /webhooks — attaches webhook → {SITE_URL}/api/architect/intake
  *   4. Writes all outputs to scripts/output/
  *
  * TALLY API REFERENCE:
@@ -37,7 +37,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const TALLY_API_BASE  = "https://api.tally.so";
-const SITE_URL        = "https://miled.one";
+const SITE_URL        = "https://cozy-seahorse-7c5204.netlify.app"; // primary until miled.one DNS is live
 const WEBHOOK_URL     = `${SITE_URL}/api/architect/intake`;
 const REDIRECT_URL    = `${SITE_URL}/architect_studio.html?sessionId={{submission_id}}`;
 const FORM_TITLE      = "MILED Bot Architect — שאלון בונה הבוטים";

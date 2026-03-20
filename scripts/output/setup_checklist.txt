@@ -1,11 +1,11 @@
 MILED Bot Architect — Tally Setup Checklist
 ============================================
-Generated: 2026-03-20T20:32:34.785Z
+Generated: 2026-03-20T21:50:07.271Z
 
 Form ID:    Ek07No
 Form URL:   https://tally.so/r/Ek07No
-Webhook:    https://miled.one/api/architect/intake
-Redirect:   https://miled.one/architect_studio.html?sessionId={{submission_id}}
+Webhook:    https://cozy-seahorse-7c5204.netlify.app/api/architect/intake
+Redirect:   https://cozy-seahorse-7c5204.netlify.app/architect_studio.html?sessionId={{submission_id}}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 STEP 1 — Update architect_studio.html
@@ -24,7 +24,7 @@ Check:
   [ ] All 9 cluster sections visible
   [ ] Field references set correctly (see scripts/output/form_result.json)
   [ ] Hidden field "session_id" present
-  [ ] Redirect URL set to: https://miled.one/architect_studio.html?sessionId={{submission_id}}
+  [ ] Redirect URL set to: https://cozy-seahorse-7c5204.netlify.app/architect_studio.html?sessionId={{submission_id}}
   [ ] Form language set to Hebrew
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -33,7 +33,7 @@ STEP 3 — Verify webhook at Tally
 Open: https://app.tally.so/forms/Ek07No/settings
 Go to: Integrations > Webhooks
 Check:
-  [ ] Webhook URL: https://miled.one/api/architect/intake
+  [ ] Webhook URL: https://cozy-seahorse-7c5204.netlify.app/api/architect/intake
   [ ] Event: FORM_RESPONSE
   [ ] Status: Active
 
