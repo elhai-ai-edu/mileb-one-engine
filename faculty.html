@@ -9,7 +9,7 @@
 <title>MilEd.One - סגל</title>
 </head>
 
-<body>
+<body class="management-theme">
 
 <div class="sidebar">
   <h2>MilEd.One</h2>
@@ -66,7 +66,7 @@ function checkPrivacyConsent() {
         <button id="privacy-decline" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:white;cursor:pointer;font-size:14px;">
           לא מסכים/ה
         </button>
-        <button id="privacy-accept" style="padding:10px 20px;background:#6C63FF;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">
+        <button id="privacy-accept" style="padding:10px 20px;background:#3730a3;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;">
           מסכים/ה ומאשר/ת
         </button>
       </div>
@@ -149,8 +149,8 @@ function initPage(CONFIG) {
   const architectCard = document.createElement("a");
   architectCard.href  = "/architect_studio.html";
   architectCard.style.cssText = `
-    display:block;grid-column:1/-1;
-    background:linear-gradient(135deg,#6C63FF,#4f46e5);
+    grid-column:1/-1;
+    background:linear-gradient(135deg,#1e1b4b,#3730a3);
     color:white;border-radius:14px;padding:20px 24px;
     text-decoration:none;
     display:flex;align-items:center;gap:16px;

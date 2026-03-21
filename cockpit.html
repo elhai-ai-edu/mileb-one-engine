@@ -10,32 +10,18 @@
 
 </head>
 
-<body>
+<body class="management-theme">
 
 <!-- ─── AUTH OVERLAY ─── -->
-<div id="auth-overlay" style="
-  position:fixed;top:0;left:0;width:100%;height:100%;
-  background:rgba(15,15,30,0.94);
-  display:flex;align-items:center;justify-content:center;
-  z-index:999;font-family:'Inter',sans-serif;">
-  <div style="
-    background:white;border-radius:16px;padding:40px 48px;
-    width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
-    <h2 style="margin:0 0 6px;font-size:20px;">MilEd Cockpit</h2>
-    <p style="color:#888;font-size:13px;margin:0 0 24px;">כניסה נדרשת</p>
-    <input id="auth-user" type="text" placeholder="שם משתמש" autocomplete="username"
-      style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #ddd;
-             border-radius:8px;font-size:14px;margin-bottom:10px;direction:ltr;">
+<div id="auth-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,15,30,0.92);display:flex;align-items:center;justify-content:center;z-index:999;">
+  <div class="auth-card">
+    <h2>MilEd Cockpit</h2>
+    <p>כניסה נדרשת</p>
+    <input id="auth-user" type="text" placeholder="שם משתמש" autocomplete="username">
     <input id="auth-pass" type="password" placeholder="סיסמה" autocomplete="current-password"
-      onkeydown="if(event.key==='Enter')attemptLogin()"
-      style="width:100%;box-sizing:border-box;padding:10px 14px;border:1px solid #ddd;
-             border-radius:8px;font-size:14px;margin-bottom:16px;direction:ltr;">
-    <button onclick="attemptLogin()"
-      style="width:100%;padding:11px;background:#5b5fc7;color:white;border:none;
-             border-radius:8px;font-size:15px;cursor:pointer;">
-      כניסה
-    </button>
-    <p id="auth-error" style="color:#e53;font-size:13px;margin:12px 0 0;min-height:18px;"></p>
+      onkeydown="if(event.key==='Enter')attemptLogin()">
+    <button class="auth-btn-primary" onclick="attemptLogin()">כניסה</button>
+    <p id="auth-error" class="auth-error"></p>
   </div>
 </div>
 
@@ -49,15 +35,9 @@
 <h1>MilEd Cockpit v2</h1>
 
 <!-- ─── TAB NAV ─── -->
-<div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:2px solid #eee;padding-bottom:0;">
-  <button id="tab-btn-config" onclick="switchTab('config')"
-    style="padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;border-bottom:3px solid #5b5fc7;color:#5b5fc7;font-weight:600;">
-    עורך Config
-  </button>
-  <button id="tab-btn-security" onclick="switchTab('security')"
-    style="padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-family:'Inter',sans-serif;border-bottom:3px solid transparent;color:#888;">
-    אבטחה
-  </button>
+<div class="mgmt-tabs">
+  <button id="tab-btn-config"   class="mgmt-tab-btn active" onclick="switchTab('config')">עורך Config</button>
+  <button id="tab-btn-security" class="mgmt-tab-btn"        onclick="switchTab('security')">אבטחה</button>
 </div>
 
 <!-- ─── CONFIG TAB ─── -->
@@ -79,25 +59,21 @@
     <p style="color:#888;font-size:13px;margin-bottom:16px;">שינויים נשמרים ישירות ב-Firebase. נדרש אימות מחדש לכל פעולה.</p>
 
     <!-- Re-auth -->
-    <div style="background:#f5f7fb;border-radius:10px;padding:16px;margin-bottom:20px;">
-      <p style="font-size:13px;font-weight:600;margin:0 0 10px;">אימות מחדש נדרש לפעולות אבטחה</p>
+    <div class="mgmt-reauth">
+      <p>אימות מחדש נדרש לפעולות אבטחה</p>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input id="sec-user" type="text" placeholder="שם משתמש" autocomplete="off"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;width:150px;">
-        <input id="sec-pass" type="password" placeholder="סיסמה" autocomplete="off"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;width:150px;">
-        <button class="btn btn-blue" onclick="loadUsers()" style="padding:8px 16px;font-size:13px;">
-          טען משתמשים
-        </button>
+        <input id="sec-user" type="text" placeholder="שם משתמש" autocomplete="off" style="width:150px;direction:ltr;">
+        <input id="sec-pass" type="password" placeholder="סיסמה" autocomplete="off" style="width:150px;direction:ltr;">
+        <button class="btn btn-blue btn-sm" onclick="loadUsers()">טען משתמשים</button>
       </div>
-      <p id="sec-msg" style="font-size:13px;color:#e53;margin:8px 0 0;min-height:18px;"></p>
+      <p id="sec-msg" class="auth-error" style="margin:8px 0 0;"></p>
     </div>
 
     <!-- Users list -->
     <div id="users-list" style="margin-bottom:20px;"></div>
 
     <!-- Create user -->
-    <div id="create-user-form" style="display:none;background:#f0fff4;border:1px solid #c6f6d5;border-radius:10px;padding:16px;">
+    <div id="create-user-form" class="mgmt-section" style="display:none;">
       <h3 style="margin:0 0 12px;font-size:14px;">+ הוסף משתמש חדש</h3>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
         <input id="new-username" type="text" placeholder="שם משתמש (login)" autocomplete="off"
@@ -533,13 +509,8 @@ render()
 function switchTab(tab){
   document.getElementById("tab-config").style.display   = tab === "config"   ? "" : "none";
   document.getElementById("tab-security").style.display = tab === "security" ? "" : "none";
-
-  document.getElementById("tab-btn-config").style.borderBottomColor   = tab === "config"   ? "#5b5fc7" : "transparent";
-  document.getElementById("tab-btn-config").style.color               = tab === "config"   ? "#5b5fc7" : "#888";
-  document.getElementById("tab-btn-config").style.fontWeight          = tab === "config"   ? "600"     : "400";
-  document.getElementById("tab-btn-security").style.borderBottomColor = tab === "security" ? "#5b5fc7" : "transparent";
-  document.getElementById("tab-btn-security").style.color             = tab === "security" ? "#5b5fc7" : "#888";
-  document.getElementById("tab-btn-security").style.fontWeight        = tab === "security" ? "600"     : "400";
+  document.getElementById("tab-btn-config").classList.toggle("active",   tab === "config");
+  document.getElementById("tab-btn-security").classList.toggle("active", tab === "security");
 }
 
 // ─── SECURITY TAB ───
