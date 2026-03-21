@@ -38,6 +38,7 @@
 <div class="mgmt-tabs">
   <button id="tab-btn-config"   class="mgmt-tab-btn active" onclick="switchTab('config')">עורך Config</button>
   <button id="tab-btn-security" class="mgmt-tab-btn"        onclick="switchTab('security')">אבטחה</button>
+  <button id="tab-btn-skills"   class="mgmt-tab-btn"        onclick="switchTab('skills')">👥 ביצועים ומיומנויות</button>
 </div>
 
 <!-- ─── CONFIG TAB ─── -->
@@ -49,6 +50,85 @@
   שמור config לשרת
   </button>
 
+</div>
+
+<!-- ─── SKILLS / PERFORMANCE TAB ─── -->
+<div id="tab-skills" style="display:none;">
+
+  <div class="mgmt-section">
+    <h2>ניתוח ביצועים ומיומנויות</h2>
+    <p>מבט משולב על ביצועי הסטודנטים בקורסים ובמסלולי המיומנויות. לטעינת נתונים — אמת תחילה בלשונית "אבטחה", ואז לחץ "טען".</p>
+    <button class="btn btn-blue" style="margin-bottom:16px;padding:8px 16px;font-size:13px;" onclick="skillsLoaded=false;loadSkillsData()">🔄 טען נתונים</button>
+
+    <!-- Toggle: Course Performance ↔ Skills Profile -->
+    <div class="perf-toggle-row">
+      <button id="perf-btn-course" class="perf-toggle-btn active" onclick="switchPerfView('course')">📋 ביצועים בקורסים</button>
+      <button id="perf-btn-skills" class="perf-toggle-btn"        onclick="switchPerfView('skills')">⭐ פרופיל מיומנויות</button>
+    </div>
+
+    <!-- Course Performance View -->
+    <div id="perf-course">
+      <div class="mgmt-section">
+        <h3>סטטוס משימות קורסיות</h3>
+        <p>טעינת נתונים מ-Firebase — פעיל ב-Production עם הרשאות Firebase מלאות</p>
+        <table class="mgmt-table" id="course-perf-table">
+          <thead>
+            <tr>
+              <th>קורס</th>
+              <th>בוט</th>
+              <th>שיחות</th>
+              <th>עדכון אחרון</th>
+              <th>סטטוס</th>
+            </tr>
+          </thead>
+          <tbody id="course-perf-body">
+            <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Skills Profile View -->
+    <div id="perf-skills" style="display:none;">
+      <div class="mgmt-section">
+        <h3>פרופיל מיומנויות — סקירת כיתה</h3>
+        <p>נתוני אבחון מיומנויות — נטענים מ-<code>skills_sessions/</code> ב-Firebase</p>
+        <table class="mgmt-table" id="skills-perf-table">
+          <thead>
+            <tr>
+              <th>סטודנט</th>
+              <th>בוט מיומנות</th>
+              <th>שכבה</th>
+              <th>פעיל לאחרונה</th>
+              <th>סשן</th>
+            </tr>
+          </thead>
+          <tbody id="skills-perf-body">
+            <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mgmt-section" style="margin-top:16px;">
+        <h3>פילוח מיומנויות — סטודנטים פעילים</h3>
+        <div id="skills-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:8px;">
+          <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+            <div style="font-size:24px;font-weight:700;color:var(--color-accent);" id="cnt-total">—</div>
+            <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">סטודנטים פעילים</div>
+          </div>
+          <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+            <div style="font-size:24px;font-weight:700;color:#0891b2;" id="cnt-diagnostic">—</div>
+            <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">אבחונים הושלמו</div>
+          </div>
+          <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+            <div style="font-size:24px;font-weight:700;color:#059669;" id="cnt-process">—</div>
+            <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">תהליכי פיתוח</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <!-- ─── SECURITY TAB ─── -->
@@ -507,11 +587,116 @@ render()
 // ─── TAB SWITCHING ───
 
 function switchTab(tab){
-  document.getElementById("tab-config").style.display   = tab === "config"   ? "" : "none";
-  document.getElementById("tab-security").style.display = tab === "security" ? "" : "none";
-  document.getElementById("tab-btn-config").classList.toggle("active",   tab === "config");
-  document.getElementById("tab-btn-security").classList.toggle("active", tab === "security");
+  ["config","security","skills"].forEach(t => {
+    document.getElementById("tab-" + t).style.display = tab === t ? "" : "none";
+    document.getElementById("tab-btn-" + t).classList.toggle("active", tab === t);
+  });
+  if (tab === "skills") loadSkillsData();
 }
+
+// ─── PERFORMANCE TOGGLE ───
+
+function switchPerfView(view) {
+  document.getElementById("perf-course").style.display  = view === "course" ? "" : "none";
+  document.getElementById("perf-skills").style.display  = view === "skills" ? "" : "none";
+  document.getElementById("perf-btn-course").classList.toggle("active", view === "course");
+  document.getElementById("perf-btn-skills").classList.toggle("active", view === "skills");
+}
+
+// ─── SKILLS DATA LOADER (Firebase via admin-auth readPath) ───
+
+let skillsLoaded = false;
+
+async function loadSkillsData() {
+  if (skillsLoaded) return;
+
+  // Re-use security tab credentials if available
+  const username = document.getElementById("sec-user")?.value?.trim()
+    || (currentUser?.name || currentUser?.id || "");
+  const password = document.getElementById("sec-pass")?.value || "";
+
+  if (!username || !password) {
+    // Show inline prompt in the skills tab
+    document.getElementById("course-perf-body").innerHTML =
+      `<tr><td colspan="5" style="text-align:center;padding:16px;">
+        <em>הזן פרטי אימות בלשונית "אבטחה" ← "טען משתמשים", ואז חזור לכאן ולחץ טען.</em>
+        <br><button class="btn btn-blue" style="margin-top:10px;padding:7px 14px;font-size:12px;" onclick="skillsLoaded=false;loadSkillsData()">🔄 טען נתונים</button>
+      </td></tr>`;
+    return;
+  }
+
+  skillsLoaded = true;
+  const courseBody = document.getElementById("course-perf-body");
+  const skillsBody = document.getElementById("skills-perf-body");
+
+  async function readPath(path, limit = 100) {
+    const res = await fetch("/.netlify/functions/admin-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "readPath", path, limit, requesterUsername: username, requesterPassword: password })
+    });
+    if (!res.ok) return null;
+    const d = await res.json();
+    return d.ok ? (d.data || {}) : null;
+  }
+
+  try {
+    // Course conversations
+    const convData = await readPath("conversations", 50);
+    if (convData) {
+      const rows = Object.entries(convData).filter(([, v]) => v.type !== "skill").slice(0, 30);
+      courseBody.innerHTML = rows.length === 0
+        ? `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">אין שיחות קורסיות עדיין</td></tr>`
+        : rows.map(([, r]) => `
+          <tr>
+            <td>${r.courseId || "—"}</td>
+            <td>${r.botType || "—"}</td>
+            <td>—</td>
+            <td>${r.updatedAt ? new Date(r.updatedAt).toLocaleString("he-IL") : "—"}</td>
+            <td><span class="badge badge-inprogress">פעיל</span></td>
+          </tr>`).join("");
+    } else {
+      courseBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:16px;">שגיאת אימות או הרשאה</td></tr>`;
+    }
+
+    // Skills sessions
+    const skillsData = await readPath("skills_sessions", 200);
+    if (skillsData) {
+      const allRows = []; let diagCount = 0; let procCount = 0;
+      for (const sid in skillsData) {
+        for (const botKey in skillsData[sid]) {
+          const r = skillsData[sid][botKey];
+          allRows.push({ studentId: sid, ...r });
+          if ((r.layer || "").includes("diagnostic")) diagCount++;
+          else procCount++;
+        }
+      }
+      document.getElementById("cnt-total").innerText      = Object.keys(skillsData).length;
+      document.getElementById("cnt-diagnostic").innerText = diagCount;
+      document.getElementById("cnt-process").innerText    = procCount;
+
+      skillsBody.innerHTML = allRows.length === 0
+        ? `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">אין נתוני מיומנויות עדיין</td></tr>`
+        : allRows.slice(0, 30).map(r => `
+          <tr>
+            <td style="font-size:11px;color:#94a3b8;">${(r.studentId || "").slice(0, 12)}</td>
+            <td>${r.botName || r.botType || "—"}</td>
+            <td><span class="badge badge-inprogress">${r.layer || "—"}</span></td>
+            <td>${r.lastActive ? new Date(r.lastActive).toLocaleString("he-IL") : "—"}</td>
+            <td style="font-size:11px;color:#94a3b8;">${(r.sessionId || "").slice(0, 16)}</td>
+          </tr>`).join("");
+    } else {
+      skillsBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:16px;">שגיאת אימות</td></tr>`;
+    }
+
+  } catch (e) {
+    console.error("SKILLS DATA LOAD ERROR:", e);
+    courseBody.innerHTML = `<tr><td colspan="5" style="color:#dc2626;text-align:center;padding:16px;">שגיאת חיבור: ${e.message}</td></tr>`;
+  }
+}
+
+// ─── Deep-link: open Skills tab if URL has #skills ───
+if (location.hash === "#skills") switchTab("skills");
 
 // ─── SECURITY TAB ───
 

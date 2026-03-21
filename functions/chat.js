@@ -338,7 +338,8 @@ exports.handler = async (event) => {
       sessionId        = null,
       hebrewLevel      = null,
       currentStep      = null,          // ← active project stage sent by workspace.html
-      isNewBotSession  = false          // ← prevents loading stale history on bot switch
+      isNewBotSession  = false,         // ← prevents loading stale history on bot switch
+      skillMode        = false          // ← true when request originates from skills hub
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -428,14 +429,30 @@ exports.handler = async (event) => {
       }
     }
 
+    // ─── DETECT SKILL ACTIVITY ───
+    const isSkillActivity = skillMode || (botConfig._layer || "").startsWith("skills_");
+    const activityType    = isSkillActivity ? "skill" : "course";
+
     // ─── LOG SESSION METADATA (once per session) ───
     if (sessionId) {
       await getDB().ref(`conversations/${sessionId}`).update({
         studentId,
         courseId,
         botType,
+        type: activityType,
         updatedAt: Date.now()
       });
+    }
+
+    // ─── SKILL SESSION TRACKING (parallel record for skills dashboard) ───
+    if (isSkillActivity && studentId && studentId !== "anonymous") {
+      getDB().ref(`skills_sessions/${studentId}/${botConfig.botType}`).update({
+        lastActive:  Date.now(),
+        botType:     botConfig.botType,
+        botName:     botConfig.name,
+        layer:       botConfig._layer,
+        sessionId:   sessionId || null
+      }).catch(e => console.error("SKILL SESSION SAVE ERROR:", e.message));
     }
     // ─── CONTEXT-BASED ENFORCEMENT ───
     const contextRules            = resolveContextRules(engine, botConfig);

@@ -75,14 +75,20 @@ if (!sessionId){
 
 let facultyId = sessionStorage.getItem('facultyId') || null;
 
-const params  = new URLSearchParams(window.location.search);
-const classId = params.get('classId');
+const params    = new URLSearchParams(window.location.search);
+const classId   = params.get('classId');
+const skillMode = params.get('skillMode') === 'true';
 
 const chatWindow = document.getElementById('chat-window');
 const input      = document.getElementById('user-input');
 const sendBtn    = document.getElementById('send-btn');
 const historyKey = `history_${classId}`;
 let chatHistory  = JSON.parse(sessionStorage.getItem(historyKey) || '[]');
+
+// Track skill visit for my_status.html progress matrix
+if (skillMode && classId) {
+  localStorage.setItem(`miled_skill_ts_${classId}`, Date.now().toString());
+}
 
 function renderMessage(role, content){
   const div = document.createElement('div');
@@ -141,6 +147,7 @@ async function triggerBotOpening() {
         studentId:       studentId,
         facultyId:       facultyId,
         sessionId:       sessionId,
+        skillMode:       skillMode,
         history:         [],
         isNewBotSession: true
       })
@@ -198,6 +205,7 @@ async function sendMessage(){
         studentId: studentId,
         facultyId: facultyId,
         sessionId: sessionId,
+        skillMode: skillMode,
         history:   chatHistory
       })
     });

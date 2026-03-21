@@ -1,130 +1,176 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-
 <head>
-
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-
-<title>MilEd.One - מיומנויות</title>
-
+<title>MilEd.One — מיומנויות</title>
 </head>
 
-<body>
+<body class="user-student">
 
-<div class="panel">
+<div class="sidebar">
+  <h2>MilEd.One</h2>
+  <a href="/students.html">קורסים</a>
+  <a href="/skills.html" class="active">מיומנויות</a>
+  <a href="/my_status.html">הסטטוס שלי</a>
+</div>
 
-<span style="font-weight:300;color:#000;">MilEd.One</span>
+<div class="main">
 
-<h1 id="title">טוען...</h1>
+  <div class="topbar">
+    <span>MilEd.One — מרכז המיומנויות</span>
+  </div>
 
-<p id="subtitle">טוען...</p>
+  <div class="skills-hub">
 
-<div id="list" class="grid"></div>
+    <span style="font-weight:300;font-size:13px;color:var(--color-text-muted);">MilEd.One</span>
+    <h1 id="hub-title">אבחון ופיתוח מיומנויות</h1>
+    <p id="hub-subtitle" style="color:var(--color-text-muted);margin-bottom:32px;">בחר תחום לפיתוח אישי ואקדמי</p>
 
-<br>
+    <!-- ─── Section 1: Academic ─── -->
+    <div class="skills-section">
+      <div class="skills-section-header">
+        <span class="skills-section-title">📚 מיומנויות אקדמיות</span>
+        <span class="skills-section-badge badge-academic">Academic</span>
+      </div>
+      <div id="section-academic" class="skills-grid"></div>
+    </div>
 
-<a href="/" onclick="sessionStorage.clear()" class="btn btn-blue">← חזרה למסך הבית</a>
+    <!-- ─── Section 2: Vocational ─── -->
+    <div class="skills-section">
+      <div class="skills-section-header">
+        <span class="skills-section-title">💼 מיומנויות תעסוקתיות</span>
+        <span class="skills-section-badge badge-vocational">Vocational</span>
+      </div>
+      <div id="section-vocational" class="skills-grid"></div>
+    </div>
+
+    <!-- ─── Section 3: Diagnostic & Learning ─── -->
+    <div class="skills-section">
+      <div class="skills-section-header">
+        <span class="skills-section-title">🔍 אבחון ולמידה</span>
+        <span class="skills-section-badge badge-diagnostic">Diagnostic</span>
+      </div>
+      <div id="section-diagnostic" class="skills-grid">
+        <!-- Diagnostic card built from config -->
+      </div>
+      <!-- Skills World placeholder -->
+      <div class="skills-grid" style="margin-top:12px;">
+        <div class="skill-card coming-soon">
+          <div class="skill-card-icon">🌍</div>
+          <div class="skill-card-title">Skills World</div>
+          <div class="skill-card-desc">סביבת למידה אדפטיבית — בפיתוח. תמשיכו לעקוב!</div>
+          <div style="margin-top:10px;">
+            <span class="badge badge-inactive" style="font-size:10px;">בקרוב</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <a href="/" onclick="sessionStorage.clear()" class="btn btn-outline" style="margin-top:8px;">← חזרה למסך הבית</a>
+
+  </div>
 </div>
 
 <script>
 
-
-// ─────────────────────────────
-// student session id
-// ─────────────────────────────
-
-let studentId=sessionStorage.getItem("studentId");
-
-if(!studentId){
-
-studentId="s_"+Math.random().toString(36).slice(2,10);
-
-sessionStorage.setItem("studentId",studentId);
-
+// ─── Student ID ───
+let studentId = sessionStorage.getItem("studentId");
+if (!studentId) {
+  studentId = "s_" + Math.random().toString(36).slice(2, 10);
+  sessionStorage.setItem("studentId", studentId);
 }
 
+// ─── Bot categorization ───
+// _layer "skills_diagnostic" → Diagnostic section
+// _layer "skills_process" → split by botType name heuristic:
+//   employment-related → Vocational, otherwise → Academic
 
-// ─────────────────────────────
-// access control layer
-// ─────────────────────────────
-
-function studentHasAccess(tool){
-
-const scope=tool.scope||"global";
-
-
-if(scope==="global") return true;
-
-if(scope==="institution") return true;
-
-if(scope==="course_specific") return true;
-
-
-if(scope==="faculty_private") return false;
-
-
-return false;
-
+function categorize(bot) {
+  const layer = bot._layer || "";
+  if (layer === "skills_diagnostic") return "diagnostic";
+  const name = (bot.name || "").toLowerCase();
+  if (name.includes("תעסוק") || name.includes("employab") || bot.botType?.includes("employ")) return "vocational";
+  return "academic";
 }
 
-
-// ─────────────────────────────
-// load config
-// ─────────────────────────────
-
-fetch('/config.json')
-
-.then(r=>r.json())
-
-.then(data=>{
-
-const skills=data.branches.skills;
-
-document.getElementById('title').innerText=skills.title;
-
-document.getElementById('subtitle').innerText=skills.subtitle;
-
-
-const list=document.getElementById('list');
-
-
-for(let id in skills.items){
-
-const tool=skills.items[id];
-
-
-if(!studentHasAccess(tool))
-continue;
-
-
-const a=document.createElement('a');
-
-a.className='btn';
-
-a.href=`/chat.html?classId=${id}`;
-
-a.innerText=tool.name;
-
-list.appendChild(a);
-
+function renderCard(bot, id) {
+  const cat = categorize(bot);
+  const isDiag = cat === "diagnostic";
+  const url = `/chat.html?classId=${id}&skillMode=true`;
+  const card = document.createElement("a");
+  card.href = url;
+  card.className = "skill-card" + (isDiag ? " diagnostic" : "");
+  card.innerHTML = `
+    <div class="skill-card-icon">${getIcon(bot)}</div>
+    <div class="skill-card-title">${bot.name}</div>
+    <div class="skill-card-desc">${getDesc(bot)}</div>
+    <div style="margin-top:12px;font-size:11px;color:var(--color-accent);font-weight:500;">
+      ${isDiag ? "🎯 התחל אבחון →" : "פתח →"}
+    </div>
+  `;
+  return { card, cat };
 }
 
-})
+function getIcon(bot) {
+  const n = bot.name || "";
+  if (n.includes("אבחון") || n.includes("diag")) return "🔍";
+  if (n.includes("תעסוק")) return "💼";
+  if (n.includes("למידה") || n.includes("אקדמ")) return "📘";
+  return "⭐";
+}
 
-.catch(err=>{
+function getDesc(bot) {
+  const phase = bot.phase || "";
+  const fn = bot.function || "";
+  const parts = [];
+  if (phase === "diagnostic") parts.push("אבחון אישי");
+  else if (phase === "development") parts.push("פיתוח מיומנויות");
+  if (fn === "learning") parts.push("למידה פעילה");
+  return parts.join(" • ") || "כלי פדגוגי מותאם";
+}
 
-console.error("config load error:",err);
+// ─── Load config ───
+fetch('/config.json?ts=' + Date.now())
+  .then(r => r.json())
+  .then(config => {
+    const skills = config.branches?.skills;
+    if (!skills) return;
 
-document.getElementById('title').innerText="שגיאה";
+    document.getElementById("hub-title").innerText = skills.title || "מרכז המיומנויות";
+    document.getElementById("hub-subtitle").innerText = skills.subtitle || "";
 
-document.getElementById('subtitle').innerText="לא ניתן לטעון את רשימת הכלים";
+    const secAcademic   = document.getElementById("section-academic");
+    const secVocational = document.getElementById("section-vocational");
+    const secDiagnostic = document.getElementById("section-diagnostic");
 
-});
+    for (let id in skills.items) {
+      const bot = skills.items[id];
+      const { card, cat } = renderCard(bot, id);
+      if (cat === "diagnostic") secDiagnostic.appendChild(card);
+      else if (cat === "vocational") secVocational.appendChild(card);
+      else secAcademic.appendChild(card);
+    }
 
+    // Placeholder if sections are empty
+    [
+      { el: secAcademic,   label: "אין כלים אקדמיים זמינים כרגע" },
+      { el: secVocational, label: "כלים תעסוקתיים — בקרוב" }
+    ].forEach(({ el, label }) => {
+      if (!el.hasChildNodes()) {
+        el.innerHTML = `<div class="skill-card coming-soon">
+          <div class="skill-card-icon">🔧</div>
+          <div class="skill-card-title">${label}</div>
+        </div>`;
+      }
+    });
+  })
+  .catch(err => {
+    console.error("Config load error:", err);
+    document.getElementById("hub-title").innerText = "שגיאה בטעינה";
+  });
 
 </script>
 

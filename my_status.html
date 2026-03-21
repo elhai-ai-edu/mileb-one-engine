@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<title>MilEd.One — הסטטוס שלי</title>
+</head>
+
+<body class="user-student">
+
+<div class="sidebar">
+  <h2>MilEd.One</h2>
+  <a href="/students.html">קורסים</a>
+  <a href="/skills.html">מיומנויות</a>
+  <a href="/my_status.html" class="active">הסטטוס שלי</a>
+</div>
+
+<div class="main">
+
+  <div class="topbar">
+    <span id="topbar-greeting">הסטטוס שלי</span>
+    <span style="font-size:12px;color:var(--color-text-muted);margin-right:auto;">MilEd.One</span>
+  </div>
+
+  <div class="container">
+
+    <span style="font-weight:300;font-size:13px;color:var(--color-text-muted);">MilEd.One</span>
+    <h1>מטריצת ההתקדמות שלי</h1>
+    <p style="color:var(--color-text-muted);margin-bottom:28px;">סקירה של המשימות הקורסיות ופרופיל המיומנויות שלך</p>
+
+    <div id="status-error" style="color:#dc2626;margin-bottom:16px;display:none;"></div>
+
+    <div class="status-matrix" id="status-matrix">
+
+      <!-- ─── Panel 1: Course Tasks ─── -->
+      <div class="matrix-panel">
+        <div class="matrix-panel-header">
+          <span class="matrix-panel-icon">📋</span>
+          <span class="matrix-panel-title">משימות קורסיות</span>
+        </div>
+        <div id="course-tasks-list">
+          <div style="color:var(--color-text-muted);font-size:13px;text-align:center;padding:20px 0;">
+            ⏳ טוען נתונים...
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── Panel 2: Skills Profile ─── -->
+      <div class="matrix-panel">
+        <div class="matrix-panel-header">
+          <span class="matrix-panel-icon">⭐</span>
+          <span class="matrix-panel-title">פרופיל מיומנויות</span>
+        </div>
+        <div id="skills-profile-list">
+          <div style="color:var(--color-text-muted);font-size:13px;text-align:center;padding:20px 0;">
+            ⏳ טוען נתונים...
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <br>
+    <a href="/" onclick="sessionStorage.clear()" class="btn btn-outline">← חזרה למסך הבית</a>
+
+  </div>
+</div>
+
+<script>
+
+// ─── Student ID ───
+let studentId = sessionStorage.getItem("studentId");
+if (!studentId) {
+  studentId = "s_" + Math.random().toString(36).slice(2, 10);
+  sessionStorage.setItem("studentId", studentId);
+}
+
+// ─── Check localStorage for a draft for this course ───
+function getDraftStatus(courseId) {
+  const key = `miled_ws_${courseId}_${studentId}`;
+  const val = localStorage.getItem(key);
+  if (!val || val.trim() === "") return { label: "לא התחיל", pct: 0, cls: "" };
+  const wordCount = val.trim().split(/\s+/).length;
+  if (wordCount < 20)  return { label: "בתחילת הדרך", pct: 15, cls: "turquoise" };
+  if (wordCount < 100) return { label: "בתהליך", pct: 45, cls: "indigo" };
+  return { label: "עבודה מפותחת", pct: 80, cls: "indigo" };
+}
+
+// ─── Check sessionStorage for skill bot usage ───
+function getSkillStatus(botId) {
+  const key = `miled_skill_${botId}_${studentId}`;
+  const val = sessionStorage.getItem(key) || localStorage.getItem(key);
+  if (val) return { label: "הושלם", pct: 100, cls: "turquoise" };
+  // Also check conversation via timestamp key
+  const tsKey = `miled_skill_ts_${botId}`;
+  const ts = localStorage.getItem(tsKey);
+  if (ts) return { label: "בתהליך", pct: 50, cls: "turquoise" };
+  return { label: "לא התחיל", pct: 0, cls: "" };
+}
+
+function renderProgressRow(label, status) {
+  return `
+    <div class="matrix-row">
+      <div class="matrix-row-top">
+        <span class="matrix-label">${label}</span>
+        <span class="matrix-value">${status.label}</span>
+      </div>
+      ${status.pct > 0
+        ? `<div class="progress-bar-wrap">
+             <div class="progress-bar-fill ${status.cls}" style="width:${status.pct}%"></div>
+           </div>`
+        : `<div class="progress-bar-wrap">
+             <div class="progress-bar-fill" style="width:0%;background:#eee;"></div>
+           </div>`
+      }
+    </div>
+  `;
+}
+
+// ─── Load config and render ───
+fetch('/config.json?ts=' + Date.now())
+  .then(r => r.json())
+  .then(config => {
+
+    // ─── Course Tasks Panel ───
+    const courseEl = document.getElementById("course-tasks-list");
+    const courses  = config.my_courses || {};
+    let courseHtml = "";
+    let courseCount = 0;
+
+    for (const id in courses) {
+      const course = courses[id];
+      const status = getDraftStatus(id);
+      courseHtml += renderProgressRow(course.name, status);
+      courseCount++;
+    }
+
+    if (courseCount === 0) {
+      courseEl.innerHTML = `<div style="color:var(--color-text-muted);font-size:13px;text-align:center;padding:20px 0;">
+        אין קורסים רשומים כרגע
+      </div>`;
+    } else {
+      courseEl.innerHTML = courseHtml;
+    }
+
+    // ─── Skills Profile Panel ───
+    const skillsEl = document.getElementById("skills-profile-list");
+    const skills   = config.branches?.skills?.items || {};
+    let skillHtml  = "";
+    let skillCount = 0;
+
+    for (const id in skills) {
+      const bot    = skills[id];
+      const status = getSkillStatus(id);
+      const barCls = (bot._layer === "skills_diagnostic") ? "turquoise" : "indigo";
+      skillHtml += renderProgressRow(bot.name, { ...status, cls: status.pct > 0 ? barCls : "" });
+      skillCount++;
+    }
+
+    // Universal skills bots also tracked
+    const uSkills = ["presentation", "academic_writing", "research_skills"];
+    uSkills.forEach(key => {
+      const bot = config.universal?.items?.[key];
+      if (!bot) return;
+      const status = getSkillStatus(key);
+      skillHtml += renderProgressRow(bot.name, { ...status, cls: status.pct > 0 ? "indigo" : "" });
+      skillCount++;
+    });
+
+    if (skillCount === 0) {
+      skillsEl.innerHTML = `<div style="color:var(--color-text-muted);font-size:13px;text-align:center;padding:20px 0;">
+        אין נתוני מיומנויות עדיין — בקר במרכז המיומנויות
+      </div>`;
+    } else {
+      skillsEl.innerHTML = skillHtml;
+    }
+
+  })
+  .catch(err => {
+    console.error("Config load error:", err);
+    const errEl = document.getElementById("status-error");
+    errEl.style.display = "block";
+    errEl.innerText = "שגיאה בטעינת הנתונים. נסה לרענן.";
+  });
+
+// ─── Track skill visits (store timestamp when arriving via skillMode) ───
+const params    = new URLSearchParams(location.search);
+const skillMode = params.get("skillMode");
+const classId   = params.get("classId");
+if (skillMode && classId) {
+  localStorage.setItem(`miled_skill_ts_${classId}`, Date.now().toString());
+}
+
+</script>
+
+</body>
+</html>

@@ -161,5 +161,27 @@ export async function handler(event) {
     }
   }
 
+  // ─── readPath: read any Firebase path (superadmin only) ───
+  if (action === "readPath") {
+    const { path: fbPath, limit: fbLimit = 200 } = body;
+    if (!fbPath)
+      return { statusCode: 400, headers, body: JSON.stringify({ error: "path required" }) };
+
+    // Guard: only allow safe read paths
+    const ALLOWED_PREFIXES = ["conversations", "skills_sessions", "sessions"];
+    const allowed = ALLOWED_PREFIXES.some(p => fbPath === p || fbPath.startsWith(p + "/"));
+    if (!allowed)
+      return { statusCode: 403, headers, body: JSON.stringify({ error: "Path not allowed" }) };
+
+    try {
+      const snap = await db.ref(fbPath).limitToLast(Number(fbLimit)).get();
+      const data = snap.exists() ? snap.val() : {};
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, data }) };
+    } catch (e) {
+      console.error("ADMIN-AUTH readPath error:", e.message);
+      return { statusCode: 500, headers, body: JSON.stringify({ error: "Failed to read path" }) };
+    }
+  }
+
   return { statusCode: 400, headers, body: JSON.stringify({ error: "Unknown action" }) };
 }
