@@ -5,13 +5,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 
 <title>MilEd.One – כיתה חכמה</title>
 
 </head>
-<body>
+<body class="management-theme">
 
 <div class="top-bar">
   <div>
@@ -21,7 +21,7 @@
   <div id="sessionBadge" class="session-badge closed">אין שיעור פעיל</div>
 </div>
 
-<div class="grid">
+<div class="classroom-grid">
 
   <!-- LEFT: Controls -->
   <div class="panel">
@@ -33,7 +33,7 @@
     </div>
 
     <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
-    <button class="btn btn-red"   id="closeBtn" onclick="closeSession()" disabled style="margin-top:8px;">■ סגור שיעור</button>
+    <button class="btn btn-red"   id="closeBtn" onclick="closeSession()" disabled>■ סגור שיעור</button>
 
     <div id="sessionInfo" style="display:none">
       <div class="session-id-box">
@@ -42,7 +42,7 @@
       </div>
     </div>
 
-    <hr style="margin:20px 0;border:none;border-top:1px solid #eee;">
+    <hr class="workspace-divider">
 
     <h2>📡 שדר לכיתה</h2>
 
@@ -53,7 +53,7 @@
 
     <div class="field">
       <label>שלב מספר</label>
-      <input type="number" id="stepNum" value="1" min="1" max="10" style="width:80px;">
+      <input type="number" id="stepNum" value="1" min="1" max="10" class="step-num-input">
     </div>
 
     <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
@@ -73,7 +73,7 @@
 
     <div id="studentGrid" class="student-grid">
       <div class="empty-state">
-        <div style="font-size:2rem">📭</div>
+        <div class="empty-state-icon">📭</div>
         <p>פתח שיעור כדי לראות את התלמידים</p>
       </div>
     </div>
@@ -145,7 +145,7 @@ async function openSession() {
   // Share URL for students
   const studentURL = `${location.origin}/chat.html?sessionId=${sessionId}&botType=${currentBot}`;
   document.getElementById('sessionIdDisplay').innerHTML =
-    `<a href="${studentURL}" target="_blank" style="color:#2980b9;word-break:break-all">${studentURL}</a>`;
+    `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
 
   startPolling();
 }
@@ -205,7 +205,7 @@ function renderDashboard(data) {
   document.getElementById('studentCount').textContent = students.length;
 
   if (students.length === 0) {
-    grid.innerHTML = `<div class="empty-state"><div style="font-size:2rem">⏳</div>
+    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⏳</div>
       <p>ממתין לתלמידים להתחבר...</p></div>`;
     return;
   }
