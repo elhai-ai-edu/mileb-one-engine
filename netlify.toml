@@ -29,6 +29,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/insights"
+  to   = "/.netlify/functions/insights"
+  status = 200
+
+[[redirects]]
   from = "/api/architect/*"
   to   = "/.netlify/functions/architect_api"
   status = 200

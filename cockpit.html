@@ -126,6 +126,21 @@
           </div>
         </div>
       </div>
+
+      <!-- ─── Skills Heatmap ─── -->
+      <div class="mgmt-section" style="margin-top:20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+          <h3 style="margin:0;">🌡️ מפת חום מיומנויות — רמת ביטחון לפי גל</h3>
+          <div class="perf-toggle-row" style="margin:0;">
+            <button id="heatmap-btn-w1" class="perf-toggle-btn active" onclick="switchHeatmapWave('w1')">גל 1 — בסיס</button>
+            <button id="heatmap-btn-w2" class="perf-toggle-btn"        onclick="switchHeatmapWave('w2')">גל 2 — אמצע</button>
+            <button id="heatmap-btn-cmp" class="perf-toggle-btn"       onclick="switchHeatmapWave('cmp')">השוואה</button>
+          </div>
+        </div>
+        <div id="heatmap-container">
+          <p style="color:var(--color-text-muted);font-size:13px;">לחץ "טען נתונים" כדי לאתחל את המפה</p>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -693,6 +708,88 @@ async function loadSkillsData() {
     console.error("SKILLS DATA LOAD ERROR:", e);
     courseBody.innerHTML = `<tr><td colspan="5" style="color:#dc2626;text-align:center;padding:16px;">שגיאת חיבור: ${e.message}</td></tr>`;
   }
+
+  // Load heatmap independently (no auth required)
+  loadInsightsHeatmap();
+}
+
+// ─── Skills Heatmap ───
+
+let heatmapData   = null;
+let heatmapWave   = "w1";
+
+function switchHeatmapWave(wave) {
+  heatmapWave = wave;
+  ["w1","w2","cmp"].forEach(w => {
+    document.getElementById("heatmap-btn-" + w).classList.toggle("active", w === wave);
+  });
+  if (heatmapData) renderHeatmap(heatmapData);
+}
+
+async function loadInsightsHeatmap() {
+  const container = document.getElementById("heatmap-container");
+  container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">⏳ טוען מפת חום...</p>`;
+  try {
+    const res  = await fetch("/api/insights", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const data = await res.json();
+    if (!data.ok || !data.insights?.length) {
+      container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">אין מספיק נתונים להצגת מפת חום עדיין.</p>`;
+      return;
+    }
+    heatmapData = data;
+    renderHeatmap(data);
+  } catch(e) {
+    container.innerHTML = `<p style="color:#dc2626;font-size:13px;">שגיאה בטעינת מפת החום: ${e.message}</p>`;
+  }
+}
+
+function renderHeatmap(data) {
+  const container = document.getElementById("heatmap-container");
+  const insights  = data.insights;
+
+  const confColor = { high: "heatmap-green", medium: "heatmap-yellow", low: "heatmap-red" };
+
+  let rows = "";
+  insights.forEach(ins => {
+    if (heatmapWave === "w1") {
+      const cls = confColor[ins.w1Confidence] || "heatmap-yellow";
+      rows += `<tr>
+        <td>${ins.botName}</td>
+        <td><span class="heatmap-cell ${cls}">${ins.w1Confidence === "high" ? "גבוה" : ins.w1Confidence === "medium" ? "בינוני" : "נמוך"}</span></td>
+        <td>${ins.wave1Count} / ${data.totalStudents}</td>
+        <td>${ins.avgW1} הודעות ממוצע</td>
+        <td>${ins.pctParticipated}%</td>
+      </tr>`;
+    } else if (heatmapWave === "w2") {
+      const cls = ins.wave2Count > 0 ? (confColor[ins.w2Confidence] || "heatmap-yellow") : "";
+      rows += `<tr>
+        <td>${ins.botName}</td>
+        <td>${ins.wave2Count > 0 ? `<span class="heatmap-cell ${cls}">${ins.w2Confidence === "high" ? "גבוה" : ins.w2Confidence === "medium" ? "בינוני" : "נמוך"}</span>` : "<span style='color:#94a3b8;font-size:12px;'>אין נתוני גל 2</span>"}</td>
+        <td>${ins.wave2Count} / ${data.totalStudents}</td>
+        <td>${ins.avgW2 > 0 ? ins.avgW2 + " הודעות ממוצע" : "—"}</td>
+        <td>${ins.improved ? `<span class="growth-indicator growth-up">↑ ${ins.improvementPct}%</span>` : "—"}</td>
+      </tr>`;
+    } else {
+      // comparison
+      const c1 = confColor[ins.w1Confidence] || "heatmap-yellow";
+      const c2 = ins.wave2Count > 0 ? (confColor[ins.w2Confidence] || "heatmap-yellow") : null;
+      rows += `<tr>
+        <td>${ins.botName}</td>
+        <td><span class="heatmap-cell ${c1}">${ins.avgW1}</span></td>
+        <td>${c2 ? `<span class="heatmap-cell ${c2}">${ins.avgW2}</span>` : "<span style='color:#94a3b8;font-size:12px;'>—</span>"}</td>
+        <td>${ins.improved ? `<span class="growth-indicator growth-up">↑ ${ins.improvementPct}%</span>` : ins.wave2Count > 0 ? "<span class='growth-indicator growth-same'>→</span>" : "—"}</td>
+        <td>${ins.needsHelp ? "<span style='color:#dc2626;font-size:12px;font-weight:600;'>⚠ דורש תשומת לב</span>" : "✓"}</td>
+      </tr>`;
+    }
+  });
+
+  const headers = heatmapWave === "cmp"
+    ? `<tr><th>מיומנות</th><th>ביטחון גל 1</th><th>ביטחון גל 2</th><th>שיפור</th><th>סטטוס</th></tr>`
+    : heatmapWave === "w2"
+    ? `<tr><th>מיומנות</th><th>ביטחון גל 2</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>שיפור</th></tr>`
+    : `<tr><th>מיומנות</th><th>ביטחון גל 1</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>השתתפות</th></tr>`;
+
+  container.innerHTML = `<table class="heatmap-table mgmt-table"><thead>${headers}</thead><tbody>${rows}</tbody></table>`;
 }
 
 // ─── Deep-link: open Skills tab if URL has #skills ───

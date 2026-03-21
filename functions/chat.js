@@ -339,7 +339,8 @@ exports.handler = async (event) => {
       hebrewLevel      = null,
       currentStep      = null,          // ← active project stage sent by workspace.html
       isNewBotSession  = false,         // ← prevents loading stale history on bot switch
-      skillMode        = false          // ← true when request originates from skills hub
+      skillMode        = false,         // ← true when request originates from skills hub
+      waveId           = null           // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -444,15 +445,29 @@ exports.handler = async (event) => {
       });
     }
 
-    // ─── SKILL SESSION TRACKING (parallel record for skills dashboard) ───
+    // ─── SKILL SESSION TRACKING — Multi-Wave Schema ───
     if (isSkillActivity && studentId && studentId !== "anonymous") {
-      getDB().ref(`skills_sessions/${studentId}/${botConfig.botType}`).update({
-        lastActive:  Date.now(),
-        botType:     botConfig.botType,
-        botName:     botConfig.name,
-        layer:       botConfig._layer,
-        sessionId:   sessionId || null
-      }).catch(e => console.error("SKILL SESSION SAVE ERROR:", e.message));
+      const effectiveWaveId  = waveId || "wave_1_baseline";
+      const waveMessageCount = trimmedHistory.length + 1; // proxy for engagement depth
+      const db = getDB();
+      Promise.all([
+        // Top-level summary record (quick reads for dashboard)
+        db.ref(`skills_sessions/${studentId}/${botConfig.botType}`).update({
+          lastActive:  Date.now(),
+          botType:     botConfig.botType,
+          botName:     botConfig.name,
+          layer:       botConfig._layer,
+          sessionId:   sessionId || null,
+          latestWave:  effectiveWaveId
+        }),
+        // Wave-specific record (enables multi-wave comparison)
+        db.ref(`skills_sessions/${studentId}/${botConfig.botType}/waves/${effectiveWaveId}`).update({
+          waveId:       effectiveWaveId,
+          sessionId:    sessionId || null,
+          messageCount: waveMessageCount,
+          lastActive:   Date.now()
+        })
+      ]).catch(e => console.error("SKILL SESSION SAVE ERROR:", e.message));
     }
     // ─── CONTEXT-BASED ENFORCEMENT ───
     const contextRules            = resolveContextRules(engine, botConfig);

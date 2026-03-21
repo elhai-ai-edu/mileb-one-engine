@@ -85,9 +85,18 @@ const sendBtn    = document.getElementById('send-btn');
 const historyKey = `history_${classId}`;
 let chatHistory  = JSON.parse(sessionStorage.getItem(historyKey) || '[]');
 
-// Track skill visit for my_status.html progress matrix
+// ─── Wave detection for multi-wave assessment tracking ───
+// First visit → wave_1_baseline; subsequent visits → wave_2_midterm
+let waveId = "wave_1_baseline";
 if (skillMode && classId) {
-  localStorage.setItem(`miled_skill_ts_${classId}`, Date.now().toString());
+  const existingWave1 = localStorage.getItem(`miled_skill_ts_${classId}`);
+  if (!existingWave1) {
+    localStorage.setItem(`miled_skill_ts_${classId}`, Date.now().toString());
+    waveId = "wave_1_baseline";
+  } else {
+    localStorage.setItem(`miled_skill_ts2_${classId}`, Date.now().toString());
+    waveId = "wave_2_midterm";
+  }
 }
 
 function renderMessage(role, content){
@@ -148,6 +157,7 @@ async function triggerBotOpening() {
         facultyId:       facultyId,
         sessionId:       sessionId,
         skillMode:       skillMode,
+        waveId:          waveId,
         history:         [],
         isNewBotSession: true
       })
@@ -206,6 +216,7 @@ async function sendMessage(){
         facultyId: facultyId,
         sessionId: sessionId,
         skillMode: skillMode,
+        waveId:    waveId,
         history:   chatHistory
       })
     });

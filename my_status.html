@@ -88,24 +88,34 @@ function getDraftStatus(courseId) {
   return { label: "עבודה מפותחת", pct: 80, cls: "indigo" };
 }
 
-// ─── Check sessionStorage for skill bot usage ───
+// ─── Check sessionStorage / localStorage for skill bot usage + wave detection ───
 function getSkillStatus(botId) {
+  const wave1 = !!localStorage.getItem(`miled_skill_ts_${botId}`);
+  const wave2 = !!localStorage.getItem(`miled_skill_ts2_${botId}`);
   const key = `miled_skill_${botId}_${studentId}`;
-  const val = sessionStorage.getItem(key) || localStorage.getItem(key);
-  if (val) return { label: "הושלם", pct: 100, cls: "turquoise" };
-  // Also check conversation via timestamp key
-  const tsKey = `miled_skill_ts_${botId}`;
-  const ts = localStorage.getItem(tsKey);
-  if (ts) return { label: "בתהליך", pct: 50, cls: "turquoise" };
-  return { label: "לא התחיל", pct: 0, cls: "" };
+  const completed = !!(sessionStorage.getItem(key) || localStorage.getItem(key));
+
+  if (wave2) return { label: "הושלם — גל 2", pct: 100, cls: "turquoise", wave1: true, wave2: true };
+  if (wave1 || completed) return { label: wave1 ? "בתהליך — גל 1" : "הושלם", pct: 55, cls: "turquoise", wave1: true, wave2: false };
+  return { label: "לא התחיל", pct: 0, cls: "", wave1: false, wave2: false };
 }
 
 function renderProgressRow(label, status) {
+  let growthHtml = "";
+  if (status.wave2) {
+    growthHtml = `<span class="growth-indicator growth-up">↑ גל 2</span>`;
+  } else if (status.wave1) {
+    growthHtml = `<span class="wave-badge wave-1-badge">גל 1</span>`;
+  }
+
   return `
     <div class="matrix-row">
       <div class="matrix-row-top">
         <span class="matrix-label">${label}</span>
-        <span class="matrix-value">${status.label}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${growthHtml}
+          <span class="matrix-value">${status.label}</span>
+        </div>
       </div>
       ${status.pct > 0
         ? `<div class="progress-bar-wrap">

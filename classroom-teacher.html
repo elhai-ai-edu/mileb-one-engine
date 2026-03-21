@@ -81,6 +81,18 @@
 
 </div>
 
+<!-- ─── Insights Box ─── -->
+<div id="insights-box" class="insights-box" style="display:none;">
+  <div class="insights-header">
+    <span class="insights-title">💡 תובנות מיומנויות כיתתיות</span>
+    <button onclick="document.getElementById('insights-box').style.display='none'"
+      style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--color-text-muted);">✕</button>
+  </div>
+  <div id="insights-content">
+    <p style="color:var(--color-text-muted);font-size:13px;">⏳ טוען...</p>
+  </div>
+</div>
+
 <script>
 /* כל הקוד JS שלך נשאר בדיוק כפי שהוא */
 </script>
@@ -266,6 +278,54 @@ async function callClassroom(body) {
 function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+// ─── Insights Panel ───
+async function loadInsights() {
+  try {
+    const res  = await fetch("/api/insights", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const data = await res.json();
+
+    const box     = document.getElementById("insights-box");
+    const content = document.getElementById("insights-content");
+
+    if (!data.ok || !data.insights?.length) {
+      // No data yet — keep box hidden
+      return;
+    }
+
+    box.style.display = "";
+
+    // Top skill needing help
+    const top = data.insights.find(i => i.needsHelp) || data.insights[0];
+
+    let html = `
+      <div style="margin-bottom:12px;">
+        <span class="insights-pct">${top.pctNeedsHelp}%</span>
+        <span style="font-size:13px;"> מהסטודנטים זקוקים לחיזוק ב: <strong>${top.botName}</strong></span>
+      </div>`;
+
+    if (top.improved) {
+      html += `<div class="insights-wave-label" style="color:#059669;">
+        ↑ שיפור של ${top.improvementPct}% בין גל 1 לגל 2
+      </div>`;
+    } else {
+      html += `<div class="insights-recommend">
+        המלצה: הקדישו זמן כיתתי לנושא <strong>${top.botName}</strong> — רמת ביטחון: ${top.w1Confidence === "low" ? "נמוכה" : top.w1Confidence === "medium" ? "בינונית" : "גבוהה"}
+      </div>`;
+    }
+
+    if (data.insights.length > 1) {
+      html += `<div class="insights-wave-label" style="margin-top:10px;">${data.totalStudents} סטודנטים עם נתוני מיומנויות</div>`;
+    }
+
+    content.innerHTML = html;
+  } catch(e) {
+    console.error("Insights load error:", e.message);
+  }
+}
+
+// Load insights 2 seconds after page load (non-blocking)
+setTimeout(loadInsights, 2000);
 </script>
 </body>
 </html>

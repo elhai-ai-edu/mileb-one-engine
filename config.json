@@ -1,5 +1,5 @@
 {
-  "system_version": "5.0",
+  "system_version": "5.1",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "_systemPromptExport": {
@@ -135,19 +135,24 @@
           "name": "🔍 אבחון מיומנויות למידה", "_layer": "skills_diagnostic",
           "botType": "skills_learning_full", "function": "learning", "phase": "diagnostic",
           "thinkingBudget": 1024,
+          "mapping_tags": ["academic", "diagnostic"],
           "systemPrompt": "אתה מאבחן מיומנויות למידה של סטודנטים באופן עמוק ומותאם אישית. שאל שאלות קצרות וממוקדות כדי להבין את דפוסי הלמידה, נקודות החוזק, והאתגרים. בסיום האבחון — ספק משוב קצר ותמציתי עם 2-3 המלצות ספציפיות.",
           "scope": "global", "owner": "system", "createdAt": "2026-03-21"
         },
         "learning_skills_full": {
           "name": "📘 אבחון וקידום מיומנויות למידה", "_layer": "skills_process",
           "botType": "skills_learning_full", "function": "learning", "phase": "diagnostic",
-          "thinkingBudget": 1024, "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו תהליך קידום מיומנויות למידה באופן מדורג.",
+          "thinkingBudget": 1024,
+          "mapping_tags": ["academic"],
+          "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו תהליך קידום מיומנויות למידה באופן מדורג.",
           "scope": "global", "owner": "system", "createdAt": "2026-02-27"
         },
         "employability_skills_full": {
           "name": "💼 אבחון וקידום מיומנויות תעסוקתיות", "_layer": "skills_process",
           "botType": "skills_employability_full", "function": "learning", "phase": "diagnostic",
-          "thinkingBudget": 1024, "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו קידום מיומנויות תעסוקתיות.",
+          "thinkingBudget": 1024,
+          "mapping_tags": ["vocational"],
+          "systemPrompt": "אתה מלווה תהליך אבחון ולאחריו קידום מיומנויות תעסוקתיות.",
           "scope": "global", "owner": "system", "createdAt": "2026-02-27"
         }
       }

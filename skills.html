@@ -27,7 +27,14 @@
 
     <span style="font-weight:300;font-size:13px;color:var(--color-text-muted);">MilEd.One</span>
     <h1 id="hub-title">אבחון ופיתוח מיומנויות</h1>
-    <p id="hub-subtitle" style="color:var(--color-text-muted);margin-bottom:32px;">בחר תחום לפיתוח אישי ואקדמי</p>
+    <p id="hub-subtitle" style="color:var(--color-text-muted);margin-bottom:16px;">בחר תחום לפיתוח אישי ואקדמי</p>
+
+    <div class="filter-pills" id="filter-pills">
+      <button class="filter-pill active" onclick="filterByTag('all', this)">הכל</button>
+      <button class="filter-pill" onclick="filterByTag('academic', this)">📚 אקדמי</button>
+      <button class="filter-pill" onclick="filterByTag('vocational', this)">💼 תעסוקתי</button>
+      <button class="filter-pill" onclick="filterByTag('diagnostic', this)">🔍 אבחון</button>
+    </div>
 
     <!-- ─── Section 1: Academic ─── -->
     <div class="skills-section">
@@ -96,13 +103,36 @@ function categorize(bot) {
   return "academic";
 }
 
+function filterByTag(tag, btn) {
+  document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  document.querySelectorAll(".skill-card:not(.coming-soon)").forEach(card => {
+    if (tag === "all") {
+      card.style.display = "";
+    } else {
+      const tags = (card.dataset.tags || "").split(",");
+      card.style.display = tags.includes(tag) ? "" : "none";
+    }
+  });
+
+  document.querySelectorAll(".skills-section").forEach(section => {
+    const grid = section.querySelector(".skills-grid");
+    if (!grid) return;
+    const visible = [...grid.querySelectorAll(".skill-card")].filter(c => c.style.display !== "none");
+    section.style.display = visible.length === 0 ? "none" : "";
+  });
+}
+
 function renderCard(bot, id) {
   const cat = categorize(bot);
   const isDiag = cat === "diagnostic";
+  const tags = (bot.mapping_tags || [cat]).join(",");
   const url = `/chat.html?classId=${id}&skillMode=true`;
   const card = document.createElement("a");
   card.href = url;
   card.className = "skill-card" + (isDiag ? " diagnostic" : "");
+  card.dataset.tags = tags;
   card.innerHTML = `
     <div class="skill-card-icon">${getIcon(bot)}</div>
     <div class="skill-card-title">${bot.name}</div>
