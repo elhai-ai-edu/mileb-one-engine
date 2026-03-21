@@ -83,15 +83,30 @@
 
 const params   = new URLSearchParams(location.search);
 const courseId = params.get("courseId") || "";
+const skillId  = params.get("skillId")  || "";
 
 // sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי לכל קורס בנפרד
 const urlSessionId = params.get("sessionId") || "";
 let sessionId = urlSessionId;
 if (!sessionId) {
-  sessionId = sessionStorage.getItem("sessionId_" + courseId);
+  const storageBase = skillId ? "skill_" + skillId : courseId;
+  sessionId = sessionStorage.getItem("sessionId_" + storageBase);
   if (!sessionId) {
     sessionId = "sess_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
-    sessionStorage.setItem("sessionId_" + courseId, sessionId);
+    sessionStorage.setItem("sessionId_" + storageBase, sessionId);
+  }
+}
+
+// ─── Skill-mode wave detection ───
+let skillWaveId = null;
+if (skillId) {
+  const existing = localStorage.getItem(`miled_skill_ts_${skillId}`);
+  if (!existing) {
+    localStorage.setItem(`miled_skill_ts_${skillId}`, Date.now().toString());
+    skillWaveId = "wave_1_baseline";
+  } else {
+    localStorage.setItem(`miled_skill_ts2_${skillId}`, Date.now().toString());
+    skillWaveId = "wave_2_midterm";
   }
 }
 
@@ -103,6 +118,7 @@ if (!studentId) {
 
 let CONFIG         = null;
 let currentCourse  = null;
+let currentSkillBot = null;
 let currentBotType = null;
 let chatHistory    = [];
 let saveTimer      = null;
@@ -116,6 +132,11 @@ let currentStep    = 1;
 async function init() {
   const res = await fetch('/config.json?ts=' + Date.now());
   CONFIG = await res.json();
+
+  if (skillId) {
+    initSkillMode();
+    return;
+  }
 
   currentCourse = CONFIG.my_courses?.[courseId];
   if (!currentCourse) {
@@ -132,6 +153,44 @@ async function init() {
 
   // כניסה לכיתה רק אם יש sessionId מה-URL (שיעור פעיל)
   if (urlSessionId) classroomJoin();
+}
+
+// ─────────────────────────────
+// Skill Mode init
+// ─────────────────────────────
+
+function initSkillMode() {
+  currentSkillBot =
+    CONFIG.branches?.skills?.items?.[skillId] ||
+    CONFIG.universal?.items?.[skillId];
+
+  if (!currentSkillBot) {
+    document.getElementById("course-title").innerText = "מיומנות לא נמצאה";
+    return;
+  }
+
+  currentBotType = currentSkillBot.botType;
+
+  document.getElementById("course-title").innerText = currentSkillBot.name;
+  document.getElementById("hebrew-level-badge").innerText =
+    skillWaveId === "wave_2_midterm" ? "גל 2 — מעקב" : "גל 1 — בסיס";
+
+  // Sidebar: show only the skill bot
+  document.getElementById("bot-menu").innerHTML =
+    `<a href="#" class="bot-link active" onclick="return false;">${currentSkillBot.name}</a>`;
+  document.getElementById("universal-menu").innerHTML = "";
+
+  // Relabel textarea for notes
+  const ta = document.getElementById("student-text");
+  if (ta) ta.placeholder = "📝 רשמות ותובנות מהאבחון...";
+
+  // No stage tabs for skills
+  document.getElementById("task-tabs").style.display = "none";
+
+  // Auto-open the skill bot
+  document.getElementById("active-bot-name").innerText = currentSkillBot.name;
+  document.getElementById("chat-window").innerHTML = "";
+  triggerBotOpening();
 }
 
 // ─────────────────────────────
@@ -236,11 +295,13 @@ async function triggerBotOpening() {
       body: JSON.stringify({
         message:         "__INIT__",
         botType:         currentBotType,
-        classId:         courseId,
-        hebrewLevel:     currentCourse.hebrew_level || null,
+        classId:         skillId || courseId,
+        hebrewLevel:     currentCourse?.hebrew_level || null,
         currentStep,
         studentId,
         sessionId,
+        skillMode:       !!skillId,
+        waveId:          skillWaveId,
         history:         [],
         isNewBotSession: true
       })
@@ -296,11 +357,13 @@ async function sendMessage() {
       body: JSON.stringify({
         message:         text,
         botType:         currentBotType,
-        classId:         courseId,
-        hebrewLevel:     currentCourse.hebrew_level || null,
+        classId:         skillId || courseId,
+        hebrewLevel:     currentCourse?.hebrew_level || null,
         currentStep,
         studentId,
         sessionId,
+        skillMode:       !!skillId,
+        waveId:          skillWaveId,
         history:          chatHistory,
         isNewBotSession:  chatHistory.length === 0
       })
