@@ -141,6 +141,17 @@
           <p style="color:var(--color-text-muted);font-size:13px;">לחץ "טען נתונים" כדי לאתחל את המפה</p>
         </div>
       </div>
+
+      <!-- ─── Competency Matrix ─── -->
+      <div class="mgmt-section" style="margin-top:20px;">
+        <h3>📊 מטריצת כשירות כיתתית — סטודנטים × מיומנויות</h3>
+        <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">
+          כל תא = רמת ביטחון לפי מספר הודעות בשיחה. ↑ = שיפור בין גל 1 לגל 2.
+        </p>
+        <div id="competency-matrix-container">
+          <p style="color:var(--color-text-muted);font-size:13px;">לחץ "טען נתונים" כדי לאתחל את המטריצה</p>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -690,6 +701,8 @@ async function loadSkillsData() {
       document.getElementById("cnt-diagnostic").innerText = diagCount;
       document.getElementById("cnt-process").innerText    = procCount;
 
+      renderCompetencyMatrix(skillsData);
+
       skillsBody.innerHTML = allRows.length === 0
         ? `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">אין נתוני מיומנויות עדיין</td></tr>`
         : allRows.slice(0, 30).map(r => `
@@ -711,6 +724,79 @@ async function loadSkillsData() {
 
   // Load heatmap independently (no auth required)
   loadInsightsHeatmap();
+}
+
+// ─── Competency Matrix ───
+
+function renderCompetencyMatrix(skillsData) {
+  const container = document.getElementById("competency-matrix-container");
+  if (!skillsData || Object.keys(skillsData).length === 0) {
+    container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">אין נתונים עדיין</p>`;
+    return;
+  }
+
+  // Collect unique skill keys and their display names
+  const skillMeta = {}; // botKey → botName
+  for (const sid in skillsData) {
+    for (const botKey in skillsData[sid]) {
+      const rec = skillsData[sid][botKey];
+      if (rec && typeof rec === "object" && rec.botType && !skillMeta[botKey]) {
+        skillMeta[botKey] = rec.botName || botKey;
+      }
+    }
+  }
+  const skillKeys = Object.keys(skillMeta);
+  if (skillKeys.length === 0) {
+    container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">אין נתוני מיומנויות עדיין</p>`;
+    return;
+  }
+
+  const confLabel = n => n >= 6 ? "high" : n >= 3 ? "medium" : "low";
+  const confClass = { high: "heatmap-green", medium: "heatmap-yellow", low: "heatmap-red" };
+  const confText  = { high: "מיומן", medium: "מתפתח", low: "בסיסי" };
+
+  const header = `<tr>
+    <th style="font-size:11px;min-width:80px;">סטודנט</th>
+    ${skillKeys.map(k => `<th style="font-size:10px;white-space:nowrap;padding:4px 8px;">${skillMeta[k]}</th>`).join("")}
+  </tr>`;
+
+  const rows = Object.entries(skillsData).map(([sid, studentData]) => {
+    const cells = skillKeys.map(botKey => {
+      const rec = studentData[botKey];
+      if (!rec || !rec.waves) return `<td style="text-align:center;color:#ddd;padding:4px;">—</td>`;
+
+      const w1 = rec.waves.wave_1_baseline?.messageCount || 0;
+      const w2 = rec.waves.wave_2_midterm?.messageCount  || 0;
+      const latest   = w2 > 0 ? w2 : w1;
+      const conf     = confLabel(latest);
+      const improved = w2 > 0 && w2 > w1;
+
+      return `<td style="text-align:center;padding:4px;">
+        <span class="heatmap-cell ${confClass[conf]}" style="font-size:10px;display:inline-flex;align-items:center;gap:2px;">
+          ${confText[conf]}${improved ? '<span style="color:#059669;font-size:9px;font-weight:700;"> ↑</span>' : ""}
+        </span>
+      </td>`;
+    }).join("");
+
+    return `<tr>
+      <td style="font-size:10px;color:#94a3b8;padding:6px 8px;white-space:nowrap;">${sid.slice(0, 12)}</td>
+      ${cells}
+    </tr>`;
+  }).join("");
+
+  container.innerHTML = `
+    <div style="overflow-x:auto;margin-bottom:10px;">
+      <table class="heatmap-table mgmt-table" style="min-width:300px;">
+        <thead>${header}</thead>
+        <tbody>${rows || '<tr><td colspan="20" style="text-align:center;color:#94a3b8;">אין נתונים</td></tr>'}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--color-text-muted);">
+      <span><span class="heatmap-cell heatmap-green" style="padding:1px 6px;font-size:10px;">מיומן</span> ≥6 הודעות</span>
+      <span><span class="heatmap-cell heatmap-yellow" style="padding:1px 6px;font-size:10px;">מתפתח</span> 3–5</span>
+      <span><span class="heatmap-cell heatmap-red" style="padding:1px 6px;font-size:10px;">בסיסי</span> 1–2</span>
+      <span style="color:#059669;font-weight:600;">↑ שיפור גל 1→2</span>
+    </div>`;
 }
 
 // ─── Skills Heatmap ───

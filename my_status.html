@@ -129,6 +129,48 @@ function renderProgressRow(label, status) {
   `;
 }
 
+// ─── Radar Chart (SVG) ───
+function renderRadar(vals) {
+  // vals: { academic: 0-1, vocational: 0-1, diagnostic: 0-1 }
+  const cx = 110, cy = 110, r = 75;
+  // academic=top, vocational=bottom-right, diagnostic=bottom-left
+  const angles  = [-90, 30, 150].map(d => d * Math.PI / 180);
+  const labels  = ["📚 אקדמי", "💼 תעסוקתי", "🔍 אבחון"];
+  const vals3   = [vals.academic, vals.vocational, vals.diagnostic];
+
+  const pt = (a, v) => [cx + Math.cos(a) * r * Math.max(0.06, v), cy + Math.sin(a) * r * Math.max(0.06, v)];
+
+  const rings = [0.33, 0.66, 1.0].map(pct => {
+    const pts = angles.map(a => `${cx + Math.cos(a)*r*pct},${cy + Math.sin(a)*r*pct}`).join(" ");
+    return `<polygon points="${pts}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`;
+  }).join("");
+
+  const axes = angles.map(a =>
+    `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*r}" y2="${cy+Math.sin(a)*r}" stroke="#e2e8f0" stroke-width="1.5"/>`
+  ).join("");
+
+  const dataPts = angles.map((a, i) => pt(a, vals3[i]).join(",")).join(" ");
+  const dataPolygon = `<polygon points="${dataPts}" fill="rgba(99,102,241,0.18)" stroke="#6366f1" stroke-width="2"/>`;
+
+  const dots = angles.map((a, i) => {
+    const [px, py] = pt(a, vals3[i]);
+    return `<circle cx="${px}" cy="${py}" r="4" fill="#6366f1" stroke="#fff" stroke-width="1.5"/>`;
+  }).join("");
+
+  const labelEls = angles.map((a, i) => {
+    const lx = cx + Math.cos(a) * (r + 20);
+    const ly = cy + Math.sin(a) * (r + 20);
+    const anchor = lx < cx - 5 ? "end" : lx > cx + 5 ? "start" : "middle";
+    const pct = Math.round(vals3[i] * 100);
+    return `<text x="${lx}" y="${ly - 6}" text-anchor="${anchor}" font-size="11" fill="#64748b" font-family="Assistant,sans-serif">${labels[i]}</text>
+            <text x="${lx}" y="${ly + 7}" text-anchor="${anchor}" font-size="10" fill="#6366f1" font-family="Assistant,sans-serif" font-weight="600">${pct}%</text>`;
+  }).join("");
+
+  return `<svg viewBox="0 0 220 220" width="200" height="200" style="margin:0 auto 8px;display:block;">
+    ${rings}${axes}${dataPolygon}${dots}${labelEls}
+  </svg>`;
+}
+
 // ─── Load config and render ───
 fetch('/config.json?ts=' + Date.now())
   .then(r => r.json())
@@ -161,15 +203,32 @@ fetch('/config.json?ts=' + Date.now())
     let skillHtml  = "";
     let skillCount = 0;
 
+    // Radar data accumulators
+    const radarTotals  = { academic: 0, vocational: 0, diagnostic: 0 };
+    const radarVisited = { academic: 0, vocational: 0, diagnostic: 0 };
+
     for (const id in skills) {
       const bot    = skills[id];
       const status = getSkillStatus(id);
       const barCls = (bot._layer === "skills_diagnostic") ? "turquoise" : "indigo";
       skillHtml += renderProgressRow(bot.name, { ...status, cls: status.pct > 0 ? barCls : "" });
       skillCount++;
+
+      // Radar accounting
+      const tags = bot.mapping_tags || [];
+      if (tags.includes("diagnostic")) {
+        radarTotals.diagnostic++;
+        if (status.wave1) radarVisited.diagnostic++;
+      } else if (tags.includes("vocational")) {
+        radarTotals.vocational++;
+        if (status.wave1) radarVisited.vocational++;
+      } else {
+        radarTotals.academic++;
+        if (status.wave1) radarVisited.academic++;
+      }
     }
 
-    // Universal skills bots also tracked
+    // Universal skills count toward academic
     const uSkills = ["presentation", "academic_writing", "research_skills"];
     uSkills.forEach(key => {
       const bot = config.universal?.items?.[key];
@@ -177,6 +236,8 @@ fetch('/config.json?ts=' + Date.now())
       const status = getSkillStatus(key);
       skillHtml += renderProgressRow(bot.name, { ...status, cls: status.pct > 0 ? "indigo" : "" });
       skillCount++;
+      radarTotals.academic++;
+      if (status.wave1) radarVisited.academic++;
     });
 
     if (skillCount === 0) {
@@ -184,7 +245,16 @@ fetch('/config.json?ts=' + Date.now())
         אין נתוני מיומנויות עדיין — בקר במרכז המיומנויות
       </div>`;
     } else {
-      skillsEl.innerHTML = skillHtml;
+      const radarVals = {
+        academic:    radarTotals.academic   > 0 ? radarVisited.academic   / radarTotals.academic   : 0,
+        vocational:  radarTotals.vocational > 0 ? radarVisited.vocational / radarTotals.vocational : 0,
+        diagnostic:  radarTotals.diagnostic > 0 ? radarVisited.diagnostic / radarTotals.diagnostic : 0
+      };
+      skillsEl.innerHTML =
+        `<div style="text-align:center;margin-bottom:12px;">
+           <p style="font-size:11px;color:var(--color-text-muted);margin-bottom:4px;">פרופיל מיומנויות — איזון בין שכבות</p>
+           ${renderRadar(radarVals)}
+         </div>` + skillHtml;
     }
 
   })
