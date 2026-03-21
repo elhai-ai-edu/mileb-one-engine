@@ -73,7 +73,8 @@ export async function handler(event) {
             wave1Count:   0,
             wave2Count:   0,
             w1MsgCounts:  [],
-            w2MsgCounts:  []
+            w2MsgCounts:  [],
+            cycleDeltaMs: []  // ms between wave_1 and wave_2 per student
           };
         }
 
@@ -88,6 +89,11 @@ export async function handler(event) {
         if (waves.wave_2_midterm) {
           s.wave2Count++;
           s.w2MsgCounts.push(waves.wave_2_midterm.messageCount || 0);
+        }
+        // Cycle delta: time between first and second wave engagement
+        if (waves.wave_1_baseline?.lastActive && waves.wave_2_midterm?.lastActive) {
+          const delta = waves.wave_2_midterm.lastActive - waves.wave_1_baseline.lastActive;
+          if (delta > 0) s.cycleDeltaMs.push(delta);
         }
       }
     }
@@ -106,6 +112,9 @@ export async function handler(event) {
         const improved = s.wave2Count > 0 && avgW2 > avgW1;
         const improvementPct = improved && avgW1 > 0
           ? Math.round(((avgW2 - avgW1) / avgW1) * 100) : 0;
+        const avgCycleDays = s.cycleDeltaMs.length > 0
+          ? Math.round(s.cycleDeltaMs.reduce((a, b) => a + b, 0) / s.cycleDeltaMs.length / 86400000 * 10) / 10
+          : null;
 
         return {
           botType, botName: s.botName, layer: s.layer,
@@ -117,16 +126,19 @@ export async function handler(event) {
           w1Confidence, w2Confidence,
           pctParticipated, pctNeedsHelp,
           needsHelp:      w1Confidence === "low" || pctParticipated < 50,
-          improved,       improvementPct
+          improved,       improvementPct,
+          avgCycleDays
         };
       })
       .filter(i => i.totalStudents > 0)
       .sort((a, b) => a.avgW1 - b.avgW1); // worst-performing skills first
 
+    const totalInteractions = insights.reduce((s, i) => s + i.wave1Count + i.wave2Count, 0);
+
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ ok: true, insights, totalStudents, waveLabels: WAVE_LABELS })
+      body: JSON.stringify({ ok: true, insights, totalStudents, totalInteractions, waveLabels: WAVE_LABELS })
     };
 
   } catch (e) {
