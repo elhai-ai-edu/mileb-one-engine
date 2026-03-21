@@ -1,12 +1,83 @@
-/* ===================== */
-/* MilEd.One Design System */
-/* ===================== */
+/* ======================================================= */
+/* MilEd.One Design System — Nano Banana Brand Identity   */
+/* Biotech-Playful × Refined Minimalist × Class Theming   */
+/* ======================================================= */
 
-body{
-font-family:'Inter',sans-serif;
-background:#f5f7fb;
-margin:0;
-color:#2c3e50;
+/* ─── Design Tokens ─────────────────────────────────── */
+
+:root {
+  /* Brand palette */
+  --color-primary:        #1e1b4b;   /* Deep Navy — headings, typography */
+  --color-accent:         #3730a3;   /* Rich Indigo — borders, highlights */
+  --color-accent-vibrant: #4ade80;   /* Modest Lime Green — user msgs, CTAs */
+  --color-accent-glow:    rgba(55, 48, 163, 0.15);
+
+  /* Surfaces */
+  --color-bg:        #f8fafc;
+  --color-surface:   #ffffff;
+  --color-surface-2: #f1f5f9;
+
+  /* Text */
+  --color-text:       #1e1b4b;
+  --color-text-muted: #64748b;
+
+  /* Chat bubbles — default (Faculty) */
+  --color-chat-bot-bg:     rgba(99, 102, 241, 0.10);
+  --color-chat-bot-border: #3730a3;
+  --color-chat-user-bg:    #4ade80;
+  --color-chat-user-text:  #1e1b4b;
+
+  /* Radius & Shadow */
+  --radius-card:   14px;
+  --radius-btn:    10px;
+  --radius-bubble: 14px;
+  --shadow-card:   0 8px 24px rgba(30, 27, 75, 0.06);
+  --shadow-btn:    0 4px 14px rgba(55, 48, 163, 0.18);
+
+  /* Typography */
+  --font-main: 'Assistant', 'Inter', sans-serif;
+
+  /* Layout */
+  --header-height: 64px;
+  --sidebar-width: 240px;
+}
+
+/* ─── Faculty Theme ──────────────────────────────────── */
+body.user-faculty {
+  --color-chat-bot-bg:     rgba(99, 102, 241, 0.10);
+  --color-chat-bot-border: var(--color-accent);
+}
+
+/* ─── Student Theme ──────────────────────────────────── */
+body.user-student {
+  --color-chat-bot-bg:     rgba(6, 182, 212, 0.10);
+  --color-chat-bot-border: #0891b2;
+}
+
+/* ─── Keyframe Animations ────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+@keyframes shimmerPulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1;   }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.4; }
+}
+@keyframes aiPanelOpen {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ─── Base ───────────────────────────────────────────── */
+body {
+  font-family: var(--font-main);
+  background:  var(--color-bg);
+  margin: 0;
+  color: var(--color-text);
 }
 
 /* Containers */
@@ -30,7 +101,7 @@ margin-bottom:20px;
 /* Gradient cards */
 
 .gradient-blue{
-background:linear-gradient(135deg,#6C63FF,#5EC9FF);
+background:linear-gradient(135deg,var(--color-accent),#5EC9FF);
 color:white;
 }
 
@@ -55,7 +126,7 @@ font-weight:500;
 }
 
 .button-primary{
-background:#6C63FF;
+background:var(--color-accent);
 color:white;
 }
 
@@ -85,7 +156,7 @@ border-radius:8px;
 }
 
 .sidebar a:hover{
-background:#f1f3ff;
+background:rgba(55,48,163,0.05);
 }
 
 /* Top bar */
@@ -149,7 +220,7 @@ font-weight:500;
 }
 
 .sidebar a:hover{
-background:#f1f3ff;
+background:rgba(55,48,163,0.05);
 }
 
 /* Main content */
@@ -250,11 +321,11 @@ margin-bottom:6px;
 }
 
 .task:hover{
-background:#f1f3ff;
+background:rgba(55,48,163,0.05);
 }
 
 .task.active{
-background:#e6e9ff;
+background:rgba(55,48,163,0.08);
 font-weight:500;
 }
 
@@ -289,10 +360,10 @@ margin-top:10px;
 }
 
 .submit{
-background:#6C63FF;
+background:var(--color-accent);
 color:white;
 border:none;
-border-radius:10px;
+border-radius:var(--radius-btn);
 padding:10px 16px;
 cursor:pointer;
 }
@@ -332,7 +403,7 @@ border-radius:10px;
 position:fixed;
 bottom:20px;
 right:20px;
-background:#6C63FF;
+background:var(--color-accent);
 color:white;
 border:none;
 border-radius:50%;
@@ -383,11 +454,11 @@ font-size:14px;
 }
 
 .ai-user{
-background:#e6e9ff;
+background:rgba(55,48,163,0.08);
 }
 
 .ai-bot{
-background:#f1f3ff;
+background:rgba(55,48,163,0.05);
 }
 
 .ai-input-row{
@@ -404,7 +475,7 @@ font-family:'Inter',sans-serif;
 
 #ai-send{
 border:none;
-background:#6C63FF;
+background:var(--color-accent);
 color:white;
 padding:10px 14px;
 cursor:pointer;
@@ -438,8 +509,8 @@ transition:border .2s, box-shadow .2s;
 
 textarea:focus{
 outline:none;
-border:1px solid #6C63FF;
-box-shadow:0 0 0 2px rgba(108,99,255,0.15);
+border:1px solid var(--color-accent);
+box-shadow:0 0 0 3px var(--color-accent-glow);
 }
 
 .task{
@@ -600,8 +671,8 @@ transition:all .2s ease;
 
 textarea:focus{
 outline:none;
-box-shadow:0 6px 22px rgba(108,99,255,0.18);
-border:1px solid #6C63FF;
+box-shadow:0 6px 22px rgba(55,48,163,0.18);
+border:1px solid var(--color-accent);
 }
 
 /* Task list polish */
@@ -617,14 +688,14 @@ transform:translateX(-3px);
 /* Active task highlight */
 
 .task.active{
-background:#e6e9ff;
+background:rgba(55,48,163,0.08);
 font-weight:500;
 }
 
 /* AI button glow */
 
 #ai-button{
-box-shadow:0 8px 24px rgba(108,99,255,0.4);
+box-shadow:0 8px 24px rgba(55,48,163,0.35);
 transition:all .2s ease;
 }
 
@@ -638,16 +709,6 @@ transform:scale(1.05);
 animation:aiPanelOpen .2s ease;
 }
 
-@keyframes aiPanelOpen{
-from{
-opacity:0;
-transform:translateY(10px);
-}
-to{
-opacity:1;
-transform:translateY(0);
-}
-}
 /* ===================================================== */
 /* NOTEBOOK WORKSPACE LAYOUT */
 /* ===================================================== */
@@ -745,10 +806,10 @@ transition:all .2s ease;
 .btn-blue,
 .button-primary,
 .submit{
-background:linear-gradient(135deg,#6C63FF,#5EC9FF);
+background:linear-gradient(135deg,var(--color-accent),#5EC9FF);
 color:white;
 border:none;
-box-shadow:0 6px 16px rgba(108,99,255,0.25);
+box-shadow:var(--shadow-btn);
 }
 
 /* Hover effect */
@@ -757,7 +818,7 @@ box-shadow:0 6px 16px rgba(108,99,255,0.25);
 .button-primary:hover,
 .submit:hover{
 transform:translateY(-1px);
-box-shadow:0 10px 24px rgba(108,99,255,0.35);
+box-shadow:0 10px 24px rgba(55,48,163,0.30);
 }
 
 /* Secondary buttons */
@@ -840,8 +901,8 @@ transition:all .2s ease;
 
 textarea:focus{
 outline:none;
-border:1px solid #6C63FF;
-box-shadow:0 0 0 2px rgba(108,99,255,0.15);
+border:1px solid var(--color-accent);
+box-shadow:0 0 0 3px var(--color-accent-glow);
 }
 
 
@@ -942,7 +1003,7 @@ transform:translateX(-3px);
 }
 
 .task.active{
-background:#e6e9ff;
+background:rgba(55,48,163,0.08);
 font-weight:500;
 }
 
@@ -1007,17 +1068,17 @@ transition:all .2s ease;
 .btn-blue,
 .button-primary,
 .submit{
-background:linear-gradient(135deg,#6C63FF,#5EC9FF);
+background:linear-gradient(135deg,var(--color-accent),#5EC9FF);
 color:white;
 border:none;
-box-shadow:0 6px 16px rgba(108,99,255,0.25);
+box-shadow:var(--shadow-btn);
 }
 
 .btn-blue:hover,
 .button-primary:hover,
 .submit:hover{
 transform:translateY(-1px);
-box-shadow:0 10px 24px rgba(108,99,255,0.35);
+box-shadow:0 10px 24px rgba(55,48,163,0.30);
 }
 
 .btn:active,
@@ -1032,7 +1093,7 @@ transform:scale(0.98);
 /* ----------------------------------------------------- */
 
 #ai-button{
-box-shadow:0 8px 24px rgba(108,99,255,0.4);
+box-shadow:0 8px 24px rgba(55,48,163,0.35);
 transition:all .2s ease;
 }
 
@@ -1044,13 +1105,114 @@ transform:scale(1.05);
 animation:aiPanelOpen .2s ease;
 }
 
-@keyframes aiPanelOpen{
-from{
-opacity:0;
-transform:translateY(10px);
+/* aiPanelOpen defined in :root section above */
+
+/* ======================================================= */
+/* GHOST BUTTONS + SHIMMER HOVER                           */
+/* ======================================================= */
+
+.btn-outline,
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
+  position: relative;
+  overflow: hidden;
 }
-to{
-opacity:1;
-transform:translateY(0);
+
+.btn-outline::before,
+.btn-ghost::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(55, 48, 163, 0.10) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.25s ease;
 }
+
+.btn-outline:hover::before,
+.btn-ghost:hover::before {
+  opacity: 1;
+  animation: shimmer 1.2s ease infinite;
+}
+
+/* Primary buttons keep their solid style but get a shimmer overlay too */
+.btn-blue:hover,
+.button-primary:hover,
+.submit:hover {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-accent) 0%,
+    #6d28d9 50%,
+    var(--color-accent) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease infinite;
+}
+
+/* ======================================================= */
+/* CHAT BUBBLE SYSTEM — Class-Based Theme                  */
+/* ======================================================= */
+
+/* Bot message — light tinted bubble with 1px border */
+.msg.ai,
+.ai-bot,
+.ai-message.ai-bot {
+  background: var(--color-chat-bot-bg);
+  border: 1px solid var(--color-chat-bot-border);
+  color: var(--color-text);
+  border-radius: var(--radius-bubble);
+  border-bottom-right-radius: 4px;
+}
+
+/* User message — solid Lime Green for all users */
+.msg.user,
+.ai-user,
+.ai-message.ai-user {
+  background: var(--color-chat-user-bg);
+  color: var(--color-chat-user-text);
+  border: none;
+  border-radius: var(--radius-bubble);
+  border-bottom-left-radius: 4px;
+}
+
+/* Thinking / loading state */
+.msg.thinking {
+  background: var(--color-surface-2);
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* ======================================================= */
+/* PILL / TAG BADGE                                        */
+/* ======================================================= */
+
+.pill {
+  background: rgba(55, 48, 163, 0.08);
+  color: var(--color-accent);
+  border: 1px solid rgba(55, 48, 163, 0.15);
+}
+
+/* ======================================================= */
+/* RESPONSIVE — Additional Breakpoints                     */
+/* ======================================================= */
+
+@media (max-width: 768px) {
+  .panel   { padding: 20px 16px; }
+  .grid    { grid-template-columns: 1fr; }
+  .topbar  { padding: 0 16px; }
+  .main    { margin-right: 0; padding: 16px; flex-direction: column; }
+}
+
+@media (max-width: 480px) {
+  .panel h1 { font-size: 24px; }
+  .btn      { padding: 16px; }
+  #ai-panel { width: calc(100vw - 40px); right: 20px; }
 }
