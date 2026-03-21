@@ -47,3 +47,8 @@
   from = "/cockpit"
   to = "/cockpit.html"
   status = 200
+
+[[redirects]]
+  from = "/institution"
+  to = "/institution.html"
+  status = 200

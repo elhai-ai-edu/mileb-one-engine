@@ -29,10 +29,16 @@
       <p style="margin:0;opacity:.7;font-size:14px;">הוראה, קורסים וכלי מחקר</p>
     </div>
 
+    <div id="institution-btn" class="btn" onclick="enterAsInstitution()"
+         style="cursor:pointer;text-align:right;opacity:0.5;">
+      <h3 style="margin:0 0 4px 0;">📊 הנהלה וסטטיסטיקה</h3>
+      <p style="margin:0;opacity:.7;font-size:14px;">לוח מחוונים מוסדי — מנהלי אקדמיה</p>
+    </div>
+
     <div id="admin-btn" class="btn" onclick="enterAsAdmin()"
          style="cursor:pointer;text-align:right;opacity:0.5;">
-      <h3 style="margin:0 0 4px 0;">📊 הנהלה</h3>
-      <p style="margin:0;opacity:.7;font-size:14px;">ניתוח נתונים ומבט מוסדי</p>
+      <h3 style="margin:0 0 4px 0;">⚙️ ניהול מערכת</h3>
+      <p style="margin:0;opacity:.7;font-size:14px;">קוקפיט IT ותחזוקת config</p>
     </div>
 
   </div>
@@ -51,6 +57,7 @@ async function loadConfig() {
   document.getElementById('h-title').innerText = CONFIG.home?.main_title || 'ברוכים הבאים';
   document.getElementById('h-subtitle').innerText = CONFIG.home?.main_subtitle || '';
   document.getElementById('faculty-btn').style.opacity = "1";
+  document.getElementById('institution-btn').style.opacity = "1";
   document.getElementById('admin-btn').style.opacity = "1";
 }
 
@@ -76,6 +83,10 @@ function enterAsFaculty() {
   } else {
     document.getElementById("error").innerText = "שם משתמש או סיסמה שגויים";
   }
+}
+
+function enterAsInstitution() {
+  window.location.href = "/institution.html";
 }
 
 function enterAsAdmin() {

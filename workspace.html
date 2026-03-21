@@ -239,12 +239,17 @@ function renderStageTabs() {
   const project = currentCourse?.course_units?.semester_a?.project;
   if (!project?.stages) return;
 
-  project.stages.forEach(stage => {
+  project.stages.forEach((stage, idx) => {
+    // Connector between steps
+    if (idx > 0) {
+      const conn = document.createElement("div");
+      conn.className = "stepper-connector";
+      tabContainer.appendChild(conn);
+    }
     const btn = document.createElement("button");
-    const isActive = stage.id === currentStep;
-    btn.className    = "stage-tab" + (isActive ? " active" : "");
+    btn.className    = "stage-tab" + (stage.id === currentStep ? " active" : "");
     btn.dataset.step = stage.id;
-    btn.innerText    = stage.id + ". " + stage.label;
+    btn.innerText    = stage.label;   // number shown via CSS ::before attr(data-step)
     btn.onclick = () => selectStage(stage.id, btn);
     tabContainer.appendChild(btn);
   });
@@ -252,7 +257,15 @@ function renderStageTabs() {
 
 function selectStage(stepId, btnEl) {
   currentStep = stepId;
-  document.querySelectorAll(".stage-tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".stage-tab").forEach(b => {
+    const s = parseInt(b.dataset.step);
+    b.classList.remove("active", "completed");
+    if (s < stepId) b.classList.add("completed");
+  });
+  document.querySelectorAll(".stepper-connector").forEach((conn, i) => {
+    // connector[i] sits between step i+1 and step i+2 — fill when step i+2 is reached
+    conn.classList.toggle("completed", stepId >= i + 2);
+  });
   btnEl.classList.add("active");
 }
 

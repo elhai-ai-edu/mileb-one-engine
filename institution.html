@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<title>MilEd.One — לוח מחוונים מוסדי</title>
+</head>
+
+<body class="management-theme">
+
+<!-- ─── AUTH OVERLAY ─── -->
+<div id="auth-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,15,30,0.92);display:flex;align-items:center;justify-content:center;z-index:999;">
+  <div class="auth-card">
+    <h2>MilEd.One — הנהלה</h2>
+    <p>נדרשת הרשאת מנהל מוסדי</p>
+    <input id="inst-pass" type="password" placeholder="קוד גישה"
+      onkeydown="if(event.key==='Enter') attemptLogin()">
+    <button class="auth-btn-primary" onclick="attemptLogin()">כניסה</button>
+    <p id="auth-error" class="auth-error"></p>
+  </div>
+</div>
+
+<!-- ─── MAIN CONTENT ─── -->
+<div id="main-content" style="display:none;" class="panel">
+
+  <div class="userbar">
+    <span>לוח מחוונים מוסדי — MilEd.One</span>
+    <span id="version-badge" style="font-size:11px;color:var(--color-text-muted);margin-right:auto;"></span>
+  </div>
+
+  <h1>📊 מבט מוסדי — כלל הכיתות</h1>
+  <p style="color:var(--color-text-muted);margin-bottom:4px;">נתוני מיומנויות מצטברים לכל הסטודנטים הפעילים במערכת</p>
+
+  <!-- ─── Metric Tiles ─── -->
+  <div class="institution-tiles">
+    <div class="institution-tile">
+      <div class="institution-tile-value" id="tile-students" style="color:var(--color-accent);">—</div>
+      <div class="institution-tile-label">סטודנטים פעילים</div>
+    </div>
+    <div class="institution-tile">
+      <div class="institution-tile-value" id="tile-skills" style="color:#0891b2;">—</div>
+      <div class="institution-tile-label">מיומנויות פעילות</div>
+    </div>
+    <div class="institution-tile">
+      <div class="institution-tile-value" id="tile-health" style="color:#059669;">—</div>
+      <div class="institution-tile-label">בריאות כוללת</div>
+    </div>
+    <div class="institution-tile">
+      <div class="institution-tile-value" id="tile-alerts" style="color:#dc2626;">—</div>
+      <div class="institution-tile-label">מיומנויות לחיזוק</div>
+    </div>
+    <div class="institution-tile">
+      <div class="institution-tile-value" id="tile-wave2" style="color:#7c3aed;">—</div>
+      <div class="institution-tile-label">מדדי גל 2</div>
+    </div>
+  </div>
+
+  <!-- ─── Radar + Heatmap ─── -->
+  <div class="institution-grid">
+
+    <!-- Global Skill Radar -->
+    <div class="mgmt-section">
+      <h3>🕸️ רדאר מיומנות מוסדי</h3>
+      <p style="font-size:11px;color:var(--color-text-muted);margin-bottom:8px;">איזון בין שכבות — כלל הסטודנטים</p>
+      <div id="institution-radar">
+        <p style="color:var(--color-text-muted);font-size:13px;">⏳ טוען...</p>
+      </div>
+    </div>
+
+    <!-- Cross-Course Heatmap -->
+    <div class="mgmt-section">
+      <h3>🌡️ מדד בריאות מיומנות — כל הכיתות</h3>
+      <p style="font-size:11px;color:var(--color-text-muted);margin-bottom:8px;">
+        ציון בריאות = השתתפות × ביטחון × שיפור בין גלים
+      </p>
+      <div id="institution-heatmap" style="overflow-x:auto;">
+        <p style="color:var(--color-text-muted);font-size:13px;">⏳ טוען...</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─── Top Issues ─── -->
+  <div class="mgmt-section" style="margin-top:20px;">
+    <h3>⚠️ מיומנויות הדורשות תשומת לב מוסדית</h3>
+    <div id="top-issues">
+      <p style="color:var(--color-text-muted);font-size:13px;">⏳ טוען...</p>
+    </div>
+  </div>
+
+  <!-- ─── Nav ─── -->
+  <div style="margin-top:28px;display:flex;gap:12px;flex-wrap:wrap;">
+    <a href="/cockpit.html" class="btn btn-blue">⚙️ קוקפיט מנהל מערכת</a>
+    <a href="/faculty.html" class="btn btn-outline">🧑‍🏫 פורטל סגל</a>
+    <a href="/" onclick="sessionStorage.clear()" class="btn btn-outline">← יציאה</a>
+  </div>
+
+</div>
+
+<script>
+
+// ─── Auth ───
+// Accept existing faculty session (superadmin) OR institution PIN
+const INST_PIN = "miled2026";
+
+function attemptLogin() {
+  const pin = document.getElementById("inst-pass").value.trim();
+  if (pin === INST_PIN) {
+    unlock();
+  } else {
+    document.getElementById("auth-error").innerText = "קוד גישה שגוי";
+  }
+}
+
+function unlock() {
+  document.getElementById("auth-overlay").style.display = "none";
+  document.getElementById("main-content").style.display = "";
+  loadData();
+}
+
+// Auto-unlock for active faculty/superadmin session
+if (sessionStorage.getItem("faculty_auth") === "true") unlock();
+
+// ─── Radar Chart (SVG) — institution-wide ───
+function renderRadar(vals) {
+  const cx = 110, cy = 110, r = 75;
+  const angles = [-90, 30, 150].map(d => d * Math.PI / 180);
+  const labels = ["📚 אקדמי", "💼 תעסוקתי", "🔍 אבחון"];
+  const vals3  = [vals.academic, vals.vocational, vals.diagnostic];
+
+  const pt = (a, v) => [cx + Math.cos(a) * r * Math.max(0.05, v),
+                        cy + Math.sin(a) * r * Math.max(0.05, v)];
+
+  const rings = [0.33, 0.66, 1.0].map(pct => {
+    const pts = angles.map(a => `${cx+Math.cos(a)*r*pct},${cy+Math.sin(a)*r*pct}`).join(" ");
+    return `<polygon points="${pts}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`;
+  }).join("");
+
+  const axes = angles.map(a =>
+    `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*r}" y2="${cy+Math.sin(a)*r}" stroke="#e2e8f0" stroke-width="1.5"/>`
+  ).join("");
+
+  const dataPts = angles.map((a, i) => pt(a, vals3[i]).join(",")).join(" ");
+  const polygon = `<polygon points="${dataPts}" fill="rgba(55,48,163,0.15)" stroke="#3730a3" stroke-width="2.5"/>`;
+
+  const dots = angles.map((a, i) => {
+    const [px, py] = pt(a, vals3[i]);
+    return `<circle cx="${px}" cy="${py}" r="5" fill="#3730a3" stroke="#fff" stroke-width="2"/>`;
+  }).join("");
+
+  const labelEls = angles.map((a, i) => {
+    const lx = cx + Math.cos(a) * (r + 22);
+    const ly = cy + Math.sin(a) * (r + 22);
+    const anchor = lx < cx - 5 ? "end" : lx > cx + 5 ? "start" : "middle";
+    const pct = Math.round(vals3[i] * 100);
+    return `<text x="${lx}" y="${ly-7}" text-anchor="${anchor}" font-size="11" fill="#64748b" font-family="Assistant,sans-serif">${labels[i]}</text>
+            <text x="${lx}" y="${ly+7}" text-anchor="${anchor}" font-size="11" fill="#3730a3" font-family="Assistant,sans-serif" font-weight="700">${pct}%</text>`;
+  }).join("");
+
+  return `<svg viewBox="0 0 220 220" width="210" height="210" style="display:block;margin:0 auto;">
+    ${rings}${axes}${polygon}${dots}${labelEls}
+  </svg>`;
+}
+
+// ─── Load data ───
+async function loadData() {
+  try {
+    const [insRes, cfgRes] = await Promise.all([
+      fetch("/api/insights", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" }),
+      fetch("/config.json?ts=" + Date.now())
+    ]);
+    const insights = await insRes.json();
+    const config   = await cfgRes.json();
+
+    document.getElementById("version-badge").innerText = "v" + (config.system_version || "");
+
+    if (!insights.ok || !Array.isArray(insights.insights)) {
+      document.getElementById("institution-heatmap").innerHTML =
+        `<p style="color:#dc2626;font-size:13px;">⚠ לא נמצאו נתוני מיומנויות — הפעל אבחון מיומנויות עם סטודנטים תחילה.</p>`;
+      return;
+    }
+
+    renderDashboard(insights, config);
+  } catch(e) {
+    console.error("Institution load error:", e);
+  }
+}
+
+function renderDashboard(insights, config) {
+  const data  = insights.insights;
+  const total = insights.totalStudents;
+
+  // Tiles
+  document.getElementById("tile-students").innerText = total;
+  document.getElementById("tile-skills").innerText   = data.length;
+  document.getElementById("tile-alerts").innerText   = data.filter(i => i.needsHelp).length;
+  document.getElementById("tile-wave2").innerText    = data.filter(i => i.wave2Count > 0).length;
+
+  const avgHealth = data.length > 0
+    ? Math.round(data.reduce((s, i) => s + i.pctParticipated, 0) / data.length) + "%"
+    : "—";
+  document.getElementById("tile-health").innerText = avgHealth;
+
+  // Radar: categorise by mapping_tags from config
+  const allSkillItems = config.branches?.skills?.items || {};
+  const catBuckets = { academic: [], vocational: [], diagnostic: [] };
+
+  data.forEach(ins => {
+    const entry = Object.values(allSkillItems).find(s => s.botType === ins.botType);
+    const tags  = entry?.mapping_tags || ["academic"];
+    const health = ins.pctParticipated / 100;
+    tags.forEach(tag => { if (catBuckets[tag]) catBuckets[tag].push(health); });
+  });
+
+  const avg = arr => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+  document.getElementById("institution-radar").innerHTML = renderRadar({
+    academic:   avg(catBuckets.academic),
+    vocational: avg(catBuckets.vocational),
+    diagnostic: avg(catBuckets.diagnostic)
+  });
+
+  // Heatmap table
+  const confCls  = { high: "heatmap-green", medium: "heatmap-yellow", low: "heatmap-red" };
+  const confText = { high: "גבוה", medium: "בינוני", low: "נמוך" };
+
+  const rows = data.map(ins => {
+    const cls = confCls[ins.w1Confidence] || "heatmap-yellow";
+    // Health score 0–100: participation (50pts) + confidence (30pts) + improvement (20pts)
+    const score = Math.min(100, Math.round(
+      ins.pctParticipated * 0.5 +
+      (ins.w1Confidence === "high" ? 30 : ins.w1Confidence === "medium" ? 15 : 0) +
+      (ins.improved ? 20 : 0)
+    ));
+    const scoreColor = score >= 70 ? "#059669" : score >= 40 ? "#d97706" : "#dc2626";
+    const wave2Cell = ins.wave2Count > 0
+      ? (ins.improved
+          ? `<span class="growth-indicator growth-up">↑ ${ins.improvementPct}%</span>`
+          : `<span class="growth-indicator growth-same">→</span>`)
+      : `<span style="color:#94a3b8;font-size:11px;">—</span>`;
+
+    return `<tr>
+      <td style="font-weight:600;">${ins.botName}</td>
+      <td>${ins.totalStudents}</td>
+      <td>${ins.pctParticipated}%</td>
+      <td><span class="heatmap-cell ${cls}" style="font-size:11px;">${confText[ins.w1Confidence] || "—"}</span></td>
+      <td>${wave2Cell}</td>
+      <td style="font-weight:700;color:${scoreColor};font-size:15px;">${score}</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("institution-heatmap").innerHTML = `
+    <table class="heatmap-table mgmt-table" style="min-width:500px;">
+      <thead>
+        <tr>
+          <th>מיומנות</th>
+          <th>סטודנטים</th>
+          <th>השתתפות</th>
+          <th>ביטחון גל 1</th>
+          <th>גל 2</th>
+          <th>ציון בריאות</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:#94a3b8;">אין נתונים</td></tr>'}</tbody>
+    </table>
+    <div style="font-size:11px;color:var(--color-text-muted);margin-top:8px;">
+      ציון בריאות: השתתפות (50%) + ביטחון (30%) + שיפור בין גלים (20%)
+    </div>`;
+
+  // Top issues
+  const issues = data.filter(i => i.needsHelp).slice(0, 3);
+  if (issues.length === 0) {
+    document.getElementById("top-issues").innerHTML =
+      `<p style="color:#059669;font-weight:500;">✓ כל המיומנויות הפעילות מציגות בריאות תקינה — אין בעיות בולטות.</p>`;
+  } else {
+    document.getElementById("top-issues").innerHTML = issues.map(ins => `
+      <div class="insights-box" style="margin-bottom:10px;">
+        <div class="insights-header">
+          <span class="insights-title">${ins.botName}</span>
+          <span class="insights-pct">${ins.pctNeedsHelp}% זקוקים לחיזוק</span>
+        </div>
+        <div class="insights-recommend">
+          ביטחון גל 1: ${ins.w1Confidence === "low" ? "נמוך" : "בינוני"} •
+          ${ins.wave1Count} מתוך ${insights.totalStudents} סטודנטים •
+          ${ins.improved ? `שיפור של ${ins.improvementPct}% בגל 2` : "אין נתוני גל 2 עדיין"}
+        </div>
+      </div>`).join("");
+  }
+}
+
+</script>
+
+</body>
+</html>
