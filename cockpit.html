@@ -37,13 +37,14 @@
 
 <!-- ─── TAB NAV ─── -->
 <div class="mgmt-tabs">
-  <button id="tab-btn-config"   class="mgmt-tab-btn active" onclick="switchTab('config')">עורך Config</button>
-  <button id="tab-btn-security" class="mgmt-tab-btn"        onclick="switchTab('security')">אבטחה</button>
-  <button id="tab-btn-skills"   class="mgmt-tab-btn"        onclick="switchTab('skills')">👥 ביצועים ומיומנויות</button>
+  <button id="tab-btn-skills"   class="mgmt-tab-btn active" onclick="switchTab('skills')">👥 ביצועים ומיומנויות</button>
+  <button id="tab-btn-config"   class="mgmt-tab-btn"        onclick="switchTab('config')">⚙️ הגדרות מערכת</button>
+  <button id="tab-btn-security" class="mgmt-tab-btn"        onclick="switchTab('security')">🔐 אבטחה ומשתמשים</button>
+  <a href="/admin_dashboard.html" class="mgmt-tab-btn" style="text-decoration:none;background:#f1f5f9;color:#64748b;">🛠 ניהול מלא →</a>
 </div>
 
 <!-- ─── CONFIG TAB ─── -->
-<div id="tab-config">
+<div id="tab-config" style="display:none;">
 
   <div id="editor"></div>
 
@@ -54,7 +55,7 @@
 </div>
 
 <!-- ─── SKILLS / PERFORMANCE TAB ─── -->
-<div id="tab-skills" style="display:none;">
+<div id="tab-skills">
 
   <div class="mgmt-section">
     <h2>ניתוח ביצועים ומיומנויות</h2>
@@ -159,7 +160,7 @@
 </div>
 
 <!-- ─── SECURITY TAB ─── -->
-<div id="tab-security" style="display:none;">
+<div id="tab-security" style="display:none;margin-top:16px;">
 
   <div class="panel">
     <h2>ניהול משתמשי מערכת</h2>
@@ -297,7 +298,8 @@ async function init(){
 
   const res=await fetch("/config.json")
   config=await res.json()
-  render()
+  // Skills tab is default — load its data. Config editor renders lazily on tab click.
+  switchTab('skills');
 
 }
 
@@ -619,6 +621,7 @@ function switchTab(tab){
     document.getElementById("tab-btn-" + t).classList.toggle("active", tab === t);
   });
   if (tab === "skills") loadSkillsData();
+  if (tab === "config" && config && Object.keys(config).length) render(); // lazy render
 }
 
 // ─── PERFORMANCE TOGGLE ───

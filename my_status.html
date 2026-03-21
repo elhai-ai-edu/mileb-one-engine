@@ -62,6 +62,13 @@
 
     </div>
 
+    <!-- ─── Recommended Next Steps ─── -->
+    <div id="recommendations-section" style="margin-top:24px;display:none;">
+      <h2>🎯 הצעדים המומלצים הבאים שלך</h2>
+      <p style="color:var(--color-text-muted);font-size:13px;margin-bottom:14px;">בהתבסס על המיומנויות שטרם השלמת</p>
+      <div id="recommendations-list"></div>
+    </div>
+
     <br>
     <a href="/" onclick="sessionStorage.clear()" class="btn btn-outline">← חזרה למסך הבית</a>
 
@@ -257,6 +264,9 @@ fetch('/config.json?ts=' + Date.now())
          </div>` + skillHtml;
     }
 
+    // ─── Recommended Next Steps ───
+    renderRecommendations(config);
+
   })
   .catch(err => {
     console.error("Config load error:", err);
@@ -264,6 +274,51 @@ fetch('/config.json?ts=' + Date.now())
     errEl.style.display = "block";
     errEl.innerText = "שגיאה בטעינת הנתונים. נסה לרענן.";
   });
+
+// ─── Recommended Next Steps ───
+function renderRecommendations(config) {
+  const skills   = config.branches?.skills?.items || {};
+  const unvisited = []; // wave1 never done — high priority
+  const wave1Only = []; // wave1 done, wave2 not — medium priority (return visit)
+
+  for (const id in skills) {
+    const bot    = skills[id];
+    const status = getSkillStatus(id);
+    if (!status.wave1) {
+      unvisited.push({ id, bot, priority: "high" });
+    } else if (!status.wave2) {
+      wave1Only.push({ id, bot, priority: "medium" });
+    }
+  }
+
+  const recs = [...unvisited.slice(0, 2), ...wave1Only.slice(0, 1)];
+  const section = document.getElementById("recommendations-section");
+  const list    = document.getElementById("recommendations-list");
+
+  if (recs.length === 0) {
+    section.style.display = "";
+    list.innerHTML = `<div style="background:#ecfdf5;border:1px solid #10b981;border-radius:12px;padding:16px 20px;color:#059669;font-weight:500;">
+      ✓ כל המיומנויות הושלמו! חזור לגל 2 כדי לבדוק את ההתקדמות שלך.
+    </div>`;
+    return;
+  }
+
+  section.style.display = "";
+  list.innerHTML = recs.map(rec => {
+    const isDiag = rec.bot._layer === "skills_diagnostic";
+    const url    = isDiag
+      ? `/workspace.html?skillId=${rec.id}`
+      : `/chat.html?classId=${rec.id}&skillMode=true`;
+    const isHigh = rec.priority === "high";
+    return `<a href="${url}" class="recommendation-card">
+      <div class="rec-icon">${isHigh ? "🔴" : "🟡"}</div>
+      <div class="rec-body">
+        <div class="rec-title">${rec.bot.name}</div>
+        <div class="rec-action">${isHigh ? "טרם התחלת — לחץ להתחיל עכשיו" : "השלם גל 2 לביסוס ההישג"} →</div>
+      </div>
+    </a>`;
+  }).join("");
+}
 
 // ─── Track skill visits (store timestamp when arriving via skillMode) ───
 const params    = new URLSearchParams(location.search);

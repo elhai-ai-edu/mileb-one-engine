@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<title>MilEd.One — ניהול מערכת</title>
+</head>
+
+<body class="management-theme">
+
+<!-- ─── AUTH OVERLAY ─── -->
+<div id="auth-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,15,30,0.92);display:flex;align-items:center;justify-content:center;z-index:999;">
+  <div class="auth-card">
+    <h2>MilEd Admin</h2>
+    <p>כניסת מנהל מערכת בלבד</p>
+    <input id="auth-user" type="text" placeholder="שם משתמש" autocomplete="username">
+    <input id="auth-pass" type="password" placeholder="סיסמה" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter')attemptLogin()">
+    <button class="auth-btn-primary" onclick="attemptLogin()">כניסה</button>
+    <p id="auth-error" class="auth-error"></p>
+  </div>
+</div>
+
+<div class="panel">
+
+<div class="userbar">
+  <span>ניהול מערכת — MilEd.One</span>
+  <span id="currentUser" style="font-size:12px;color:var(--color-text-muted);margin-right:auto;"></span>
+</div>
+
+<h1>🛠 לוח ניהול מערכת</h1>
+
+<!-- ─── TAB NAV ─── -->
+<div class="mgmt-tabs">
+  <button id="tab-btn-security" class="mgmt-tab-btn active" onclick="switchTab('security')">🔐 משתמשים ואבטחה</button>
+  <button id="tab-btn-config"   class="mgmt-tab-btn"        onclick="switchTab('config')">⚙️ עורך Config</button>
+  <a href="/cockpit.html" class="mgmt-tab-btn" style="text-decoration:none;background:#f1f5f9;color:#64748b;">📊 ביצועים ומיומנויות →</a>
+</div>
+
+<!-- ─── SECURITY / USER MANAGEMENT TAB ─── -->
+<div id="tab-security">
+
+  <div class="panel">
+    <h2>ניהול משתמשי מערכת</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:16px;">שינויים נשמרים ישירות ב-Firebase. נדרש אימות מחדש לכל פעולה.</p>
+
+    <div class="mgmt-reauth">
+      <p>אימות מחדש נדרש לפעולות אבטחה</p>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input id="sec-user" type="text" placeholder="שם משתמש" autocomplete="off" style="width:150px;direction:ltr;">
+        <input id="sec-pass" type="password" placeholder="סיסמה" autocomplete="off" style="width:150px;direction:ltr;">
+        <button class="btn btn-blue btn-sm" onclick="loadUsers()">טען משתמשים</button>
+      </div>
+      <p id="sec-msg" class="auth-error" style="margin:8px 0 0;"></p>
+    </div>
+
+    <div id="users-list" style="margin-bottom:20px;"></div>
+
+    <div id="create-user-form" class="mgmt-section" style="display:none;">
+      <h3 style="margin:0 0 12px;font-size:14px;">+ הוסף משתמש חדש</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <input id="new-username" type="text" placeholder="שם משתמש (login)" autocomplete="off"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
+        <input id="new-name" type="text" placeholder="שם לתצוגה"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+        <input id="new-password" type="password" placeholder="סיסמה ראשונית"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
+        <select id="new-role"
+          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
+          <option value="faculty">faculty</option>
+          <option value="superadmin">superadmin</option>
+        </select>
+      </div>
+      <button class="btn btn-green" onclick="createUser()" style="padding:8px 16px;font-size:13px;">
+        צור משתמש
+      </button>
+      <p id="create-msg" style="font-size:13px;color:#e53;margin:8px 0 0;min-height:18px;"></p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ─── CONFIG EDITOR TAB ─── -->
+<div id="tab-config" style="display:none;">
+
+  <div style="background:#fff8e1;border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;">
+    ⚠️ שינויים בעורך ה-Config ישמרו ל-Firebase ויחולו לאחר פריסה מחדש.
+    לניתוח ביצועים — עבור ל<a href="/cockpit.html">לוח הביצועים</a>.
+  </div>
+
+  <div id="editor"></div>
+
+  <button class="btn btn-blue" onclick="saveConfig()">
+    שמור config לשרת
+  </button>
+
+</div>
+
+</div>
+
+<script>
+
+let config = {};
+let currentUser = null;
+const branchKeys = ["courses","faculty","skills","admin"];
+
+// ─── AUTH ───
+function isSuperAdminSession(){
+  return sessionStorage.getItem("faculty_auth") === "true" &&
+         sessionStorage.getItem("facultyRole")  === "superadmin";
+}
+
+async function attemptLogin(){
+  const username = document.getElementById("auth-user").value.trim();
+  const password = document.getElementById("auth-pass").value;
+  document.getElementById("auth-error").innerText = "";
+  if(!username || !password){
+    document.getElementById("auth-error").innerText = "יש למלא שם משתמש וסיסמה.";
+    return;
+  }
+  try{
+    const res = await fetch("/.netlify/functions/auth",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({username,password})
+    });
+    const data = await res.json();
+    if(data.ok){
+      sessionStorage.setItem("faculty_auth",  "true");
+      sessionStorage.setItem("facultyRole",   data.user.role);
+      sessionStorage.setItem("cockpit_token", data.token);
+      sessionStorage.setItem("cockpit_user",  JSON.stringify(data.user));
+      document.getElementById("auth-overlay").style.display = "none";
+      init();
+    } else {
+      document.getElementById("auth-error").innerText = "פרטים שגויים או אין הרשאת superadmin.";
+    }
+  } catch(e){
+    document.getElementById("auth-error").innerText = "שגיאת חיבור לשרת.";
+  }
+}
+
+async function init(){
+  const hasCockpitToken   = !!sessionStorage.getItem("cockpit_token");
+  const hasFacultySession = isSuperAdminSession();
+  if(!hasCockpitToken && !hasFacultySession){
+    document.getElementById("auth-overlay").style.display = "flex";
+    return;
+  }
+  const stored = sessionStorage.getItem("cockpit_user");
+  if(stored){ try{ currentUser = JSON.parse(stored); } catch{} }
+  if(!currentUser){
+    document.getElementById("auth-overlay").style.display = "flex";
+    return;
+  }
+  document.getElementById("currentUser").innerText =
+    (currentUser.name || currentUser.id) + " (" + currentUser.role + ")";
+
+  const res = await fetch("/config.json");
+  config = await res.json();
+}
+
+init();
+
+// ─── TAB SWITCHING ───
+function switchTab(tab){
+  ["config","security"].forEach(t => {
+    document.getElementById("tab-" + t).style.display = tab === t ? "" : "none";
+    document.getElementById("tab-btn-" + t).classList.toggle("active", tab === t);
+  });
+  if(tab === "config" && config && Object.keys(config).length) render();
+}
+
+// ─── CONFIG EDITOR ───
+function render(){
+  const root = document.getElementById("editor");
+  root.innerHTML = "";
+  branchKeys.forEach(branchKey => {
+    const branch = config.branches[branchKey];
+    if(!branch) return;
+    let html = `<div class="panel"><h2>${branch.title}</h2>
+      <button class="btn btn-green" onclick="addTool('${branchKey}')">+ הוסף כלי חדש</button>`;
+    for(let id in branch.items){
+      html += renderTool(branchKey, id, branch.items[id]);
+    }
+    html += "</div>";
+    root.innerHTML += html;
+  });
+}
+
+function renderTool(branch, id, tool){
+  return`<div class="panel">
+<div class="field"><label>name</label>
+<input value="${tool.name||''}" onchange="update('${branch}','${id}','name',this.value)"></div>
+<div class="field"><label>botType</label>
+<input value="${tool.botType||''}" onchange="update('${branch}','${id}','botType',this.value)"></div>
+<div class="field"><label>botCategory</label>
+<select onchange="update('${branch}','${id}','botCategory',this.value)">
+<option value="universal" ${tool.botCategory==="universal"?"selected":""}>universal</option>
+<option value="course" ${tool.botCategory==="course"?"selected":""}>course</option>
+<option value="task" ${tool.botCategory==="task"?"selected":""}>task</option>
+</select></div>
+<div class="field"><label>processMode</label>
+<select onchange="update('${branch}','${id}','processMode',this.value)">
+<option value="guided" ${tool.processMode==="guided"?"selected":""}>guided</option>
+<option value="adaptive" ${tool.processMode==="adaptive"?"selected":""}>adaptive</option>
+<option value="gated" ${tool.processMode==="gated"?"selected":""}>gated</option>
+</select></div>
+${tool.botCategory==="task" ? renderStagesEditor(branch,id,tool) : ""}
+<div class="field"><label>systemPrompt</label>
+<textarea onchange="update('${branch}','${id}','systemPrompt',this.value)">${tool.systemPrompt||''}</textarea></div>
+<div class="field"><label>thinkingBudget</label>
+<input type="number" value="${tool.thinkingBudget||512}" onchange="update('${branch}','${id}','thinkingBudget',parseInt(this.value))"></div>
+<div class="field"><label>scope</label>
+<select onchange="update('${branch}','${id}','scope',this.value)">
+<option ${tool.scope==="global"?"selected":""}>global</option>
+<option ${tool.scope==="faculty_private"?"selected":""}>faculty_private</option>
+<option ${tool.scope==="institution"?"selected":""}>institution</option>
+<option ${tool.scope==="course_specific"?"selected":""}>course_specific</option>
+</select></div>
+<div class="field"><label>owner</label>
+<input value="${tool.owner||''}" onchange="update('${branch}','${id}','owner',this.value)"></div>
+<button class="btn btn-red" onclick="deleteTool('${branch}','${id}')">מחק</button>
+</div>`;
+}
+
+function renderStagesEditor(branch,id,tool){
+  let html=`<div class="panel"><h3>Stage Workflow</h3>
+    <button class="btn btn-green" onclick="addStage('${branch}','${id}')">+ הוסף שלב</button>`;
+  (tool.stages||[]).forEach((stage,index)=>{
+    html+=`<div class="field">
+      <label>Stage ID</label>
+      <input value="${stage.id||''}" onchange="updateStage('${branch}','${id}',${index},'id',this.value)">
+      <label>Stage Title</label>
+      <input value="${stage.title||''}" onchange="updateStage('${branch}','${id}',${index},'title',this.value)">
+      <button class="btn btn-red" onclick="deleteStage('${branch}','${id}',${index})">מחק</button>
+    </div>`;
+  });
+  return html+"</div>";
+}
+
+function update(branch,id,key,value){ config.branches[branch].items[id][key]=value; }
+
+function addTool(branch){
+  const id="tool_"+Date.now();
+  config.branches[branch].items[id]={
+    id,name:"כלי חדש",botType:"",botCategory:"course",processMode:"guided",
+    stages:[],systemPrompt:"",thinkingBudget:512,scope:"faculty_private",
+    owner:currentUser?.id||"",createdBy:currentUser?.id||"",
+    createdAt:new Date().toISOString(),version:"1.0"
+  };
+  render();
+}
+
+function deleteTool(branch,id){ delete config.branches[branch].items[id]; render(); }
+function addStage(branch,id){ config.branches[branch].items[id].stages.push({id:"stage_"+Date.now(),title:"שלב חדש"}); render(); }
+function updateStage(branch,id,index,key,value){ config.branches[branch].items[id].stages[index][key]=value; }
+function deleteStage(branch,id,index){ config.branches[branch].items[id].stages.splice(index,1); render(); }
+
+async function saveConfig(){
+  await fetch("/api/saveConfig",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(config)
+  });
+  alert("config נשמר בהצלחה");
+}
+
+// ─── USER MANAGEMENT ───
+function secCredentials(){
+  return {
+    requesterUsername: document.getElementById("sec-user").value.trim(),
+    requesterPassword: document.getElementById("sec-pass").value
+  };
+}
+
+async function adminAuthCall(body){
+  const res = await fetch("/.netlify/functions/admin-auth",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function loadUsers(){
+  const { requesterUsername, requesterPassword } = secCredentials();
+  document.getElementById("sec-msg").innerText = "";
+  if(!requesterUsername || !requesterPassword){
+    document.getElementById("sec-msg").innerText = "יש למלא שם משתמש וסיסמה.";
+    return;
+  }
+  document.getElementById("sec-msg").innerText = "טוען...";
+  try {
+    const data = await adminAuthCall({ action:"list", requesterUsername, requesterPassword });
+    if(!data.ok){
+      document.getElementById("sec-msg").innerText = data.error || "שגיאה";
+      return;
+    }
+    document.getElementById("sec-msg").innerText = "";
+    renderUsers(data.users);
+    document.getElementById("create-user-form").style.display = "";
+  } catch(e){
+    document.getElementById("sec-msg").innerText = "שגיאת חיבור לשרת.";
+  }
+}
+
+function renderUsers(users){
+  const container = document.getElementById("users-list");
+  if(!users.length){
+    container.innerHTML = "<p style='color:#aaa;font-size:13px;'>אין משתמשים.</p>";
+    return;
+  }
+  let html = "<table style='width:100%;border-collapse:collapse;font-size:13px;'>" +
+    "<thead><tr style='background:#f5f7fb;'>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>שם משתמש</th>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>שם</th>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>תפקיד</th>" +
+    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>סיסמה חדשה</th>" +
+    "<th style='padding:8px 12px;border-bottom:1px solid #eee;'></th>" +
+    "</tr></thead><tbody>";
+  users.forEach(u => {
+    html += `<tr id="user-row-${u.username}" style="border-bottom:1px solid #f0f0f0;">
+      <td style="padding:8px 12px;direction:ltr;">${u.username}</td>
+      <td style="padding:8px 12px;">${u.name||""}</td>
+      <td style="padding:8px 12px;">${u.role}</td>
+      <td style="padding:8px 12px;">
+        <input id="pw-${u.username}" type="password" placeholder="סיסמה חדשה"
+          style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;width:140px;direction:ltr;">
+      </td>
+      <td style="padding:8px 12px;white-space:nowrap;">
+        <button class="btn btn-blue" onclick="updatePassword('${u.username}')" style="padding:5px 10px;font-size:12px;margin-left:4px;">עדכן</button>
+        <button class="btn btn-red"  onclick="deleteUser('${u.username}')"    style="padding:5px 10px;font-size:12px;">מחק</button>
+      </td>
+    </tr>`;
+  });
+  html += "</tbody></table>";
+  container.innerHTML = html;
+}
+
+async function updatePassword(username){
+  const { requesterUsername, requesterPassword } = secCredentials();
+  const newPassword = document.getElementById("pw-"+username)?.value;
+  if(!newPassword){ alert("יש להזין סיסמה חדשה."); return; }
+  try {
+    const data = await adminAuthCall({ action:"update_password", requesterUsername, requesterPassword, username, newPassword });
+    if(data.ok){ alert("סיסמה עודכנה."); document.getElementById("pw-"+username).value=""; }
+    else alert("שגיאה: "+(data.error||"Unknown"));
+  } catch(e){ alert("שגיאת חיבור לשרת."); }
+}
+
+async function deleteUser(username){
+  if(!confirm("למחוק את "+username+"?")) return;
+  const { requesterUsername, requesterPassword } = secCredentials();
+  try {
+    const data = await adminAuthCall({ action:"delete_user", requesterUsername, requesterPassword, username });
+    if(data.ok){ document.getElementById("user-row-"+username)?.remove(); alert("משתמש נמחק."); }
+    else alert("שגיאה: "+(data.error||"Unknown"));
+  } catch(e){ alert("שגיאת חיבור לשרת."); }
+}
+
+async function createUser(){
+  const { requesterUsername, requesterPassword } = secCredentials();
+  const username = document.getElementById("new-username").value.trim();
+  const name     = document.getElementById("new-name").value.trim();
+  const password = document.getElementById("new-password").value;
+  const role     = document.getElementById("new-role").value;
+  document.getElementById("create-msg").innerText = "";
+  if(!username||!name||!password){
+    document.getElementById("create-msg").innerText = "יש למלא את כל השדות."; return;
+  }
+  try {
+    const data = await adminAuthCall({ action:"create_user", requesterUsername, requesterPassword, username, name, password, role });
+    if(data.ok){
+      alert("משתמש נוצר בהצלחה.");
+      ["new-username","new-name","new-password"].forEach(id => document.getElementById(id).value="");
+      loadUsers();
+    } else {
+      document.getElementById("create-msg").innerText = data.error||"שגיאה";
+    }
+  } catch(e){ document.getElementById("create-msg").innerText = "שגיאת חיבור."; }
+}
+
+</script>
+
+</body>
+</html>

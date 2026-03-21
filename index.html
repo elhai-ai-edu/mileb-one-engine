@@ -90,18 +90,8 @@ function enterAsInstitution() {
 }
 
 function enterAsAdmin() {
-  if (!CONFIG) { alert("המערכת עדיין נטענת — נסה שוב"); return; }
-
-  const adminPassword = CONFIG.admin_password || "miled2026";
-  const input = prompt("סיסמת הנהלה:");
-  if (!input) return;
-
-  if (input.trim() === adminPassword) {
-    sessionStorage.setItem("institutionRole", "admin");
-    window.location.href = "/admin.html";
-  } else {
-    document.getElementById("error").innerText = "סיסמה שגויה";
-  }
+  // Admin dashboard handles its own auth (superadmin Firebase login)
+  window.location.href = "/admin_dashboard.html";
 }
 
 loadConfig();

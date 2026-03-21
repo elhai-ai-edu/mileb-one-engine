@@ -42,6 +42,9 @@
         <div id="lock-overlay" class="workspace-lock-overlay" style="display:none;">
           🔒 השלב נעול — המרצה יפתח אותו בקרוב
         </div>
+        <div id="unlock-banner" class="unlock-banner" style="display:none;">
+          🎉 השלב נפתח! המרצה שחרר אותך — כעת תוכל להמשיך.
+        </div>
         <textarea id="student-text"
           placeholder="כתוב כאן את העבודה שלך..."
           class="workspace-textarea">
@@ -453,7 +456,7 @@ async function submitWork() {
 }
 
 // ─────────────────────────────
-// classroom join
+// classroom join + live polling
 // ─────────────────────────────
 
 async function classroomJoin() {
@@ -462,6 +465,49 @@ async function classroomJoin() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "join", sessionId, studentId })
   });
+  startClassroomPolling();
+}
+
+// ─── Lock/Unlock polling ───
+let wasStepLocked = false;
+let classroomPollTimer = null;
+
+function startClassroomPolling() {
+  classroomPollTimer = setInterval(pollClassroomState, 5000);
+  pollClassroomState();
+}
+
+async function pollClassroomState() {
+  try {
+    const res  = await fetch(
+      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=student_view`
+    );
+    const data = await res.json();
+    const lockedSteps = data.lockedSteps || [];
+    const isLocked    = lockedSteps.includes(studentId);
+
+    document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
+
+    // Detect transition: was locked → now unlocked
+    if (wasStepLocked && !isLocked) triggerUnlockAnimation();
+    wasStepLocked = isLocked;
+  } catch(e) {
+    console.error("Classroom poll error:", e.message);
+  }
+}
+
+function triggerUnlockAnimation() {
+  const banner = document.getElementById("unlock-banner");
+  if (!banner) return;
+  banner.style.display = "";
+  banner.classList.remove("unlock-animate");
+  // Force reflow so animation restarts
+  void banner.offsetWidth;
+  banner.classList.add("unlock-animate");
+  setTimeout(() => {
+    banner.style.display = "none";
+    banner.classList.remove("unlock-animate");
+  }, 4000);
 }
 
 init();
