@@ -74,6 +74,7 @@
   <button id="tab-btn-security" class="mgmt-tab-btn active" onclick="switchTab('security')">🔐 משתמשים ואבטחה</button>
   <button id="tab-btn-config"   class="mgmt-tab-btn"        onclick="switchTab('config')">⚙️ עורך Config</button>
   <button id="tab-btn-textlab"  class="mgmt-tab-btn"        onclick="switchTab('textlab')">🧪 מעבדת טקסט</button>
+  <button id="tab-btn-lexicon"  class="mgmt-tab-btn"        onclick="switchTab('lexicon')">📚 לקסיקון</button>
   <a href="/cockpit.html" class="mgmt-tab-btn" style="text-decoration:none;background:#f1f5f9;color:#64748b;">📊 ביצועים ומיומנויות →</a>
 </div>
 
@@ -324,6 +325,75 @@
 
 </div>
 
+<!-- ─── LEXICON TAB ─── -->
+<div id="tab-lexicon" style="display:none;">
+
+  <div style="background:#fefce8;border:1.5px solid #fde68a;border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:13px;color:#92400e;line-height:1.6;">
+    <strong>📚 ניהול לקסיקון אקדמי</strong> — הוסף מילים לפי תחום ורמה. הסטודנטים יוכלו לדרג את הכרותם ולקבל רשימת לימוד מותאמת.
+  </div>
+
+  <!-- Word list -->
+  <div class="panel" style="margin-bottom:16px;">
+    <h2 style="display:flex;align-items:center;gap:10px;">
+      📖 מילים במאגר
+      <span id="lex-count-badge" style="font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;background:#fef3c7;color:#92400e;"></span>
+    </h2>
+    <div id="lex-word-list" style="margin-bottom:14px;min-height:40px;"></div>
+  </div>
+
+  <!-- Add word form -->
+  <div class="panel">
+    <h2>+ הוסף מילה חדשה</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מילה / מונח</label>
+        <input id="lex-word" type="text" placeholder="לדוגמה: פרדיגמה"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תחום</label>
+        <select id="lex-field"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="management">ניהול (management)</option>
+          <option value="optics">אופטיקה (optics)</option>
+          <option value="social">רווחה חברתית (social)</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">הסבר / הגדרה</label>
+      <input id="lex-meaning" type="text" placeholder="הגדרה קצרה וברורה בעברית"
+        style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:10px;align-items:end;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">דוגמה בהקשר (אופציונלי)</label>
+        <input id="lex-example" type="text" placeholder="משפט המדגים שימוש במילה..."
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">רמת קושי</label>
+        <select id="lex-diff"
+          style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+          <option value="1">⭐ בסיסי</option>
+          <option value="2">⭐⭐ ביניים</option>
+          <option value="3">⭐⭐⭐ מתקדם</option>
+        </select>
+      </div>
+    </div>
+    <!-- Credentials row -->
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px;">
+      <input id="lex-admin-user" type="text"     placeholder="שם משתמש מנהל" dir="ltr"
+        style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+      <input id="lex-admin-pass" type="password" placeholder="סיסמה" dir="ltr"
+        style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+      <button class="btn btn-green" onclick="addLexiconWord()" style="padding:8px 18px;white-space:nowrap;">הוסף מילה</button>
+    </div>
+    <p id="lex-add-msg" style="font-size:12px;margin:0;min-height:16px;"></p>
+  </div>
+
+</div>
+
 </div>
 
 <script>
@@ -455,13 +525,14 @@ document.addEventListener("click", function(e) {
 
 // ─── TAB SWITCHING ───
 function switchTab(tab){
-  ["config","security","textlab"].forEach(t => {
+  ["config","security","textlab","lexicon"].forEach(t => {
     document.getElementById("tab-" + t).style.display = tab === t ? "" : "none";
     const btn = document.getElementById("tab-btn-" + t);
     if (btn) btn.classList.toggle("active", tab === t);
   });
   if(tab === "config" && config && Object.keys(config).length) render();
   if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); loadClassLifecycle(); }
+  if(tab === "lexicon")  { loadLexiconWords(); }
 }
 
 // ─── Firebase REST helpers ───
@@ -1192,6 +1263,94 @@ function copyPuzzleLink() {
 
 function escHtmlAdmin(s) {
   return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ─── Lexicon Admin ───
+
+let lexWords = []; // cached word list
+
+async function loadLexiconWords() {
+  const el = document.getElementById("lex-word-list");
+  if (!el) return;
+  try {
+    const res = await fetch(`${dbUrl()}/lexicon.json`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const badge = document.getElementById("lex-count-badge");
+
+    if (!data) {
+      el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין מילים עדיין.</p>';
+      if (badge) badge.innerText = "0 מילים";
+      return;
+    }
+
+    lexWords = Object.entries(data).map(([id, w]) => ({ id, ...w }));
+    lexWords.sort((a, b) => (a.field || "").localeCompare(b.field || "") || (b.difficulty_level || 1) - (a.difficulty_level || 1));
+    if (badge) badge.innerText = `${lexWords.length} מילים`;
+
+    const FIELD_LABELS = { management:"ניהול", optics:"אופטיקה", social:"רווחה" };
+    const FIELD_COLORS = { management:"#eef2ff;color:#4338ca", optics:"#fef3c7;color:#92400e", social:"#d1fae5;color:#065f46" };
+
+    el.innerHTML = lexWords.map(w => `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;flex-wrap:wrap;">
+        <strong style="font-size:14px;color:#1e1b4b;min-width:80px;">${escHtmlAdmin(w.word)}</strong>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:${FIELD_COLORS[w.field] || '#f1f5f9;color:#64748b'};">${FIELD_LABELS[w.field] || w.field}</span>
+        <span style="font-size:11px;color:#f59e0b;">${"⭐".repeat(w.difficulty_level || 1)}</span>
+        <span style="font-size:12px;color:#64748b;flex:1;">${escHtmlAdmin(w.meaning)}</span>
+        <button onclick="deleteLexiconWord('${w.id}')"
+          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:12px;padding:3px 9px;white-space:nowrap;">מחק</button>
+      </div>`).join("") || '<p style="font-size:13px;color:#94a3b8;">אין מילים.</p>';
+  } catch(e) {
+    el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
+  }
+}
+
+async function addLexiconWord() {
+  const word    = document.getElementById("lex-word").value.trim();
+  const meaning = document.getElementById("lex-meaning").value.trim();
+  const example = document.getElementById("lex-example").value.trim();
+  const field   = document.getElementById("lex-field").value;
+  const diff    = parseInt(document.getElementById("lex-diff").value) || 1;
+  const user    = document.getElementById("lex-admin-user").value.trim();
+  const pass    = document.getElementById("lex-admin-pass").value;
+  const msg     = document.getElementById("lex-add-msg");
+
+  if (!word || !meaning) { msg.style.color="#ef4444"; msg.innerText="נא למלא מילה והגדרה."; return; }
+  if (!user || !pass)    { msg.style.color="#ef4444"; msg.innerText="נדרשים פרטי אימות."; return; }
+
+  msg.style.color="#6366f1"; msg.innerText="מוסיף...";
+  try {
+    const res = await fetch("/api/lexicon/add-word", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ word, meaning, example: example || null, field, difficulty_level: diff,
+        requesterUsername: user, requesterPassword: pass })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "שגיאה");
+
+    msg.style.color="#16a34a"; msg.innerText=`✅ המילה '${word}' נוספה.`;
+    ["lex-word","lex-meaning","lex-example"].forEach(id => { const el = document.getElementById(id); if(el) el.value=""; });
+    loadLexiconWords();
+  } catch(e) { msg.style.color="#ef4444"; msg.innerText=e.message; }
+}
+
+async function deleteLexiconWord(wordId) {
+  const user = document.getElementById("lex-admin-user").value.trim();
+  const pass = document.getElementById("lex-admin-pass").value;
+  if (!user || !pass) { alert("הזן שם משתמש וסיסמה לפני מחיקה."); return; }
+  if (!confirm("למחוק מילה זו?")) return;
+
+  try {
+    const res = await fetch("/api/lexicon/delete-word", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ wordId, requesterUsername: user, requesterPassword: pass })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "שגיאה");
+    loadLexiconWords();
+  } catch(e) { alert(e.message); }
 }
 
 </script>

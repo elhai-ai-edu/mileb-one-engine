@@ -44,6 +44,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/lexicon/*"
+  to   = "/.netlify/functions/lexicon_api"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200

@@ -246,6 +246,26 @@ body.xray-mode .brick-role {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ─── Lexicon word highlights ─── */
+.lex-hint {
+  background: #fef3c7; border-bottom: 2px dotted #f59e0b;
+  cursor: pointer; border-radius: 2px; padding: 0 1px;
+  transition: background .15s;
+}
+.lex-hint:hover { background: #fde68a; }
+
+/* Lexicon tooltip */
+.lex-tooltip {
+  position: fixed; z-index: 400; background: #1e1b4b; color: #fff;
+  border-radius: 10px; padding: 10px 14px; max-width: 240px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25); pointer-events: none;
+  font-size: 13px; line-height: 1.55;
+  animation: msgPop .15s ease;
+}
+.lex-tooltip-word    { font-weight: 700; margin-bottom: 4px; color: #fde68a; }
+.lex-tooltip-meaning { color: #e2e8f0; }
+.lex-tooltip-link    { font-size: 11px; color: #818cf8; margin-top: 6px; }
+
 /* ─── Mobile ─── */
 @media (max-width: 500px) {
   .pz-topbar { padding: 10px 14px; gap: 8px; }
@@ -274,6 +294,15 @@ body.xray-mode .brick-role {
 <!-- ─── Body ─── -->
 <div class="pz-body" id="pz-body">
   <div class="pz-loading" id="pz-loading">טוען פאזל...</div>
+</div>
+
+<!-- ─── Lexicon tooltip (singleton, repositioned on click) ─── -->
+<div class="lex-tooltip" id="lex-tooltip" style="display:none;">
+  <div class="lex-tooltip-word"   id="lex-tt-word"></div>
+  <div class="lex-tooltip-meaning" id="lex-tt-meaning"></div>
+  <div class="lex-tooltip-link">
+    <a href="/lexicon.html" style="color:#818cf8;text-decoration:none;">← ללקסיקון המלא</a>
+  </div>
 </div>
 
 <!-- ─── Reflection Modal ─── -->
@@ -427,6 +456,9 @@ function renderPuzzle() {
 
   // Set drag events on bricks in source zone
   activateBricks();
+
+  // Load lexicon highlights after render
+  loadLexiconHighlights();
 }
 
 function brickHTML(blockId, inSource) {
@@ -890,6 +922,79 @@ function shuffle(arr) {
   }
   return arr;
 }
+
+// ─────────────────────────────
+// Lexicon cross-integration
+// ─────────────────────────────
+
+let lexiconMap = {}; // word (lowercase) → { word, meaning, id }
+
+async function loadLexiconHighlights() {
+  try {
+    const res = await fetch(`${DB_URL}/lexicon.json`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data) return;
+
+    // Build lookup map (longest words first to avoid partial matches)
+    const entries = Object.entries(data).map(([id, w]) => ({ id, ...w }));
+    entries.sort((a, b) => b.word.length - a.word.length);
+    entries.forEach(w => { if (w.word) lexiconMap[w.word.trim()] = w; });
+
+    applyLexiconHighlights();
+  } catch { /* non-fatal — lexicon integration is additive only */ }
+}
+
+function applyLexiconHighlights() {
+  if (!Object.keys(lexiconMap).length) return;
+  // Find all brick-text spans and apply highlighting
+  document.querySelectorAll(".brick-text").forEach(el => {
+    let html = el.innerHTML;
+    // Iterate words longest-first to avoid partial replacements
+    Object.values(lexiconMap)
+      .sort((a, b) => b.word.length - a.word.length)
+      .forEach(entry => {
+        const escaped = entry.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`(?<![א-תa-zA-Z])${escaped}(?![א-תa-zA-Z])`, "g");
+        html = html.replace(re,
+          `<span class="lex-hint" data-word="${escHtml(entry.word)}" data-meaning="${escHtml(entry.meaning)}" data-id="${entry.id}">${entry.word}</span>`
+        );
+      });
+    el.innerHTML = html;
+  });
+}
+
+// Re-apply highlights whenever a brick moves (after DOM updates)
+const _origMoveBrickToSlot   = moveBrickToSlot;
+const _origMoveBrickToSource = moveBrickToSource;
+window.moveBrickToSlot = function(...a) {
+  _origMoveBrickToSlot(...a);
+  if (Object.keys(lexiconMap).length) setTimeout(applyLexiconHighlights, 20);
+};
+window.moveBrickToSource = function(...a) {
+  _origMoveBrickToSource(...a);
+  if (Object.keys(lexiconMap).length) setTimeout(applyLexiconHighlights, 20);
+};
+
+// Tooltip logic
+document.addEventListener("click", e => {
+  const hint = e.target.closest(".lex-hint");
+  const tt   = document.getElementById("lex-tooltip");
+  if (!tt) return;
+
+  if (!hint) { tt.style.display = "none"; return; }
+
+  document.getElementById("lex-tt-word").textContent    = hint.dataset.word    || "";
+  document.getElementById("lex-tt-meaning").textContent = hint.dataset.meaning || "";
+
+  // Position near click, keep within viewport
+  const x = Math.min(e.clientX + 10, window.innerWidth  - 260);
+  const y = Math.min(e.clientY + 10, window.innerHeight - 120);
+  tt.style.left    = x + "px";
+  tt.style.top     = y + "px";
+  tt.style.display = "block";
+  e.stopPropagation();
+});
 
 // ─────────────────────────────
 // Start
