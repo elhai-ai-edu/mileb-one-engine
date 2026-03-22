@@ -1,5 +1,5 @@
 {
-  "system_version": "5.3 - Skill-Academic Balance",
+  "system_version": "5.4 - Data Lifecycle Management",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "balance": {

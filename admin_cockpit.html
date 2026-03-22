@@ -198,6 +198,19 @@
     </div>
   </div>
 
+  <!-- ── Part D: Class Lifecycle Management ── -->
+  <div class="panel">
+    <h2>📅 ניהול מחזור חיים של קבוצות</h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
+      קבע תאריך נעילה (חסימת גישה לסטודנטים) ותאריך מחיקה לכל קבוצה.
+      ניתן לאפשר גישה אישית לסטודנטים ספציפיים גם לאחר הנעילה.
+    </p>
+    <div id="class-lifecycle-list" style="margin-bottom:14px;min-height:32px;">
+      <div class="miled-spinner">טוען קבוצות...</div>
+    </div>
+    <p id="lifecycle-msg" style="font-size:12px;margin:6px 0 0;min-height:16px;"></p>
+  </div>
+
 </div>
 
 <!-- ─── CONFIG EDITOR TAB ─── -->
@@ -330,6 +343,8 @@ document.addEventListener("click", function(e) {
           if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
           loadInstitutions();
           loadAuthorizedUsers();
+          loadClassLifecycle();
+          checkRetentionCleanup();
         })
         .catch(function(e) {
           console.warn("Admin Cockpit: token refresh failed —", e.message);
@@ -350,7 +365,7 @@ function switchTab(tab){
     document.getElementById("tab-btn-" + t).classList.toggle("active", tab === t);
   });
   if(tab === "config" && config && Object.keys(config).length) render();
-  if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); }
+  if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); loadClassLifecycle(); }
 }
 
 // ─── Firebase REST helpers ───
@@ -483,6 +498,10 @@ async function loadAuthorizedUsers() {
           : `<span style="font-size:12px;color:#cbd5e1;white-space:nowrap;">ללא כיתה</span>`
         }
         <span style="font-size:12px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;">${val.institutionId || ''}</span>
+        <button onclick="toggleBypassLock('${key}', ${!!val.isBypassingLock})"
+          title="${val.isBypassingLock ? 'בטל גישה מיוחדת' : 'אפשר גישה לאחר נעילה'}"
+          style="background:${val.isBypassingLock ? '#dcfce7' : '#f8fafc'};border:1px solid ${val.isBypassingLock ? '#86efac' : '#e2e8f0'};border-radius:6px;color:${val.isBypassingLock ? '#166534' : '#94a3b8'};cursor:pointer;font-size:11px;padding:3px 9px;white-space:nowrap;">
+          ${val.isBypassingLock ? '✅ עוקף נעילה' : '🔓 גישה לאחר נעילה'}</button>
         <button onclick="deleteAuthorizedUser('${key}')"
           title="מחק משתמש"
           style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:14px;padding:3px 8px;line-height:1;white-space:nowrap;transition:background .15s;"
@@ -674,6 +693,152 @@ async function saveConfig(){
     body:JSON.stringify(config)
   });
   alert("config נשמר בהצלחה");
+}
+
+// ─── Class Lifecycle Management ───
+
+async function loadClassLifecycle() {
+  const el = document.getElementById("class-lifecycle-list");
+  if (!el) return;
+  try {
+    // Discover all classIds from authorized_users
+    const users = await dbFetch("/authorized_users.json");
+    const classIds = new Set();
+    if (users) Object.values(users).forEach(u => { if (u.classId) classIds.add(u.classId); });
+
+    // Also load existing class settings (may have classIds not in authorized_users yet)
+    let classSettings = {};
+    try { classSettings = (await dbFetch("/classes.json")) || {}; } catch {}
+    Object.keys(classSettings).forEach(id => classIds.add(id));
+
+    if (!classIds.size) {
+      el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין קבוצות רשומות. ייבא סטודנטים בחלק ג׳ תחילה.</p>';
+      return;
+    }
+
+    // Count users per class
+    const classCounts = {};
+    if (users) Object.values(users).forEach(u => {
+      if (u.classId) classCounts[u.classId] = (classCounts[u.classId] || 0) + 1;
+    });
+
+    const rows = [...classIds].sort().map(classId => {
+      const s = classSettings[classId] || {};
+      const count = classCounts[classId] || 0;
+      const now = Date.now();
+      const isLocked    = s.lockDate      && new Date(s.lockDate).getTime()      < now;
+      const isExpired   = s.retentionDate && new Date(s.retentionDate).getTime() < now;
+      const statusBadge = isExpired
+        ? `<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:#fee2e2;color:#dc2626;font-weight:700;">⚠️ תוקף פג</span>`
+        : isLocked
+          ? `<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:700;">🔒 נעולה</span>`
+          : `<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:#dcfce7;color:#166534;font-weight:700;">✅ פעילה</span>`;
+      return `
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:10px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+            <strong style="font-size:14px;color:#1e1b4b;direction:ltr;">${classId}</strong>
+            <span style="font-size:12px;color:#94a3b8;">${count} סטודנטים</span>
+            ${statusBadge}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+            <div>
+              <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">📅 תאריך נעילה (חסימת גישה)</label>
+              <input type="date" id="lock-${classId}" value="${s.lockDate || ''}"
+                style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            </div>
+            <div>
+              <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🗑️ תאריך מחיקה (retention)</label>
+              <input type="date" id="ret-${classId}" value="${s.retentionDate || ''}"
+                style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <button class="btn btn-blue" onclick="saveClassSettings('${classId}')"
+                style="padding:7px 14px;font-size:12px;white-space:nowrap;">שמור</button>
+              ${isExpired
+                ? `<button class="btn btn-red" onclick="deleteClassData('${classId}')"
+                    style="padding:7px 14px;font-size:12px;white-space:nowrap;">מחק קבוצה</button>`
+                : ''}
+            </div>
+          </div>
+        </div>`;
+    }).join("");
+    el.innerHTML = rows;
+  } catch(e) {
+    el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
+  }
+}
+
+async function saveClassSettings(classId) {
+  const lockDate      = document.getElementById("lock-" + classId)?.value || null;
+  const retentionDate = document.getElementById("ret-"  + classId)?.value || null;
+  const msg = document.getElementById("lifecycle-msg");
+  try {
+    await dbFetch(`/classes/${classId}.json`, {
+      method: "PATCH",
+      body: JSON.stringify({ lockDate: lockDate || null, retentionDate: retentionDate || null, updatedAt: Date.now() })
+    });
+    msg.style.color = "#16a34a";
+    msg.innerText = `✅ הגדרות הקבוצה '${classId}' נשמרו.`;
+    loadClassLifecycle();
+  } catch(e) {
+    msg.style.color = "#ef4444";
+    msg.innerText = e.message;
+  }
+}
+
+async function toggleBypassLock(key, currentValue) {
+  try {
+    await dbFetch(`/authorized_users/${key}.json`, {
+      method: "PATCH",
+      body: JSON.stringify({ isBypassingLock: !currentValue })
+    });
+    loadAuthorizedUsers();
+  } catch(e) { alert(e.message); }
+}
+
+async function deleteClassData(classId) {
+  if (!confirm(`מחק את כל נתוני הקבוצה '${classId}' לצמיתות?\n\nפעולה זו תמחק את כל הסטודנטים מהקבוצה ואת הגדרותיה.`)) return;
+  const msg = document.getElementById("lifecycle-msg");
+  try {
+    const users = await dbFetch("/authorized_users.json");
+    const toDelete = Object.entries(users || {})
+      .filter(([, u]) => u.classId === classId)
+      .map(([k]) => k);
+    await Promise.all([
+      ...toDelete.map(k => dbFetch(`/authorized_users/${k}.json`, { method: "DELETE" })),
+      dbFetch(`/classes/${classId}.json`, { method: "DELETE" })
+    ]);
+    msg.style.color = "#16a34a";
+    msg.innerText = `✅ קבוצה '${classId}' נמחקה (${toDelete.length} משתמשים).`;
+    loadClassLifecycle();
+    loadAuthorizedUsers();
+  } catch(e) {
+    msg.style.color = "#ef4444";
+    msg.innerText = e.message;
+  }
+}
+
+async function checkRetentionCleanup() {
+  try {
+    const data = await dbFetch("/classes.json");
+    if (!data) return;
+    const now = Date.now();
+    const expired = Object.entries(data).filter(([, cls]) =>
+      cls.retentionDate && new Date(cls.retentionDate).getTime() < now
+    );
+    if (!expired.length) return;
+    const names = expired.map(([id]) => id).join(", ");
+    if (confirm(`נמצאו קבוצות שתאריך המחיקה שלהן עבר:\n${names}\n\nהאם למחוק אותן כעת?`)) {
+      const msg = document.getElementById("lifecycle-msg");
+      await Promise.all(expired.map(([id]) => deleteClassData(id)));
+      msg.style.color = "#16a34a";
+      msg.innerText = `✅ ${expired.length} קבוצות נמחקו בהצלחה.`;
+      loadClassLifecycle();
+      loadAuthorizedUsers();
+    }
+  } catch(e) {
+    console.warn("Retention cleanup check failed:", e.message);
+  }
 }
 
 // ─── USER MANAGEMENT ───

@@ -775,6 +775,56 @@ init();
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/firebase-init.js"></script>
 <script src="/firebase-auth.js"></script>
-<script>window.addEventListener("load",()=>{ if(window.MiledAuth) MiledAuth.renderUserBadge("user-badge"); });</script>
+<script>
+
+// ─── Course Lock Gatekeeper (v9.0.7) ───
+async function checkCourseLock() {
+  if (!courseId || !window.MILED_FIREBASE_CONFIG) return;
+  const dbUrl = window.MILED_FIREBASE_CONFIG.databaseURL;
+  try {
+    const res = await fetch(`${dbUrl}/classes/${courseId}.json`);
+    if (!res.ok) return;
+    const cls = await res.json();
+    if (!cls || !cls.lockDate) return;
+    if (Date.now() < new Date(cls.lockDate).getTime()) return; // not yet locked
+
+    // Locked — check for personal bypass
+    let bypassing = false;
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    if (auth?.email) {
+      const key = auth.email.replace(/\./g, "_").replace(/@/g, "_at_");
+      try {
+        const uRes = await fetch(`${dbUrl}/authorized_users/${key}.json`);
+        if (uRes.ok) { const u = await uRes.json(); bypassing = !!u?.isBypassingLock; }
+      } catch {}
+    }
+    if (bypassing) return;
+
+    // Block access
+    const dateStr = new Date(cls.lockDate).toLocaleDateString("he-IL");
+    const cw = document.getElementById("chat-window");
+    if (cw) cw.innerHTML = `
+      <div style="text-align:center;padding:40px 20px;">
+        <div style="font-size:36px;margin-bottom:14px;">🔒</div>
+        <div style="font-size:16px;font-weight:700;color:#dc2626;margin-bottom:8px;">הגישה לקורס זה הסתיימה</div>
+        <div style="font-size:13px;color:#64748b;">תאריך נעילה: ${dateStr}</div>
+      </div>`;
+    const inp = document.getElementById("chat-input");
+    if (inp) { inp.disabled = true; inp.placeholder = "הגישה לקורס נסגרה"; }
+    const sendBtn = document.querySelector(".send-btn");
+    if (sendBtn) sendBtn.disabled = true;
+    const ta = document.getElementById("student-text");
+    if (ta) { ta.disabled = true; ta.style.opacity = "0.5"; }
+    const submitBtn = document.querySelector(".actions .btn-blue");
+    if (submitBtn) submitBtn.disabled = true;
+  } catch { /* non-fatal — don't block access on network errors */ }
+}
+
+window.addEventListener("load", () => {
+  if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
+  if (courseId) checkCourseLock();
+});
+
+</script>
 </body>
 </html>

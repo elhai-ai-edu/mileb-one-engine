@@ -81,7 +81,7 @@ This is the single authoritative reference for:
 - **New bot types:** Add to `config.json` only. Never create new Netlify functions for individual bots.
 - **Config changes:** Bump `system_version` in `config.json` after any structural change.
 - **Kernel changes:** Require `system_version` bump + MASTER_LOGIC.md update + architectural alignment.
-- **Firebase path:** `sessions/{studentId}/{courseId}` for student state; `admin/auth/{username}` for credentials; `conversations/{sessionId}` for chat logs.
+- **Firebase path:** `sessions/{studentId}/{courseId}` for student state; `admin/auth/{username}` for credentials; `conversations/{sessionId}` for chat logs; `classes/{classId}` for lifecycle settings (lockDate, retentionDate); `authorized_users/{key}.isBypassingLock` for individual access override.
 - **courseId vs classId:** `workspace.html` sends `classId: courseId` in POST body; `chat.js` destructures as `classId` then aliases to `courseId`. Do not break this.
 - **Hebrew responses:** All bot output is in Hebrew. System code and comments may be in English.
 
@@ -119,6 +119,7 @@ docs/
 | PV-5 | Faculty bots with `scope: "global"` accessible to students | Open |
 | AR-1 | `architect_api.js` — export bridge: `handleExport()` fully implemented | Completed |
 | AR-2 | `architect_api.js` — intake & bootstrap: `handleTallyIntake()` + `handleBootstrapSession()` fully implemented; `architect_studio.html` wired to bootstrap endpoint | Completed |
+| DL-1 | Data Lifecycle Management (v9.0.7) — lockDate/retentionDate per class in admin UI, isBypassingLock toggle per user, workspace gatekeeper, retention cleanup prompt | Completed |
 
 ---
 
