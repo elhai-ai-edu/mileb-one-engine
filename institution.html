@@ -6,6 +6,26 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — לוח מחוונים מוסדי</title>
+<style>
+.roi-modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,10,30,.88);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;box-sizing:border-box;}
+.roi-modal{background:#fff;border-radius:16px;max-width:740px;width:100%;max-height:92vh;overflow-y:auto;padding:36px;font-family:'Assistant',sans-serif;direction:rtl;box-shadow:0 24px 64px rgba(0,0,0,.3);}
+.roi-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #ede9fe;}
+.roi-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.roi-metric-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:16px;text-align:center;}
+.roi-metric-value{font-size:38px;font-weight:700;color:#6c5ce7;line-height:1;}
+.roi-metric-label{font-size:12px;color:#64748b;margin-top:4px;font-weight:600;}
+.roi-narrative{background:#f8fafc;border-right:3px solid #6c5ce7;padding:16px 20px;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.75;color:#1e293b;}
+.roi-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid #e2e8f0;}
+.roi-btn-primary{background:#6c5ce7;color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;}
+.roi-btn-secondary{background:#f5f3ff;color:#6c5ce7;border:1.5px solid #6c5ce7;border-radius:8px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;}
+.roi-btn-ghost{background:#f1f5f9;color:#64748b;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;margin-right:auto;}
+@media print{
+  body>*{display:none!important;}
+  #roi-modal-overlay{display:block!important;position:static!important;background:none!important;padding:0!important;}
+  .roi-modal{max-height:none!important;box-shadow:none!important;border-radius:0!important;padding:20px!important;}
+  .roi-actions{display:none!important;}
+}
+</style>
 </head>
 
 <body class="management-theme">
@@ -30,8 +50,16 @@
     <span id="version-badge" style="font-size:11px;color:var(--color-text-muted);margin-right:auto;"></span>
   </div>
 
-  <h1>📊 מבט מוסדי — כלל הכיתות</h1>
-  <p style="color:var(--color-text-muted);margin-bottom:4px;">נתוני מיומנויות מצטברים לכל הסטודנטים הפעילים במערכת</p>
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:4px;">
+    <div>
+      <h1 style="margin:0 0 4px 0;">📊 מבט מוסדי — כלל הכיתות</h1>
+      <p style="color:var(--color-text-muted);margin:0;">נתוני מיומנויות מצטברים לכל הסטודנטים הפעילים במערכת</p>
+    </div>
+    <button id="roi-btn" onclick="openROIReport()" disabled
+      style="display:inline-flex;align-items:center;gap:8px;background:#6c5ce7;color:#fff;border:none;border-radius:10px;padding:11px 22px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Assistant',sans-serif;box-shadow:0 4px 14px rgba(108,92,231,.35);opacity:.45;pointer-events:none;white-space:nowrap;transition:opacity .2s;">
+      📊 הפק דוח ROI לפיילוט
+    </button>
+  </div>
 
   <!-- ─── Metric Tiles ─── -->
   <div class="institution-tiles">
@@ -133,6 +161,13 @@
     <a href="/" onclick="sessionStorage.clear()" class="btn btn-outline">← יציאה</a>
   </div>
 
+</div>
+
+<!-- ─── ROI Report Modal ─── -->
+<div id="roi-modal-overlay" class="roi-modal-overlay" style="display:none;" onclick="if(event.target===this)closeROIReport()">
+  <div class="roi-modal" id="roi-modal-content">
+    <!-- populated by openROIReport() -->
+  </div>
 </div>
 
 <script>
@@ -304,6 +339,25 @@ function renderDashboard(insights, config) {
       ציון בריאות: השתתפות (50%) + ביטחון (30%) + שיפור בין גלים (20%)
     </div>`;
 
+  // ─── Store ROI snapshot + enable button ───
+  const improved = data.filter(i => i.wave2Count > 0 && i.improvementPct > 0);
+  const avgGrowthPct = improved.length > 0
+    ? Math.round(improved.reduce((s, i) => s + i.improvementPct, 0) / improved.length) : 0;
+  window._roi = {
+    totalStudents:     total,
+    totalSkills:       data.length,
+    totalInteractions: insights.totalInteractions || 0,
+    totalMins:         (insights.totalInteractions || 0) * 15,
+    hoursSaved:        Math.floor((insights.totalInteractions || 0) * 15 / 60),
+    avgGrowthPct,
+    wave2Skills:       data.filter(i => i.wave2Count > 0).length,
+    skillData:         data
+  };
+  const roiBtn = document.getElementById("roi-btn");
+  roiBtn.disabled = false;
+  roiBtn.style.opacity = "1";
+  roiBtn.style.pointerEvents = "";
+
   // ─── Metrics Engine ───
   renderHoursSaved(insights.totalInteractions || 0, total);
   document.getElementById("efficiency-container").innerHTML = renderEfficiencyTracker(data);
@@ -329,6 +383,146 @@ function renderDashboard(insights, config) {
         </div>
       </div>`).join("");
   }
+}
+
+// ─── ROI Report ───
+function openROIReport() {
+  if (!window._roi) return;
+  const roi   = window._roi;
+  const today = new Date().toLocaleDateString("he-IL", { year:"numeric", month:"long", day:"numeric" });
+
+  const skillRows = roi.skillData.map(ins => {
+    const score = Math.min(100, Math.round(
+      ins.pctParticipated * 0.5 +
+      (ins.w1Confidence === "high" ? 30 : ins.w1Confidence === "medium" ? 15 : 0) +
+      (ins.improved ? 20 : 0)
+    ));
+    const dStr = ins.improvementPct > 0 ? `+${ins.improvementPct}%` : ins.wave2Count > 0 ? "±0%" : "—";
+    const dCol = ins.improved ? "#059669" : ins.wave2Count > 0 ? "#dc2626" : "#94a3b8";
+    return `<tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:8px 4px;font-weight:600;font-size:13px;">${ins.botName}</td>
+      <td style="padding:8px 4px;text-align:center;font-size:13px;">${ins.totalStudents}</td>
+      <td style="padding:8px 4px;text-align:center;font-size:13px;">${ins.pctParticipated}%</td>
+      <td style="padding:8px 4px;text-align:center;font-weight:700;color:${dCol};font-size:13px;">${dStr}</td>
+      <td style="padding:8px 4px;text-align:center;font-size:13px;">${score}/100</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("roi-modal-content").innerHTML = `
+    <div class="roi-header">
+      <div>
+        <div style="font-size:11px;letter-spacing:1.5px;color:#6c5ce7;font-weight:700;margin-bottom:6px;">MILED.ONE — PILOT ROI REPORT</div>
+        <div style="font-size:22px;font-weight:700;color:#1e1b4b;">דוח ערך פיילוט — מבט מוסדי</div>
+        <div style="font-size:13px;color:#64748b;margin-top:4px;">תאריך הפקה: ${today}</div>
+      </div>
+      <button onclick="closeROIReport()" style="background:none;border:none;cursor:pointer;font-size:24px;color:#94a3b8;line-height:1;padding:0;">✕</button>
+    </div>
+
+    <div class="roi-metrics">
+      <div class="roi-metric-box">
+        <div class="roi-metric-value">${roi.hoursSaved}</div>
+        <div class="roi-metric-label">שעות בדיקה שנחסכו</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:3px;">${roi.totalMins.toLocaleString()} דקות × 15</div>
+      </div>
+      <div class="roi-metric-box">
+        <div class="roi-metric-value">${roi.avgGrowthPct > 0 ? "+" + roi.avgGrowthPct + "%" : "—"}</div>
+        <div class="roi-metric-label">שיפור ממוצע במיומנויות</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:3px;">גל 1 → גל 2 · ${roi.wave2Skills} מיומנויות</div>
+      </div>
+      <div class="roi-metric-box">
+        <div class="roi-metric-value">${roi.totalStudents}</div>
+        <div class="roi-metric-label">סטודנטים פעילים</div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:3px;">${roi.totalSkills} מיומנויות · ${roi.totalInteractions} סשנים</div>
+      </div>
+    </div>
+
+    <div class="roi-narrative">
+      <strong>💡 ממצא מרכזי:</strong> מערכת MilEd.One סיפקה
+      <strong>${roi.totalInteractions.toLocaleString()} סשני פידבק פדגוגי</strong> אוטומטי —
+      שוות ערך ל-<strong>${roi.hoursSaved} שעות</strong> בדיקה ידנית שנחסכו מעומס הסגל.
+      ${roi.avgGrowthPct > 0
+        ? `<br><br><strong>📈 צמיחה מוכחת:</strong> ממוצע שיפור מיומנות בין גל 1 לגל 2 עומד על
+           <strong>+${roi.avgGrowthPct}%</strong> — מדד המצביע על למידה אקטיבית ורכישת מיומנות בת-קיימא.`
+        : ""}
+      <br><br><strong>🎯 המלצה:</strong> בהתבסס על נתוני הפיילוט, הרחבת המערכת לכלל הקורסים המוסדיים
+      צפויה להניב חיסכון של עשרות שעות סגל בסמסטר ולשפר את מדדי ההתקדמות הלימודית.
+    </div>
+
+    <h3 style="font-size:14px;font-weight:700;color:#1e1b4b;margin-bottom:10px;">📋 פירוט לפי מיומנות</h3>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-family:'Assistant',sans-serif;">
+        <thead>
+          <tr style="background:#f5f3ff;">
+            <th style="padding:8px 4px;text-align:right;font-size:12px;color:#6c5ce7;font-weight:700;">מיומנות</th>
+            <th style="padding:8px 4px;text-align:center;font-size:12px;color:#6c5ce7;font-weight:700;">סטודנטים</th>
+            <th style="padding:8px 4px;text-align:center;font-size:12px;color:#6c5ce7;font-weight:700;">השתתפות</th>
+            <th style="padding:8px 4px;text-align:center;font-size:12px;color:#6c5ce7;font-weight:700;">שיפור גל 2</th>
+            <th style="padding:8px 4px;text-align:center;font-size:12px;color:#6c5ce7;font-weight:700;">ציון בריאות</th>
+          </tr>
+        </thead>
+        <tbody>${skillRows || '<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:14px;">אין נתונים</td></tr>'}</tbody>
+      </table>
+    </div>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:11px;color:#64748b;line-height:1.7;">
+      <strong>הערות מתודולוגיות:</strong>
+      חיסכון בשעות מחושב על בסיס מקדם 15 דקות לסשן בוט (ממוצע מקובל למשוב ידני).
+      שיפור מיומנות = הפרש ממוצע סבבי דיאלוג בין גל 1 לגל 2.
+      ציון בריאות = השתתפות (50%) + ביטחון (30%) + שיפור בין גלים (20%).
+    </div>
+
+    <div class="roi-actions">
+      <button class="roi-btn-primary" onclick="printROIReport()">🖨️ הדפס דוח</button>
+      <button class="roi-btn-secondary" onclick="downloadROIReport()">⬇️ הורד HTML</button>
+      <button class="roi-btn-ghost" onclick="closeROIReport()">סגור</button>
+    </div>
+  `;
+  document.getElementById("roi-modal-overlay").style.display = "flex";
+}
+
+function closeROIReport() {
+  document.getElementById("roi-modal-overlay").style.display = "none";
+}
+
+function printROIReport() {
+  window.print();
+}
+
+function downloadROIReport() {
+  if (!window._roi) return;
+  const today = new Date().toISOString().slice(0, 10);
+  const content = document.getElementById("roi-modal-content").innerHTML;
+  const html = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>MilEd.One — דוח ROI פיילוט ${today}</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'Assistant',sans-serif;direction:rtl;margin:40px;color:#1e293b;background:#fff;}
+  .roi-modal{max-width:720px;margin:0 auto;}
+  .roi-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #ede9fe;}
+  .roi-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+  .roi-metric-box{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:16px;text-align:center;}
+  .roi-metric-value{font-size:38px;font-weight:700;color:#6c5ce7;line-height:1;}
+  .roi-metric-label{font-size:12px;color:#64748b;margin-top:4px;font-weight:600;}
+  .roi-narrative{background:#f8fafc;border-right:3px solid #6c5ce7;padding:16px 20px;border-radius:0 8px 8px 0;margin-bottom:24px;font-size:14px;line-height:1.75;}
+  .roi-actions{display:none;}
+  table{width:100%;border-collapse:collapse;}
+  th{background:#f5f3ff;color:#6c5ce7;font-weight:700;padding:8px 4px;}
+  button[onclick="closeROIReport()"]{display:none;}
+</style>
+</head>
+<body>
+<div class="roi-modal">${content}</div>
+</body>
+</html>`;
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const a    = document.createElement("a");
+  a.href     = URL.createObjectURL(blob);
+  a.download = `miled_roi_report_${today}.html`;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ─── Hours Saved Summary Card ───
