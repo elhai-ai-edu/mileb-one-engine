@@ -27,7 +27,8 @@
   <div class="topbar">
     <span id="course-title">טוען...</span>
     <span id="hebrew-level-badge" style="font-size:12px;color:#aaa;margin-right:12px;"></span>
-    <span>MilEd.One</span>
+    <span style="margin-right:auto;">MilEd.One</span>
+    <span id="user-badge" style="font-size:13px;"></span>
   </div>
 
   <div class="container workspace-layout">
@@ -514,5 +515,11 @@ init();
 
 </script>
 
+<!-- Firebase Auth utility -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/firebase-auth.js"></script>
+<script>window.addEventListener("load",()=>{ if(window.MiledAuth) MiledAuth.renderUserBadge("user-badge"); });</script>
 </body>
 </html>

@@ -22,8 +22,9 @@
 
 <div class="main">
 
-  <div class="topbar">
-    MilEd.One - פורטל סגל
+  <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>MilEd.One - פורטל סגל</span>
+    <span id="user-badge"></span>
   </div>
 
   <div class="container">
@@ -185,5 +186,11 @@ if (checkAuth()) {
 
 </script>
 
+<!-- Firebase Auth utility -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/firebase-auth.js"></script>
+<script>window.addEventListener("load",()=>{ if(window.MiledAuth) MiledAuth.renderUserBadge("user-badge"); });</script>
 </body>
 </html>

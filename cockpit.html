@@ -9,6 +9,17 @@
 
 <title>MilEd.One Cockpit v2 – System Manager</title>
 
+<!-- ─── Route Guard: requires superadmin (new OR legacy auth) ─── -->
+<script>(function(){
+  var ss = sessionStorage, auth = null;
+  try { auth = JSON.parse(ss.getItem("miled_auth")||"null"); } catch(e){}
+  var LEVEL = {student:0,faculty:1,institution:2,superadmin:3};
+  var newOk    = auth && (LEVEL[auth.role]||0) >= LEVEL.superadmin;
+  var legacyOk = (ss.getItem("faculty_auth")==="true" && ss.getItem("facultyRole")==="superadmin")
+              || !!ss.getItem("cockpit_token");
+  if (!newOk && !legacyOk) { document.documentElement.style.visibility="hidden"; location.replace("/"); }
+}());</script>
+
 </head>
 
 <body class="management-theme">
@@ -28,9 +39,10 @@
 
 <div class="panel">
 
-<div class="userbar">
-משתמש נוכחי:
-<span id="currentUser"></span>
+<div class="userbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+  <span>משתמש נוכחי: <span id="currentUser"></span></span>
+  <span style="margin-right:auto;"></span>
+  <span id="user-badge"></span>
 </div>
 
 <h1>MilEd Cockpit v2</h1>
@@ -295,6 +307,7 @@ async function init(){
   const displayName = currentUser.name || currentUser.id;
   document.getElementById("currentUser").innerText =
     displayName + " (" + currentUser.role + ")";
+  if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
 
   const res=await fetch("/config.json")
   config=await res.json()
@@ -1032,5 +1045,10 @@ async function createUser(){
 
 </script>
 
+<!-- Firebase Auth utility -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/firebase-auth.js"></script>
 </body>
 </html>
