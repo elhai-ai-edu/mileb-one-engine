@@ -6,6 +6,93 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — הסטטוס שלי</title>
+<style>
+/* ── Active Learning Skill Cards ── */
+.skill-action-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  margin-bottom: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.skill-action-card::before {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-radius: 0 12px 12px 0;
+  background: #e2e8f0;
+  transition: background 0.3s;
+}
+.skill-action-card.state-unstarted { border-color: #fecaca; }
+.skill-action-card.state-unstarted::before { background: #ef4444; }
+.skill-action-card.state-active    { border-color: #fed7aa; }
+.skill-action-card.state-active::before    { background: #f97316; }
+.skill-action-card.state-completed { border-color: #bbf7d0; }
+.skill-action-card.state-completed::before { background: #10b981; }
+
+.skill-action-badge {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: transform 0.3s;
+}
+.skill-action-card.state-completed .skill-action-badge {
+  transform: scale(1.15);
+}
+.skill-action-body { flex: 1; min-width: 0; }
+.skill-action-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e1b4b;
+  margin-bottom: 5px;
+}
+.skill-action-cta {
+  display: inline-block;
+  font-size: 13px;
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.15s;
+  line-height: 1.5;
+}
+.skill-action-card.state-unstarted .skill-action-cta { color: #dc2626; }
+.skill-action-card.state-active    .skill-action-cta { color: #ea580c; }
+.skill-action-card.state-completed .skill-action-cta { color: #059669; }
+.skill-action-cta:hover { text-decoration: underline; }
+
+.skill-action-meta {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.skill-wave-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #64748b;
+  letter-spacing: 0.3px;
+}
+.skill-wave-pill.wave1 { background: rgba(99,102,241,0.1); color: #4338ca; }
+.skill-wave-pill.wave2 { background: rgba(16,185,129,0.1); color: #059669; }
+
+/* slide-in animation when card state changes */
+@keyframes cardFlip {
+  0%   { opacity: 0.4; transform: translateY(-4px); }
+  100% { opacity: 1;   transform: translateY(0); }
+}
+.skill-action-card.animating { animation: cardFlip 0.3s ease-out; }
+</style>
 </head>
 
 <body class="user-student">
@@ -84,29 +171,151 @@ if (!studentId) {
   sessionStorage.setItem("studentId", studentId);
 }
 
+// ─── Held config reference for reactive updates ───
+let _config = null;
+
 // ─── Check localStorage for a draft for this course ───
 function getDraftStatus(courseId) {
   const key = `miled_ws_${courseId}_${studentId}`;
   const val = localStorage.getItem(key);
   if (!val || val.trim() === "") return { label: "לא התחיל", pct: 0, cls: "" };
   const wordCount = val.trim().split(/\s+/).length;
-  if (wordCount < 20)  return { label: "בתחילת הדרך", pct: 15, cls: "turquoise" };
+  if (wordCount < 20)  return { label: "בתחילת הדרך", pct: 15, cls: "" };
   if (wordCount < 100) return { label: "בתהליך", pct: 45, cls: "indigo" };
   return { label: "עבודה מפותחת", pct: 80, cls: "indigo" };
 }
 
-// ─── Check sessionStorage / localStorage for skill bot usage + wave detection ───
+// ─── Read skill wave status from localStorage ───
 function getSkillStatus(botId) {
   const wave1 = !!localStorage.getItem(`miled_skill_ts_${botId}`);
   const wave2 = !!localStorage.getItem(`miled_skill_ts2_${botId}`);
   const key = `miled_skill_${botId}_${studentId}`;
   const completed = !!(sessionStorage.getItem(key) || localStorage.getItem(key));
 
-  if (wave2) return { label: "הושלם — גל 2", pct: 100, cls: "turquoise", wave1: true, wave2: true };
-  if (wave1 || completed) return { label: wave1 ? "בתהליך — גל 1" : "הושלם", pct: 55, cls: "turquoise", wave1: true, wave2: false };
-  return { label: "לא התחיל", pct: 0, cls: "", wave1: false, wave2: false };
+  if (wave2)            return { label: "הושלם — גל 2", pct: 100, wave1: true,  wave2: true  };
+  if (wave1 || completed) return { label: "בתהליך — גל 1", pct: 55,  wave1: true,  wave2: false };
+  return                       { label: "לא התחיל",      pct: 0,   wave1: false, wave2: false };
 }
 
+// ─── Resolve skill URL based on wave state + bot layer ───
+function resolveSkillUrl(id, bot, status) {
+  // Unstarted → send to diagnosis/workspace
+  // Active (wave1) or completed → go to training/practice bot
+  if (!status.wave1) {
+    // Diagnosis entry: all skills start via workspace (wave detection built in)
+    return `/workspace.html?skillId=${id}`;
+  }
+  // Started: for process-layer bots route to chat with skillMode; diagnostic bots stay in workspace
+  if (bot._layer === "skills_diagnostic") {
+    return `/workspace.html?skillId=${id}`;
+  }
+  return `/workspace.html?skillId=${id}`;
+}
+
+// ════════════════════════════════════════════════════════
+// updateSkillCard(skillId, status)
+// Public function — updates badge, CTA text, link destination,
+// and state class for a rendered skill-action-card.
+// Called on init and on visibilitychange (return from bot session).
+// ════════════════════════════════════════════════════════
+function updateSkillCard(skillId, status) {
+  const card    = document.querySelector(`[data-skill-id="${skillId}"]`);
+  if (!card) return;
+
+  const badge   = card.querySelector('.skill-action-badge');
+  const ctaEl   = card.querySelector('.skill-action-cta');
+  const wavePill = card.querySelector('.skill-wave-pill');
+  const fillEl  = card.querySelector('.progress-bar-fill');
+
+  // Determine next state
+  let newState, badgeIcon, ctaText;
+
+  if (status.wave2) {
+    newState  = 'state-completed';
+    badgeIcon = '✅';
+    ctaText   = 'הושלם — גל 2! לחץ לסקירת ההתקדמות שלך ←';
+  } else if (status.wave1) {
+    newState  = 'state-active';
+    badgeIcon = '🛠️';
+    ctaText   = 'הזמנה להתחיל עבודה על רכישה וחיזוק מיומנויות ←';
+  } else {
+    newState  = 'state-unstarted';
+    badgeIcon = '🔴';
+    ctaText   = 'אבחון מיומנויות — טרם התחלת. לחץ להתחיל עכשיו →';
+  }
+
+  // Only animate if state actually changed
+  const prevState = card.dataset.state || '';
+  if (prevState !== newState) {
+    card.classList.remove('state-unstarted', 'state-active', 'state-completed', 'animating');
+    // force reflow so animation replays
+    void card.offsetWidth;
+    card.classList.add(newState, 'animating');
+    card.dataset.state = newState;
+    setTimeout(() => card.classList.remove('animating'), 350);
+  }
+
+  // Update DOM
+  if (badge)   badge.textContent   = badgeIcon;
+  if (ctaEl)   ctaEl.textContent   = ctaText;
+
+  // Update link destination
+  const bot = (_config?.branches?.skills?.items?.[skillId])
+           || (_config?.universal?.items?.[skillId]);
+  if (ctaEl && bot) ctaEl.href = resolveSkillUrl(skillId, bot, status);
+
+  // Wave pill
+  if (wavePill) {
+    if (status.wave2) {
+      wavePill.textContent = 'גל 2 ✓';
+      wavePill.className   = 'skill-wave-pill wave2';
+    } else if (status.wave1) {
+      wavePill.textContent = 'גל 1';
+      wavePill.className   = 'skill-wave-pill wave1';
+    } else {
+      wavePill.textContent = 'טרם התחיל';
+      wavePill.className   = 'skill-wave-pill';
+    }
+  }
+
+  // Progress bar
+  if (fillEl) fillEl.style.width = status.pct + '%';
+}
+
+// ─── Render a single skill-action-card (initial HTML) ───
+function renderSkillCard(id, bot, status) {
+  const url      = resolveSkillUrl(id, bot, status);
+  const state    = status.wave2 ? 'state-completed' : status.wave1 ? 'state-active' : 'state-unstarted';
+  const badge    = status.wave2 ? '✅' : status.wave1 ? '🛠️' : '🔴';
+  const ctaText  = status.wave2
+    ? 'הושלם — גל 2! לחץ לסקירת ההתקדמות שלך ←'
+    : status.wave1
+      ? 'הזמנה להתחיל עבודה על רכישה וחיזוק מיומנויות ←'
+      : 'אבחון מיומנויות — טרם התחלת. לחץ להתחיל עכשיו →';
+  const wavePill = status.wave2
+    ? `<span class="skill-wave-pill wave2">גל 2 ✓</span>`
+    : status.wave1
+      ? `<span class="skill-wave-pill wave1">גל 1</span>`
+      : `<span class="skill-wave-pill">טרם התחיל</span>`;
+  const barCls   = status.pct > 0 ? (bot.mapping_tags?.includes("vocational") ? "turquoise" : "indigo") : "";
+
+  return `
+    <div class="skill-action-card ${state}" data-skill-id="${id}" data-state="${state}">
+      <div class="skill-action-badge">${badge}</div>
+      <div class="skill-action-body">
+        <div class="skill-action-name">${bot.name}</div>
+        <a class="skill-action-cta" href="${url}">${ctaText}</a>
+        <div class="skill-action-meta">
+          ${wavePill}
+          <div class="progress-bar-wrap" style="flex:1;margin:0;">
+            <div class="progress-bar-fill ${barCls}" style="width:${status.pct}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── Simple progress row (for course tasks — no active-learning logic needed) ───
 function renderProgressRow(label, status) {
   let growthHtml = "";
   if (status.wave2) {
@@ -114,7 +323,6 @@ function renderProgressRow(label, status) {
   } else if (status.wave1) {
     growthHtml = `<span class="wave-badge wave-1-badge">גל 1</span>`;
   }
-
   return `
     <div class="matrix-row">
       <div class="matrix-row-top">
@@ -124,46 +332,33 @@ function renderProgressRow(label, status) {
           <span class="matrix-value">${status.label}</span>
         </div>
       </div>
-      ${status.pct > 0
-        ? `<div class="progress-bar-wrap">
-             <div class="progress-bar-fill ${status.cls}" style="width:${status.pct}%"></div>
-           </div>`
-        : `<div class="progress-bar-wrap">
-             <div class="progress-bar-fill" style="width:0%;background:#eee;"></div>
-           </div>`
-      }
-    </div>
-  `;
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill ${status.cls || ''}" style="width:${status.pct}%"></div>
+      </div>
+    </div>`;
 }
 
 // ─── Radar Chart (SVG) ───
 function renderRadar(vals) {
-  // vals: { academic: 0-1, vocational: 0-1, diagnostic: 0-1 }
   const cx = 110, cy = 110, r = 75;
-  // academic=top, vocational=bottom-right, diagnostic=bottom-left
   const angles  = [-90, 30, 150].map(d => d * Math.PI / 180);
   const labels  = ["📚 אקדמי", "💼 תעסוקתי", "🔍 אבחון"];
   const vals3   = [vals.academic, vals.vocational, vals.diagnostic];
-
   const pt = (a, v) => [cx + Math.cos(a) * r * Math.max(0.06, v), cy + Math.sin(a) * r * Math.max(0.06, v)];
 
   const rings = [0.33, 0.66, 1.0].map(pct => {
     const pts = angles.map(a => `${cx + Math.cos(a)*r*pct},${cy + Math.sin(a)*r*pct}`).join(" ");
     return `<polygon points="${pts}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`;
   }).join("");
-
   const axes = angles.map(a =>
     `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*r}" y2="${cy+Math.sin(a)*r}" stroke="#e2e8f0" stroke-width="1.5"/>`
   ).join("");
-
-  const dataPts = angles.map((a, i) => pt(a, vals3[i]).join(",")).join(" ");
+  const dataPts    = angles.map((a, i) => pt(a, vals3[i]).join(",")).join(" ");
   const dataPolygon = `<polygon points="${dataPts}" fill="rgba(99,102,241,0.18)" stroke="#6366f1" stroke-width="2"/>`;
-
   const dots = angles.map((a, i) => {
     const [px, py] = pt(a, vals3[i]);
     return `<circle cx="${px}" cy="${py}" r="4" fill="#6366f1" stroke="#fff" stroke-width="1.5"/>`;
   }).join("");
-
   const labelEls = angles.map((a, i) => {
     const lx = cx + Math.cos(a) * (r + 20);
     const ly = cy + Math.sin(a) * (r + 20);
@@ -172,76 +367,80 @@ function renderRadar(vals) {
     return `<text x="${lx}" y="${ly - 6}" text-anchor="${anchor}" font-size="11" fill="#64748b" font-family="Assistant,sans-serif">${labels[i]}</text>
             <text x="${lx}" y="${ly + 7}" text-anchor="${anchor}" font-size="10" fill="#6366f1" font-family="Assistant,sans-serif" font-weight="600">${pct}%</text>`;
   }).join("");
-
   return `<svg viewBox="0 0 220 220" width="200" height="200" style="margin:0 auto 8px;display:block;">
     ${rings}${axes}${dataPolygon}${dots}${labelEls}
   </svg>`;
 }
 
+// ─── Refresh all skill cards — called on init and on tab return ───
+function refreshAllSkillCards() {
+  if (!_config) return;
+  const skills  = _config.branches?.skills?.items || {};
+  const uSkills = ["presentation", "academic_writing", "research_skills"];
+
+  for (const id in skills) {
+    updateSkillCard(id, getSkillStatus(id));
+  }
+  uSkills.forEach(key => updateSkillCard(key, getSkillStatus(key)));
+
+  // Also refresh recommendations
+  renderRecommendations(_config);
+}
+
+// ─── Reactivity: re-check when student tabs back after bot session ───
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") refreshAllSkillCards();
+});
+
 // ─── Load config and render ───
 fetch('/config.json?ts=' + Date.now())
   .then(r => r.json())
   .then(config => {
+    _config = config; // store for reactive updates
 
-    // ─── Course Tasks Panel ───
-    const courseEl = document.getElementById("course-tasks-list");
-    const courses  = config.my_courses || {};
-    let courseHtml = "";
+    // ── Course Tasks Panel ──
+    const courseEl  = document.getElementById("course-tasks-list");
+    const courses   = config.my_courses || {};
+    let courseHtml  = "";
     let courseCount = 0;
-
     for (const id in courses) {
-      const course = courses[id];
-      const status = getDraftStatus(id);
-      courseHtml += renderProgressRow(course.name, status);
+      courseHtml += renderProgressRow(courses[id].name, getDraftStatus(id));
       courseCount++;
     }
+    courseEl.innerHTML = courseCount === 0
+      ? `<div style="color:var(--color-text-muted);font-size:13px;text-align:center;padding:20px 0;">אין קורסים רשומים כרגע</div>`
+      : courseHtml;
 
-    if (courseCount === 0) {
-      courseEl.innerHTML = `<div style="color:var(--color-text-muted);font-size:13px;text-align:center;padding:20px 0;">
-        אין קורסים רשומים כרגע
-      </div>`;
-    } else {
-      courseEl.innerHTML = courseHtml;
-    }
-
-    // ─── Skills Profile Panel ───
+    // ── Skills Profile Panel — Active Learning Cards ──
     const skillsEl = document.getElementById("skills-profile-list");
     const skills   = config.branches?.skills?.items || {};
+    const uSkillIds = ["presentation", "academic_writing", "research_skills"];
     let skillHtml  = "";
     let skillCount = 0;
 
-    // Radar data accumulators
+    // Radar accumulators
     const radarTotals  = { academic: 0, vocational: 0, diagnostic: 0 };
     const radarVisited = { academic: 0, vocational: 0, diagnostic: 0 };
 
     for (const id in skills) {
       const bot    = skills[id];
       const status = getSkillStatus(id);
-      const barCls = (bot._layer === "skills_diagnostic") ? "turquoise" : "indigo";
-      skillHtml += renderProgressRow(bot.name, { ...status, cls: status.pct > 0 ? barCls : "" });
+      skillHtml += renderSkillCard(id, bot, status);
       skillCount++;
 
-      // Radar accounting
       const tags = bot.mapping_tags || [];
-      if (tags.includes("diagnostic")) {
-        radarTotals.diagnostic++;
-        if (status.wave1) radarVisited.diagnostic++;
-      } else if (tags.includes("vocational")) {
-        radarTotals.vocational++;
-        if (status.wave1) radarVisited.vocational++;
-      } else {
-        radarTotals.academic++;
-        if (status.wave1) radarVisited.academic++;
-      }
+      const bucket = tags.includes("diagnostic") ? "diagnostic"
+                   : tags.includes("vocational")  ? "vocational"
+                   : "academic";
+      radarTotals[bucket]++;
+      if (status.wave1) radarVisited[bucket]++;
     }
 
-    // Universal skills count toward academic
-    const uSkills = ["presentation", "academic_writing", "research_skills"];
-    uSkills.forEach(key => {
+    uSkillIds.forEach(key => {
       const bot = config.universal?.items?.[key];
       if (!bot) return;
       const status = getSkillStatus(key);
-      skillHtml += renderProgressRow(bot.name, { ...status, cls: status.pct > 0 ? "indigo" : "" });
+      skillHtml += renderSkillCard(key, { ...bot, mapping_tags: ["academic"] }, status);
       skillCount++;
       radarTotals.academic++;
       if (status.wave1) radarVisited.academic++;
@@ -253,20 +452,19 @@ fetch('/config.json?ts=' + Date.now())
       </div>`;
     } else {
       const radarVals = {
-        academic:    radarTotals.academic   > 0 ? radarVisited.academic   / radarTotals.academic   : 0,
-        vocational:  radarTotals.vocational > 0 ? radarVisited.vocational / radarTotals.vocational : 0,
-        diagnostic:  radarTotals.diagnostic > 0 ? radarVisited.diagnostic / radarTotals.diagnostic : 0
+        academic:   radarTotals.academic   > 0 ? radarVisited.academic   / radarTotals.academic   : 0,
+        vocational: radarTotals.vocational > 0 ? radarVisited.vocational / radarTotals.vocational : 0,
+        diagnostic: radarTotals.diagnostic > 0 ? radarVisited.diagnostic / radarTotals.diagnostic : 0
       };
       skillsEl.innerHTML =
-        `<div style="text-align:center;margin-bottom:12px;">
+        `<div style="text-align:center;margin-bottom:16px;">
            <p style="font-size:11px;color:var(--color-text-muted);margin-bottom:4px;">פרופיל מיומנויות — איזון בין שכבות</p>
            ${renderRadar(radarVals)}
          </div>` + skillHtml;
     }
 
-    // ─── Recommended Next Steps ───
+    // ── Recommendations ──
     renderRecommendations(config);
-
   })
   .catch(err => {
     console.error("Config load error:", err);
@@ -277,21 +475,18 @@ fetch('/config.json?ts=' + Date.now())
 
 // ─── Recommended Next Steps ───
 function renderRecommendations(config) {
-  const skills   = config.branches?.skills?.items || {};
-  const unvisited = []; // wave1 never done — high priority
-  const wave1Only = []; // wave1 done, wave2 not — medium priority (return visit)
+  const skills    = config.branches?.skills?.items || {};
+  const unvisited = [];
+  const wave1Only = [];
 
   for (const id in skills) {
     const bot    = skills[id];
     const status = getSkillStatus(id);
-    if (!status.wave1) {
-      unvisited.push({ id, bot, priority: "high" });
-    } else if (!status.wave2) {
-      wave1Only.push({ id, bot, priority: "medium" });
-    }
+    if (!status.wave1)       unvisited.push({ id, bot, priority: "high" });
+    else if (!status.wave2)  wave1Only.push({ id, bot, priority: "medium" });
   }
 
-  const recs = [...unvisited.slice(0, 2), ...wave1Only.slice(0, 1)];
+  const recs    = [...unvisited.slice(0, 2), ...wave1Only.slice(0, 1)];
   const section = document.getElementById("recommendations-section");
   const list    = document.getElementById("recommendations-list");
 
@@ -305,10 +500,8 @@ function renderRecommendations(config) {
 
   section.style.display = "";
   list.innerHTML = recs.map(rec => {
-    const isDiag = rec.bot._layer === "skills_diagnostic";
-    const url    = isDiag
-      ? `/workspace.html?skillId=${rec.id}`
-      : `/chat.html?classId=${rec.id}&skillMode=true`;
+    const status = getSkillStatus(rec.id);
+    const url    = resolveSkillUrl(rec.id, rec.bot, status);
     const isHigh = rec.priority === "high";
     return `<a href="${url}" class="recommendation-card">
       <div class="rec-icon">${isHigh ? "🔴" : "🟡"}</div>
