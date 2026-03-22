@@ -17,6 +17,29 @@
   }
 }());</script>
 
+<!-- ─── Firebase SDK — loaded in <head> so it's available to all body scripts ─── -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/firebase-auth.js"></script>
+
+<style>
+/* Loading spinner for institution/user lists */
+.miled-spinner {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 4px; color: #64748b; font-size: 13px;
+}
+.miled-spinner::before {
+  content: "";
+  width: 18px; height: 18px; flex-shrink: 0;
+  border: 2px solid #e2e8f0;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 </head>
 
 <body class="management-theme">
@@ -64,9 +87,7 @@
       להעלאת תפקיד — השתמש בחלק ב׳.
     </p>
 
-    <div id="inst-list" style="margin-bottom:14px;min-height:32px;">
-      <p style="font-size:13px;color:#94a3b8;">⏳ טוען...</p>
-    </div>
+    <div id="inst-list" style="margin-bottom:14px;min-height:32px;"></div>
 
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
       <div style="font-size:13px;font-weight:700;margin-bottom:10px;">+ הוסף דומיין מורשה</div>
@@ -94,9 +115,7 @@
       הוסף משתמשים ספציפיים עם תפקיד מותאם — גם אם הדומיין שלהם אינו מורשה.
     </p>
 
-    <div id="auth-users-list" style="margin-bottom:14px;min-height:32px;">
-      <p style="font-size:13px;color:#94a3b8;">⏳ טוען...</p>
-    </div>
+    <div id="auth-users-list" style="margin-bottom:14px;min-height:32px;"></div>
 
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
       <div style="font-size:13px;font-weight:700;margin-bottom:10px;">+ הוסף הרשאה אישית</div>
@@ -174,27 +193,61 @@ document.addEventListener("click", function(e) {
 });
 
 // ─── Firebase Auth Ready Gate ───
-// Firebase SDK scripts are loaded at the bottom of this file.
-// We must wait for window.load before registering onAuthStateChanged.
-// Once Firebase confirms the user session, we fetch institution data.
-window.addEventListener("load", function() {
+// Firebase SDK is now loaded in <head>, so window.firebase exists immediately.
+// We still use onAuthStateChanged to wait for the async session restore.
+(function() {
+  // Show spinner in both list containers while waiting
+  const SPINNER = '<div class="miled-spinner">מתחבר למערכת הניהול...</div>';
+  ["inst-list", "auth-users-list"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = SPINNER;
+  });
+
+  // Force-initialize Firebase if nobody else did (this page doesn't call signInWithGoogle)
+  function ensureFirebaseInit() {
+    if (!window.firebase) return false;
+    if (!firebase.apps.length) {
+      if (window.MILED_FIREBASE_CONFIG) {
+        firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+        console.log("Admin Cockpit: Firebase force-initialized from MILED_FIREBASE_CONFIG");
+      } else {
+        return false; // config not loaded yet
+      }
+    }
+    return true;
+  }
+
   function tryRegisterAuth(attempt) {
-    if (!window.firebase || !firebase.apps.length) {
+    if (!ensureFirebaseInit()) {
       if (attempt < 3) {
-        // Firebase SDK not ready yet — retry after 2s
         setTimeout(() => tryRegisterAuth(attempt + 1), 2000);
       } else {
-        console.warn("Admin Cockpit: Firebase SDK unavailable after retries — loading data anyway");
-        loadInstitutions();
-        loadAuthorizedUsers();
+        console.warn("Admin Cockpit: Firebase config unavailable after retries");
+        // Replace spinner with soft warning (not a scary error)
+        ["inst-list", "auth-users-list"].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = '<p style="font-size:13px;color:#f59e0b;">⚠️ לא ניתן לטעון נתונים — רענן את הדף.</p>';
+        });
       }
       return;
     }
 
-    firebase.auth().onAuthStateChanged(function(fbUser) {
-      if (!fbUser) return; // session not yet restored or signed out — wait
+    // 5-second timeout: if onAuthStateChanged hasn't fired yet, show soft warning
+    const timeoutId = setTimeout(() => {
+      ["inst-list", "auth-users-list"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.querySelector(".miled-spinner")) {
+          el.innerHTML = '<p style="font-size:13px;color:#f59e0b;">⚠️ הזדהות לוקחת זמן — רענן את הדף אם הבעיה נמשכת.</p>';
+        }
+      });
+    }, 5000);
 
-      // Verify superadmin via sessionStorage (set by MiledAuth during login)
+    firebase.auth().onAuthStateChanged(function(fbUser) {
+      if (!fbUser) return; // still waiting for session restore
+
+      clearTimeout(timeoutId);
+
+      // Verify superadmin from sessionStorage (set by MiledAuth during login)
       let mAuth = null;
       try { mAuth = JSON.parse(sessionStorage.getItem("miled_auth") || "null"); } catch {}
       if (!mAuth || mAuth.role !== "superadmin") return;
@@ -207,7 +260,7 @@ window.addEventListener("load", function() {
   }
 
   tryRegisterAuth(0);
-});
+}());
 
 // ─── TAB SWITCHING ───
 function switchTab(tab){
@@ -547,10 +600,5 @@ async function createUser(){
 
 </script>
 
-<!-- Firebase Auth utility -->
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="/firebase-init.js"></script>
-<script src="/firebase-auth.js"></script>
 </body>
 </html>
