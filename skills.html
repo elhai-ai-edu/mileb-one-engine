@@ -6,6 +6,23 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — מיומנויות</title>
+<style>
+/* ── 5-Pillar badge variants ── */
+.badge-resilience { background: rgba(245,158,11,0.10); color: #b45309; border: 1px solid rgba(245,158,11,0.20); }
+.badge-social     { background: rgba(99,102,241,0.10);  color: #4338ca; border: 1px solid rgba(99,102,241,0.20); }
+.badge-tools      { background: rgba(6,182,212,0.10);   color: #0891b2; border: 1px solid rgba(6,182,212,0.20); }
+.badge-career     { background: rgba(16,185,129,0.10);  color: #059669; border: 1px solid rgba(16,185,129,0.20); }
+
+/* ── Step label inside skill card ── */
+.skill-step-label {
+  margin-top: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+.skill-step-label.diag  { color: #6366f1; }
+.skill-step-label.reinf { color: #059669; }
+</style>
 </head>
 
 <body class="user-student">
@@ -21,59 +38,75 @@
 
   <div class="topbar">
     <span>MilEd.One — מרכז המיומנויות</span>
+    <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn" style="margin-right:auto;">← יציאה</button>
   </div>
 
   <div class="skills-hub">
 
     <span style="font-weight:300;font-size:13px;color:var(--color-text-muted);">MilEd.One</span>
     <h1 id="hub-title">אבחון ופיתוח מיומנויות</h1>
-    <p id="hub-subtitle" style="color:var(--color-text-muted);margin-bottom:16px;">בחר תחום לפיתוח אישי ואקדמי</p>
+    <p id="hub-subtitle" style="color:var(--color-text-muted);margin-bottom:16px;">בחר עמוד אבחון ומיפוי (שלב 1) או תוכנית חיזוק (שלב 2)</p>
 
+    <!-- Filter pills — 5 pillars -->
     <div class="filter-pills" id="filter-pills">
-      <button class="filter-pill active" onclick="filterByTag('all', this)">הכל</button>
-      <button class="filter-pill" onclick="filterByTag('academic', this)">📚 אקדמי</button>
-      <button class="filter-pill" onclick="filterByTag('vocational', this)">💼 תעסוקתי</button>
-      <button class="filter-pill" onclick="filterByTag('diagnostic', this)">🔍 אבחון</button>
+      <button class="filter-pill active" onclick="filterByPillar('all', this)">הכל</button>
+      <button class="filter-pill" onclick="filterByPillar('academic',   this)">🎓 למידה וחשיבה</button>
+      <button class="filter-pill" onclick="filterByPillar('resilience', this)">🧘 ניהול וחוסן</button>
+      <button class="filter-pill" onclick="filterByPillar('social',     this)">🤝 תקשורת וחברה</button>
+      <button class="filter-pill" onclick="filterByPillar('tools',      this)">💻 כלים וטכנולוגיה</button>
+      <button class="filter-pill" onclick="filterByPillar('career',     this)">💼 מוכנות לקריירה</button>
     </div>
 
-    <!-- ─── Section 1: Academic ─── -->
-    <div class="skills-section">
+    <!-- ─── Pillar 1: Academic & Meta-Cognition ─── -->
+    <div class="skills-section" data-pillar="academic">
       <div class="skills-section-header">
-        <span class="skills-section-title">📚 מיומנויות אקדמיות</span>
-        <span class="skills-section-badge badge-academic">Academic</span>
+        <span class="skills-section-title">🎓 למידה וחשיבה</span>
+        <span class="skills-section-badge badge-academic">Academic &amp; Meta-Cognition</span>
       </div>
       <div id="section-academic" class="skills-grid"></div>
     </div>
 
-    <!-- ─── Section 2: Vocational ─── -->
-    <div class="skills-section">
+    <!-- ─── Pillar 2: Self-Management & Resilience ─── -->
+    <div class="skills-section" data-pillar="resilience">
       <div class="skills-section-header">
-        <span class="skills-section-title">💼 מיומנויות תעסוקתיות</span>
-        <span class="skills-section-badge badge-vocational">Vocational</span>
+        <span class="skills-section-title">🧘 ניהול וחוסן</span>
+        <span class="skills-section-badge badge-resilience">Self-Management &amp; Resilience</span>
       </div>
-      <div id="section-vocational" class="skills-grid"></div>
+      <div id="section-resilience" class="skills-grid"></div>
     </div>
 
-    <!-- ─── Section 3: Diagnostic & Learning ─── -->
-    <div class="skills-section">
+    <!-- ─── Pillar 3: Communication & Social ─── -->
+    <div class="skills-section" data-pillar="social">
       <div class="skills-section-header">
-        <span class="skills-section-title">🔍 אבחון ולמידה</span>
-        <span class="skills-section-badge badge-diagnostic">Diagnostic</span>
+        <span class="skills-section-title">🤝 תקשורת וחברה</span>
+        <span class="skills-section-badge badge-social">Communication &amp; Social</span>
       </div>
-      <div id="section-diagnostic" class="skills-grid">
-        <!-- Diagnostic card built from config -->
+      <div id="section-social" class="skills-grid"></div>
+    </div>
+
+    <!-- ─── Pillar 4: Tools & Tech ─── -->
+    <div class="skills-section" data-pillar="tools">
+      <div class="skills-section-header">
+        <span class="skills-section-title">💻 כלים וטכנולוגיה</span>
+        <span class="skills-section-badge badge-tools">Tools &amp; Tech</span>
       </div>
-      <!-- Skills World placeholder -->
-      <div class="skills-grid" style="margin-top:12px;">
+      <div id="section-tools" class="skills-grid">
         <div class="skill-card coming-soon">
           <div class="skill-card-icon">🌍</div>
           <div class="skill-card-title">Skills World</div>
           <div class="skill-card-desc">סביבת למידה אדפטיבית — בפיתוח. תמשיכו לעקוב!</div>
-          <div style="margin-top:10px;">
-            <span class="badge badge-inactive" style="font-size:10px;">בקרוב</span>
-          </div>
+          <span class="badge badge-inactive" style="font-size:10px;margin-top:10px;display:inline-block;">בקרוב</span>
         </div>
       </div>
+    </div>
+
+    <!-- ─── Pillar 5: Career Readiness ─── -->
+    <div class="skills-section" data-pillar="career">
+      <div class="skills-section-header">
+        <span class="skills-section-title">💼 מוכנות לקריירה</span>
+        <span class="skills-section-badge badge-career">Career Readiness</span>
+      </div>
+      <div id="section-career" class="skills-grid"></div>
     </div>
 
     <a href="#" onclick="navigateHome()" class="btn btn-outline" style="margin-top:8px;">← חזרה למסך הבית</a>
@@ -82,7 +115,7 @@
 </div>
 
 <script>
-// ─── Dynamic navigation (v7.8) ───
+// ─── Dynamic navigation ───
 (function() {
   function getRole() {
     try { return JSON.parse(sessionStorage.getItem("miled_auth") || "null")?.role; } catch { return null; }
@@ -95,7 +128,7 @@
   }
   window.navigateHome = function() {
     if (isFaculty) { window.location.href = "/lecturer_cockpit.html"; }
-    else { sessionStorage.clear(); window.location.href = "/student_dashboard.html"; }
+    else { window.location.href = "/student_dashboard.html"; }
   };
 })();
 
@@ -106,75 +139,66 @@ if (!studentId) {
   sessionStorage.setItem("studentId", studentId);
 }
 
-// ─── Bot categorization ───
-// _layer "skills_diagnostic" → Diagnostic section
-// _layer "skills_process" → split by botType name heuristic:
-//   employment-related → Vocational, otherwise → Academic
+// ─── 5-Pillar static mapping ───
+// Each botId → pillar key.  Unrecognised bots fall back to "academic".
+const PILLAR_MAP = {
+  diag_1:                    "resilience", // self-assessment gateway
+  learning_skills_full:      "academic",
+  employability_skills_full: "career",
+  support:                   "resilience",
+  presentation:              "social",
+  academic_writing:          "academic",
+  research_skills:           "academic",
+};
 
-function categorize(bot) {
-  const layer = bot._layer || "";
-  if (layer === "skills_diagnostic") return "diagnostic";
-  const name = (bot.name || "").toLowerCase();
-  if (name.includes("תעסוק") || name.includes("employab") || bot.botType?.includes("employ")) return "vocational";
-  return "academic";
+// Section container IDs per pillar
+const PILLAR_SECTION_ID = {
+  academic:   "section-academic",
+  resilience: "section-resilience",
+  social:     "section-social",
+  tools:      "section-tools",
+  career:     "section-career",
+};
+
+// ─── Wave status from localStorage ───
+function getSkillStatus(id) {
+  const wave1 = !!localStorage.getItem(`miled_skill_ts_${id}`);
+  const wave2 = !!localStorage.getItem(`miled_skill_ts2_${id}`);
+  return { wave1, wave2 };
 }
 
-function filterByTag(tag, btn) {
-  document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
-  if (btn) btn.classList.add("active");
-
-  document.querySelectorAll(".skill-card:not(.coming-soon)").forEach(card => {
-    if (tag === "all") {
-      card.style.display = "";
-    } else {
-      const tags = (card.dataset.tags || "").split(",");
-      card.style.display = tags.includes(tag) ? "" : "none";
-    }
-  });
-
-  document.querySelectorAll(".skills-section").forEach(section => {
-    const grid = section.querySelector(".skills-grid");
-    if (!grid) return;
-    const visible = [...grid.querySelectorAll(".skill-card")].filter(c => c.style.display !== "none");
-    section.style.display = visible.length === 0 ? "none" : "";
-  });
+// ─── Step label: diagnosis vs reinforcement ───
+function getStepLabel(bot, status) {
+  const isDiag = bot._layer === "skills_diagnostic";
+  if (!isDiag) {
+    // Process bot: show phase based on student's wave state
+    if (status.wave2) return { text: "📘 תוכנית חיזוק — הושלם ✅", cls: "reinf" };
+    if (status.wave1) return { text: "📘 תוכנית חיזוק ←", cls: "reinf" };
+    return { text: "📘 תוכנית חיזוק — התחל →", cls: "reinf" };
+  }
+  // Diagnostic bot
+  if (status.wave1) return { text: "🔍 אבחון ומיפוי — הושלם ✅", cls: "diag" };
+  return { text: "🔍 אבחון ומיפוי — התחל →", cls: "diag" };
 }
 
-function renderCard(bot, id) {
-  const cat = categorize(bot);
-  const isDiag = cat === "diagnostic";
-  const tags = (bot.mapping_tags || [cat]).join(",");
-  // Diagnostic bots open in workspace (textarea for notes + chat).
-  // All other skill bots open in chat-only mode.
-  const url = isDiag
-    ? `/workspace.html?skillId=${id}`
-    : `/chat.html?classId=${id}&skillMode=true`;
-  const card = document.createElement("a");
-  card.href = url;
-  card.className = "skill-card" + (isDiag ? " diagnostic" : "");
-  card.dataset.tags = tags;
-  card.innerHTML = `
-    <div class="skill-card-icon">${getIcon(bot)}</div>
-    <div class="skill-card-title">${bot.name}</div>
-    <div class="skill-card-desc">${getDesc(bot)}</div>
-    <div style="margin-top:12px;font-size:11px;color:var(--color-accent);font-weight:500;">
-      ${isDiag ? "🎯 התחל אבחון →" : "פתח →"}
-    </div>
-  `;
-  return { card, cat };
+// ─── URL resolution ───
+function resolveUrl(id, bot) {
+  return `/workspace.html?skillId=${id}`;
 }
 
-function getIcon(bot) {
-  const n = bot.name || "";
-  if (n.includes("אבחון") || n.includes("diag")) return "🔍";
-  if (n.includes("תעסוק")) return "💼";
-  if (n.includes("למידה") || n.includes("אקדמ")) return "📘";
-  return "⭐";
+// ─── Icon per bot ───
+function getIcon(bot, id) {
+  const icons = {
+    diag_1: "🔍", learning_skills_full: "📘", employability_skills_full: "💼",
+    support: "🤝", presentation: "🎤", academic_writing: "✍️", research_skills: "🔬",
+  };
+  return icons[id] || "⭐";
 }
 
+// ─── Description per bot ───
 function getDesc(bot) {
   const phase = bot.phase || "";
-  const fn = bot.function || "";
+  const fn    = bot.function || "";
   const parts = [];
   if (phase === "diagnostic") parts.push("אבחון אישי");
   else if (phase === "development") parts.push("פיתוח מיומנויות");
@@ -182,37 +206,79 @@ function getDesc(bot) {
   return parts.join(" • ") || "כלי פדגוגי מותאם";
 }
 
-// ─── Load config ───
+// ─── Render a skill card ───
+function renderCard(id, bot) {
+  const status    = getSkillStatus(id);
+  const step      = getStepLabel(bot, status);
+  const url       = resolveUrl(id, bot);
+  const pillar    = PILLAR_MAP[id] || "academic";
+  const card      = document.createElement("a");
+  card.href        = url;
+  card.className   = "skill-card";
+  card.dataset.pillar = pillar;
+
+  card.innerHTML = `
+    <div class="skill-card-icon">${getIcon(bot, id)}</div>
+    <div class="skill-card-title">${bot.name}</div>
+    <div class="skill-card-desc">${getDesc(bot)}</div>
+    <div class="skill-step-label ${step.cls}">${step.text}</div>
+  `;
+  return card;
+}
+
+// ─── Filter by pillar ───
+function filterByPillar(pillar, btn) {
+  document.querySelectorAll(".filter-pill").forEach(p => p.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+
+  document.querySelectorAll(".skills-section").forEach(section => {
+    if (pillar === "all") {
+      section.style.display = "";
+    } else {
+      section.style.display = section.dataset.pillar === pillar ? "" : "none";
+    }
+  });
+}
+
+// ─── Load config and populate sections ───
 fetch('/config.json?ts=' + Date.now())
   .then(r => r.json())
   .then(config => {
-    const skills = config.branches?.skills;
-    if (!skills) return;
+    const skills    = config.branches?.skills?.items || {};
+    const universal = config.universal?.items || {};
 
-    document.getElementById("hub-title").innerText = skills.title || "מרכז המיומנויות";
-    document.getElementById("hub-subtitle").innerText = skills.subtitle || "";
+    document.getElementById("hub-title").innerText    = config.branches?.skills?.title    || "מרכז המיומנויות";
+    document.getElementById("hub-subtitle").innerText = config.branches?.skills?.subtitle || "בחר אבחון ומיפוי (שלב 1) או תוכנית חיזוק (שלב 2)";
 
-    const secAcademic   = document.getElementById("section-academic");
-    const secVocational = document.getElementById("section-vocational");
-    const secDiagnostic = document.getElementById("section-diagnostic");
-
-    for (let id in skills.items) {
-      const bot = skills.items[id];
-      const { card, cat } = renderCard(bot, id);
-      if (cat === "diagnostic") secDiagnostic.appendChild(card);
-      else if (cat === "vocational") secVocational.appendChild(card);
-      else secAcademic.appendChild(card);
+    // Populate from skills branch
+    for (const id in skills) {
+      const bot      = skills[id];
+      const card     = renderCard(id, bot);
+      const pillar   = PILLAR_MAP[id] || "academic";
+      const sectionId = PILLAR_SECTION_ID[pillar];
+      const el = document.getElementById(sectionId);
+      if (el) el.appendChild(card);
     }
 
-    // Placeholder if sections are empty
-    [
-      { el: secAcademic,   label: "אין כלים אקדמיים זמינים כרגע" },
-      { el: secVocational, label: "כלים תעסוקתיים — בקרוב" }
-    ].forEach(({ el, label }) => {
-      if (!el.hasChildNodes()) {
+    // Populate from universal branch (exclude "support" — shown in resilience)
+    const uIds = ["presentation", "academic_writing", "research_skills", "support"];
+    uIds.forEach(id => {
+      const bot = universal[id];
+      if (!bot) return;
+      const card     = renderCard(id, { ...bot, _layer: "skills_process" });
+      const pillar   = PILLAR_MAP[id] || "academic";
+      const sectionId = PILLAR_SECTION_ID[pillar];
+      const el = document.getElementById(sectionId);
+      if (el) el.appendChild(card);
+    });
+
+    // Empty-state placeholders for sections that got nothing
+    ["academic", "resilience", "social", "career"].forEach(p => {
+      const el = document.getElementById(PILLAR_SECTION_ID[p]);
+      if (el && !el.children.length) {
         el.innerHTML = `<div class="skill-card coming-soon">
           <div class="skill-card-icon">🔧</div>
-          <div class="skill-card-title">${label}</div>
+          <div class="skill-card-title">כלים בקרוב</div>
         </div>`;
       }
     });
