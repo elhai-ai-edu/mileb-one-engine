@@ -2387,3 +2387,124 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   v8.2 — Role Assignment System
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Overlay ─── */
+.team-setup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.team-setup-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 28px;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.team-setup-title { font-size: 1.4rem; margin: 0 0 8px; color: #1e293b; }
+.team-setup-sub   { font-size: 14px; color: #64748b; margin: 0 0 24px; }
+
+/* ─── Role cards (First-Win / Rotation) ─── */
+.role-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+.role-card {
+  background: #f8f5ff;
+  border: 2px solid #6c5ce7;
+  border-radius: 12px;
+  padding: 16px 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c5ce7;
+  font-family: 'Assistant', sans-serif;
+  transition: background .15s, transform .1s, box-shadow .15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.role-card:hover:not(:disabled) {
+  background: #6c5ce7;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108,92,231,.35);
+}
+.role-card--disabled {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+.role-card-name { font-size: 14px; }
+.role-card-tag  { font-size: 10px; font-weight: 400; opacity: .75; }
+
+/* ─── Spinning wheel (Roulette) ─── */
+.wheel-wrap {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  margin: 0 auto 16px;
+}
+.wheel-pointer {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 26px;
+  color: #6c5ce7;
+  z-index: 5;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
+}
+.spin-wheel {
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  border: 5px solid #fff;
+  box-shadow: 0 4px 24px rgba(108,92,231,.3);
+  will-change: transform;
+}
+.wheel-result { min-height: 40px; font-size: 15px; color: #1e293b; }
+.wheel-win {
+  background: #f0fdf4;
+  border: 1.5px solid #86efac;
+  border-radius: 8px;
+  padding: 8px 20px;
+  color: #166534;
+  font-weight: 700;
+  font-size: 17px;
+  display: inline-block;
+  margin-top: 4px;
+  animation: rolePop .35s ease;
+}
+@keyframes rolePop {
+  0%   { transform: scale(.85); opacity: 0; }
+  70%  { transform: scale(1.05); }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+/* ─── Role badge in topbar ─── */
+#role-badge {
+  font-size: 12px;
+  background: #f0f0ff;
+  color: #6c5ce7;
+  border: 1px solid #c4b5fd;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
