@@ -5,6 +5,7 @@
  * Routes:
  *   POST /api/lexicon/personalize  — AI curates study set from student familiarity ratings
  *   POST /api/lexicon/submit       — Saves handwriting submission (sentence + photo ref)
+ *   POST /api/lexicon/ingest       — Admin: AI enrichment preview (no Firebase write, superadmin auth required)
  *   POST /api/lexicon/add-word     — Admin: add word to lexicon (superadmin auth required)
  *   POST /api/lexicon/delete-word  — Admin: delete word (superadmin auth required)
  *   POST /api/lexicon/bulk-import  — Admin: batch ingest with dedup (superadmin auth required)
@@ -272,7 +273,7 @@ Respond ONLY with a valid JSON object (no markdown, no explanation):
       preview: {
         word:            word.trim(),
         meaning:         meaning.trim(),
-        field:           [\"management\",\"optics\",\"social\"].includes(field) ? field : \"management\",
+        field:           ["management","optics","social"].includes(field) ? field : "management",
         difficulty_level: Math.max(1, Math.min(3, parseInt(difficulty_level) || 1)),
         preposition:     preview.preposition   || null,
         root:            preview.root          || null,
@@ -392,6 +393,7 @@ export async function handler(event) {
     switch (action) {
       case "personalize":  result = await handlePersonalize(body);  break;
       case "submit":       result = await handleSubmit(body);       break;
+      case "ingest":       result = await handleIngest(body);       break;
       case "add-word":     result = await handleAddWord(body);      break;
       case "delete-word":  result = await handleDeleteWord(body);   break;
       case "bulk-import":  result = await handleBulkImport(body);   break;

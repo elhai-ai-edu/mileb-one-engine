@@ -341,17 +341,20 @@
     <div id="lex-word-list" style="margin-bottom:14px;min-height:40px;"></div>
   </div>
 
-  <!-- Add word form -->
-  <div class="panel">
+  <!-- Add word form — Step 1: AI-assisted ingest -->
+  <div class="panel" id="lex-add-panel">
     <h2>+ הוסף מילה חדשה</h2>
+    <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:9px;padding:11px 15px;margin-bottom:14px;font-size:12px;color:#1e40af;line-height:1.6;">
+      🤖 <strong>הזן מילה ומשמעות</strong> — הבינה המלאכותית תייצר אוטומטית: שורש, מילית יחס, ערבית, אנגלית ומשימת כתיבה. לאחר ניתוח תוכל לאשר ולשמור.
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
       <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מילה / מונח</label>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מילה / מונח *</label>
         <input id="lex-word" type="text" placeholder="לדוגמה: פרדיגמה"
           style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
       </div>
       <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תחום</label>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תחום *</label>
         <select id="lex-field"
           style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
           <option value="management">ניהול (management)</option>
@@ -360,15 +363,10 @@
         </select>
       </div>
     </div>
-    <div style="margin-bottom:10px;">
-      <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">הסבר / הגדרה</label>
-      <input id="lex-meaning" type="text" placeholder="הגדרה קצרה וברורה בעברית"
-        style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-    </div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:10px;align-items:end;">
       <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">דוגמה בהקשר (אופציונלי)</label>
-        <input id="lex-example" type="text" placeholder="משפט המדגים שימוש במילה..."
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">הסבר / הגדרה *</label>
+        <input id="lex-meaning" type="text" placeholder="הגדרה קצרה וברורה בעברית"
           style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
       </div>
       <div>
@@ -381,52 +379,25 @@
         </select>
       </div>
     </div>
-    <!-- Trilingual fields -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מילית יחס (אופציונלי)</label>
-        <input id="lex-preposition" type="text" placeholder='לדוגמה: "ל-", "ב-"'
-          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-      </div>
-      <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שורש / שם פעולה (אופציונלי)</label>
-        <input id="lex-root" type="text" placeholder='לדוגמה: "נ.ה.ל", "ניהול"'
-          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇸🇦 מילה בערבית (אופציונלי)</label>
-        <input id="lex-arabic-word" type="text" dir="rtl" placeholder="المصطلح بالعربية"
-          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-      </div>
-      <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇸🇦 משמעות בערבית (אופציונלי)</label>
-        <input id="lex-arabic-meaning" type="text" dir="rtl" placeholder="הסבר קצר בערבית"
-          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇬🇧 מילה באנגלית (אופציונלי)</label>
-        <input id="lex-english-word" type="text" dir="ltr" placeholder="English term"
-          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-      </div>
-      <div>
-        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇬🇧 משמעות באנגלית (אופציונלי)</label>
-        <input id="lex-english-meaning" type="text" dir="ltr" placeholder="Short English definition"
-          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-      </div>
-    </div>
-    <!-- Credentials row -->
     <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px;">
       <input id="lex-admin-user" type="text"     placeholder="שם משתמש מנהל" dir="ltr"
         style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
       <input id="lex-admin-pass" type="password" placeholder="סיסמה" dir="ltr"
         style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
-      <button class="btn btn-green" onclick="addLexiconWord()" style="padding:8px 18px;white-space:nowrap;">הוסף מילה</button>
+      <button class="btn btn-green" onclick="ingestWord()" id="lex-ingest-btn" style="padding:8px 18px;white-space:nowrap;">🔍 נתח עם AI</button>
     </div>
     <p id="lex-add-msg" style="font-size:12px;margin:0;min-height:16px;"></p>
+  </div>
+
+  <!-- Card Preview — Step 2: confirm before save -->
+  <div id="lex-preview-panel" style="display:none;" class="panel">
+    <h2 style="color:#4338ca;">🃏 תצוגה מקדימה — אשר ושמור</h2>
+    <div id="lex-preview-card"></div>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button class="btn btn-green" onclick="confirmIngest()" style="padding:9px 22px;">✅ אשר ושמור</button>
+      <button onclick="cancelPreview()" style="padding:9px 16px;background:#f1f5f9;border:1.5px solid #cbd5e1;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;">❌ בטל</button>
+    </div>
+    <p id="lex-confirm-msg" style="font-size:12px;margin:8px 0 0;min-height:16px;"></p>
   </div>
 
   <!-- Bulk Import panel -->
@@ -1367,61 +1338,124 @@ async function loadLexiconWords() {
     const FIELD_LABELS = { management:"ניהול", optics:"אופטיקה", social:"רווחה" };
     const FIELD_COLORS = { management:"#eef2ff;color:#4338ca", optics:"#fef3c7;color:#92400e", social:"#d1fae5;color:#065f46" };
 
-    el.innerHTML = lexWords.map(w => `
-      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;flex-wrap:wrap;">
-        <strong style="font-size:14px;color:#1e1b4b;min-width:80px;">${escHtmlAdmin(w.word)}</strong>
-        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:${FIELD_COLORS[w.field] || '#f1f5f9;color:#64748b'};">${FIELD_LABELS[w.field] || w.field}</span>
-        <span style="font-size:11px;color:#f59e0b;">${"⭐".repeat(w.difficulty_level || 1)}</span>
-        <span style="font-size:12px;color:#64748b;flex:1;">${escHtmlAdmin(w.meaning)}</span>
-        <button onclick="deleteLexiconWord('${w.id}')"
-          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:12px;padding:3px 9px;white-space:nowrap;">מחק</button>
-      </div>`).join("") || '<p style="font-size:13px;color:#94a3b8;">אין מילים.</p>';
+    el.innerHTML = lexWords.map(w => {
+      const fieldBg = FIELD_COLORS[w.field] || '#f1f5f9;color:#64748b';
+      const hasArabic = w.arabic_word || w.arabic_meaning;
+      const hasEnglish = w.english_word || w.english_meaning;
+      return `
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <strong style="font-size:15px;color:#1e1b4b;">${escHtmlAdmin(w.word)}</strong>
+          ${w.preposition ? `<span style="font-size:11px;background:#ede9fe;color:#6d28d9;padding:2px 7px;border-radius:6px;">${escHtmlAdmin(w.preposition)}</span>` : ""}
+          ${w.root ? `<span style="font-size:10px;color:#94a3b8;font-style:italic;">שורש: ${escHtmlAdmin(w.root)}</span>` : ""}
+          <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:8px;background:${fieldBg};">${FIELD_LABELS[w.field] || w.field}</span>
+          <span style="font-size:11px;color:#f59e0b;">${"⭐".repeat(w.difficulty_level || 1)}</span>
+          <button onclick="deleteLexiconWord('${w.id}')"
+            style="margin-right:auto;background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:12px;padding:3px 9px;">מחק</button>
+        </div>
+        <div style="font-size:12px;color:#475569;margin-bottom:4px;">${escHtmlAdmin(w.meaning)}</div>
+        ${w.example ? `<div style="font-size:11px;color:#94a3b8;font-style:italic;margin-bottom:4px;">📝 ${escHtmlAdmin(w.example)}</div>` : ""}
+        ${w.handwriting_task ? `<div style="font-size:11px;background:#fef9c3;color:#854d0e;padding:3px 8px;border-radius:6px;margin-bottom:4px;">✏️ ${escHtmlAdmin(w.handwriting_task)}</div>` : ""}
+        ${hasArabic || hasEnglish ? `
+        <div style="display:flex;gap:10px;margin-top:5px;flex-wrap:wrap;">
+          ${hasArabic ? `<span style="font-size:11px;color:#065f46;background:#d1fae5;padding:2px 8px;border-radius:6px;" dir="rtl">🇸🇦 ${escHtmlAdmin(w.arabic_word || "")}${w.arabic_meaning ? " — "+escHtmlAdmin(w.arabic_meaning) : ""}</span>` : ""}
+          ${hasEnglish ? `<span style="font-size:11px;color:#1e40af;background:#dbeafe;padding:2px 8px;border-radius:6px;" dir="ltr">🇬🇧 ${escHtmlAdmin(w.english_word || "")}${w.english_meaning ? " — "+escHtmlAdmin(w.english_meaning) : ""}</span>` : ""}
+        </div>` : ""}
+      </div>`;
+    }).join("") || '<p style="font-size:13px;color:#94a3b8;">אין מילים.</p>';
   } catch(e) {
     el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
   }
 }
 
-async function addLexiconWord() {
-  const word            = document.getElementById("lex-word").value.trim();
-  const meaning         = document.getElementById("lex-meaning").value.trim();
-  const example         = document.getElementById("lex-example").value.trim();
-  const field           = document.getElementById("lex-field").value;
-  const diff            = parseInt(document.getElementById("lex-diff").value) || 1;
-  const preposition     = document.getElementById("lex-preposition").value.trim();
-  const root            = document.getElementById("lex-root").value.trim();
-  const arabic_word     = document.getElementById("lex-arabic-word").value.trim();
-  const arabic_meaning  = document.getElementById("lex-arabic-meaning").value.trim();
-  const english_word    = document.getElementById("lex-english-word").value.trim();
-  const english_meaning = document.getElementById("lex-english-meaning").value.trim();
-  const user            = document.getElementById("lex-admin-user").value.trim();
-  const pass            = document.getElementById("lex-admin-pass").value;
-  const msg             = document.getElementById("lex-add-msg");
+let lexIngestPreview = null;
+
+async function ingestWord() {
+  const word    = document.getElementById("lex-word").value.trim();
+  const meaning = document.getElementById("lex-meaning").value.trim();
+  const field   = document.getElementById("lex-field").value;
+  const diff    = parseInt(document.getElementById("lex-diff").value) || 1;
+  const user    = document.getElementById("lex-admin-user").value.trim();
+  const pass    = document.getElementById("lex-admin-pass").value;
+  const msg     = document.getElementById("lex-add-msg");
+  const btn     = document.getElementById("lex-ingest-btn");
 
   if (!word || !meaning) { msg.style.color="#ef4444"; msg.innerText="נא למלא מילה והגדרה."; return; }
   if (!user || !pass)    { msg.style.color="#ef4444"; msg.innerText="נדרשים פרטי אימות."; return; }
 
-  msg.style.color="#6366f1"; msg.innerText="מוסיף...";
+  btn.disabled = true;
+  msg.style.color = "#6366f1"; msg.innerText = "🤖 הAI מנתח...";
   try {
-    const res = await fetch("/api/lexicon/add-word", {
+    const res = await fetch("/api/lexicon/ingest", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        word, meaning, example: example || null, field, difficulty_level: diff,
-        preposition: preposition || null, root: root || null,
-        arabic_word: arabic_word || null, arabic_meaning: arabic_meaning || null,
-        english_word: english_word || null, english_meaning: english_meaning || null,
-        requesterUsername: user, requesterPassword: pass
-      })
+      body: JSON.stringify({ word, meaning, field, difficulty_level: diff,
+        requesterUsername: user, requesterPassword: pass })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "שגיאה");
 
-    msg.style.color="#16a34a"; msg.innerText=`✅ המילה '${word}' נוספה.`;
-    ["lex-word","lex-meaning","lex-example","lex-preposition","lex-root",
-     "lex-arabic-word","lex-arabic-meaning","lex-english-word","lex-english-meaning"
-    ].forEach(id => { const el = document.getElementById(id); if(el) el.value=""; });
+    lexIngestPreview = { ...data.preview, requesterUsername: user, requesterPassword: pass };
+    msg.innerText = "";
+    renderIngestPreview(data.preview);
+    document.getElementById("lex-preview-panel").style.display = "";
+    document.getElementById("lex-add-panel").style.display = "none";
+  } catch(e) {
+    msg.style.color = "#ef4444"; msg.innerText = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderIngestPreview(p) {
+  const FL = { management:"ניהול", optics:"אופטיקה", social:"רווחה חברתית" };
+  const stars = "⭐".repeat(p.difficulty_level || 1);
+  document.getElementById("lex-preview-card").innerHTML = `
+    <div style="border:1.5px solid #c7d2fe;border-radius:12px;padding:16px 20px;background:#f5f3ff;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
+        <strong style="font-size:17px;color:#1e1b4b;">${escHtmlAdmin(p.word)}</strong>
+        ${p.preposition ? `<span style="background:#ede9fe;color:#6d28d9;padding:3px 10px;border-radius:7px;font-size:12px;font-weight:600;">${escHtmlAdmin(p.preposition)}</span>` : ""}
+        ${p.root ? `<span style="font-size:11px;color:#7c3aed;background:#ede9fe;padding:2px 8px;border-radius:6px;">שורש: ${escHtmlAdmin(p.root)}</span>` : ""}
+        <span style="font-size:12px;background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:6px;">${FL[p.field] || p.field}</span>
+        <span style="font-size:12px;color:#f59e0b;">${stars}</span>
+      </div>
+      <div style="font-size:13px;color:#334155;margin-bottom:6px;"><strong>הגדרה:</strong> ${escHtmlAdmin(p.meaning)}</div>
+      ${p.example ? `<div style="font-size:12px;color:#475569;background:#f0fdf4;padding:6px 10px;border-radius:7px;margin-bottom:8px;">📝 <em>${escHtmlAdmin(p.example)}</em></div>` : ""}
+      ${p.handwriting_task ? `<div style="font-size:12px;background:#fef9c3;color:#854d0e;padding:6px 10px;border-radius:7px;margin-bottom:8px;">✏️ <strong>משימת כתיבה:</strong> ${escHtmlAdmin(p.handwriting_task)}</div>` : ""}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+        ${p.arabic_word ? `<div style="background:#f0fdf4;border-radius:8px;padding:8px 12px;" dir="rtl"><div style="font-size:10px;color:#65a30d;margin-bottom:2px;">🇸🇦 ערבית</div><div style="font-size:13px;color:#166534;font-weight:600;">${escHtmlAdmin(p.arabic_word)}</div>${p.arabic_meaning ? `<div style="font-size:11px;color:#4b7c51;">${escHtmlAdmin(p.arabic_meaning)}</div>` : ""}</div>` : ""}
+        ${p.english_word ? `<div style="background:#eff6ff;border-radius:8px;padding:8px 12px;" dir="ltr"><div style="font-size:10px;color:#3b82f6;margin-bottom:2px;">🇬🇧 English</div><div style="font-size:13px;color:#1e40af;font-weight:600;">${escHtmlAdmin(p.english_word)}</div>${p.english_meaning ? `<div style="font-size:11px;color:#3b82f6;">${escHtmlAdmin(p.english_meaning)}</div>` : ""}</div>` : ""}
+      </div>
+    </div>`;
+}
+
+async function confirmIngest() {
+  if (!lexIngestPreview) return;
+  const msg = document.getElementById("lex-confirm-msg");
+  msg.style.color = "#6366f1"; msg.innerText = "שומר...";
+  try {
+    const res = await fetch("/api/lexicon/add-word", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(lexIngestPreview)
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "שגיאה");
+    lexIngestPreview = null;
+    document.getElementById("lex-preview-panel").style.display = "none";
+    document.getElementById("lex-add-panel").style.display = "";
+    const addMsg = document.getElementById("lex-add-msg");
+    addMsg.style.color = "#16a34a"; addMsg.innerText = "✅ המילה נשמרה בהצלחה!";
+    ["lex-word","lex-meaning"].forEach(id => { const el=document.getElementById(id); if(el) el.value=""; });
     loadLexiconWords();
   } catch(e) { msg.style.color="#ef4444"; msg.innerText=e.message; }
+}
+
+function cancelPreview() {
+  lexIngestPreview = null;
+  document.getElementById("lex-preview-panel").style.display = "none";
+  document.getElementById("lex-add-panel").style.display = "";
+  document.getElementById("lex-confirm-msg").innerText = "";
 }
 
 async function deleteLexiconWord(wordId) {
