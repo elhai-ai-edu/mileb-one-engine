@@ -152,30 +152,18 @@ let config = {};
 let currentUser = null;
 const branchKeys = ["courses","faculty","skills","admin"];
 
-// ─── AUTH (Google-only) ───
+// ─── INIT (synchronous session data — runs before Firebase SDK loads) ───
 async function init(){
-  // Route guard already handles unauthenticated users.
-  // Read current user from Google auth session.
-  if (window.MiledAuth) {
-    const u = MiledAuth.getUser();
-    if (u) {
-      document.getElementById("currentUser").innerText = (u.displayName || u.email) + " (" + u.role + ")";
-      MiledAuth.renderUserBadge("user-badge");
-    }
-  }
-  // Show role switcher for superadmin
   try {
     const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
-    if (auth && auth.role === "superadmin")
+    if (auth && auth.role === "superadmin") {
       document.getElementById("role-switcher").style.display = "";
+      document.getElementById("currentUser").innerText =
+        (auth.displayName || auth.email || "") + " (" + auth.role + ")";
+    }
   } catch {}
-
   const res = await fetch("/config.json");
   config = await res.json();
-
-  // Load institution/user management data for the default tab
-  loadInstitutions();
-  loadAuthorizedUsers();
 }
 
 init();
@@ -183,6 +171,42 @@ document.addEventListener("click", function(e) {
   var sw = document.getElementById("role-switcher");
   var m  = document.getElementById("sw-menu");
   if (sw && m && !sw.contains(e.target)) m.style.display = "none";
+});
+
+// ─── Firebase Auth Ready Gate ───
+// Firebase SDK scripts are loaded at the bottom of this file.
+// We must wait for window.load before registering onAuthStateChanged.
+// Once Firebase confirms the user session, we fetch institution data.
+window.addEventListener("load", function() {
+  function tryRegisterAuth(attempt) {
+    if (!window.firebase || !firebase.apps.length) {
+      if (attempt < 3) {
+        // Firebase SDK not ready yet — retry after 2s
+        setTimeout(() => tryRegisterAuth(attempt + 1), 2000);
+      } else {
+        console.warn("Admin Cockpit: Firebase SDK unavailable after retries — loading data anyway");
+        loadInstitutions();
+        loadAuthorizedUsers();
+      }
+      return;
+    }
+
+    firebase.auth().onAuthStateChanged(function(fbUser) {
+      if (!fbUser) return; // session not yet restored or signed out — wait
+
+      // Verify superadmin via sessionStorage (set by MiledAuth during login)
+      let mAuth = null;
+      try { mAuth = JSON.parse(sessionStorage.getItem("miled_auth") || "null"); } catch {}
+      if (!mAuth || mAuth.role !== "superadmin") return;
+
+      console.log(`Admin Auth Verified: ${fbUser.email}`);
+      if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
+      loadInstitutions();
+      loadAuthorizedUsers();
+    });
+  }
+
+  tryRegisterAuth(0);
 });
 
 // ─── TAB SWITCHING ───
