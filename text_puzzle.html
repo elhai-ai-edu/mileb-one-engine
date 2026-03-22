@@ -254,17 +254,25 @@ body.xray-mode .brick-role {
 }
 .lex-hint:hover { background: #fde68a; }
 
-/* Lexicon tooltip */
+/* Lexicon tooltip — trilingual */
 .lex-tooltip {
   position: fixed; z-index: 400; background: #1e1b4b; color: #fff;
-  border-radius: 10px; padding: 10px 14px; max-width: 240px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.25); pointer-events: none;
+  border-radius: 12px; padding: 12px 16px; max-width: 300px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.3); pointer-events: none;
   font-size: 13px; line-height: 1.55;
   animation: msgPop .15s ease;
 }
-.lex-tooltip-word    { font-weight: 700; margin-bottom: 4px; color: #fde68a; }
-.lex-tooltip-meaning { color: #e2e8f0; }
-.lex-tooltip-link    { font-size: 11px; color: #818cf8; margin-top: 6px; }
+.lex-tt-header   { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.lex-tt-word     { font-weight: 700; color: #fde68a; font-size: 15px; }
+.lex-tt-meta     { font-size: 10px; color: #94a3b8; }
+.lex-tt-meaning  { color: #e2e8f0; margin-bottom: 8px; }
+.lex-tt-divider  { height: 1px; background: rgba(255,255,255,.12); margin: 7px 0; }
+.lex-tt-lang-row { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 4px; }
+.lex-tt-flag     { font-size: 14px; flex-shrink: 0; line-height: 1.4; }
+.lex-tt-lang-text{ flex: 1; }
+.lex-tt-lang-word{ font-weight: 700; color: #c7d2fe; font-size: 12px; }
+.lex-tt-lang-def { color: #94a3b8; font-size: 11px; }
+.lex-tt-link     { font-size: 11px; color: #818cf8; margin-top: 8px; }
 
 /* ─── Mobile ─── */
 @media (max-width: 500px) {
@@ -296,11 +304,29 @@ body.xray-mode .brick-role {
   <div class="pz-loading" id="pz-loading">טוען פאזל...</div>
 </div>
 
-<!-- ─── Lexicon tooltip (singleton, repositioned on click) ─── -->
+<!-- ─── Lexicon tooltip — trilingual (singleton, repositioned on click) ─── -->
 <div class="lex-tooltip" id="lex-tooltip" style="display:none;">
-  <div class="lex-tooltip-word"   id="lex-tt-word"></div>
-  <div class="lex-tooltip-meaning" id="lex-tt-meaning"></div>
-  <div class="lex-tooltip-link">
+  <div class="lex-tt-header">
+    <span class="lex-tt-word" id="lex-tt-word"></span>
+    <span class="lex-tt-meta" id="lex-tt-meta"></span>
+  </div>
+  <div class="lex-tt-meaning" id="lex-tt-meaning"></div>
+  <div class="lex-tt-divider" id="lex-tt-divider" style="display:none;"></div>
+  <div id="lex-tt-arabic" class="lex-tt-lang-row" style="display:none;">
+    <span class="lex-tt-flag">🇸🇦</span>
+    <div class="lex-tt-lang-text">
+      <div class="lex-tt-lang-word" id="lex-tt-arabic-word"></div>
+      <div class="lex-tt-lang-def"  id="lex-tt-arabic-meaning"></div>
+    </div>
+  </div>
+  <div id="lex-tt-english" class="lex-tt-lang-row" style="display:none;">
+    <span class="lex-tt-flag">🇬🇧</span>
+    <div class="lex-tt-lang-text">
+      <div class="lex-tt-lang-word" id="lex-tt-english-word"></div>
+      <div class="lex-tt-lang-def"  id="lex-tt-english-meaning"></div>
+    </div>
+  </div>
+  <div class="lex-tt-link">
     <a href="/lexicon.html" style="color:#818cf8;text-decoration:none;">← ללקסיקון המלא</a>
   </div>
 </div>
@@ -957,7 +983,16 @@ function applyLexiconHighlights() {
         const escaped = entry.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const re = new RegExp(`(?<![א-תa-zA-Z])${escaped}(?![א-תa-zA-Z])`, "g");
         html = html.replace(re,
-          `<span class="lex-hint" data-word="${escHtml(entry.word)}" data-meaning="${escHtml(entry.meaning)}" data-id="${entry.id}">${entry.word}</span>`
+          `<span class="lex-hint"
+            data-word="${escHtml(entry.word)}"
+            data-meaning="${escHtml(entry.meaning || "")}"
+            data-preposition="${escHtml(entry.preposition || "")}"
+            data-root="${escHtml(entry.root || "")}"
+            data-arabic-word="${escHtml(entry.arabic_word || "")}"
+            data-arabic-meaning="${escHtml(entry.arabic_meaning || "")}"
+            data-english-word="${escHtml(entry.english_word || "")}"
+            data-english-meaning="${escHtml(entry.english_meaning || "")}"
+            data-id="${entry.id}">${entry.word}</span>`
         );
       });
     el.innerHTML = html;
@@ -984,8 +1019,37 @@ document.addEventListener("click", e => {
 
   if (!hint) { tt.style.display = "none"; return; }
 
-  document.getElementById("lex-tt-word").textContent    = hint.dataset.word    || "";
-  document.getElementById("lex-tt-meaning").textContent = hint.dataset.meaning || "";
+  // Populate trilingual tooltip
+  const d = hint.dataset;
+  document.getElementById("lex-tt-word").textContent    = d.word    || "";
+  document.getElementById("lex-tt-meaning").textContent = d.meaning || "";
+
+  // Meta line: preposition + root
+  const metaParts = [];
+  if (d.preposition) metaParts.push(`מ"י: ${d.preposition}`);
+  if (d.root)        metaParts.push(`שורש: ${d.root}`);
+  document.getElementById("lex-tt-meta").textContent = metaParts.join(" | ");
+
+  // Arabic row
+  const hasAr = d.arabicWord || d.arabicMeaning;
+  const arRow  = document.getElementById("lex-tt-arabic");
+  arRow.style.display = hasAr ? "" : "none";
+  if (hasAr) {
+    document.getElementById("lex-tt-arabic-word").textContent    = d.arabicWord    || "";
+    document.getElementById("lex-tt-arabic-meaning").textContent = d.arabicMeaning || "";
+  }
+
+  // English row
+  const hasEn = d.englishWord || d.englishMeaning;
+  const enRow  = document.getElementById("lex-tt-english");
+  enRow.style.display = hasEn ? "" : "none";
+  if (hasEn) {
+    document.getElementById("lex-tt-english-word").textContent    = d.englishWord    || "";
+    document.getElementById("lex-tt-english-meaning").textContent = d.englishMeaning || "";
+  }
+
+  // Show divider only if any translation exists
+  document.getElementById("lex-tt-divider").style.display = (hasAr || hasEn) ? "" : "none";
 
   // Position near click, keep within viewport
   const x = Math.min(e.clientX + 10, window.innerWidth  - 260);

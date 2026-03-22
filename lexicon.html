@@ -95,6 +95,12 @@ body { font-family: 'Assistant', sans-serif; background: #f0f4ff; min-height: 10
 .diff-stars { font-size: 12px; color: #f59e0b; letter-spacing: 1px; }
 
 .card-meaning { font-size: 13px; color: #374151; line-height: 1.55; }
+.card-meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 2px; }
+.card-meta-chip { font-size: 10px; color: #6366f1; background: #eef2ff; border-radius: 5px; padding: 1px 7px; }
+.card-translation-row { display: flex; align-items: baseline; gap: 6px; font-size: 12px; margin-top: 3px; }
+.card-tt-flag { font-size: 13px; }
+.card-tt-lang-word { font-weight: 700; color: #374151; }
+.card-tt-lang-def  { color: #94a3b8; font-size: 11px; }
 .card-example {
   font-size: 12px; color: #64748b; font-style: italic; line-height: 1.5;
   border-right: 2px solid #e2e8f0; padding-right: 8px;
@@ -363,8 +369,11 @@ function wordCardHTML(w, withTip) {
       </div>
     </div>
     <div class="card-meaning">${escHtml(w.meaning)}</div>
+    ${w.preposition || w.root ? `<div class="card-meta-row">${w.preposition ? `<span class="card-meta-chip">מ"י: ${escHtml(w.preposition)}</span>` : ""}${w.root ? `<span class="card-meta-chip">שורש: ${escHtml(w.root)}</span>` : ""}</div>` : ""}
     ${w.example ? `<div class="card-example">${escHtml(w.example)}</div>` : ""}
     ${withTip && w.studyTip ? `<div class="study-tip">💡 ${escHtml(w.studyTip)}</div>` : ""}
+    ${(w.arabic_word || w.arabic_meaning) ? `<div class="card-translation-row"><span class="card-tt-flag">🇸🇦</span><span class="card-tt-lang-word">${escHtml(w.arabic_word || "")}</span>${w.arabic_meaning ? `<span class="card-tt-lang-def">${escHtml(w.arabic_meaning)}</span>` : ""}</div>` : ""}
+    ${(w.english_word || w.english_meaning) ? `<div class="card-translation-row"><span class="card-tt-flag">🇬🇧</span><span class="card-tt-lang-word">${escHtml(w.english_word || "")}</span>${w.english_meaning ? `<span class="card-tt-lang-def">${escHtml(w.english_meaning)}</span>` : ""}</div>` : ""}
     <div class="familiarity-row">
       <span class="fam-label">הכרות:</span>
       <div class="fam-dots">

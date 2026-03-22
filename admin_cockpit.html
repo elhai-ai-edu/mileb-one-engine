@@ -381,6 +381,43 @@
         </select>
       </div>
     </div>
+    <!-- Trilingual fields -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מילית יחס (אופציונלי)</label>
+        <input id="lex-preposition" type="text" placeholder='לדוגמה: "ל-", "ב-"'
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שורש / שם פעולה (אופציונלי)</label>
+        <input id="lex-root" type="text" placeholder='לדוגמה: "נ.ה.ל", "ניהול"'
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇸🇦 מילה בערבית (אופציונלי)</label>
+        <input id="lex-arabic-word" type="text" dir="rtl" placeholder="المصطلح بالعربية"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇸🇦 משמעות בערבית (אופציונלי)</label>
+        <input id="lex-arabic-meaning" type="text" dir="rtl" placeholder="הסבר קצר בערבית"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇬🇧 מילה באנגלית (אופציונלי)</label>
+        <input id="lex-english-word" type="text" dir="ltr" placeholder="English term"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">🇬🇧 משמעות באנגלית (אופציונלי)</label>
+        <input id="lex-english-meaning" type="text" dir="ltr" placeholder="Short English definition"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+    </div>
     <!-- Credentials row -->
     <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px;">
       <input id="lex-admin-user" type="text"     placeholder="שם משתמש מנהל" dir="ltr"
@@ -390,6 +427,45 @@
       <button class="btn btn-green" onclick="addLexiconWord()" style="padding:8px 18px;white-space:nowrap;">הוסף מילה</button>
     </div>
     <p id="lex-add-msg" style="font-size:12px;margin:0;min-height:16px;"></p>
+  </div>
+
+  <!-- Bulk Import panel -->
+  <div class="panel">
+    <h2>📥 ייבוא בצובר (Bulk Import)</h2>
+    <p style="font-size:12px;color:#64748b;margin:0 0 10px;">הדבק מערך JSON של מילים (עד 500 בבת אחת). כל אובייקט חייב לכלול לפחות <code>word</code> ו-<code>meaning</code>.</p>
+    <details style="margin-bottom:10px;font-size:11px;color:#64748b;">
+      <summary style="cursor:pointer;font-weight:600;">פורמט שדות (לחץ להרחבה)</summary>
+      <pre style="background:#f8fafc;border-radius:8px;padding:10px;margin-top:6px;overflow:auto;font-size:11px;line-height:1.5;">[
+  {
+    "word": "פרדיגמה",
+    "preposition": "ב-",
+    "root": "פרדיגמה",
+    "meaning": "מסגרת תפיסתית שמנחה חשיבה ומחקר",
+    "example": "שינוי פרדיגמה מאפיין מהפכות מדעיות.",
+    "field": "management",
+    "difficulty_level": 3,
+    "arabic_word": "نموذج",
+    "arabic_meaning": "إطار فكري يوجه التفكير والبحث",
+    "english_word": "paradigm",
+    "english_meaning": "A typical example or pattern of something"
+  }
+]</pre>
+    </details>
+    <textarea id="bulk-json" rows="8" placeholder="[&#10;  { &quot;word&quot;: &quot;...&quot;, &quot;meaning&quot;: &quot;...&quot;, ... }&#10;]"
+      style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;font-family:monospace;box-sizing:border-box;resize:vertical;"></textarea>
+    <div style="display:flex;gap:16px;align-items:center;margin:10px 0 8px;flex-wrap:wrap;">
+      <label style="font-size:12px;font-weight:600;color:#374151;">כפילויות:</label>
+      <label style="font-size:12px;cursor:pointer;"><input type="radio" name="bulk-conflict" value="skip" checked> דלג על קיימות (skip)</label>
+      <label style="font-size:12px;cursor:pointer;"><input type="radio" name="bulk-conflict" value="overwrite"> החלף קיימות (overwrite)</label>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px;">
+      <input id="bulk-admin-user" type="text"     placeholder="שם משתמש מנהל" dir="ltr"
+        style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+      <input id="bulk-admin-pass" type="password" placeholder="סיסמה" dir="ltr"
+        style="padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+      <button class="btn btn-green" onclick="bulkImportLexicon()" style="padding:8px 18px;white-space:nowrap;">ייבא</button>
+    </div>
+    <div id="bulk-result" style="font-size:12px;min-height:16px;"></div>
   </div>
 
 </div>
@@ -1306,14 +1382,20 @@ async function loadLexiconWords() {
 }
 
 async function addLexiconWord() {
-  const word    = document.getElementById("lex-word").value.trim();
-  const meaning = document.getElementById("lex-meaning").value.trim();
-  const example = document.getElementById("lex-example").value.trim();
-  const field   = document.getElementById("lex-field").value;
-  const diff    = parseInt(document.getElementById("lex-diff").value) || 1;
-  const user    = document.getElementById("lex-admin-user").value.trim();
-  const pass    = document.getElementById("lex-admin-pass").value;
-  const msg     = document.getElementById("lex-add-msg");
+  const word            = document.getElementById("lex-word").value.trim();
+  const meaning         = document.getElementById("lex-meaning").value.trim();
+  const example         = document.getElementById("lex-example").value.trim();
+  const field           = document.getElementById("lex-field").value;
+  const diff            = parseInt(document.getElementById("lex-diff").value) || 1;
+  const preposition     = document.getElementById("lex-preposition").value.trim();
+  const root            = document.getElementById("lex-root").value.trim();
+  const arabic_word     = document.getElementById("lex-arabic-word").value.trim();
+  const arabic_meaning  = document.getElementById("lex-arabic-meaning").value.trim();
+  const english_word    = document.getElementById("lex-english-word").value.trim();
+  const english_meaning = document.getElementById("lex-english-meaning").value.trim();
+  const user            = document.getElementById("lex-admin-user").value.trim();
+  const pass            = document.getElementById("lex-admin-pass").value;
+  const msg             = document.getElementById("lex-add-msg");
 
   if (!word || !meaning) { msg.style.color="#ef4444"; msg.innerText="נא למלא מילה והגדרה."; return; }
   if (!user || !pass)    { msg.style.color="#ef4444"; msg.innerText="נדרשים פרטי אימות."; return; }
@@ -1323,14 +1405,21 @@ async function addLexiconWord() {
     const res = await fetch("/api/lexicon/add-word", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ word, meaning, example: example || null, field, difficulty_level: diff,
-        requesterUsername: user, requesterPassword: pass })
+      body: JSON.stringify({
+        word, meaning, example: example || null, field, difficulty_level: diff,
+        preposition: preposition || null, root: root || null,
+        arabic_word: arabic_word || null, arabic_meaning: arabic_meaning || null,
+        english_word: english_word || null, english_meaning: english_meaning || null,
+        requesterUsername: user, requesterPassword: pass
+      })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "שגיאה");
 
     msg.style.color="#16a34a"; msg.innerText=`✅ המילה '${word}' נוספה.`;
-    ["lex-word","lex-meaning","lex-example"].forEach(id => { const el = document.getElementById(id); if(el) el.value=""; });
+    ["lex-word","lex-meaning","lex-example","lex-preposition","lex-root",
+     "lex-arabic-word","lex-arabic-meaning","lex-english-word","lex-english-meaning"
+    ].forEach(id => { const el = document.getElementById(id); if(el) el.value=""; });
     loadLexiconWords();
   } catch(e) { msg.style.color="#ef4444"; msg.innerText=e.message; }
 }
@@ -1351,6 +1440,49 @@ async function deleteLexiconWord(wordId) {
     if (!data.ok) throw new Error(data.error || "שגיאה");
     loadLexiconWords();
   } catch(e) { alert(e.message); }
+}
+
+async function bulkImportLexicon() {
+  const resultEl = document.getElementById("bulk-result");
+  const user = document.getElementById("bulk-admin-user").value.trim();
+  const pass = document.getElementById("bulk-admin-pass").value;
+  const raw  = document.getElementById("bulk-json").value.trim();
+  const onConflict = document.querySelector('input[name="bulk-conflict"]:checked')?.value || "skip";
+
+  if (!user || !pass) { resultEl.style.color="#ef4444"; resultEl.innerHTML="נדרשים פרטי אימות."; return; }
+  if (!raw)           { resultEl.style.color="#ef4444"; resultEl.innerHTML="נא להדביק JSON."; return; }
+
+  let words;
+  try { words = JSON.parse(raw); } catch(e) {
+    resultEl.style.color="#ef4444"; resultEl.innerHTML=`שגיאת JSON: ${e.message}`; return;
+  }
+  if (!Array.isArray(words)) { resultEl.style.color="#ef4444"; resultEl.innerHTML="הקלט חייב להיות מערך JSON."; return; }
+
+  resultEl.style.color="#6366f1"; resultEl.innerHTML=`מייבא ${words.length} מילים...`;
+
+  try {
+    const res = await fetch("/api/lexicon/bulk-import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ words, onConflict, requesterUsername: user, requesterPassword: pass })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "שגיאה");
+
+    let html = `<span style="color:#16a34a;font-weight:600;">✅ נוספו: ${data.added}</span>`;
+    if (data.skipped > 0)
+      html += ` &nbsp;|&nbsp; <span style="color:#f59e0b;">דולגו: ${data.skipped}</span>`;
+    if (data.errorRows?.length > 0) {
+      html += `<br><span style="color:#ef4444;">שגיאות (${data.errorRows.length}):</span><ul style="margin:4px 0 0 16px;padding:0;font-size:11px;color:#ef4444;">`;
+      data.errorRows.slice(0, 10).forEach(r => {
+        html += `<li>שורה ${r.row}: ${escHtmlAdmin(r.issue)} (${escHtmlAdmin(r.data)})</li>`;
+      });
+      if (data.errorRows.length > 10) html += `<li>...ועוד ${data.errorRows.length - 10}</li>`;
+      html += "</ul>";
+    }
+    resultEl.innerHTML = html;
+    loadLexiconWords();
+  } catch(e) { resultEl.style.color="#ef4444"; resultEl.innerHTML=e.message; }
 }
 
 </script>

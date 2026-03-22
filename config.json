@@ -1,5 +1,5 @@
 {
-  "system_version": "5.6 - Adaptive Smart Lexicon",
+  "system_version": "5.7 - Trilingual Lexicon",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "balance": {

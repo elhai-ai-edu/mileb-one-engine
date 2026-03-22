@@ -1,19 +1,23 @@
 /**
  * lexicon_api.js — Smart Lexicon Engine API
- * MilEd.One v9.6.0
+ * MilEd.One v9.6.9
  *
  * Routes:
  *   POST /api/lexicon/personalize  — AI curates study set from student familiarity ratings
  *   POST /api/lexicon/submit       — Saves handwriting submission (sentence + photo ref)
  *   POST /api/lexicon/add-word     — Admin: add word to lexicon (superadmin auth required)
  *   POST /api/lexicon/delete-word  — Admin: delete word (superadmin auth required)
+ *   POST /api/lexicon/bulk-import  — Admin: batch ingest with dedup (superadmin auth required)
  *
  * FIREBASE PATHS:
  *   /lexicon/{wordId}                              — word definitions (public read)
  *   /lexicon_submissions/{studentId}/{wordId}      — handwriting submissions
  *   /lexicon_ratings/{studentId}/{wordId}          — familiarity ratings (server-persisted copy)
  *
- * Fields: field = "management" | "optics" | "social"
+ * SCHEMA v9.6.9 — 10-field trilingual format:
+ *   word, preposition, root, meaning, example, field, difficulty_level,
+ *   arabic_word, arabic_meaning, english_word  (+optional: english_meaning)
+ * Field: "management" | "optics" | "social"
  * Difficulty: 1 (basic) | 2 (intermediate) | 3 (advanced)
  */
 
@@ -199,9 +203,93 @@ async function handleSubmit(body) {
   return { statusCode: 200, body: JSON.stringify({ ok: true, submissionId, xpEarned }) };
 }
 
+// ─── Shared word record builder (v9.6.9 schema) ───
+function buildWordRecord(w, wordId, createdBy, now) {
+  return {
+    wordId,
+    // Core Hebrew
+    word:            w.word?.trim()           || "",
+    preposition:     w.preposition?.trim()    || null,
+    root:            w.root?.trim()           || null,
+    meaning:         w.meaning?.trim()        || "",
+    example:         w.example?.trim()        || null,
+    // Classification
+    field:           ["management","optics","social"].includes(w.field) ? w.field : "management",
+    difficulty_level: Math.max(1, Math.min(3, parseInt(w.difficulty_level) || 1)),
+    // Arabic translation
+    arabic_word:     w.arabic_word?.trim()    || null,
+    arabic_meaning:  w.arabic_meaning?.trim() || null,
+    // English translation
+    english_word:    w.english_word?.trim()   || null,
+    english_meaning: w.english_meaning?.trim()|| null,
+    // Metadata
+    createdAt: now,
+    createdBy
+  };
+}
+
+// ─── INGEST (AI enrichment — preview only, no Firebase write) ───
+async function handleIngest(body) {
+  const { word, meaning, field, difficulty_level, requesterUsername, requesterPassword } = body;
+  if (!word?.trim() || !meaning?.trim())
+    return { statusCode: 400, body: JSON.stringify({ error: "word and meaning are required" }) };
+  if (!requesterUsername || !requesterPassword)
+    return { statusCode: 401, body: JSON.stringify({ error: "authentication required" }) };
+
+  const auth = await authenticate(requesterUsername, requesterPassword);
+  if (!auth) return { statusCode: 401, body: JSON.stringify({ error: "אימות נכשל" }) };
+
+  const system = `You are a Hebrew linguistics expert specializing in Israeli academic vocabulary.
+Given a Hebrew academic word and its meaning, generate a full linguistic profile.
+
+Respond ONLY with a valid JSON object (no markdown, no explanation):
+{
+  "preposition": "the most common preposition that follows this verb/adjective (e.g. 'ב-', 'את', 'ל-', or null if not applicable)",
+  "root": "3-4 letter Hebrew root (shoresh) in the format פ.ע.ל (e.g. 'מ.ר.כ.ז') or null",
+  "example": "one natural academic sentence in Hebrew using this word (20-30 words)",
+  "arabic_word": "the Arabic translation of the Hebrew word (Modern Standard Arabic)",
+  "arabic_meaning": "the Arabic translation of the meaning (1-2 sentences, Modern Standard Arabic)",
+  "english_word": "the English translation of the Hebrew word (1-3 words)",
+  "english_meaning": "the English translation of the meaning (1-2 sentences)",
+  "handwriting_task": "a short Hebrew instruction for a handwriting exercise using the word + preposition (e.g. 'כתבי משפט המשתמש ב-להתמקד ב-'). 15 words max."
+}`;
+
+  const userMsg = `מילה: ${word.trim()}\nמשמעות: ${meaning.trim()}\nתחום: ${FIELD_LABELS[field] || field || "כללי"}\nרמה: ${difficulty_level || 1}`;
+
+  let preview = {};
+  try {
+    const raw = await callAI(system, userMsg, 800);
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) preview = JSON.parse(match[0]);
+  } catch (e) {
+    return { statusCode: 500, body: JSON.stringify({ error: "AI enrichment failed: " + e.message }) };
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      ok: true,
+      preview: {
+        word:            word.trim(),
+        meaning:         meaning.trim(),
+        field:           [\"management\",\"optics\",\"social\"].includes(field) ? field : \"management\",
+        difficulty_level: Math.max(1, Math.min(3, parseInt(difficulty_level) || 1)),
+        preposition:     preview.preposition   || null,
+        root:            preview.root          || null,
+        example:         preview.example       || null,
+        arabic_word:     preview.arabic_word   || null,
+        arabic_meaning:  preview.arabic_meaning|| null,
+        english_word:    preview.english_word  || null,
+        english_meaning: preview.english_meaning || null,
+        handwriting_task: preview.handwriting_task || null
+      }
+    })
+  };
+}
+
 // ─── ADD WORD (admin) ───
 async function handleAddWord(body) {
-  const { word, meaning, example, field, difficulty_level, requesterUsername, requesterPassword } = body;
+  const { word, meaning, field, requesterUsername, requesterPassword } = body;
   if (!word?.trim() || !meaning?.trim() || !field)
     return { statusCode: 400, body: JSON.stringify({ error: "word, meaning, and field are required" }) };
   if (!["management","optics","social"].includes(field))
@@ -213,18 +301,68 @@ async function handleAddWord(body) {
   if (!auth) return { statusCode: 401, body: JSON.stringify({ error: "אימות נכשל" }) };
 
   const wordId = "w_" + crypto.randomBytes(5).toString("hex");
-  await getDB().ref(`lexicon/${wordId}`).set({
-    wordId,
-    word: word.trim(),
-    meaning: meaning.trim(),
-    example: example?.trim() || null,
-    field,
-    difficulty_level: Math.max(1, Math.min(3, parseInt(difficulty_level) || 1)),
-    createdAt: Date.now(),
-    createdBy: requesterUsername
-  });
+  await getDB().ref(`lexicon/${wordId}`).set(buildWordRecord(body, wordId, requesterUsername, Date.now()));
 
   return { statusCode: 200, body: JSON.stringify({ ok: true, wordId }) };
+}
+
+// ─── BULK IMPORT (admin) ───
+async function handleBulkImport(body) {
+  const { words, requesterUsername, requesterPassword, onConflict = "skip" } = body;
+  if (!Array.isArray(words) || !words.length)
+    return { statusCode: 400, body: JSON.stringify({ error: "words array is required" }) };
+  if (words.length > 500)
+    return { statusCode: 400, body: JSON.stringify({ error: "maximum 500 words per batch" }) };
+  if (!requesterUsername || !requesterPassword)
+    return { statusCode: 401, body: JSON.stringify({ error: "authentication required" }) };
+
+  const auth = await authenticate(requesterUsername, requesterPassword);
+  if (!auth) return { statusCode: 401, body: JSON.stringify({ error: "אימות נכשל" }) };
+
+  // Load existing words → dedup set (normalized lowercase)
+  const snap = await getDB().ref("lexicon").get();
+  const existingKeys = new Set();
+  if (snap.exists() && snap.val()) {
+    Object.values(snap.val()).forEach(w => {
+      if (w.word) existingKeys.add(w.word.trim().toLowerCase());
+    });
+  }
+
+  const now  = Date.now();
+  const writes   = {};
+  const skippedWords = [];
+  const errorRows    = [];
+  let added = 0, skipped = 0;
+
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i];
+    if (!w.word?.trim() || !w.meaning?.trim()) {
+      errorRows.push({ row: i + 1, issue: "missing word or meaning", data: String(w.word || "") });
+      continue;
+    }
+
+    const normalKey = w.word.trim().toLowerCase();
+    if (existingKeys.has(normalKey) && onConflict === "skip") {
+      skipped++;
+      skippedWords.push(w.word.trim());
+      continue;
+    }
+
+    const wordId = "w_" + crypto.randomBytes(5).toString("hex");
+    writes[`lexicon/${wordId}`] = buildWordRecord(w, wordId, requesterUsername, now);
+    existingKeys.add(normalKey); // prevent intra-batch duplicates
+    added++;
+  }
+
+  if (Object.keys(writes).length > 0) {
+    // Firebase update() has a 32MB limit — safe for ≤500 words
+    await getDB().ref().update(writes);
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ ok: true, added, skipped, skippedWords, errorRows })
+  };
 }
 
 // ─── DELETE WORD (admin) ───
@@ -256,9 +394,10 @@ export async function handler(event) {
       case "submit":       result = await handleSubmit(body);       break;
       case "add-word":     result = await handleAddWord(body);      break;
       case "delete-word":  result = await handleDeleteWord(body);   break;
+      case "bulk-import":  result = await handleBulkImport(body);   break;
       default:
         return { statusCode: 404, headers,
-          body: JSON.stringify({ error: "Unknown route", valid: ["/personalize","/submit","/add-word","/delete-word"] }) };
+          body: JSON.stringify({ error: "Unknown route", valid: ["/personalize","/submit","/add-word","/delete-word","/bulk-import"] }) };
     }
     return { ...result, headers };
   } catch (e) {
