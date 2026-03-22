@@ -223,6 +223,12 @@ function buildWordRecord(w, wordId, createdBy, now) {
     // English translation
     english_word:    w.english_word?.trim()   || null,
     english_meaning: w.english_meaning?.trim()|| null,
+    // Handwriting task — AI-generated or auto-fallback from word + preposition
+    handwriting_task: w.handwriting_task?.trim() || (() => {
+      const hw = w.word?.trim() || "";
+      const prep = w.preposition?.trim();
+      return prep ? `כתבי משפט בו תשתמשי ב"${hw} ${prep}"` : `כתבי משפט בו תשתמשי ב"${hw}"`;
+    })(),
     // Metadata
     createdAt: now,
     createdBy
