@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>כיתה חכמה — MilEd.One</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; min-height: 100vh; direction: rtl; }
+
+    /* ─── Topbar ─── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 0 28px; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .brand { font-size: 18px; font-weight: 700; color: #1e293b; }
+    .brand span { color: #6366f1; }
+    .topbar-nav { display: flex; align-items: center; gap: 16px; }
+    .back-link { font-size: 13px; color: #6366f1; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+    .back-link:hover { text-decoration: underline; }
+    .logout-btn {
+      font-size: 12px; color: #94a3b8; border: 1px solid #e2e8f0;
+      border-radius: 6px; padding: 4px 12px; cursor: pointer; background: none;
+    }
+    .logout-btn:hover { color: #ef4444; border-color: #fca5a5; }
+
+    /* ─── Layout ─── */
+    .page { max-width: 980px; margin: 0 auto; padding: 32px 24px 80px; }
+
+    /* ─── Course header ─── */
+    .course-header {
+      background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      border-radius: 18px;
+      padding: 26px 28px;
+      margin-bottom: 24px;
+      color: #fff;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .course-header-left {}
+    .course-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .course-header-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .header-chip {
+      font-size: 11px; font-weight: 600; padding: 3px 11px; border-radius: 20px;
+      background: rgba(255,255,255,.2); color: #fff;
+    }
+    .lock-status-badge {
+      font-size: 13px; font-weight: 700; padding: 6px 16px; border-radius: 20px;
+      flex-shrink: 0; align-self: flex-start;
+    }
+    .lock-status-badge.locked { background: #fee2e2; color: #dc2626; }
+    .lock-status-badge.active { background: #dcfce7; color: #16a34a; }
+    .lock-status-badge.loading { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* ─── Grid ─── */
+    .grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; align-items: start; }
+    @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+
+    /* ─── Panel ─── */
+    .panel {
+      background: #fff;
+      border-radius: 14px;
+      border: 1.5px solid #e2e8f0;
+      padding: 20px 22px;
+      margin-bottom: 18px;
+    }
+    .panel-title {
+      font-size: 14px; font-weight: 700; color: #374151;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ─── Bot launchers ─── */
+    .bot-launchers { display: flex; flex-direction: column; gap: 10px; }
+    .bot-launch-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1.5px solid #c7d2fe;
+      background: #eef2ff;
+      text-decoration: none;
+      color: #4f46e5;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background .15s, border-color .15s, transform .12s;
+    }
+    .bot-launch-btn:hover { background: #e0e7ff; border-color: #818cf8; transform: translateX(-2px); }
+    .bot-launch-btn .btn-icon { font-size: 18px; }
+    .bot-launch-btn .btn-arrow { font-size: 12px; color: #818cf8; }
+
+    /* ─── Unit list ─── */
+    .unit-list { display: flex; flex-direction: column; gap: 6px; }
+    .unit-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 12px; border-radius: 8px; background: #f8fafc;
+      font-size: 13px; color: #374151;
+    }
+    .unit-num {
+      width: 24px; height: 24px; border-radius: 50%; background: #e0e7ff;
+      color: #6366f1; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+
+    /* ─── Lifecycle panel ─── */
+    .lifecycle-row { display: flex; flex-direction: column; gap: 10px; }
+    .lifecycle-field label {
+      display: block; font-size: 11px; color: #64748b; font-weight: 600; margin-bottom: 4px;
+    }
+    .lifecycle-field input[type="date"] {
+      width: 100%; padding: 7px 10px; border: 1.5px solid #e2e8f0;
+      border-radius: 8px; font-size: 13px;
+    }
+    .save-lifecycle-btn {
+      width: 100%; padding: 9px; border-radius: 8px;
+      background: #6366f1; color: #fff; border: none; cursor: pointer;
+      font-size: 13px; font-weight: 600;
+      transition: background .15s;
+    }
+    .save-lifecycle-btn:hover { background: #4f46e5; }
+    .lifecycle-msg { font-size: 12px; min-height: 16px; margin-top: 4px; }
+
+    /* ─── Spinner ─── */
+    .miled-spinner { color: #94a3b8; font-size: 13px; padding: 20px 0; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">MilEd<span>.</span>One</div>
+  <div class="topbar-nav">
+    <a href="/my_courses.html" class="back-link">→ הקורסים שלי</a>
+    <button class="logout-btn" onclick="logout()">יציאה</button>
+  </div>
+</div>
+
+<div class="page" id="page-content" style="display:none;">
+
+  <!-- Course header -->
+  <div class="course-header" id="course-header">
+    <div class="course-header-left">
+      <div id="course-name" style="font-size:22px;font-weight:700;">טוען...</div>
+      <div class="course-header-meta" id="course-meta"></div>
+    </div>
+    <span class="lock-status-badge loading" id="lock-badge">בודק...</span>
+  </div>
+
+  <div class="grid-2">
+
+    <!-- ─── Left column ─── -->
+    <div>
+
+      <!-- Bot launchers -->
+      <div class="panel">
+        <div class="panel-title">🤖 הפעל בוט</div>
+        <div class="bot-launchers" id="bot-launchers">
+          <div class="miled-spinner">טוען...</div>
+        </div>
+      </div>
+
+      <!-- Semester units -->
+      <div class="panel" id="units-panel" style="display:none;">
+        <div class="panel-title">📋 יחידות הקורס</div>
+        <div class="unit-list" id="unit-list"></div>
+      </div>
+
+    </div>
+
+    <!-- ─── Right column ─── -->
+    <div>
+
+      <!-- Class lifecycle -->
+      <div class="panel">
+        <div class="panel-title">📅 מחזור חיי הכיתה</div>
+        <div class="lifecycle-row">
+          <div class="lifecycle-field">
+            <label>תאריך נעילה (lockDate)</label>
+            <input type="date" id="lock-date">
+          </div>
+          <div class="lifecycle-field">
+            <label>תאריך מחיקת נתונים (retentionDate)</label>
+            <input type="date" id="retention-date">
+          </div>
+          <button class="save-lifecycle-btn" onclick="saveLifecycle()">שמור</button>
+          <div class="lifecycle-msg" id="lifecycle-msg"></div>
+        </div>
+      </div>
+
+      <!-- Quick links -->
+      <div class="panel">
+        <div class="panel-title">🔗 קישורים מהירים</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <a id="student-link" href="#" target="_blank"
+            style="font-size:13px;color:#6366f1;text-decoration:none;padding:8px 12px;background:#eef2ff;border-radius:8px;border:1px solid #c7d2fe;">
+            📱 קישור לסטודנטים
+          </a>
+          <a href="/admin_cockpit.html#lexicon"
+            style="font-size:13px;color:#6366f1;text-decoration:none;padding:8px 12px;background:#eef2ff;border-radius:8px;border:1px solid #c7d2fe;">
+            📚 נהל לקסיקון
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="error-msg" style="display:none;text-align:center;color:#ef4444;padding:60px 20px;font-size:15px;"></div>
+
+<!-- Firebase SDK for lifecycle writes -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script>
+
+// ─── Auth guard ───
+const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+if (!auth || !["faculty", "institution", "superadmin"].includes(auth.role)) {
+  document.documentElement.style.visibility = "hidden";
+  location.replace("/");
+}
+
+const params  = new URLSearchParams(location.search);
+const classId = params.get("classId") || "";
+
+if (!classId) {
+  document.getElementById("error-msg").style.display = "";
+  document.getElementById("error-msg").textContent = "לא צוין מזהה קורס (classId). חזור לדף הקורסים.";
+}
+
+const DB_URL = window.MILED_FIREBASE_CONFIG?.databaseURL;
+
+const LANG_LABELS = {
+  ar: "דוברי ערבית", ru: "דוברי רוסית", am: "דוברי אמהרית", he: "עברית"
+};
+const LEVEL_LABELS = {
+  he_a2_arabic: "עברית A2", he_b1_arabic: "עברית B1",
+  he_a2_russian: "עברית A2", he_b1: "עברית B1", native: "שפת אם"
+};
+
+let currentCourse = null;
+let db = null;
+
+// ─── Init Firebase for writes ───
+window.addEventListener("load", () => {
+  if (window.firebase && window.MILED_FIREBASE_CONFIG && !firebase.apps.length) {
+    firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+  }
+  if (window.firebase?.apps?.length) db = firebase.database();
+  if (classId) loadPage();
+});
+
+async function loadPage() {
+  try {
+    // Load config
+    const config = await fetch("/config.json?ts=" + Date.now()).then(r => r.json());
+    currentCourse = config.my_courses?.[classId];
+    if (!currentCourse) {
+      showError(`קורס "${escHtml(classId)}" לא נמצא בתצורה. בדוק את config.json.`);
+      return;
+    }
+
+    // Render course header
+    document.getElementById("course-name").textContent = currentCourse.name;
+    const metaEl = document.getElementById("course-meta");
+    const langLabel  = LANG_LABELS[currentCourse.language]   || currentCourse.language   || "";
+    const levelLabel = LEVEL_LABELS[currentCourse.hebrew_level] || currentCourse.hebrew_level || "";
+    if (langLabel)  metaEl.insertAdjacentHTML("beforeend", `<span class="header-chip">🌐 ${escHtml(langLabel)}</span>`);
+    if (levelLabel) metaEl.insertAdjacentHTML("beforeend", `<span class="header-chip">📊 ${escHtml(levelLabel)}</span>`);
+
+    // Render bot launchers
+    renderBotLaunchers(currentCourse);
+
+    // Render semester units
+    const units = currentCourse.course_units?.semester_a?.units || [];
+    if (units.length) {
+      document.getElementById("unit-list").innerHTML = units.map(u =>
+        `<div class="unit-row">
+          <div class="unit-num">${u.id}</div>
+          <span>${escHtml(u.label)}</span>
+        </div>`
+      ).join("");
+      document.getElementById("units-panel").style.display = "";
+    }
+
+    // Student workspace link
+    document.getElementById("student-link").href = `/workspace.html?courseId=${encodeURIComponent(classId)}`;
+
+    // Load lifecycle from Firebase
+    if (DB_URL) {
+      try {
+        const snap = await fetch(`${DB_URL}/classes/${encodeURIComponent(classId)}.json`).then(r => r.json());
+        const badge = document.getElementById("lock-badge");
+        if (snap?.lockDate) {
+          document.getElementById("lock-date").value = snap.lockDate;
+          const isLocked = new Date(snap.lockDate) < new Date();
+          badge.textContent = isLocked ? "🔒 נעול" : "✅ פעיל";
+          badge.className = "lock-status-badge " + (isLocked ? "locked" : "active");
+        } else {
+          badge.textContent = "✅ פעיל";
+          badge.className = "lock-status-badge active";
+        }
+        if (snap?.retentionDate) document.getElementById("retention-date").value = snap.retentionDate;
+      } catch { /* lifecycle data non-fatal */ }
+    }
+
+    document.getElementById("page-content").style.display = "";
+  } catch (e) {
+    showError("שגיאה בטעינת הקורס: " + e.message);
+  }
+}
+
+function renderBotLaunchers(course) {
+  const container = document.getElementById("bot-launchers");
+  const bots = course.bots || {};
+  const universalBots = course.universal_bots || [];
+
+  const BOT_ICONS = {
+    socratic_student: "🤖", task_final_project: "📝",
+    universal_support: "🤝", universal_presentation: "🎤",
+    universal_writing: "✍️", universal_research: "🔬"
+  };
+
+  let html = "";
+
+  // Main course bots
+  for (const key in bots) {
+    const bot = bots[key];
+    const label   = bot.label   || key;
+    const botType = bot.botType || bot;
+    const icon = BOT_ICONS[botType] || "🤖";
+    const url = `/workspace.html?courseId=${encodeURIComponent(classId)}`;
+    html += `<a href="${url}" class="bot-launch-btn" target="_blank">
+      <span>${icon} ${escHtml(label)}</span>
+      <span class="btn-arrow">← פתח</span>
+    </a>`;
+  }
+
+  // Universal bots
+  const UNI_MAP = {
+    support:      { label: "🤝 בוט תמיכה",        skillId: "support_bot" },
+    presentation: { label: "🎤 בוט פרזנטציות",     skillId: "presentation_bot" }
+  };
+  for (const u of universalBots) {
+    const info = UNI_MAP[u];
+    if (!info) continue;
+    html += `<a href="/workspace.html?courseId=${encodeURIComponent(classId)}" class="bot-launch-btn" target="_blank">
+      <span>${escHtml(info.label)}</span>
+      <span class="btn-arrow">← פתח</span>
+    </a>`;
+  }
+
+  container.innerHTML = html || '<p style="font-size:13px;color:#94a3b8;">לא הוגדרו בוטים לקורס זה.</p>';
+}
+
+// ─── Save lifecycle ───
+async function saveLifecycle() {
+  const msgEl = document.getElementById("lifecycle-msg");
+  const lockDate      = document.getElementById("lock-date").value;
+  const retentionDate = document.getElementById("retention-date").value;
+
+  if (!db) {
+    msgEl.style.color = "#ef4444";
+    msgEl.textContent = "Firebase לא מחובר — נסה שוב.";
+    return;
+  }
+
+  msgEl.style.color = "#6366f1";
+  msgEl.textContent = "שומר...";
+
+  try {
+    const updates = {};
+    if (lockDate)      updates.lockDate = lockDate;
+    if (retentionDate) updates.retentionDate = retentionDate;
+    await db.ref(`classes/${classId}`).update(updates);
+
+    // Update the lock badge
+    const badge = document.getElementById("lock-badge");
+    if (lockDate) {
+      const isLocked = new Date(lockDate) < new Date();
+      badge.textContent = isLocked ? "🔒 נעול" : "✅ פעיל";
+      badge.className = "lock-status-badge " + (isLocked ? "locked" : "active");
+    }
+
+    msgEl.style.color = "#16a34a";
+    msgEl.textContent = "✅ נשמר.";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
+  } catch (e) {
+    msgEl.style.color = "#ef4444";
+    msgEl.textContent = e.message;
+  }
+}
+
+function showError(msg) {
+  const errEl = document.getElementById("error-msg");
+  errEl.innerHTML = msg;
+  errEl.style.display = "";
+}
+
+function escHtml(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function logout() {
+  sessionStorage.removeItem("miled_auth");
+  location.replace("/");
+}
+
+</script>
+</body>
+</html>

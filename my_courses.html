@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>הקורסים שלי — MilEd.One</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; min-height: 100vh; direction: rtl; }
+
+    /* ─── Topbar ─── */
+    .topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 0 28px; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .brand { font-size: 18px; font-weight: 700; color: #1e293b; }
+    .brand span { color: #6366f1; }
+    .topbar-nav { display: flex; align-items: center; gap: 16px; }
+    .back-link { font-size: 13px; color: #6366f1; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+    .back-link:hover { text-decoration: underline; }
+    .logout-btn {
+      font-size: 12px; color: #94a3b8; border: 1px solid #e2e8f0;
+      border-radius: 6px; padding: 4px 12px; cursor: pointer; background: none;
+    }
+    .logout-btn:hover { color: #ef4444; border-color: #fca5a5; }
+
+    /* ─── Page ─── */
+    .page { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+    .page-title { font-size: 24px; font-weight: 700; color: #1e293b; margin-bottom: 4px; }
+    .page-subtitle { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+
+    /* ─── Course grid ─── */
+    .course-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 18px;
+    }
+
+    .course-card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1.5px solid #e2e8f0;
+      padding: 22px;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: border-color .18s, box-shadow .18s, transform .18s;
+      cursor: pointer;
+    }
+    .course-card:hover {
+      border-color: #6366f1;
+      box-shadow: 0 6px 24px rgba(99,102,241,.1);
+      transform: translateY(-2px);
+    }
+
+    .course-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .course-name { font-size: 16px; font-weight: 700; color: #1e293b; line-height: 1.4; }
+    .lock-badge {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .lock-badge.locked   { background: #fee2e2; color: #dc2626; }
+    .lock-badge.active   { background: #dcfce7; color: #16a34a; }
+    .lock-badge.loading  { background: #f1f5f9; color: #94a3b8; }
+
+    .course-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+    .meta-chip {
+      font-size: 11px; color: #64748b; background: #f8fafc;
+      border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px 9px;
+    }
+
+    .course-bots { display: flex; flex-wrap: wrap; gap: 6px; }
+    .bot-chip {
+      font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+      background: #eef2ff; color: #4f46e5; border: 1px solid #c7d2fe;
+    }
+
+    .course-cta {
+      margin-top: 4px;
+      font-size: 13px; font-weight: 600; color: #6366f1;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ─── Empty / loading states ─── */
+    .empty-state {
+      text-align: center; color: #94a3b8; padding: 60px 20px;
+      font-size: 15px;
+    }
+    .miled-spinner {
+      text-align: center; color: #94a3b8; padding: 40px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">MilEd<span>.</span>One</div>
+  <div class="topbar-nav">
+    <a href="/lecturer_hub.html" class="back-link">→ חזרה לפורטל</a>
+    <button class="logout-btn" onclick="logout()">יציאה</button>
+  </div>
+</div>
+
+<div class="page">
+  <div class="page-title">הקורסים שלי</div>
+  <div class="page-subtitle">לחץ על קורס כדי לפתוח את לוח הכיתה החכם</div>
+
+  <div id="course-grid" class="course-grid">
+    <div class="miled-spinner">טוען קורסים...</div>
+  </div>
+</div>
+
+<script src="/firebase-init.js"></script>
+<script>
+
+// ─── Auth guard ───
+const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+if (!auth || !["faculty", "institution", "superadmin"].includes(auth.role)) {
+  document.documentElement.style.visibility = "hidden";
+  location.replace("/");
+}
+
+const DB_URL = window.MILED_FIREBASE_CONFIG?.databaseURL;
+
+const LANG_LABELS = {
+  ar: "דוברי ערבית",
+  ru: "דוברי רוסית",
+  am: "דוברי אמהרית",
+  he: "עברית"
+};
+
+const LEVEL_LABELS = {
+  he_a2_arabic:    "עברית A2",
+  he_b1_arabic:    "עברית B1",
+  he_a2_russian:   "עברית A2",
+  he_b1:           "עברית B1",
+  native:          "רמת שפת אם"
+};
+
+async function loadCourses() {
+  const grid = document.getElementById("course-grid");
+  try {
+    const res = await fetch("/config.json?ts=" + Date.now());
+    const config = await res.json();
+    const courses = config.my_courses || {};
+    const keys = Object.keys(courses);
+
+    if (!keys.length) {
+      grid.innerHTML = '<div class="empty-state">לא נמצאו קורסים. פנה למנהל המערכת.</div>';
+      return;
+    }
+
+    // Render cards immediately, then update lock status async
+    grid.innerHTML = keys.map(id => courseCardHTML(id, courses[id], "loading")).join("");
+
+    // Fetch lock status from Firebase for each course
+    keys.forEach(async (classId) => {
+      if (!DB_URL) return;
+      try {
+        const snap = await fetch(`${DB_URL}/classes/${classId}.json`).then(r => r.json());
+        const badge = document.getElementById(`lock-${classId}`);
+        if (!badge) return;
+        if (snap?.lockDate) {
+          const isLocked = new Date(snap.lockDate) < new Date();
+          badge.textContent = isLocked ? "🔒 נעול" : "✅ פעיל";
+          badge.className = "lock-badge " + (isLocked ? "locked" : "active");
+        } else {
+          badge.textContent = "✅ פעיל";
+          badge.className = "lock-badge active";
+        }
+      } catch { /* non-fatal */ }
+    });
+
+  } catch (e) {
+    grid.innerHTML = `<div class="empty-state">שגיאה בטעינת הקורסים: ${e.message}</div>`;
+  }
+}
+
+function courseCardHTML(classId, course, lockStatus) {
+  const botChips = Object.values(course.bots || {})
+    .map(b => `<span class="bot-chip">${b.label || b.botType || b}</span>`)
+    .join("");
+
+  const langLabel  = LANG_LABELS[course.language]  || course.language  || "";
+  const levelLabel = LEVEL_LABELS[course.hebrew_level] || course.hebrew_level || "";
+
+  const unitCount = course.course_units?.semester_a?.units?.length || 0;
+
+  return `
+  <a href="/smart_class.html?classId=${encodeURIComponent(classId)}" class="course-card">
+    <div class="course-card-header">
+      <div class="course-name">${escHtml(course.name)}</div>
+      <span class="lock-badge loading" id="lock-${classId}">בודק...</span>
+    </div>
+    <div class="course-meta">
+      ${langLabel  ? `<span class="meta-chip">🌐 ${escHtml(langLabel)}</span>` : ""}
+      ${levelLabel ? `<span class="meta-chip">📊 ${escHtml(levelLabel)}</span>` : ""}
+      ${unitCount  ? `<span class="meta-chip">📋 ${unitCount} יחידות</span>` : ""}
+    </div>
+    ${botChips ? `<div class="course-bots">${botChips}</div>` : ""}
+    <div class="course-cta">פתח כיתה חכמה <span>←</span></div>
+  </a>`;
+}
+
+function escHtml(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function logout() {
+  sessionStorage.removeItem("miled_auth");
+  location.replace("/");
+}
+
+loadCourses();
+</script>
+</body>
+</html>

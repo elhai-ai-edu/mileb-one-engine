@@ -79,6 +79,21 @@
   status = 200
 
 [[redirects]]
+  from = "/lecturer-hub"
+  to = "/lecturer_hub.html"
+  status = 200
+
+[[redirects]]
+  from = "/my-courses"
+  to = "/my_courses.html"
+  status = 200
+
+[[redirects]]
+  from = "/smart-class"
+  to = "/smart_class.html"
+  status = 200
+
+[[redirects]]
   from = "/lecturer-cockpit"
   to = "/lecturer_cockpit.html"
   status = 200
