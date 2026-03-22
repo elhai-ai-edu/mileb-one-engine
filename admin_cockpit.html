@@ -353,19 +353,69 @@ function switchTab(tab){
 // ─── Firebase REST helpers ───
 function dbUrl() { return window.MILED_FIREBASE_CONFIG?.databaseURL || ""; }
 
+// Returns a fresh ID token. Forces refresh on every call (no caching).
 async function getFirebaseToken() {
-  if (window.firebase && firebase.apps.length && firebase.auth().currentUser)
-    return firebase.auth().currentUser.getIdToken(true);
+  const user = window.firebase?.apps?.length && firebase.auth().currentUser;
+  if (user) return user.getIdToken(/* forceRefresh= */ true);
   throw new Error("לא מחובר ל-Firebase — טען את הדף מחדש");
+}
+
+// ─── Re-authenticate ───
+// Clears all session data and sends back to the landing page for a fresh Google Login.
+function reAuthenticate() {
+  if (window.firebase?.apps?.length) firebase.auth().signOut().catch(() => {});
+  sessionStorage.clear();
+  window.location.href = "/";
+}
+
+function reAuthBtn() {
+  return `<button onclick="reAuthenticate()"
+    style="display:inline-block;margin-top:8px;background:#6366f1;color:#fff;border:none;
+           border-radius:8px;padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;
+           font-family:'Assistant',sans-serif;">
+    🔄 התחבר מחדש
+  </button>`;
+}
+
+// ─── Unified fetch wrapper for all RTDB REST calls ───
+// • Encodes the token so JWT characters (+, /, =) don't corrupt the URL
+// • Auto-retries once with a forced token refresh for the superadmin email
+// • Throws Error with human-readable Hebrew message on failure
+async function dbFetch(path, options = {}, _isRetry = false) {
+  const token = await getFirebaseToken();
+  const url   = `${dbUrl()}${path}?auth=${encodeURIComponent(token)}`;
+  const res   = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...options
+  });
+
+  if (!res.ok) {
+    // Parse Firebase error body if available
+    let errMsg = `HTTP ${res.status}`;
+    try { const j = await res.json(); errMsg = j.error || errMsg; } catch {}
+
+    // Superadmin auto-retry: force-refresh token once and try again
+    if (!_isRetry) {
+      const fbUser = window.firebase?.apps?.length && firebase.auth().currentUser;
+      if (fbUser?.email === SUPER_ADMIN_EMAIL) {
+        console.log(`Admin Cockpit: permission error (${errMsg}) — refreshing token and retrying`);
+        await fbUser.getIdToken(true); // discard result; next call will use fresh token
+        return dbFetch(path, options, true);
+      }
+    }
+    throw new Error(errMsg);
+  }
+
+  // 204 No Content (DELETE) — return null
+  if (res.status === 204) return null;
+  return res.json();
 }
 
 // ─── Institutions ───
 async function loadInstitutions() {
   const el = document.getElementById("inst-list");
   try {
-    const token = await getFirebaseToken();
-    const res   = await fetch(`${dbUrl()}/institutions.json?auth=${token}`);
-    const data  = await res.json();
+    const data = await dbFetch("/institutions.json");
     if (!data) { el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין מוסדות רשומים עדיין.</p>'; return; }
     const rows = Object.entries(data).map(([key, val]) =>
       `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
@@ -377,7 +427,7 @@ async function loadInstitutions() {
     ).join("");
     el.innerHTML = rows || '<p style="font-size:13px;color:#94a3b8;">אין מוסדות רשומים עדיין.</p>';
   } catch(e) {
-    el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
+    el.innerHTML = `<div><p style="color:#ef4444;font-size:12px;margin:0;">${e.message}</p>${reAuthBtn()}</div>`;
   }
 }
 
@@ -387,14 +437,11 @@ async function addDomain() {
   const msg    = document.getElementById("domain-msg");
   if (!domain || !domain.includes(".")) { msg.style.color="#ef4444"; msg.innerText="נא להזין דומיין תקין (למשל: college.ac.il)"; return; }
   try {
-    const token = await getFirebaseToken();
-    const key   = domain.replace(/\./g, "_");
-    const res   = await fetch(`${dbUrl()}/institutions/${key}.json?auth=${token}`, {
+    const key = domain.replace(/\./g, "_");
+    await dbFetch(`/institutions/${key}.json`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ domain, name: name || domain, createdAt: Date.now() })
     });
-    if (!res.ok) throw new Error(`שגיאה ${res.status} — בדוק הרשאות RTDB`);
     msg.style.color="#16a34a"; msg.innerText=`✅ הדומיין '${domain}' נוסף בהצלחה.`;
     document.getElementById("new-domain").value = "";
     document.getElementById("new-inst-name").value = "";
@@ -405,8 +452,7 @@ async function addDomain() {
 async function deleteInstitution(key) {
   if (!confirm(`מחק את הדומיין '${key.replace(/_/g, ".")}'?`)) return;
   try {
-    const token = await getFirebaseToken();
-    await fetch(`${dbUrl()}/institutions/${key}.json?auth=${token}`, { method: "DELETE" });
+    await dbFetch(`/institutions/${key}.json`, { method: "DELETE" });
     loadInstitutions();
   } catch(e) { alert(e.message); }
 }
@@ -415,9 +461,7 @@ async function deleteInstitution(key) {
 async function loadAuthorizedUsers() {
   const el = document.getElementById("auth-users-list");
   try {
-    const token = await getFirebaseToken();
-    const res   = await fetch(`${dbUrl()}/authorized_users.json?auth=${token}`);
-    const data  = await res.json();
+    const data = await dbFetch("/authorized_users.json");
     if (!data) { el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>'; return; }
     const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed", student:"#0891b2" };
     const rows = Object.entries(data).map(([key, val]) =>
@@ -432,7 +476,7 @@ async function loadAuthorizedUsers() {
     ).join("");
     el.innerHTML = rows || '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>';
   } catch(e) {
-    el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
+    el.innerHTML = `<div><p style="color:#ef4444;font-size:12px;margin:0;">${e.message}</p>${reAuthBtn()}</div>`;
   }
 }
 
@@ -443,14 +487,11 @@ async function addUserRole() {
   const msg    = document.getElementById("auth-user-msg");
   if (!email || !email.includes("@")) { msg.style.color="#ef4444"; msg.innerText="נא להזין כתובת מייל תקינה."; return; }
   try {
-    const token = await getFirebaseToken();
-    const key   = email.replace(/\./g, "_").replace(/@/g, "_at_");
-    const res   = await fetch(`${dbUrl()}/authorized_users/${key}.json?auth=${token}`, {
+    const key = email.replace(/\./g, "_").replace(/@/g, "_at_");
+    await dbFetch(`/authorized_users/${key}.json`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, role, institutionId: instId, createdAt: Date.now() })
     });
-    if (!res.ok) throw new Error(`שגיאה ${res.status} — בדוק הרשאות RTDB`);
     msg.style.color="#16a34a"; msg.innerText=`✅ נוסף: ${email} → ${role}`;
     document.getElementById("new-auth-email").value = "";
     document.getElementById("new-auth-inst").value = "";
@@ -461,8 +502,7 @@ async function addUserRole() {
 async function deleteAuthorizedUser(key) {
   if (!confirm("מחק הרשאה זו?")) return;
   try {
-    const token = await getFirebaseToken();
-    await fetch(`${dbUrl()}/authorized_users/${key}.json?auth=${token}`, { method: "DELETE" });
+    await dbFetch(`/authorized_users/${key}.json`, { method: "DELETE" });
     loadAuthorizedUsers();
   } catch(e) { alert(e.message); }
 }
@@ -499,18 +539,18 @@ async function batchImport() {
 
   let success = 0, failed = 0;
   try {
-    const token = await getFirebaseToken();
-    const now   = Date.now();
+    const now = Date.now();
 
     // Write all entries in parallel
     await Promise.all(emails.map(async email => {
       const key = email.replace(/\./g, "_").replace(/@/g, "_at_");
-      const res = await fetch(`${dbUrl()}/authorized_users/${key}.json?auth=${token}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role, institutionId: instId, classId, createdAt: now })
-      });
-      if (res.ok) success++; else failed++;
+      try {
+        await dbFetch(`/authorized_users/${key}.json`, {
+          method: "PUT",
+          body: JSON.stringify({ email, role, institutionId: instId, classId, createdAt: now })
+        });
+        success++;
+      } catch { failed++; }
     }));
 
     progress.style.color = "#16a34a";
