@@ -223,6 +223,15 @@
       <div id="recommendations-list"></div>
     </div>
 
+    <!-- ─── Skill Progress Widget (v8.4) ─── -->
+    <div style="margin-top:32px;">
+      <h2>📊 למידה משולבת מיומנויות</h2>
+      <p style="color:var(--color-text-muted);font-size:13px;margin-bottom:18px;">
+        התקדמות מצטברת לפי עמודי מיומנות — מעקב בזמן אמת
+      </p>
+      <div id="pillar-progress-bars"></div>
+    </div>
+
     <br>
     <a href="/" onclick="sessionStorage.clear()" class="btn btn-outline">← חזרה למסך הבית</a>
 
@@ -462,7 +471,7 @@ function refreshSkillsPanel() {
 
 // ─── Reactivity: tab return ───
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible") refreshSkillsPanel();
+  if (document.visibilityState === "visible") { refreshSkillsPanel(); renderSkillProgressWidget(); }
 });
 
 // ─── Load config ───
@@ -482,6 +491,7 @@ fetch('/config.json?ts=' + Date.now())
 
     // Skills panel
     refreshSkillsPanel();
+    renderSkillProgressWidget();
   })
   .catch(err => {
     console.error("Config load error:", err);
@@ -489,6 +499,44 @@ fetch('/config.json?ts=' + Date.now())
     e.style.display = "block";
     e.innerText = "שגיאה בטעינת הנתונים. נסה לרענן.";
   });
+
+// ─── Skill Progress Widget (v8.4) ───
+function renderSkillProgressWidget() {
+  const PILLAR_META = [
+    { id: "academic",   icon: "🎓", label: "למידה וחשיבה",    color: "#6366f1",
+      skills: ["learning_skills_full", "academic_writing", "research_skills"] },
+    { id: "resilience", icon: "🧘", label: "ניהול וחוסן",     color: "#f59e0b",
+      skills: ["diag_1", "support"] },
+    { id: "social",     icon: "🤝", label: "תקשורת וחברה",    color: "#a21caf",
+      skills: ["presentation"] },
+    { id: "tools",      icon: "💻", label: "כלים וטכנולוגיה", color: "#06b6d4",
+      skills: [] },
+    { id: "career",     icon: "💼", label: "מוכנות לקריירה",  color: "#10b981",
+      skills: ["employability_skills_full"] },
+  ];
+
+  const wrap = document.getElementById("pillar-progress-bars");
+  if (!wrap) return;
+
+  wrap.innerHTML = PILLAR_META.map(p => {
+    let pct = 0;
+    if (p.skills.length > 0) {
+      const total = p.skills.reduce((sum, id) => sum + getSkillStatus(id).pct, 0);
+      pct = Math.round(total / p.skills.length);
+    }
+    const stateLabel = pct === 0 ? "טרם החל" : pct < 60 ? "בתהליך" : pct < 100 ? "מתקדם" : "הושלם ✓";
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+          <span style="font-size:13px;font-weight:600;color:#1e293b;">${p.icon} ${p.label}</span>
+          <span style="font-size:12px;color:#64748b;">${pct}% — ${stateLabel}</span>
+        </div>
+        <div style="height:9px;background:#f1f5f9;border-radius:6px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${p.color};border-radius:6px;transition:width .7s ease;"></div>
+        </div>
+      </div>`;
+  }).join('');
+}
 
 // ─── Recommendations (updated terminology) ───
 function renderRecommendations(config, allSkills) {

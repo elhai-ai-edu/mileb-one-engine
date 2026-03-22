@@ -65,6 +65,42 @@
       <strong>⚡ שודר לתלמידים:</strong>
       <span id="broadcastPreviewText"></span>
     </div>
+
+    <hr class="workspace-divider">
+
+    <h2>🎓 למידה משולבת מיומנויות</h2>
+    <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:14px;">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</p>
+
+    <div class="field">
+      <label>נושא שיעור / יחידת לימוד</label>
+      <input type="text" id="syllabusTopicInput" placeholder="לדוג׳: כתיבת ביקורת ספרותית...">
+    </div>
+
+    <div class="field">
+      <label>עמוד מיומנות מקושר</label>
+      <select id="syllabusPillarSelect">
+        <option value="">— בחר עמוד —</option>
+        <option value="academic">🎓 למידה וחשיבה</option>
+        <option value="resilience">🧘 ניהול וחוסן</option>
+        <option value="social">🤝 תקשורת וחברה</option>
+        <option value="tools">💻 כלים וטכנולוגיה</option>
+        <option value="career">💼 מוכנות לקריירה</option>
+      </select>
+    </div>
+
+    <button class="btn btn-blue" onclick="addSyllabusRow()" style="margin-bottom:14px;">+ הוסף שיוך</button>
+
+    <div id="syllabus-empty" style="text-align:center;font-size:12px;color:var(--color-text-muted);padding:10px 0;">טרם נוספו שיוכים</div>
+    <table id="syllabus-table" style="width:100%;font-size:13px;border-collapse:collapse;display:none;">
+      <thead>
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <th style="text-align:right;padding:6px 4px;color:var(--color-text-muted);font-weight:600;">נושא</th>
+          <th style="text-align:right;padding:6px 4px;color:var(--color-text-muted);font-weight:600;">עמוד מיומנות</th>
+          <th style="width:28px;"></th>
+        </tr>
+      </thead>
+      <tbody id="syllabus-tbody"></tbody>
+    </table>
   </div>
 
   <!-- RIGHT: Live view -->
@@ -329,6 +365,61 @@ async function loadInsights() {
 
 // Load insights 2 seconds after page load (non-blocking)
 setTimeout(loadInsights, 2000);
+
+// ─── Syllabus–Skill Mapping (v8.4) ───
+const _SYLLABUS_KEY = "miled_syllabus";
+const _PILLAR_LABELS = {
+  academic:   "🎓 למידה וחשיבה",
+  resilience: "🧘 ניהול וחוסן",
+  social:     "🤝 תקשורת וחברה",
+  tools:      "💻 כלים וטכנולוגיה",
+  career:     "💼 מוכנות לקריירה"
+};
+
+function loadSyllabus() {
+  return JSON.parse(localStorage.getItem(_SYLLABUS_KEY) || "[]");
+}
+
+function renderSyllabusTable() {
+  const rows  = loadSyllabus();
+  const tbody = document.getElementById("syllabus-tbody");
+  const table = document.getElementById("syllabus-table");
+  const empty = document.getElementById("syllabus-empty");
+  if (!tbody) return;
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr style="border-bottom:1px solid #f1f5f9;">
+      <td style="padding:8px 4px;">${r.topic}</td>
+      <td style="padding:8px 4px;">${_PILLAR_LABELS[r.pillar] || r.pillar}</td>
+      <td style="padding:8px 4px;text-align:center;">
+        <button onclick="removeSyllabusRow(${i})"
+          style="background:none;border:none;cursor:pointer;color:#94a3b8;font-size:15px;line-height:1;">✕</button>
+      </td>
+    </tr>`).join('');
+  const hasRows = rows.length > 0;
+  table.style.display = hasRows ? ""      : "none";
+  empty.style.display = hasRows ? "none"  : "";
+}
+
+function addSyllabusRow() {
+  const topic  = document.getElementById("syllabusTopicInput").value.trim();
+  const pillar = document.getElementById("syllabusPillarSelect").value;
+  if (!topic || !pillar) { alert("מלא נושא ובחר עמוד מיומנות"); return; }
+  const rows = loadSyllabus();
+  rows.push({ topic, pillar });
+  localStorage.setItem(_SYLLABUS_KEY, JSON.stringify(rows));
+  document.getElementById("syllabusTopicInput").value = "";
+  document.getElementById("syllabusPillarSelect").value = "";
+  renderSyllabusTable();
+}
+
+function removeSyllabusRow(i) {
+  const rows = loadSyllabus();
+  rows.splice(i, 1);
+  localStorage.setItem(_SYLLABUS_KEY, JSON.stringify(rows));
+  renderSyllabusTable();
+}
+
+renderSyllabusTable();
 
 // ─── Welcome greeting + user badge ───
 window.addEventListener("load", () => {

@@ -2389,6 +2389,24 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   v8.4 — Syllabus-Skill Integration
+   ═══════════════════════════════════════════════════════════ */
+
+/* Skill Context Banner — appears above chat when a skill pillar is detected */
+.skill-context-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(90deg, #eef2ff 0%, #f5f3ff 100%);
+  border-bottom: 1px solid #c7d2fe;
+  padding: 7px 14px;
+  font-size: 13px;
+  color: #4338ca;
+  flex-shrink: 0;
+}
+.skill-context-banner strong { font-weight: 700; }
+
+/* ═══════════════════════════════════════════════════════════
    v8.2 — Role Assignment System
    ═══════════════════════════════════════════════════════════ */
 

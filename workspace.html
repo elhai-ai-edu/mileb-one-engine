@@ -68,6 +68,10 @@
           <span id="active-bot-name">בחר בוט</span>
         </div>
 
+        <div id="skill-context-banner" class="skill-context-banner" style="display:none;">
+          🎓 <strong>למידה משולבת מיומנויות:</strong> <span id="skill-context-label"></span>
+        </div>
+
         <div id="chat-window" class="chat-panel-messages">
           <div class="message ai">בחר בוט מהתפריט כדי להתחיל.</div>
         </div>
@@ -392,6 +396,7 @@ function initSkillMode() {
   // Auto-open the skill bot
   document.getElementById("active-bot-name").innerText = currentSkillBot.name;
   document.getElementById("chat-window").innerHTML = "";
+  updateSkillContextBanner(currentBotType);
   triggerBotOpening();
 }
 
@@ -477,6 +482,32 @@ function selectStage(stepId, btnEl) {
 
 let activeBotLink = null;
 
+// ─── Skill Context Banner ───
+const _BOT_PILLAR = {
+  learning_skills_full: "academic", academic_writing: "academic", research_skills: "academic",
+  employability_skills_full: "career",
+  diag_1: "resilience", support: "resilience",
+  presentation: "social"
+};
+const _PILLAR_LABEL = {
+  academic: "למידה וחשיבה", resilience: "ניהול וחוסן",
+  social: "תקשורת וחברה", tools: "כלים וטכנולוגיה", career: "מוכנות לקריירה"
+};
+
+function updateSkillContextBanner(botType) {
+  const urlCtx = params.get("skillContext");
+  const pillar = urlCtx || _BOT_PILLAR[botType] || currentCourse?.skillContext;
+  const label  = pillar ? (_PILLAR_LABEL[pillar] || pillar) : null;
+  const banner = document.getElementById("skill-context-banner");
+  if (!banner) return;
+  if (label) {
+    document.getElementById("skill-context-label").textContent = label;
+    banner.style.display = "";
+  } else {
+    banner.style.display = "none";
+  }
+}
+
 function selectBot(botType, label, linkEl) {
   currentBotType = botType;
   chatHistory    = [];
@@ -488,6 +519,7 @@ function selectBot(botType, label, linkEl) {
   activeBotLink = linkEl;
   linkEl.classList.add("active");
 
+  updateSkillContextBanner(botType);
   document.getElementById("user-input").focus();
   triggerBotOpening();  // ← הבוט פותח את השיחה
 }
