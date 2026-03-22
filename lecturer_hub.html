@@ -179,7 +179,7 @@
       <div class="branch-desc">
         כלי מחקר ופדגוגיה, בנייה ושדרוג בוטים, ותמיכה פסיכו-פדגוגית למרצים.
       </div>
-      <div class="branch-cta" id="branch-b-cta">הצג כלים <span id="branch-b-arrow">▼</span></div>
+      <div class="branch-cta" id="branch-b-cta"><span id="branch-b-label">הצג כלים</span> <span id="branch-b-arrow">▼</span></div>
 
       <div class="branch-b-subitems" id="branch-b-subitems">
         <a href="/architect_studio.html" class="sub-item" onclick="event.stopPropagation()">
@@ -249,10 +249,10 @@ if (auth?.role === "superadmin") {
 function toggleBranchB(e) {
   const sub   = document.getElementById("branch-b-subitems");
   const arrow = document.getElementById("branch-b-arrow");
-  const cta   = document.getElementById("branch-b-cta");
+  const label = document.getElementById("branch-b-label");
   const isOpen = sub.classList.toggle("open");
   arrow.textContent = isOpen ? "▲" : "▼";
-  cta.firstChild.textContent = isOpen ? "סגור " : "הצג כלים ";
+  label.textContent = isOpen ? "סגור" : "הצג כלים";
 }
 
 // ─── Logout ───

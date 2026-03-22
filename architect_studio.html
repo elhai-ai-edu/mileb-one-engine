@@ -792,6 +792,15 @@ body.user-student .faculty-only {
 // ─────────────────────────────────────────────────────
 
 let currentStep    = 1;
+// ─── Auth guard — faculty/institution/superadmin only ───
+(function() {
+  const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+  if (!auth || !["faculty", "institution", "superadmin"].includes(auth.role)) {
+    document.documentElement.style.visibility = "hidden";
+    location.replace("/");
+  }
+})();
+
 let chatHistory    = [];
 let sessionId      = null;
 let chatEnabled    = false;
