@@ -146,78 +146,85 @@
 }
 .skill-action-card.animating { animation: cardFlip 0.3s ease-out; }
 
-/* ─── v8.9 Skill Pioneer Dashboard ─── */
+/* ─── v8.9.1 Skill Pioneer — Funnel Layout ─── */
 .pioneer-container { padding: 6px 8px 12px !important; max-width: 100% !important; }
-.pioneer-grid {
-  display: grid;
-  grid-template-columns: 55% 45%;
+
+/* ── Outer shell ── */
+.pioneer-funnel {
+  display: flex; flex-direction: column;
   min-height: calc(100vh - 110px);
   border: 1px solid #1e1b4b;
-  border-radius: 14px;
-  overflow: hidden;
-  background: #fff;
-  margin-bottom: 12px;
+  border-radius: 14px; overflow: hidden;
+  background: #fff; margin-bottom: 12px;
 }
 
-/* ── Left: Command Center ── */
-.pioneer-left {
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  border-left: 1px solid #e2e8f0;
-  overflow-y: auto;
+/* ── TOP: Synergy / Integration strip (full width) ── */
+.pioneer-top {
+  padding: 12px 20px 10px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  display: flex; align-items: center; gap: 0;
 }
+
+/* ── MIDDLE: Hero (left) + Courses (right) ── */
+.pioneer-middle {
+  display: grid;
+  grid-template-columns: 44% 56%;
+  flex: 1; min-height: 0;
+}
+.pioneer-hero-col {
+  background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 60%, #1a1534 100%);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 16px 14px 12px; position: relative; overflow: hidden;
+  border-left: 1px solid #312e81;
+}
+.pioneer-hero-col::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.11) 1px, transparent 1px);
+  background-size: 22px 22px; pointer-events: none;
+}
+.pioneer-courses-col {
+  padding: 14px 16px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* ── BOTTOM: Action blocks strip (full width) ── */
+.pioneer-bottom {
+  border-top: 1px solid #e2e8f0;
+  padding: 12px 18px 14px;
+  background: #f8fafc;
+}
+
+/* Section headers */
 .pioneer-section-header {
   font-size: 10px; font-weight: 700; color: #64748b;
   letter-spacing: 0.5px; text-transform: uppercase;
   padding-bottom: 6px; border-bottom: 1px solid #f1f5f9; margin-bottom: 8px;
 }
-.mini-radar-wrap { display: flex; align-items: center; gap: 14px; }
-.mini-radar-stats { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.mini-stat { font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px; line-height: 1.4; }
-.mini-stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.pioneer-course-item { padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 5px; background: #f8fafc; }
-.pioneer-course-name { font-size: 12px; font-weight: 600; color: #1e293b; }
-.pioneer-course-bar { height: 3px; background: #e2e8f0; border-radius: 3px; margin-top: 5px; overflow: hidden; }
-.pioneer-course-bar-fill { height: 100%; background: #6366f1; border-radius: 3px; transition: width .6s; }
-.action-blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.action-block { border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 10px; background: #fff; }
-.action-block.needs-block { border-color: #fecaca; background: #fff5f5; }
-.action-block.rec-block   { border-color: #dbeafe; background: #eff6ff; }
-.action-block-title { font-size: 10px; font-weight: 700; margin-bottom: 7px; letter-spacing: 0.3px; }
-.action-block.needs-block .action-block-title { color: #dc2626; }
-.action-block.rec-block   .action-block-title { color: #2563eb; }
-.action-skill-link {
-  display: block; font-size: 11px; color: #1e293b; text-decoration: none;
-  padding: 4px 0; border-bottom: 1px solid #f1f5f9; transition: color .15s;
-}
-.action-skill-link:last-child { border-bottom: none; }
-.action-skill-link:hover { color: #6366f1; }
 
-/* ── Right: Hero Panel ── */
-.pioneer-right {
-  background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 60%, #1a1534 100%);
-  display: flex; flex-direction: column; align-items: center;
-  padding: 18px 16px 14px; position: relative; overflow: hidden;
-}
-.pioneer-right::before {
-  content: ''; position: absolute; inset: 0;
-  background-image: radial-gradient(circle, rgba(255,255,255,0.11) 1px, transparent 1px);
-  background-size: 22px 22px; pointer-events: none;
-}
+/* Mini radar (top strip) */
+.mini-radar-wrap { display: flex; align-items: center; gap: 14px; flex: 1; }
+.mini-radar-stats { display: flex; flex-direction: row; flex-wrap: wrap; gap: 10px 24px; flex: 1; }
+.mini-stat { font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px; }
+.mini-stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* Courses */
+.pioneer-course-item { padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; }
+.pioneer-course-name { font-size: 12px; font-weight: 600; color: #1e293b; }
+.pioneer-course-bar  { height: 3px; background: #e2e8f0; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+.pioneer-course-bar-fill { height: 100%; background: #6366f1; border-radius: 3px; transition: width .6s; }
 
 /* XP Bar */
-.xp-bar-container { width: 100%; z-index: 1; margin-bottom: 12px; }
-.xp-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.xp-bar-container { width: 100%; z-index: 1; margin-bottom: 10px; }
+.xp-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
 .xp-level-badge { font-size: 12px; font-weight: 700; color: #fbbf24; letter-spacing: 0.4px; }
 .xp-label { font-size: 11px; color: rgba(255,255,255,0.55); }
 .xp-track { height: 8px; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; }
-.xp-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg,#6366f1,#a78bfa,#fbbf24); transition: width 1s cubic-bezier(0.34,1.56,0.64,1); }
+.xp-fill  { height: 100%; border-radius: 20px; background: linear-gradient(90deg,#6366f1,#a78bfa,#fbbf24); transition: width 1s cubic-bezier(0.34,1.56,0.64,1); }
 
 /* Hero area */
-.hero-area { position: relative; width: 210px; height: 210px; flex-shrink: 0; z-index: 1; }
-.hero-svg { width: 110px; height: 170px; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); }
+.hero-area { position: relative; width: 200px; height: 200px; flex-shrink: 0; z-index: 1; }
+.hero-svg  { width: 110px; height: 170px; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); }
 
 /* Equipment slots */
 .equip-slot {
@@ -229,18 +236,33 @@
 .equip-slot.level-0 { border-color: rgba(255,255,255,0.15); opacity: 0.5; }
 .equip-slot.level-1 { border-color: #818cf8; box-shadow: 0 0 10px rgba(99,102,241,0.55); }
 .equip-slot.level-2 { border-color: #fbbf24; box-shadow: 0 0 14px rgba(251,191,36,0.65); animation: equipGlow 2s ease-in-out infinite; }
-/* individual hover preserves translation */
-.equip-slot[data-pillar="academic"]   { top:6px; left:50%; transform:translateX(-50%); }
-.equip-slot[data-pillar="resilience"] { top:50%; right:2px; transform:translateY(-50%); }
-.equip-slot[data-pillar="social"]     { top:50%; left:2px;  transform:translateY(-50%); }
-.equip-slot[data-pillar="tools"]      { bottom:14px; right:18px; }
-.equip-slot[data-pillar="career"]     { bottom:14px; left:18px; }
+.equip-slot[data-pillar="academic"]   { top:4px; left:50%; transform:translateX(-50%); }
+.equip-slot[data-pillar="resilience"] { top:50%; right:0;   transform:translateY(-50%); }
+.equip-slot[data-pillar="social"]     { top:50%; left:0;    transform:translateY(-50%); }
+.equip-slot[data-pillar="tools"]      { bottom:12px; right:14px; }
+.equip-slot[data-pillar="career"]     { bottom:12px; left:14px; }
 .equip-slot[data-pillar="academic"]:hover   { transform:translateX(-50%) scale(1.2); }
 .equip-slot[data-pillar="resilience"]:hover { transform:translateY(-50%) scale(1.2); }
 .equip-slot[data-pillar="social"]:hover     { transform:translateY(-50%) scale(1.2); }
-.equip-slot[data-pillar="tools"]:hover      { transform:scale(1.2); }
+.equip-slot[data-pillar="tools"]:hover,
 .equip-slot[data-pillar="career"]:hover     { transform:scale(1.2); }
 
+/* Action blocks (bottom strip) */
+.action-blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.action-block { border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 12px; background: #fff; }
+.action-block.needs-block { border-color: #fecaca; background: #fff5f5; }
+.action-block.rec-block   { border-color: #dbeafe; background: #eff6ff; }
+.action-block-title { font-size: 10px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.3px; }
+.action-block.needs-block .action-block-title { color: #dc2626; }
+.action-block.rec-block   .action-block-title { color: #2563eb; }
+.action-skill-link {
+  display: block; font-size: 11px; color: #1e293b; text-decoration: none;
+  padding: 4px 0; border-bottom: 1px solid #f1f5f9; transition: color .15s;
+}
+.action-skill-link:last-child { border-bottom: none; }
+.action-skill-link:hover { color: #6366f1; }
+
+/* XP float animation */
 @keyframes equipGlow {
   0%,100% { box-shadow: 0 0 8px rgba(251,191,36,0.4); }
   50%      { box-shadow: 0 0 22px rgba(251,191,36,0.9); }
@@ -281,8 +303,8 @@
 .status-wave2 { background:#d1fae5; color:#065f46; }
 
 @media (max-width: 768px) {
-  .pioneer-grid { grid-template-columns: 1fr; }
-  .pioneer-right { min-height: 340px; }
+  .pioneer-middle { grid-template-columns: 1fr; }
+  .pioneer-hero-col { min-height: 320px; }
   .action-blocks-grid { grid-template-columns: 1fr; }
 }
 </style>
@@ -309,73 +331,73 @@
 
     <div id="status-error" style="color:#dc2626;margin-bottom:8px;display:none;"></div>
 
-    <!-- ─── Pioneer Grid (v8.9) ─── -->
-    <div class="pioneer-grid">
+    <!-- ─── Pioneer Funnel (v8.9.1) ─── -->
+    <div class="pioneer-funnel">
 
-      <!-- LEFT 55%: Command Center -->
-      <div class="pioneer-left">
-
-        <!-- Mini radar + strain stats -->
-        <div>
-          <div class="pioneer-section-header">🕸️ סינרגיה ועומס</div>
-          <div class="mini-radar-wrap">
-            <svg id="mini-radar-svg" viewBox="0 0 160 160" style="width:130px;height:130px;flex-shrink:0;"></svg>
-            <div class="mini-radar-stats" id="mini-radar-stats">
-              <div class="mini-stat" style="color:var(--color-text-muted);">⏳ טוען...</div>
-            </div>
+      <!-- ═══ TOP ROW: Synergy / Integration (full width) ═══ -->
+      <div class="pioneer-top">
+        <div class="pioneer-section-header" style="margin-bottom:0;border:none;padding-bottom:0;margin-left:16px;white-space:nowrap;">🕸️ גשר הסינרגיה</div>
+        <div class="mini-radar-wrap">
+          <svg id="mini-radar-svg" viewBox="0 0 160 160" style="width:110px;height:110px;flex-shrink:0;"></svg>
+          <div class="mini-radar-stats" id="mini-radar-stats">
+            <div class="mini-stat" style="color:var(--color-text-muted);">⏳ טוען...</div>
           </div>
         </div>
+      </div>
 
-        <!-- Current courses -->
-        <div>
+      <!-- ═══ MIDDLE: Hero (left) + Courses (right) ═══ -->
+      <div class="pioneer-middle">
+
+        <!-- LEFT: Skill Pioneer Hero -->
+        <div class="pioneer-hero-col">
+
+          <!-- Level + XP Bar -->
+          <div class="xp-bar-container">
+            <div class="xp-bar-header">
+              <span class="xp-level-badge" id="xp-level-badge">⭐ רמה 1 — מתחיל</span>
+              <span class="xp-label" id="xp-label">0 XP</span>
+            </div>
+            <div class="xp-track">
+              <div class="xp-fill" id="xp-fill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <!-- Explorer figure + equipment slots -->
+          <div class="hero-area" id="hero-area">
+            <svg class="hero-svg" id="explorer-svg" viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg"></svg>
+            <!-- equipment slots injected by JS -->
+          </div>
+
+          <div style="color:rgba(255,255,255,0.45);font-size:11px;margin-top:8px;z-index:1;text-align:center;">
+            לחץ על ציוד לפרטי מיומנות
+          </div>
+
+        </div>
+
+        <!-- RIGHT: Current Courses -->
+        <div class="pioneer-courses-col">
           <div class="pioneer-section-header">📚 הקורסים שלי</div>
           <div id="pioneer-courses">
             <div style="font-size:12px;color:var(--color-text-muted);">⏳ טוען...</div>
           </div>
-          <a href="/skills.html" style="display:block;text-align:center;font-size:11px;color:#6366f1;margin-top:6px;font-weight:600;text-decoration:none;">→ כל המיומנויות</a>
-        </div>
-
-        <!-- Action blocks -->
-        <div>
-          <div class="pioneer-section-header">⚡ פעולות</div>
-          <div class="action-blocks-grid">
-            <div class="action-block needs-block">
-              <div class="action-block-title">🔴 מה צריך?</div>
-              <div id="pioneer-needs"></div>
-            </div>
-            <div class="action-block rec-block">
-              <div class="action-block-title">📘 מה כדאי?</div>
-              <div id="pioneer-recommended"></div>
-            </div>
-          </div>
+          <a href="/skills.html" style="display:block;text-align:center;font-size:11px;color:#6366f1;margin-top:4px;font-weight:600;text-decoration:none;">→ כל המיומנויות</a>
         </div>
 
       </div>
 
-      <!-- RIGHT 45%: Skill Pioneer Hero -->
-      <div class="pioneer-right">
-
-        <!-- Level + XP Bar -->
-        <div class="xp-bar-container">
-          <div class="xp-bar-header">
-            <span class="xp-level-badge" id="xp-level-badge">⭐ רמה 1 — מתחיל</span>
-            <span class="xp-label" id="xp-label">0 XP</span>
+      <!-- ═══ BOTTOM: Action blocks (full width) ═══ -->
+      <div class="pioneer-bottom">
+        <div class="pioneer-section-header">⚡ פעולות — מה עכשיו?</div>
+        <div class="action-blocks-grid">
+          <div class="action-block needs-block">
+            <div class="action-block-title">🔴 מה צריך? — חובה</div>
+            <div id="pioneer-needs"></div>
           </div>
-          <div class="xp-track">
-            <div class="xp-fill" id="xp-fill" style="width:0%"></div>
+          <div class="action-block rec-block">
+            <div class="action-block-title">📘 מה כדאי? — מומלץ</div>
+            <div id="pioneer-recommended"></div>
           </div>
         </div>
-
-        <!-- Explorer figure + equipment slots -->
-        <div class="hero-area" id="hero-area">
-          <svg class="hero-svg" id="explorer-svg" viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg"></svg>
-          <!-- equipment slots injected by JS -->
-        </div>
-
-        <div style="color:rgba(255,255,255,0.45);font-size:11px;margin-top:10px;z-index:1;text-align:center;">
-          לחץ על ציוד לפרטי מיומנות
-        </div>
-
       </div>
 
     </div>
@@ -467,6 +489,8 @@ fetch('/config.json?ts=' + Date.now())
   .then(config => {
     _config = config;
     refreshSkillsPanel();
+    // After initial localStorage render, sync Firebase completions (non-blocking)
+    syncFromFirebase();
   })
   .catch(err => {
     console.error("Config load error:", err);
@@ -762,6 +786,37 @@ function openPillarModal(pillarId, allSkills) {
 
 function closePillarModal() {
   document.getElementById("pillar-modal-overlay")?.classList.remove("open");
+}
+
+// ─── Firebase skill sync (reactive — uses MILED_FIREBASE_CONFIG REST endpoint) ───
+// Reads skills_sessions/{studentId} from RTDB, merges wave timestamps into localStorage,
+// then re-renders XP bar + equipment glow if new completions are found.
+function syncFromFirebase() {
+  const cfg = window.MILED_FIREBASE_CONFIG;
+  if (!cfg?.databaseURL || !studentId) return;
+  fetch(`${cfg.databaseURL}/skills_sessions/${encodeURIComponent(studentId)}.json`)
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data || typeof data !== "object") return;
+      let changed = false;
+      for (const botId in data) {
+        const rec = data[botId];
+        // wave_1_baseline → miled_skill_ts_{botId}
+        const ts1 = rec?.waves?.wave_1_baseline?.lastActive;
+        if (ts1 && !localStorage.getItem(`miled_skill_ts_${botId}`)) {
+          localStorage.setItem(`miled_skill_ts_${botId}`, String(ts1));
+          changed = true;
+        }
+        // wave_2_midterm → miled_skill_ts2_{botId}
+        const ts2 = rec?.waves?.wave_2_midterm?.lastActive;
+        if (ts2 && !localStorage.getItem(`miled_skill_ts2_${botId}`)) {
+          localStorage.setItem(`miled_skill_ts2_${botId}`, String(ts2));
+          changed = true;
+        }
+      }
+      if (changed) refreshSkillsPanel();
+    })
+    .catch(() => {}); // silent fallback — localStorage remains authoritative
 }
 
 // ─── Master refresh ───
