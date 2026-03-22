@@ -1,0 +1,315 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "title": "MilEd.One — Text Puzzle Knowledge Base",
+    "source": [
+      "Paraphrase Bot KB v1 (KB בוט פרפרזה: חומרים בתבליך הפיתוח)",
+      "PARAPHRASE BOT KNOWLEDGE BASE — FINAL CORRECTED VERSION (KB נוסח 11_3)",
+      "MASTER_LOGIC.md v4.2 — 8-Layer SP, OPAL tools, Connector Logic"
+    ],
+    "authority": "docs/MASTER_LOGIC.md",
+    "used_by": ["functions/text_puzzle_api.js", "structural_builder.html"],
+    "last_updated": "2026-03-22"
+  },
+
+  "rhetorical_roles": {
+
+    "sentence_level": {
+      "description": "Rhetorical categories for individual academic sentences (Paraphrase Bot taxonomy)",
+      "roles": [
+        { "id": "Definition",     "he": "הגדרה",       "code": "DEF",  "desc": "Defines a concept or term" },
+        { "id": "Research Claim", "he": "טענת מחקר",   "code": "RC",   "desc": "States a finding or research claim" },
+        { "id": "Cause-Effect",   "he": "סיבה-תוצאה",  "code": "CE",   "desc": "Causal relationship between ideas" },
+        { "id": "Comparison",     "he": "השוואה",       "code": "COMP", "desc": "Compares or contrasts two entities" },
+        { "id": "Hedging",        "he": "גידור",        "code": "HED",  "desc": "Qualifies a claim with uncertainty markers" },
+        { "id": "Conclusion",     "he": "מסקנה",        "code": "CONC", "desc": "Summarizes or concludes an argument" },
+        { "id": "Limitation",     "he": "מגבלה",        "code": "LIM",  "desc": "States a limitation of a study or claim" },
+        { "id": "Implication",    "he": "השלכה",        "code": "IMP",  "desc": "Derives implications from findings" },
+        { "id": "Explanation",    "he": "הסבר",         "code": "EXP",  "desc": "Explains a mechanism or process" },
+        { "id": "Process",        "he": "תהליך",        "code": "PROC", "desc": "Describes a sequential process" }
+      ]
+    },
+
+    "puzzle_levels": {
+
+      "macro": {
+        "he": "מאקרו — פסקאות",
+        "desc": "Reordering essay paragraphs by argumentative logic",
+        "splitUnit": "paragraphs",
+        "roles": [
+          { "id": "מבוא",         "color": "#4338ca", "desc": "Introduces topic / research question" },
+          { "id": "טענה מרכזית", "color": "#7c3aed", "desc": "States the central thesis" },
+          { "id": "טיעון",        "color": "#6d28d9", "desc": "Develops a supporting argument" },
+          { "id": "ראיה",         "color": "#0891b2", "desc": "Provides empirical or textual evidence" },
+          { "id": "פרכה",         "color": "#dc2626", "desc": "Challenges or refutes a counter-claim" },
+          { "id": "הסתייגות",     "color": "#64748b", "desc": "Qualifies the argument (hedging)" },
+          { "id": "מעבר",         "color": "#f59e0b", "desc": "Bridges two sections logically" },
+          { "id": "מסקנה",        "color": "#16a34a", "desc": "Synthesizes argument and restates position" }
+        ]
+      },
+
+      "mid": {
+        "he": "מיד — משפטים",
+        "desc": "Building a paragraph using connector logic",
+        "splitUnit": "sentences",
+        "roles": [
+          { "id": "פתיחת פסקה", "color": "#4338ca", "desc": "Topic sentence — opens the paragraph" },
+          { "id": "ראיה",       "color": "#0891b2", "desc": "Evidence supporting the paragraph claim" },
+          { "id": "פרשנות",     "color": "#7c3aed", "desc": "Interpretation / analysis of evidence" },
+          { "id": "מחבר לוגי", "color": "#f59e0b", "desc": "Logical connector sentence (contrast/addition)" },
+          { "id": "הסתייגות",  "color": "#64748b", "desc": "Qualification or nuance" },
+          { "id": "דוגמה",     "color": "#0e7490", "desc": "Concrete example" },
+          { "id": "הפניה",     "color": "#9333ea", "desc": "Citation or reference to a source" },
+          { "id": "סיכום",     "color": "#16a34a", "desc": "Closing sentence of the paragraph" }
+        ]
+      },
+
+      "micro": {
+        "he": "מיקרו — מילים",
+        "desc": "Constructing a sentence (Lexical/Grammar)",
+        "splitUnit": "words or minimal phrases",
+        "roles": [
+          { "id": "נושא",  "color": "#4338ca", "desc": "Grammatical subject" },
+          { "id": "פועל",  "color": "#dc2626", "desc": "Main verb" },
+          { "id": "מושא",  "color": "#0891b2", "desc": "Direct/indirect object" },
+          { "id": "הקשר",  "color": "#9333ea", "desc": "Contextual modifier / prepositional phrase" },
+          { "id": "מחבר",  "color": "#f59e0b", "desc": "Connector word / subordinator" },
+          { "id": "מרחב",  "color": "#6d28d9", "desc": "Adverb of place or manner" },
+          { "id": "תנאי",  "color": "#64748b", "desc": "Conditional element" },
+          { "id": "זמן",   "color": "#16a34a", "desc": "Temporal element" }
+        ]
+      }
+    }
+  },
+
+  "typical_errors": {
+    "description": "Error Bank — common student errors in paraphrase and structural tasks",
+    "errors": [
+      {
+        "id": "minimal_change",
+        "he": "שינוי מינימלי",
+        "desc": "Student changed only 1–2 words; structure nearly identical to original",
+        "hint_key": "probe_depth"
+      },
+      {
+        "id": "structure_copying",
+        "he": "העתקת מבנה",
+        "desc": "Syntactic skeleton unchanged despite lexical changes",
+        "hint_key": "probe_structure"
+      },
+      {
+        "id": "meaning_distortion",
+        "he": "עיוות משמעות",
+        "desc": "Paraphrase shifts or inverts the original meaning",
+        "hint_key": "probe_meaning"
+      },
+      {
+        "id": "information_loss",
+        "he": "אובדן מידע",
+        "desc": "Key component (evidence/qualifier) dropped from paraphrase",
+        "hint_key": "probe_completeness"
+      },
+      {
+        "id": "information_addition",
+        "he": "הוספת מידע",
+        "desc": "Student added content not in the original",
+        "hint_key": "probe_faithfulness"
+      },
+      {
+        "id": "missing_hedge",
+        "he": "היעדר גידור",
+        "desc": "Hedging marker (ייתכן / עשוי / נראה כי) omitted — claim sounds absolute",
+        "hint_key": "probe_hedge"
+      },
+      {
+        "id": "missing_marker",
+        "he": "היעדר מחבר",
+        "desc": "Connector word missing — logic link is broken",
+        "hint_key": "probe_connector"
+      },
+      {
+        "id": "awkward_structure",
+        "he": "מבנה מסורבל",
+        "desc": "Grammatically valid but unnatural Hebrew academic register",
+        "hint_key": "probe_register"
+      },
+      {
+        "id": "incomplete_paraphrase",
+        "he": "פרפרזה חלקית",
+        "desc": "Only part of the sentence was paraphrased",
+        "hint_key": "probe_completeness"
+      },
+      {
+        "id": "missing_component",
+        "he": "רכיב חסר",
+        "desc": "A required syntactic component (subject/verb/object) is missing",
+        "hint_key": "probe_syntax"
+      }
+    ],
+
+    "by_puzzle_level": {
+      "macro": [
+        "הצבת ראיה לפני הטענה שהיא מבססת",
+        "מסקנה לפני הטיעונים התומכים בה",
+        "פרכה ללא הכנה טיעונית מספקת",
+        "היעדר מבוא מכין — קפיצה ישירה לטיעון",
+        "חוסר קוהרנטיות בין טיעון לביסוסו"
+      ],
+      "mid": [
+        "מחבר לוגי (לכן / עם זאת) בלי שני הצדדים הנדרשים",
+        "דוגמה לפני הטענה שהיא ממחישה",
+        "ראיה ללא פרשנות מקשרת",
+        "הסתייגות המפריעה לזרימת הטיעון",
+        "סיכום לפני ביסוס מלא"
+      ],
+      "micro": [
+        "פועל לפני הנושא (בניגוד לסדר המובנה)",
+        "מחבר ללא שני הצדדים הנדרשים",
+        "הקשר המפריד בין נושא לפועל",
+        "מרחב (תואר הפועל) ממוקם שגוי",
+        "תנאי ממוקם בסוף המשפט במקום בתחילתו"
+      ]
+    }
+  },
+
+  "connector_logic": {
+    "description": "מילות קישור classified by rhetorical function — used by checker and hint engine",
+
+    "types": {
+      "contrast": {
+        "he": "ניגוד",
+        "function": "Introduces an idea that contradicts or qualifies the previous one",
+        "academic_markers": ["עם זאת", "לעומת זאת", "אולם", "ברם", "בניגוד לכך", "מאידך גיסא"],
+        "informal_to_avoid": ["אבל", "בכל זאת"],
+        "position_rule": "Typically sentence-initial in Hebrew academic writing"
+      },
+      "addition": {
+        "he": "הוספה",
+        "function": "Adds a related idea that strengthens or extends the previous one",
+        "academic_markers": ["בנוסף", "בנוסף לכך", "יתרה מכך", "כמו כן", "אף על פי כן", "יתר על כן"],
+        "informal_to_avoid": ["גם", "וגם"],
+        "position_rule": "Usually sentence-initial; 'יתרה מכך' implies elevation of the new point"
+      },
+      "cause": {
+        "he": "סיבה",
+        "function": "Explains why the preceding claim is true",
+        "academic_markers": ["מפני ש", "מאחר ש", "מכיוון ש", "משום ש", "הואיל ו"],
+        "informal_to_avoid": ["כי", "בגלל ש"],
+        "position_rule": "כי is acceptable in academic Hebrew but מפני ש / מאחר ש is more formal"
+      },
+      "result": {
+        "he": "תוצאה",
+        "function": "States the logical or causal outcome of the previous claim",
+        "academic_markers": ["לפיכך", "על כן", "לכן", "כתוצאה מכך", "לאור האמור"],
+        "informal_to_avoid": ["אז", "אז ש"],
+        "position_rule": "לפיכך / על כן are the most formal; prefer over לכן in written academic text"
+      },
+      "condition": {
+        "he": "תנאי",
+        "function": "Introduces a conditional relationship",
+        "academic_markers": ["אם", "במידה ו", "בהנחה ש", "ככל ש", "כל עוד"],
+        "informal_to_avoid": ["אם כ"],
+        "position_rule": "Conditional clauses typically precede the main clause in formal Hebrew"
+      },
+      "sequence": {
+        "he": "רצף",
+        "function": "Marks the logical or temporal order of ideas",
+        "academic_markers": ["ראשית", "תחילה", "לאחר מכן", "בשלב הבא", "לסיכום", "לאחרונה"],
+        "informal_to_avoid": ["ואז", "אחרי זה"],
+        "position_rule": "Sequence markers signal the argumentative structure — their order IS the logic"
+      }
+    },
+
+    "arabic_transfer_errors": {
+      "description": "Typical connector errors by Arabic-speaking learners of Hebrew — used to calibrate Socratic hints",
+      "patterns": [
+        {
+          "error_id": "AR_contrast_aber",
+          "description": "Using 'אבל' (colloquial) instead of 'עם זאת / לעומת זאת' (academic)",
+          "arabic_source": "لكن — direct transfer of spoken Arabic contrast marker",
+          "hebrew_target": "עם זאת / לעומת זאת",
+          "hint_he": "בעברית אקדמית, 'אבל' נשמע דיבורי. מה מילת הניגוד הפורמלית שמתאימה כאן?",
+          "hint_ar": "في العبرية الأكاديمية، 'אבל' تبدو عامية. ما هي أداة المقابلة الرسمية المناسبة هنا؟"
+        },
+        {
+          "error_id": "AR_addition_gam",
+          "description": "Using 'גם' (colloquial addition) instead of 'בנוסף / יתרה מכך'",
+          "arabic_source": "أيضا / وكذلك — colloquial addition transfer",
+          "hebrew_target": "בנוסף לכך / יתרה מכך / כמו כן",
+          "hint_he": "המילה 'גם' מתאימה לשיחה יום-יומית. איזו מילת הוספה אקדמית תשתמש כאן?",
+          "hint_ar": "كلمة 'גם' مناسبة للحديث اليومي. ما هي أداة الإضافة الأكاديمية المناسبة هنا؟"
+        },
+        {
+          "error_id": "AR_cause_placement",
+          "description": "Placing the cause clause AFTER the result (Arabic syntax pattern: result + لأن + cause)",
+          "arabic_source": "لأن — Arabic places cause clause post-result, opposite to formal Hebrew",
+          "hebrew_target": "מאחר ש/מכיוון ש — cause clause precedes or follows with clear connector",
+          "hint_he": "בעברית אקדמית, הסיבה יכולה לבוא לפני התוצאה. האם הסדר הנוכחי משרת את ההיגיון?",
+          "hint_ar": "في العبرية الأكاديمية، يمكن أن تسبق العلة النتيجة. هل الترتيب الحالي يخدم المنطق؟"
+        },
+        {
+          "error_id": "AR_result_az",
+          "description": "Using 'אז' instead of 'לפיכך / על כן / כתוצאה מכך'",
+          "arabic_source": "إذن / فـ — colloquial result marker",
+          "hebrew_target": "לפיכך / על כן / לאור האמור",
+          "hint_he": "'אז' שייכת לעברית מדוברת. מה המקבילה הפורמלית לביטוי 'לכן/כתוצאה' בכתיבה אקדמית?",
+          "hint_ar": "'אז' تنتمي للعبرية المحكية. ما هو المقابل الرسمي في الكتابة الأكاديمية؟"
+        },
+        {
+          "error_id": "AR_sequence_veze",
+          "description": "Using 'ואז / ואחרי זה' for sequence instead of academic sequence markers",
+          "arabic_source": "وبعد ذلك / ثم — narrative Arabic temporal sequence",
+          "hebrew_target": "לאחר מכן / בשלב הבא / לאחר שבחנו",
+          "hint_he": "'ואז' מתאים לסיפור — לא לטקסט אקדמי. מה מילת הרצף שתשמיע מקצועי?",
+          "hint_ar": "'ואז' مناسب للسرد — ليس للنصوص الأكاديمية. ما هي كلمة التسلسل التي تبدو مهنية؟"
+        }
+      ]
+    }
+  },
+
+  "hint_patterns": {
+    "description": "Socratic hint templates keyed by error type — referenced by the hint engine",
+    "templates": {
+      "probe_depth":       "מה הטענה המרכזית של המשפט הזה? האם שינית מספיק כדי שהרעיון יישמע כשלך?",
+      "probe_structure":   "הסתכל על סדר הרכיבים במשפט — האם הוא זהה למקור? ניסוח חדש דורש גם מבנה שונה.",
+      "probe_meaning":     "האם מי שיקרא את הגרסה שלך יבין בדיוק את אותו הרעיון כמו המקור?",
+      "probe_completeness":"בדוק: האם כל חלקי המשפט המקורי נמצאים בפרפרזה שלך?",
+      "probe_faithfulness":"יש בגרסה שלך מידע שלא מופיע במקור. מה הוספת ולמה?",
+      "probe_hedge":       "המחקר מציין אי-ודאות. כיצד ניתן לשמר זאת בפרפרזה?",
+      "probe_connector":   "מה הקשר ההגיוני בין שני חלקי המשפט? איזו מילת קישור מבטאת אותו בצורה הטובה ביותר?",
+      "probe_register":    "קרא את המשפט בקול. האם הוא נשמע כמו כתיבה אקדמית? מה אפשר לשפר?",
+      "probe_syntax":      "מי עושה מה במשפט הזה? האם הנושא, הפועל והמושא ברורים?"
+    }
+  },
+
+  "paraphrase_tools": {
+    "description": "Operations available for paraphrase — referenced by Parse SP and exercise generator",
+    "tools": [
+      { "id": "lexical_change",     "he": "שינוי מילים",         "desc": "Replace content words with synonyms" },
+      { "id": "structure_change",   "he": "שינוי מבנה",          "desc": "Alter syntactic structure while preserving meaning" },
+      { "id": "information_reorder","he": "ארגון מחדש",          "desc": "Reorder information units" },
+      { "id": "nominalization",     "he": "נומינליזציה",          "desc": "Convert verb phrases to noun phrases" },
+      { "id": "modal_change",       "he": "שינוי גוון",           "desc": "Change modality (ייתכן / עשוי / ידוע)" },
+      { "id": "voice_change",       "he": "שינוי גוף / סביל",    "desc": "Shift active/passive voice" },
+      { "id": "sentence_split",     "he": "פיצול משפטים",        "desc": "Split one complex sentence into two" },
+      { "id": "sentence_merge",     "he": "איחוד משפטים",        "desc": "Merge two short sentences into one" }
+    ]
+  },
+
+  "xray_taxonomy": {
+    "description": "Canonical X-Ray role labels used in structural_builder.html — must match puzzle_levels above",
+
+    "word_mode": {
+      "maps_to": "micro",
+      "canonical_roles": ["נושא", "פועל", "מושא", "הקשר", "מחבר", "מרחב", "תנאי", "זמן"]
+    },
+    "sentence_mode": {
+      "maps_to": "mid",
+      "canonical_roles": ["פתיחת פסקה", "ראיה", "פרשנות", "מחבר לוגי", "הסתייגות", "דוגמה", "הפניה", "סיכום"]
+    },
+    "paragraph_mode": {
+      "maps_to": "macro",
+      "canonical_roles": ["מבוא", "טענה מרכזית", "טיעון", "ראיה", "פרכה", "הסתייגות", "מעבר", "מסקנה"]
+    }
+  }
+}

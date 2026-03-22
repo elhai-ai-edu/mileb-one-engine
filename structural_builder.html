@@ -348,12 +348,43 @@ body { background: #f1f5f9; font-family: 'Assistant', sans-serif; }
 
 const PUZZLES = {
 
+// ─── KB X-Ray Taxonomy (puzzles_kb.json → xray_taxonomy) ───
+// word_mode → micro roles, sentence_mode → mid roles, paragraph_mode → macro roles
+// These labels MUST match puzzles_kb.json rhetorical_roles.puzzle_levels.*
+const KB_XRAY = {
+  micro:    ["נושא","פועל","מושא","הקשר","מחבר","מרחב","תנאי","זמן"],
+  mid:      ["פתיחת פסקה","ראיה","פרשנות","מחבר לוגי","הסתייגות","דוגמה","הפניה","סיכום"],
+  macro:    ["מבוא","טענה מרכזית","טיעון","ראיה","פרכה","הסתייגות","מעבר","מסקנה"]
+};
+
+// ─── Arabic-speaker connector hints (puzzles_kb.json → connector_logic.arabic_transfer_errors) ───
+const ARABIC_CONNECTOR_HINTS = {
+  // Triggered when the wrong block involves a contrast connector
+  contrast: "💡 טיפ: בעברית אקדמית, 'עם זאת' ו-'לעומת זאת' הן מילות הניגוד הפורמליות — לא 'אבל'.",
+  addition: "💡 טיפ: 'בנוסף לכך' / 'יתרה מכך' / 'כמו כן' הן מילות ההוספה האקדמיות — לא 'גם'.",
+  result:   "💡 טיפ: 'לפיכך' / 'על כן' / 'כתוצאה מכך' הן מילות התוצאה הפורמליות — לא 'אז'.",
+  sequence: "💡 טיפ: בטקסט אקדמי, 'לאחר מכן' / 'בשלב הבא' עדיפות על 'ואז' / 'ואחרי זה'."
+};
+
+// Detect which connector type is involved in a sentence block
+function detectConnectorType(text) {
+  if (!text) return null;
+  if (/עם זאת|לעומת זאת|אולם|ברם|אבל|אך/.test(text)) return "contrast";
+  if (/בנוסף|יתרה מכך|כמו כן|גם/.test(text)) return "addition";
+  if (/לפיכך|על כן|לכן|כתוצאה|אז\b/.test(text)) return "result";
+  if (/ראשית|תחילה|לאחר מכן|בשלב הבא|ואז|ואחרי/.test(text)) return "sequence";
+  return null;
+}
+
+const PUZZLES = {
+
   word: [
     {
       prompt: "סדר את המילים ליצירת משפט אקדמי תקין:",
       words:   ["הטכנולוגיה", "שינתה", "את", "שיטות", "הלמידה", "המסורתיות"],
       correct: [0, 1, 2, 3, 4, 5],
-      xray:    ["נושא", "פועל", "מ\"מ", "מושא-שם", "מושא-ראשי", "תואר-שם"],
+      // X-Ray labels from KB micro taxonomy (KB_XRAY.micro)
+      xray:    ["נושא", "פועל", "הקשר", "מושא", "מושא", "הקשר"],
       checker: checkWordOrder,
       skill: "grammar"
     },
@@ -361,7 +392,7 @@ const PUZZLES = {
       prompt: "סדר את המילים ליצירת משפט אקדמי תקין:",
       words:   ["יש", "לחינוך", "השפעה", "מכרעת", "על", "עתיד", "החברה"],
       correct: [0, 1, 2, 3, 4, 5, 6],
-      xray:    ["פועל עזר", "נושא", "מושא", "תואר", "מ\"מ", "יחס-שם", "מושא-שם"],
+      xray:    ["פועל", "נושא", "מושא", "הקשר", "הקשר", "מושא", "מושא"],
       checker: checkWordOrder,
       skill: "grammar"
     },
@@ -369,7 +400,7 @@ const PUZZLES = {
       prompt: "סדר את המילים ליצירת משפט אקדמי תקין:",
       words:   ["נמצא", "כי", "המחקר", "גדולה", "לסביבה", "יש", "חשיבות"],
       correct: [2, 0, 6, 5, 3, 4, 1],
-      xray:    ["נושא", "פועל", "מושא", "פועל עזר", "תואר", "מ\"מ", "מחבר"],
+      xray:    ["נושא", "פועל", "מושא", "פועל", "הקשר", "הקשר", "מחבר"],
       checker: checkWordOrder,
       skill: "grammar"
     }
@@ -385,9 +416,10 @@ const PUZZLES = {
         { text: "לסיכום, האיזון הנכון הוא המפתח לשילוב מוצלח של טכנולוגיה בחינוך.", connector: "לסיכום", order: 3 }
       ],
       connectorSequence: ["ראשית", "בנוסף", "עם זאת", "לסיכום"],
-      xray: ["פתיחה", "הרחבה", "נגד-טענה", "סיכום"],
+      // X-Ray labels from KB mid taxonomy (KB_XRAY.mid)
+      xray: ["פתיחת פסקה", "ראיה", "הסתייגות", "סיכום"],
       skill: "flow",
-      template: "טיעונית (פתיחה ← הרחבה ← נגד ← סיכום)"
+      template: "טיעונית (פתיחת פסקה ← ראיה ← הסתייגות ← סיכום)"
     },
     {
       prompt: "סדר את המשפטים ליצירת פסקה תיאורית קוהרנטית:",
@@ -398,9 +430,10 @@ const PUZZLES = {
         { text: "בסופו של דבר, ניתן לומר כי אוריינות אקדמית היא מיומנות יסוד ברת-הערכה.", connector: "בסופו", order: 3 }
       ],
       connectorSequence: ["תחילה", "לאחר מכן", "כמו כן", "בסופו"],
-      xray: ["הגדרה", "פירוט", "הרחבה", "הסקה"],
+      // X-Ray labels from KB mid taxonomy
+      xray: ["פתיחת פסקה", "פרשנות", "ראיה", "סיכום"],
       skill: "flow",
-      template: "תיאורית (הגדרה ← פירוט ← הרחבה ← הסקה)"
+      template: "תיאורית (פתיחת פסקה ← פרשנות ← ראיה ← סיכום)"
     }
   ],
 
@@ -411,23 +444,23 @@ const PUZZLES = {
       blocks: [
         {
           text: "החינוך הדיגיטלי הפך לנושא מרכזי בשיח הפדגוגי העכשווי. בעידן שבו טכנולוגיה חודרת לכל תחום חיים, עולה השאלה: האם הכלים הדיגיטליים משפרים את הישגי התלמידים?",
-          role: "Opening", roleHe: "פתיחה / הצגת שאלה", order: 0
+          role: "מבוא", roleHe: "מבוא", order: 0
         },
         {
           text: "מחקרים רבים מצביעים על כך שכלים דיגיטליים מגבירים מוטיבציה וגישה למידע. לדוגמה, מחקר של OECD (2023) מצא כי שימוש מושכל בטבלטים הגביר ציונים ב-15% בקרב תלמידים יסודיים.",
-          role: "Evidence", roleHe: "ראיה / נתון", order: 1
+          role: "ראיה", roleHe: "ראיה", order: 1
         },
         {
           text: "עם זאת, מבקרים טוענים כי התלות הטכנולוגית פוגעת ביכולת הריכוז ובחשיבה עמוקה. ממצאים של Rosen (2022) מראים ירידה בזמן הריכוז הממוצע של בני נוער ב-30% בעשור האחרון.",
-          role: "Counter", roleHe: "נגד-טענה", order: 2
+          role: "פרכה", roleHe: "פרכה", order: 2
         },
         {
           text: "לסיכום, הטכנולוגיה אינה טובה ואינה רעה כשלעצמה — הכל תלוי בדרך השימוש. שילוב מאוזן, המוביל על ידי מורה מנוסה, הוא המפתח להצלחה פדגוגית.",
-          role: "Conclusion", roleHe: "סיכום / עמדה", order: 3
+          role: "מסקנה", roleHe: "מסקנה", order: 3
         }
       ],
-      correctSequence: ["Opening", "Evidence", "Counter", "Conclusion"],
-      template: "פסקה טיעונית",
+      correctSequence: ["מבוא", "ראיה", "פרכה", "מסקנה"],
+      template: "פסקה טיעונית (מבוא ← ראיה ← פרכה ← מסקנה)",
       skill: "rhetoric"
     },
     {
@@ -436,23 +469,23 @@ const PUZZLES = {
       blocks: [
         {
           text: "סקירה זו עוסקת בהשפעת הכתיבה האקדמית על הישגי סטודנטים במכללות. מטרתה להציג את המחקרים הרלוונטיים ולגזור מהם מסקנות מעשיות.",
-          role: "Introduction", roleHe: "הקדמה / מטרת הסקירה", order: 0
+          role: "מבוא", roleHe: "מבוא", order: 0
         },
         {
           text: "מחקרים מהשנים 2018–2022 מצאו קשר חיובי בין כתיבה רפלקטיבית לבין הצלחה אקדמית. Flower & Hayes (2019) הדגישו את חשיבות תהליך הכתיבה על פני התוצר הסופי.",
-          role: "Review1", roleHe: "סקירה ראשונה", order: 1
+          role: "טיעון", roleHe: "טיעון", order: 1
         },
         {
           text: "לעומת זאת, חוקרים אחרים כגון Bereiter & Scardamalia (2021) טענו כי כתיבה ללא הנחיה מובנית עלולה לחזק טעויות מחשבתיות. הם המליצו על 'כתיבה לבנייה' (knowledge building).",
-          role: "Review2", roleHe: "סקירה שנייה / ניגוד", order: 2
+          role: "פרכה", roleHe: "פרכה", order: 2
         },
         {
           text: "נוכח הממצאים הסותרים, ניתן להסיק כי הקשר בין כתיבה להישגים מורכב ותלוי הקשר. המחקר העתידי יידרש לבחון את גורמי הרקע המתערבים.",
-          role: "Synthesis", roleHe: "סינתזה / מסקנה", order: 3
+          role: "מסקנה", roleHe: "מסקנה", order: 3
         }
       ],
-      correctSequence: ["Introduction", "Review1", "Review2", "Synthesis"],
-      template: "סקירת ספרות",
+      correctSequence: ["מבוא", "טיעון", "פרכה", "מסקנה"],
+      template: "סקירת ספרות (מבוא ← טיעון ← פרכה ← מסקנה)",
       skill: "rhetoric"
     }
   ]
@@ -703,7 +736,7 @@ function checkAnswer() {
     hideChecker();
   } else {
     showFeedback("error", `❌ ${result.wrongCount} בלוק/ים במקום לא נכון. נסה שוב — רמזים למטה:`);
-    showChecker(result.hints);
+    showChecker(result.hints, result.arabicHint || null);
   }
 }
 
@@ -768,9 +801,19 @@ function checkSentenceOrder(blocks) {
   const connectors = zoneBlocks.map(el => pz.sentences[parseInt(el.dataset.idx)].connector);
   const firstConn  = connectors[0];
   if (firstConn && firstConn !== connSeq[0])
-    hints.push(`הפסקה הראשונה אמורה להתחיל ב-"${connSeq[0]}" (פתיחה).`);
+    hints.push(`הפסקה הראשונה אמורה להתחיל ב-"${connSeq[0]}" (פתיחת פסקה לפי KB).`);
 
-  return { perfect: false, wrongCount: wrong, hints };
+  // Detect Arabic transfer error pattern on wrong block
+  const wrongIdx  = zoneBlocks.findIndex((el, i) => {
+    const idx = parseInt(el.dataset.idx);
+    return pz.sentences[idx].connector !== connSeq[i];
+  });
+  const wrongText = wrongIdx >= 0
+    ? pz.sentences[parseInt(zoneBlocks[wrongIdx].dataset.idx)].text : "";
+  const connType = detectConnectorType(wrongText);
+  const arabicHint = connType ? ARABIC_CONNECTOR_HINTS[connType] : null;
+
+  return { perfect: false, wrongCount: wrong, hints, arabicHint };
 }
 
 function checkParagraphOrder(blocks) {
@@ -841,16 +884,21 @@ function clearFeedback() {
   });
 }
 
-function showChecker(hints) {
+function showChecker(hints, connectorHint) {
   const el   = document.getElementById("sb-checker");
   const list = document.getElementById("checker-hints");
   const titleMap = {
-    word: "🔍 בודק תחביר — מה לתקן:",
-    sentence: "🔍 בודק מילות קישור — מה לתקן:",
-    paragraph: "🔍 בודק תבנית ורטורית — מה לתקן:"
+    word:      "🔍 בודק תחביר (KB: רמת מיקרו) — מה לתקן:",
+    sentence:  "🔍 בודק מילות קישור (KB: רמת מיד) — מה לתקן:",
+    paragraph: "🔍 בודק תבנית ורטורית (KB: רמת מאקרו) — מה לתקן:"
   };
   document.getElementById("checker-title").innerText = titleMap[state.mode];
-  list.innerHTML = hints.map(h => `<li>${h}</li>`).join("");
+  let items = hints.map(h => `<li>${h}</li>`).join("");
+  // Append Arabic-specific connector hint if relevant (from KB arabic_transfer_errors)
+  if (connectorHint) {
+    items += `<li style="margin-top:6px;padding-top:6px;border-top:1px solid #fde68a;color:#92400e;">${connectorHint}</li>`;
+  }
+  list.innerHTML = items;
   el.style.display = "block";
 }
 

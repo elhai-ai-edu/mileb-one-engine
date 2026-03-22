@@ -1,17 +1,21 @@
 /**
  * text_puzzle_api.js — Text Puzzle (פאזל טקסט) Engine API
- * MilEd.One v9.4.0
+ * MilEd.One v9.5.0
  *
  * Routes:
  *   POST /api/text-puzzle/parse   — AI analyzes text → blocks with rhetorical roles
- *   POST /api/text-puzzle/hint    — Socratic guiding question (never reveals answer)
+ *   POST /api/text-puzzle/hint    — Socratic Paraphrase Coach guiding question (never reveals answer)
  *   POST /api/text-puzzle/reflect — Evaluates student reflection, signals XP
  *   POST /api/text-puzzle/save    — Saves puzzle to Firebase (superadmin auth required)
  *
  * FIREBASE PATHS:
  *   puzzles/{puzzleId}            — full puzzle definition (blocks, level, typicalErrors)
  *
- * AUTHORITY: docs/MASTER_LOGIC.md — Paraphrase Bot KB, 8-Layer SP structure, OPAL tools
+ * KB AUTHORITY: puzzles_kb.json — canonical rhetorical roles, Error Bank, Connector Logic,
+ *               Arabic transfer-error patterns. All role names and error IDs in this file
+ *               MUST match puzzles_kb.json xray_taxonomy and typical_errors sections.
+ *
+ * PEDAGOGICAL AUTHORITY: docs/MASTER_LOGIC.md — 8-Layer SP, OPAL tools, Phase enforcement
  */
 
 import crypto from "crypto";
@@ -63,7 +67,8 @@ async function callAI(system, user, maxTokens = 2000) {
   return d.choices?.[0]?.message?.content?.trim() || "";
 }
 
-// ─── Level config (Paraphrase KB taxonomy) ───
+// ─── Level config — canonical taxonomy from puzzles_kb.json xray_taxonomy + puzzle_levels ───
+// Role IDs here MUST match puzzles_kb.json → rhetorical_roles.puzzle_levels.*
 const LEVEL_CONFIG = {
   macro: {
     he: "מאקרו — פסקאות",
@@ -109,6 +114,36 @@ const LEVEL_CONFIG = {
   }
 };
 
+// ─── Arabic Transfer-Error Awareness (puzzles_kb.json → connector_logic.arabic_transfer_errors) ───
+// Injected into the Paraphrase Coach hint SP when connector errors are detected.
+const ARABIC_CONNECTOR_NOTES = `
+ARABIC SPEAKER CONNECTOR AWARENESS (from puzzles_kb.json):
+You are coaching students many of whom are native Arabic speakers. When connector logic errors appear,
+apply these pedagogical notes — always as a Socratic question, NEVER as a statement of the answer:
+
+• Contrast (ניגוד): Arabic speakers often transfer 'لكن' → 'אבל' (colloquial).
+  Academic target: 'עם זאת' / 'לעומת זאת'.
+  Hint direction: Ask why formal written Hebrew prefers a different word for contrast.
+
+• Addition (הוספה): Arabic 'أيضا / وكذلك' → colloquial 'גם'.
+  Academic target: 'בנוסף לכך' / 'יתרה מכך' / 'כמו כן'.
+  Hint direction: Ask what addition word fits an academic essay versus a conversation.
+
+• Cause (סיבה): Arabic syntax puts effect before cause (result + لأن + cause).
+  Academic Hebrew can do both but formal preference is cause-first or clear connector.
+  Hint direction: Ask which clause is the cause and which is the effect — is the order logical?
+
+• Result (תוצאה): Arabic 'إذن / فـ' → colloquial 'אז'.
+  Academic target: 'לפיכך' / 'על כן' / 'כתוצאה מכך'.
+  Hint direction: Ask what formal result-marker would sound right in a published article.
+
+• Sequence (רצף): Arabic 'وبعد ذلك / ثم' → colloquial 'ואז / ואחרי זה'.
+  Academic target: 'לאחר מכן' / 'בשלב הבא'.
+  Hint direction: Ask how a scholar would express temporal sequence in a formal text.
+
+Use these notes to calibrate hint specificity — but NEVER quote the Arabic in your response to the student.
+All responses to students must be in Hebrew only.`;
+
 // ─── PARSE ───
 async function handleParse(body) {
   const { text, level, requesterUsername, requesterPassword } = body;
@@ -123,11 +158,12 @@ async function handleParse(body) {
   const lc = LEVEL_CONFIG[level];
   if (!lc) return { statusCode: 400, body: JSON.stringify({ error: "level must be macro | mid | micro" }) };
 
-  const system = `You are a Hebrew pedagogical text analyzer for the MilEd.One platform.
+  const system = `You are the MilEd.One Paraphrase Coach — a Hebrew pedagogical text analyzer.
 Task: Analyze the given Hebrew (or Hebrew/English mixed) academic text and split it into blocks
-at the ${lc.splitUnit} level, then assign a rhetorical role to each block.
+at the ${lc.splitUnit} level, then assign a canonical rhetorical role to each block.
 
-Available roles: ${lc.roles.join(", ")}
+ROLE TAXONOMY (from puzzles_kb.json — use EXACTLY these Hebrew labels, no others):
+${lc.roles.map((r, i) => `${i + 1}. ${r}`).join("\n")}
 
 Color map for roles:
 ${Object.entries(lc.roleColors).map(([r,c]) => `${r} → ${c}`).join("\n")}
@@ -136,7 +172,7 @@ Respond ONLY with a valid JSON array — no markdown fences, no explanation:
 [
   {
     "content": "exact verbatim text of this block",
-    "role": "one of the Hebrew roles listed above",
+    "role": "one of the canonical Hebrew roles listed above",
     "roleColor": "hex color from the map above"
   },
   ...
@@ -145,10 +181,11 @@ Respond ONLY with a valid JSON array — no markdown fences, no explanation:
 Rules:
 - Preserve EXACT original wording — never paraphrase or alter
 - Split at natural boundaries (\\n\\n for macro, punctuation [.?!] for mid, word/phrase for micro)
-- Every block must have a role
+- Every block MUST have a role from the canonical taxonomy above — never invent new role names
 - Output blocks in their CORRECT logical order (as they appear in the text)
 - Minimum 3 blocks, maximum 20 blocks
-- For micro level: each block is 1–4 words max`;
+- For micro level: each block is 1–4 words max
+- Role assignment priority: prefer the most specific role; use הסתייגות only when hedging is explicit`;
 
   const raw = await callAI(system, `Level: ${level}\n\nText:\n${text}`);
 
@@ -200,19 +237,29 @@ async function handleHint(body) {
   const wrongBlock = blocks.find(b => b.id === wrongId);
   const errorType  = lc.typicalErrors[Math.min(hintCount, lc.typicalErrors.length - 1)];
 
-  const system = `You are a Socratic Hebrew pedagogy tutor for MilEd.One's text puzzle tool.
+  const system = `You are the MilEd.One Paraphrase Coach — a Socratic pedagogy tutor specializing
+in academic Hebrew writing for Israeli college students.
 A student is rearranging ${lc.splitUnit} to reconstruct an academic text.
+
+YOUR PERSONA:
+- Warm, curious, patient — like a skilled writing tutor in a one-on-one session
+- You know the Paraphrase Bot KB deeply: rhetorical roles, connector logic, Error Bank
+- You understand how connector logic works differently in Hebrew vs. Arabic
 
 YOUR LAWS (violating any is a critical failure):
 1. NEVER reveal the correct position number
 2. NEVER say "this block belongs before/after X"
 3. NEVER give the answer — only ask ONE guiding question
-4. Respond ONLY in Hebrew
+4. Respond ONLY in Hebrew (regardless of student's background)
 5. Be warm, curious, never judgmental
-6. Reference the block's rhetorical role and its logical function
-7. Hint ${hintCount + 1}: ${hintCount >= 2 ? "be more specific (but STILL no direct answer)" : "broad Socratic nudge"}
+6. Reference the block's rhetorical role (from KB taxonomy) and its logical function
+7. Hint ${hintCount + 1}: ${hintCount >= 2 ? "be more specific about the KB role/connector logic (but STILL no direct answer)" : "broad Socratic nudge about logical flow"}
+8. If the error involves a connector word (מחבר לוגי), apply your knowledge of Hebrew academic
+   connectors vs. colloquial usage — ask a question that guides toward the correct register
 
-Typical error pattern for this level: "${errorType}"`;
+KB RHETORICAL ROLES for this level: ${lc.roles.join(", ")}
+Typical error pattern for this level: "${errorType}"
+${ARABIC_CONNECTOR_NOTES}`;
 
   const user = `Student arrangement problem:
 Block in question: "${wrongBlock?.content || '?'}"
