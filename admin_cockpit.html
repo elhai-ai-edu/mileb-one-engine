@@ -110,7 +110,10 @@
 
   <!-- ── Part B: Individual Role Assignments ── -->
   <div class="panel">
-    <h2>👤 הרשאות אישיות</h2>
+    <h2 style="display:flex;align-items:center;gap:10px;">
+      👤 הרשאות אישיות
+      <span id="users-count-badge" style="display:none;font-size:12px;font-weight:700;padding:3px 10px;border-radius:10px;background:#eef2ff;color:#4338ca;"></span>
+    </h2>
     <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
       הוסף משתמשים ספציפיים עם תפקיד מותאם — גם אם הדומיין שלהם אינו מורשה.
     </p>
@@ -462,19 +465,31 @@ async function loadAuthorizedUsers() {
   const el = document.getElementById("auth-users-list");
   try {
     const data = await dbFetch("/authorized_users.json");
-    if (!data) { el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>'; return; }
+    const badge = document.getElementById("users-count-badge");
+    if (!data || !Object.keys(data).length) {
+      el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>';
+      if (badge) { badge.innerText = "0 משתמשים"; badge.style.display = "inline-block"; }
+      return;
+    }
+    const entries = Object.entries(data);
+    if (badge) { badge.innerText = `${entries.length} משתמשים`; badge.style.display = "inline-block"; }
     const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed", student:"#0891b2" };
-    const rows = Object.entries(data).map(([key, val]) =>
-      `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
+    const rows = entries.map(([key, val]) =>
+      `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
         <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;">${val.email || key.replace(/_at_/g,"@").replace(/_/g,".")}</span>
-        <span style="font-size:11px;padding:2px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;">${val.role || '—'}</span>
-        <span style="font-size:11px;padding:2px 8px;border-radius:8px;background:#fef9c3;color:#854d0e;font-weight:600;white-space:nowrap;${val.classId ? '' : 'display:none;'}">${val.classId || ''}</span>
-        <span style="font-size:12px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${val.institutionId || ''}</span>
+        <span style="font-size:11px;padding:3px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;">${val.role || '—'}</span>
+        ${val.classId
+          ? `<span style="font-size:12px;padding:3px 10px;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:700;white-space:nowrap;border:1px solid #fde68a;">📚 ${val.classId}</span>`
+          : `<span style="font-size:12px;color:#cbd5e1;white-space:nowrap;">ללא כיתה</span>`
+        }
+        <span style="font-size:12px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;">${val.institutionId || ''}</span>
         <button onclick="deleteAuthorizedUser('${key}')"
-          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:11px;padding:3px 9px;white-space:nowrap;">מחק</button>
+          title="מחק משתמש"
+          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:14px;padding:3px 8px;line-height:1;white-space:nowrap;transition:background .15s;"
+          onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">🗑️</button>
       </div>`
     ).join("");
-    el.innerHTML = rows || '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>';
+    el.innerHTML = rows;
   } catch(e) {
     el.innerHTML = `<div><p style="color:#ef4444;font-size:12px;margin:0;">${e.message}</p>${reAuthBtn()}</div>`;
   }
@@ -500,7 +515,8 @@ async function addUserRole() {
 }
 
 async function deleteAuthorizedUser(key) {
-  if (!confirm("מחק הרשאה זו?")) return;
+  const email = key.replace(/_at_/g, "@").replace(/_/g, ".");
+  if (!confirm(`האם למחוק את הרשאת הגישה של:\n${email}?`)) return;
   try {
     await dbFetch(`/authorized_users/${key}.json`, { method: "DELETE" });
     loadAuthorizedUsers();
