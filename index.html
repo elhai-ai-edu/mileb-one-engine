@@ -192,9 +192,11 @@ async function startGoogleFlow(intent) {
 
   } catch (e) {
     console.error("Google sign-in failed:", e);
+    // Sign out from Firebase so user isn't left in a partial auth state
+    if (window.firebase?.auth) firebase.auth().signOut().catch(() => {});
     err.innerText = e.message?.includes("popup")
       ? "הקופץ נחסם — אפשר חלונות קופצים ונסה שוב."
-      : "כניסה נכשלה. נסה שוב.";
+      : e.message || "כניסה נכשלה. נסה שוב.";
     ALL_BTNS.forEach(id => { const b = document.getElementById(id); if (b) b.disabled = false; });
   }
 }

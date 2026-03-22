@@ -72,7 +72,7 @@ window.MiledAuth = (() => {
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Role fetch failed");
-    return { role: data.role, uid: data.uid, email: data.email };
+    return { role: data.role, uid: data.uid, email: data.email, institutionId: data.institutionId || null };
   }
 
   // ─── Google SVG icon ───
@@ -94,12 +94,13 @@ window.MiledAuth = (() => {
       const result   = await firebase.auth().signInWithPopup(provider);
       const fbUser   = result.user;
       const idToken  = await fbUser.getIdToken();
-      const { role, uid, email } = await fetchRole(idToken);
+      const { role, uid, email, institutionId } = await fetchRole(idToken);
       const user = {
         uid, email,
         displayName: fbUser.displayName,
         photoURL:    fbUser.photoURL,
-        role
+        role,
+        institutionId: institutionId || null
       };
       setSession(user);
       return user;

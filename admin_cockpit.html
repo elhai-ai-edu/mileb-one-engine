@@ -56,41 +56,73 @@
 <!-- ─── SECURITY / USER MANAGEMENT TAB ─── -->
 <div id="tab-security">
 
-  <div class="panel">
-    <h2>ניהול משתמשי מערכת</h2>
-    <p style="color:#888;font-size:13px;margin-bottom:16px;">שינויים נשמרים ישירות ב-Firebase. נדרש אימות מחדש לכל פעולה.</p>
+  <!-- ── Part A: Authorized Domains ── -->
+  <div class="panel" style="margin-bottom:16px;">
+    <h2>🏛 מוסדות מורשים (לפי דומיין)</h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
+      כל משתמש עם מייל מהדומיין יקבל גישה אוטומטית כסטודנט.
+      להעלאת תפקיד — השתמש בחלק ב׳.
+    </p>
 
-    <div class="mgmt-reauth">
-      <p>אימות מחדש נדרש לפעולות אבטחה</p>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input id="sec-user" type="text" placeholder="שם משתמש" autocomplete="off" style="width:150px;direction:ltr;">
-        <input id="sec-pass" type="password" placeholder="סיסמה" autocomplete="off" style="width:150px;direction:ltr;">
-        <button class="btn btn-blue btn-sm" onclick="loadUsers()">טען משתמשים</button>
-      </div>
-      <p id="sec-msg" class="auth-error" style="margin:8px 0 0;"></p>
+    <div id="inst-list" style="margin-bottom:14px;min-height:32px;">
+      <p style="font-size:13px;color:#94a3b8;">⏳ טוען...</p>
     </div>
 
-    <div id="users-list" style="margin-bottom:20px;"></div>
-
-    <div id="create-user-form" class="mgmt-section" style="display:none;">
-      <h3 style="margin:0 0 12px;font-size:14px;">+ הוסף משתמש חדש</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <input id="new-username" type="text" placeholder="שם משתמש (login)" autocomplete="off"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
-        <input id="new-name" type="text" placeholder="שם לתצוגה"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
-        <input id="new-password" type="password" placeholder="סיסמה ראשונית"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
-        <select id="new-role"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
-          <option value="faculty">faculty</option>
-          <option value="superadmin">superadmin</option>
-        </select>
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">+ הוסף דומיין מורשה</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">דומיין (לדוגמה: college.ac.il)</label>
+          <input id="new-domain" type="text" placeholder="college.ac.il" dir="ltr"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם המוסד</label>
+          <input id="new-inst-name" type="text" placeholder="מכללת ..."
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <button class="btn btn-green" onclick="addDomain()" style="padding:8px 16px;white-space:nowrap;">הוסף</button>
       </div>
-      <button class="btn btn-green" onclick="createUser()" style="padding:8px 16px;font-size:13px;">
-        צור משתמש
-      </button>
-      <p id="create-msg" style="font-size:13px;color:#e53;margin:8px 0 0;min-height:18px;"></p>
+      <p id="domain-msg" style="font-size:12px;margin:6px 0 0;min-height:16px;"></p>
+    </div>
+  </div>
+
+  <!-- ── Part B: Individual Role Assignments ── -->
+  <div class="panel">
+    <h2>👤 הרשאות אישיות</h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
+      הוסף משתמשים ספציפיים עם תפקיד מותאם — גם אם הדומיין שלהם אינו מורשה.
+    </p>
+
+    <div id="auth-users-list" style="margin-bottom:14px;min-height:32px;">
+      <p style="font-size:13px;color:#94a3b8;">⏳ טוען...</p>
+    </div>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">+ הוסף הרשאה אישית</div>
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;">
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">כתובת מייל</label>
+          <input id="new-auth-email" type="email" placeholder="name@example.com" dir="ltr"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תפקיד</label>
+          <select id="new-auth-role"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            <option value="faculty">מרצה (faculty)</option>
+            <option value="institution">הנהלה (institution)</option>
+            <option value="superadmin">מנהל (superadmin)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מוסד (אופציונלי)</label>
+          <input id="new-auth-inst" type="text" placeholder="college_ac_il" dir="ltr"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <button class="btn btn-green" onclick="addUserRole()" style="padding:8px 16px;white-space:nowrap;">הוסף</button>
+      </div>
+      <p id="auth-user-msg" style="font-size:12px;margin:6px 0 0;min-height:16px;"></p>
     </div>
   </div>
 
@@ -140,6 +172,10 @@ async function init(){
 
   const res = await fetch("/config.json");
   config = await res.json();
+
+  // Load institution/user management data for the default tab
+  loadInstitutions();
+  loadAuthorizedUsers();
 }
 
 init();
@@ -156,6 +192,123 @@ function switchTab(tab){
     document.getElementById("tab-btn-" + t).classList.toggle("active", tab === t);
   });
   if(tab === "config" && config && Object.keys(config).length) render();
+  if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); }
+}
+
+// ─── Firebase REST helpers ───
+function dbUrl() { return window.MILED_FIREBASE_CONFIG?.databaseURL || ""; }
+
+async function getFirebaseToken() {
+  if (window.firebase && firebase.apps.length && firebase.auth().currentUser)
+    return firebase.auth().currentUser.getIdToken(true);
+  throw new Error("לא מחובר ל-Firebase — טען את הדף מחדש");
+}
+
+// ─── Institutions ───
+async function loadInstitutions() {
+  const el = document.getElementById("inst-list");
+  try {
+    const token = await getFirebaseToken();
+    const res   = await fetch(`${dbUrl()}/institutions.json?auth=${token}`);
+    const data  = await res.json();
+    if (!data) { el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין מוסדות רשומים עדיין.</p>'; return; }
+    const rows = Object.entries(data).map(([key, val]) =>
+      `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
+        <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;">${val.domain || key.replace(/_/g,".")}</span>
+        <span style="font-size:12px;color:#64748b;flex:1;">${val.name || ''}</span>
+        <button onclick="deleteInstitution('${key}')"
+          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:11px;padding:3px 9px;">מחק</button>
+      </div>`
+    ).join("");
+    el.innerHTML = rows || '<p style="font-size:13px;color:#94a3b8;">אין מוסדות רשומים עדיין.</p>';
+  } catch(e) {
+    el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
+  }
+}
+
+async function addDomain() {
+  const domain = document.getElementById("new-domain").value.trim().toLowerCase();
+  const name   = document.getElementById("new-inst-name").value.trim();
+  const msg    = document.getElementById("domain-msg");
+  if (!domain || !domain.includes(".")) { msg.style.color="#ef4444"; msg.innerText="נא להזין דומיין תקין (למשל: college.ac.il)"; return; }
+  try {
+    const token = await getFirebaseToken();
+    const key   = domain.replace(/\./g, "_");
+    const res   = await fetch(`${dbUrl()}/institutions/${key}.json?auth=${token}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domain, name: name || domain, createdAt: Date.now() })
+    });
+    if (!res.ok) throw new Error(`שגיאה ${res.status} — בדוק הרשאות RTDB`);
+    msg.style.color="#16a34a"; msg.innerText=`✅ הדומיין '${domain}' נוסף בהצלחה.`;
+    document.getElementById("new-domain").value = "";
+    document.getElementById("new-inst-name").value = "";
+    loadInstitutions();
+  } catch(e) { msg.style.color="#ef4444"; msg.innerText=e.message; }
+}
+
+async function deleteInstitution(key) {
+  if (!confirm(`מחק את הדומיין '${key.replace(/_/g, ".")}'?`)) return;
+  try {
+    const token = await getFirebaseToken();
+    await fetch(`${dbUrl()}/institutions/${key}.json?auth=${token}`, { method: "DELETE" });
+    loadInstitutions();
+  } catch(e) { alert(e.message); }
+}
+
+// ─── Authorized Users ───
+async function loadAuthorizedUsers() {
+  const el = document.getElementById("auth-users-list");
+  try {
+    const token = await getFirebaseToken();
+    const res   = await fetch(`${dbUrl()}/authorized_users.json?auth=${token}`);
+    const data  = await res.json();
+    if (!data) { el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>'; return; }
+    const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed" };
+    const rows = Object.entries(data).map(([key, val]) =>
+      `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
+        <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;">${val.email || key}</span>
+        <span style="font-size:11px;padding:2px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;">${val.role}</span>
+        <span style="font-size:12px;color:#94a3b8;flex:1;">${val.institutionId || ''}</span>
+        <button onclick="deleteAuthorizedUser('${key}')"
+          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:11px;padding:3px 9px;">מחק</button>
+      </div>`
+    ).join("");
+    el.innerHTML = rows || '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>';
+  } catch(e) {
+    el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
+  }
+}
+
+async function addUserRole() {
+  const email  = document.getElementById("new-auth-email").value.trim().toLowerCase();
+  const role   = document.getElementById("new-auth-role").value;
+  const instId = document.getElementById("new-auth-inst").value.trim() || "manual";
+  const msg    = document.getElementById("auth-user-msg");
+  if (!email || !email.includes("@")) { msg.style.color="#ef4444"; msg.innerText="נא להזין כתובת מייל תקינה."; return; }
+  try {
+    const token = await getFirebaseToken();
+    const key   = email.replace(/\./g, "_").replace(/@/g, "_at_");
+    const res   = await fetch(`${dbUrl()}/authorized_users/${key}.json?auth=${token}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, role, institutionId: instId, createdAt: Date.now() })
+    });
+    if (!res.ok) throw new Error(`שגיאה ${res.status} — בדוק הרשאות RTDB`);
+    msg.style.color="#16a34a"; msg.innerText=`✅ נוסף: ${email} → ${role}`;
+    document.getElementById("new-auth-email").value = "";
+    document.getElementById("new-auth-inst").value = "";
+    loadAuthorizedUsers();
+  } catch(e) { msg.style.color="#ef4444"; msg.innerText=e.message; }
+}
+
+async function deleteAuthorizedUser(key) {
+  if (!confirm("מחק הרשאה זו?")) return;
+  try {
+    const token = await getFirebaseToken();
+    await fetch(`${dbUrl()}/authorized_users/${key}.json?auth=${token}`, { method: "DELETE" });
+    loadAuthorizedUsers();
+  } catch(e) { alert(e.message); }
 }
 
 // ─── CONFIG EDITOR ───

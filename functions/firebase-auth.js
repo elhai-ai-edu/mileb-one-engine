@@ -1,11 +1,15 @@
-// functions/firebase-auth.js — MilEd.One Auth v7.0
+// functions/firebase-auth.js — MilEd.One Auth v8.0
 // POST /api/firebase-auth  { idToken: string }
 //
 // Verifies a Google ID token via Firebase Admin Auth.
-// On first login  → creates users/{uid} in RTDB with role: "student"
-// On return login → returns stored role, updates lastSeen
+// Institution lookup order:
+//   1. SUPER_ADMIN_EMAILS override (bypass all checks)
+//   2. /institutions/{domainKey}  — auto-approve entire domain
+//   3. /authorized_users/{emailKey} — individual whitelist
+//   4. Block — "מייל לא מזוהה: הגישה מותרת למוסדות מורשים בלבד"
 //
-// To promote a user: Firebase Console → Realtime Database → users/{uid} → role → change value
+// New users default to role: "student" (or authorized_users override)
+// Return users keep their stored role; institutionId is refreshed
 // Valid roles: student | faculty | institution | superadmin
 
 import { initializeApp, getApps, cert } from "firebase-admin/app";
@@ -27,6 +31,10 @@ function getApp() {
   return getApps()[0];
 }
 
+// Encode email/domain for use as Firebase RTDB keys (no dots or @ allowed)
+function domainKey(domain)  { return domain.replace(/\./g, "_"); }
+function emailKey(email)    { return email.replace(/\./g, "_").replace(/@/g, "_at_"); }
+
 export async function handler(event) {
   if (event.httpMethod === "OPTIONS")
     return { statusCode: 200, headers, body: "" };
@@ -41,7 +49,7 @@ export async function handler(event) {
   if (!idToken)
     return { statusCode: 400, headers, body: JSON.stringify({ error: "idToken required" }) };
 
-  // ─── Verify Google ID token via Firebase Admin ───
+  // ─── Verify Google ID token ───
   const app = getApp();
   let decoded;
   try {
@@ -52,21 +60,65 @@ export async function handler(event) {
   }
 
   const { uid, email, name } = decoded;
+  const emailLower = (email || "").toLowerCase();
   const db      = getDatabase(app);
   const userRef = db.ref(`users/${uid}`);
 
   // ─── Hardcoded Super-Admin override ───
-  // These emails are always granted superadmin regardless of RTDB state.
+  // Bypasses all institution checks — always granted superadmin.
   const SUPER_ADMIN_EMAILS = new Set(["elnahum@gmail.com"]);
-  if (SUPER_ADMIN_EMAILS.has((email || "").toLowerCase())) {
+  if (SUPER_ADMIN_EMAILS.has(emailLower)) {
     await userRef.update({
       uid, email,
       displayName: name || email,
       role: "superadmin",
+      institutionId: "superadmin",
       lastSeen: Date.now()
     }).catch(() => {});
     console.log(`FIREBASE-AUTH: superadmin override — ${email}`);
-    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, uid, email, role: "superadmin" }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, uid, email, role: "superadmin", institutionId: "superadmin" }) };
+  }
+
+  // ─── Institution lookup ───
+  const domain   = emailLower.split("@")[1] || "";
+  const dKey     = domainKey(domain);
+  const eKey     = emailKey(emailLower);
+
+  let institutionId      = null;
+  let authorizedUserData = null;
+
+  // 1. Check /institutions/{domainKey}
+  try {
+    const instSnap = await db.ref(`institutions/${dKey}`).get();
+    if (instSnap.exists()) {
+      institutionId = dKey;
+      console.log(`FIREBASE-AUTH: domain match — ${domain} → ${institutionId}`);
+    }
+  } catch {}
+
+  // 2. Check /authorized_users/{emailKey} (manual whitelist)
+  try {
+    const auSnap = await db.ref(`authorized_users/${eKey}`).get();
+    if (auSnap.exists()) {
+      authorizedUserData = auSnap.val();
+      if (!institutionId) {
+        institutionId = authorizedUserData.institutionId || "manual";
+        console.log(`FIREBASE-AUTH: authorized_users match — ${email} → ${institutionId}`);
+      }
+    }
+  } catch {}
+
+  // 3. Block if unknown
+  if (!institutionId) {
+    console.warn(`FIREBASE-AUTH: blocked — unknown domain '${domain}' for ${email}`);
+    return {
+      statusCode: 403,
+      headers,
+      body: JSON.stringify({
+        ok: false,
+        error: "מייל לא מזוהה: הגישה מותרת למוסדות מורשים בלבד"
+      })
+    };
   }
 
   // ─── Read or create user record ───
@@ -74,18 +126,25 @@ export async function handler(event) {
   try {
     const snap = await userRef.get();
     if (snap.exists()) {
+      // Returning user: keep stored role; refresh metadata
       role = snap.val().role || "student";
-      await userRef.update({ lastSeen: Date.now(), email, displayName: name || email });
+      await userRef.update({
+        lastSeen: Date.now(), email,
+        displayName: name || email,
+        institutionId
+      });
     } else {
-      role = "student";
+      // New user: use authorized_users role override if present, else "student"
+      role = authorizedUserData?.role || "student";
       await userRef.set({
         uid, email,
         displayName: name || email,
         role,
+        institutionId,
         createdAt: Date.now(),
         lastSeen:  Date.now()
       });
-      console.log(`FIREBASE-AUTH: new user — ${email} (role: student)`);
+      console.log(`FIREBASE-AUTH: new user — ${email} (role: ${role}, institution: ${institutionId})`);
     }
   } catch (e) {
     console.error("FIREBASE-AUTH: RTDB error:", e.message);
@@ -95,6 +154,6 @@ export async function handler(event) {
   return {
     statusCode: 200,
     headers,
-    body: JSON.stringify({ ok: true, uid, email, role })
+    body: JSON.stringify({ ok: true, uid, email, role, institutionId })
   };
 }
