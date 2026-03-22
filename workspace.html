@@ -302,7 +302,7 @@ function selectBot(botType, label, linkEl) {
 async function triggerBotOpening() {
   const chatWindow = document.getElementById("chat-window");
   const loading    = document.createElement("div");
-  loading.className = "message ai";
+  loading.className = "message ai bot-message";
   loading.innerText = "...";
   chatWindow.appendChild(loading);
 
@@ -343,7 +343,7 @@ async function triggerBotOpening() {
 
 function renderMessage(role, content) {
   const div = document.createElement("div");
-  div.className = "message " + (role === "user" ? "user" : "ai");
+  div.className = "message " + (role === "user" ? "user user-message" : "ai bot-message");
   div.innerHTML = role === "user" ? content : marked.parse(content);
   return div;
 }
@@ -363,7 +363,7 @@ async function sendMessage() {
   document.getElementById("send-btn").disabled = true;
 
   const loading = document.createElement("div");
-  loading.className = "message ai";
+  loading.className = "message ai bot-message";
   loading.innerText = "חושב...";
   chatWindow.appendChild(loading);
   chatWindow.scrollTop = chatWindow.scrollHeight;

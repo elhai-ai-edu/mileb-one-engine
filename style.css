@@ -2277,3 +2277,31 @@ body.management-theme select:focus {
   75%  { opacity: 1; }
   100% { opacity: 0; transform: translateY(-4px); }
 }
+
+/* ─── Chat message bubbles (v7.6) ─── */
+#chat-window {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+}
+.message {
+  max-width: 78%;
+  word-break: break-word;
+}
+.message.user, .user-message {
+  background: #f3f4f6;
+  color: #1f2937;
+  align-self: flex-start;
+  border-radius: 12px 12px 4px 12px;
+  padding: 10px 14px;
+}
+.message.ai, .bot-message {
+  background: #eef2ff;
+  color: #4338ca;
+  align-self: flex-end;
+  border-radius: 12px 12px 12px 4px;
+  padding: 10px 14px;
+  line-height: 1.75;
+  font-family: 'Assistant', sans-serif;
+}
