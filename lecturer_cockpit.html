@@ -22,6 +22,101 @@
   letter-spacing: .3px;
   transition: background .3s;
 }
+
+/* v8.6 — Class Skills Profiler */
+.profiler-btn-bar {
+  padding: 14px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.class-profiler-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,0.6);
+  z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.class-profiler-modal {
+  background: #fff;
+  border-radius: 18px;
+  width: 100%; max-width: 840px;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+  direction: rtl;
+}
+.cp-header {
+  padding: 22px 28px 16px;
+  border-bottom: 2px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 1;
+  border-radius: 18px 18px 0 0;
+}
+.cp-title   { font-size: 18px; font-weight: 700; color: #1e1b4b; }
+.cp-subtitle{ font-size: 12px; color: #64748b; margin-top: 3px; }
+.cp-close {
+  background: #f1f5f9; border: none; border-radius: 8px;
+  width: 32px; height: 32px; cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cp-body { padding: 24px 28px; }
+.cp-section-title {
+  font-size: 12px; font-weight: 700; color: #475569; letter-spacing: .5px;
+  text-transform: uppercase; margin-bottom: 14px;
+  padding-bottom: 6px; border-bottom: 1px solid #f1f5f9;
+}
+.cp-two-col {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px;
+}
+.cp-insight-card {
+  border-radius: 12px; padding: 14px 16px;
+  display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
+}
+.cp-insight-card.insight-high { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.cp-insight-card.insight-low  { background: #fff5f5; border: 1px solid #fecaca; }
+.cp-insight-icon  { font-size: 22px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+.cp-insight-label { font-size: 11px; font-weight: 700; letter-spacing: .4px; margin-bottom: 3px; }
+.cp-insight-label.high { color: #059669; }
+.cp-insight-label.low  { color: #dc2626; }
+.cp-insight-text  { font-size: 13px; color: #1e293b; font-weight: 600; }
+.cp-insight-rec   { font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.5; }
+.dist-row { margin-bottom: 16px; }
+.dist-label {
+  font-size: 13px; font-weight: 600; color: #374151;
+  margin-bottom: 5px; display: flex; justify-content: space-between;
+}
+.dist-bar-track {
+  height: 22px; border-radius: 6px; background: #f1f5f9;
+  overflow: hidden; display: flex;
+}
+.dist-seg { height: 100%; transition: width .7s ease; }
+.dist-seg-1 { background: #fca5a5; }
+.dist-seg-2 { background: #fbbf24; }
+.dist-seg-3 { background: #34d399; }
+.dist-legend {
+  display: flex; gap: 16px; margin-top: 12px;
+  font-size: 11px; color: #64748b; flex-wrap: wrap;
+}
+.dist-legend span::before { content: "●"; margin-left: 4px; }
+.dist-legend .l1::before { color: #fca5a5; }
+.dist-legend .l2::before { color: #fbbf24; }
+.dist-legend .l3::before { color: #34d399; }
+.cp-footer {
+  padding: 16px 28px; border-top: 1px solid #e2e8f0;
+  display: flex; justify-content: flex-end; gap: 12px;
+  border-radius: 0 0 18px 18px;
+}
+@media (max-width: 640px) { .cp-two-col { grid-template-columns: 1fr; } }
+@media print {
+  body > *:not(.class-profiler-overlay) { display: none !important; }
+  .class-profiler-overlay {
+    position: static; background: none; padding: 0; display: block !important;
+  }
+  .class-profiler-modal { box-shadow: none; max-height: none; border-radius: 0; }
+  .cp-header { position: static; }
+  .cp-close, .cp-footer, .profiler-btn-bar { display: none !important; }
+}
 </style>
 <title>MilEd.One – כיתה חכמה</title>
 
@@ -171,6 +266,65 @@
     </div>
   </div>
 
+</div>
+
+<!-- ─── Analytics Bar (v8.6) ─── -->
+<div class="profiler-btn-bar">
+  <div>
+    <div style="font-size:13px;font-weight:600;color:#1e293b;">📈 ניתוח מיומנויות כיתתי</div>
+    <div style="font-size:12px;color:#64748b;margin-top:2px;">הפק דוח מצב מיומנויות לכלל הכיתה</div>
+  </div>
+  <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:14px;padding:10px 22px;white-space:nowrap;">
+    📊 הפקת פרופיל מיומנויות כיתתי
+  </button>
+</div>
+
+<!-- ─── Class Skills Profiler Modal (v8.6) ─── -->
+<div id="class-profiler-overlay" class="class-profiler-overlay" style="display:none;" onclick="handleProfilerOverlayClick(event)">
+  <div class="class-profiler-modal">
+
+    <div class="cp-header">
+      <div>
+        <div class="cp-title">📊 פרופיל מיומנויות כיתתי</div>
+        <div class="cp-subtitle" id="cp-subtitle">טוען נתונים...</div>
+      </div>
+      <button class="cp-close" onclick="closeClassProfiler()">✕</button>
+    </div>
+
+    <div class="cp-body">
+
+      <!-- Row 1: Radar + Insights -->
+      <div class="cp-two-col">
+        <div>
+          <div class="cp-section-title">🕸️ מפת מיומנויות כיתתית — ממוצע</div>
+          <div style="text-align:center;">
+            <svg id="class-radar-svg" viewBox="0 0 240 240" width="220" height="220"
+              style="display:block;margin:0 auto;"></svg>
+          </div>
+        </div>
+        <div>
+          <div class="cp-section-title">💡 תובנות כיתתיות</div>
+          <div id="cp-insights"></div>
+        </div>
+      </div>
+
+      <!-- Row 2: Distribution bars -->
+      <div class="cp-section-title">📊 התפלגות תלמידים לפי עמוד ורמה</div>
+      <div id="cp-distributions"></div>
+      <div class="dist-legend">
+        <span class="l1">רמה 1 — טרם החל</span>
+        <span class="l2">רמה 2 — בתהליך (גל 1)</span>
+        <span class="l3">רמה 3 — הושלם (גל 2)</span>
+      </div>
+
+    </div>
+
+    <div class="cp-footer">
+      <button onclick="closeClassProfiler()" class="btn btn-outline">סגור</button>
+      <button onclick="printClassProfile()" class="btn btn-blue">🖨️ הדפסה / ייצוא PDF</button>
+    </div>
+
+  </div>
 </div>
 
 <!-- ─── Insights Box ─── -->
@@ -576,6 +730,187 @@ function saveBalance() {
   const bal = MiledBalance.setBalance(null, aw); // save to global
   const preview = `✅ נשמר — ${bal.academicWeight}% אקדמי + ${bal.skillWeight}% מיומנות`;
   document.getElementById("balance-preview-label").textContent = preview;
+}
+
+// ─── Class Skills Profiler (v8.6) ───
+
+function getClassProfileData() {
+  // Check for saved real class snapshot (key: miled_class_profile)
+  const saved = localStorage.getItem("miled_class_profile");
+  if (saved) { try { return JSON.parse(saved); } catch {} }
+
+  // Synthesize realistic demo data (24 students).
+  // Pillars with syllabus coverage get a boost — reflects real lecture engagement.
+  const syllabus      = JSON.parse(localStorage.getItem("miled_syllabus") || "[]");
+  const mappedPillars = new Set(syllabus.map(r => r.pillar));
+
+  const BASE = [
+    { id: "academic",   label: "למידה וחשיבה",    icon: "🎓", base: 65 },
+    { id: "resilience", label: "ניהול וחוסן",     icon: "🧘", base: 42 },
+    { id: "social",     label: "תקשורת וחברה",    icon: "🤝", base: 71 },
+    { id: "tools",      label: "כלים וטכנולוגיה", icon: "💻", base: 18 },
+    { id: "career",     label: "מוכנות לקריירה",  icon: "💼", base: 55 },
+  ];
+
+  const total = 24;
+  const pillars = BASE.map(p => {
+    const avg = Math.min(95, p.base + (mappedPillars.has(p.id) ? 14 : 0));
+    const done = Math.round(total * (avg / 100) * 0.52);
+    const inProgress = Math.round(total * (avg / 100) * 0.48);
+    const notStarted = Math.max(0, total - done - inProgress);
+    return { ...p, avgPct: avg, level1: notStarted, level2: inProgress, level3: done };
+  });
+
+  return { totalStudents: total, pillars, isDemo: true };
+}
+
+function openClassProfiler() {
+  const overlay = document.getElementById("class-profiler-overlay");
+  if (!overlay) return;
+  overlay.style.display = "flex";
+  document.body.style.overflow = "hidden";
+
+  const data = getClassProfileData();
+
+  const sub = document.getElementById("cp-subtitle");
+  if (sub) sub.textContent = data.isDemo
+    ? `נתוני הדגמה — ${data.totalStudents} סטודנטים (שמור נתונים אמיתיים ב-miled_class_profile)`
+    : `${data.totalStudents} סטודנטים — נתוני כיתה`;
+
+  renderClassRadar(data.pillars);
+  renderClassInsights(data.pillars, data.totalStudents);
+  renderDistributionBars(data.pillars, data.totalStudents);
+}
+
+function closeClassProfiler() {
+  const overlay = document.getElementById("class-profiler-overlay");
+  if (overlay) overlay.style.display = "none";
+  document.body.style.overflow = "";
+}
+
+function handleProfilerOverlayClick(e) {
+  if (e.target === e.currentTarget) closeClassProfiler();
+}
+
+function renderClassRadar(pillars) {
+  const svg = document.getElementById("class-radar-svg");
+  if (!svg) return;
+
+  const cx = 120, cy = 120, R = 82;
+  const n = pillars.length;
+  const angles = pillars.map((_, i) => (-90 + i * (360 / n)) * Math.PI / 180);
+  let html = "";
+
+  // Rings + pct labels
+  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
+    const pts = angles.map(a => `${cx+Math.cos(a)*R*pct},${cy+Math.sin(a)*R*pct}`).join(" ");
+    html += `<polygon points="${pts}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`;
+    if (pct < 1) {
+      const a0 = angles[1];
+      html += `<text x="${cx+Math.cos(a0)*R*pct+4}" y="${cy+Math.sin(a0)*R*pct-2}" font-size="9" fill="#94a3b8" font-family="Assistant,sans-serif">${Math.round(pct*100)}%</text>`;
+    }
+  });
+
+  // Axes
+  angles.forEach(a => {
+    html += `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*R}" y2="${cy+Math.sin(a)*R}" stroke="#e2e8f0" stroke-width="1"/>`;
+  });
+
+  // Data fill
+  const vals = pillars.map(p => p.avgPct / 100);
+  const dataPts = angles.map((a, i) => {
+    const v = Math.max(0.05, vals[i]);
+    return `${cx+Math.cos(a)*R*v},${cy+Math.sin(a)*R*v}`;
+  }).join(" ");
+  html += `<polygon points="${dataPts}" fill="rgba(99,102,241,0.15)" stroke="#6366f1" stroke-width="2.5"/>`;
+
+  // Dots
+  angles.forEach((a, i) => {
+    const v = Math.max(0.05, vals[i]);
+    const px = cx+Math.cos(a)*R*v, py = cy+Math.sin(a)*R*v;
+    html += `<circle cx="${px}" cy="${py}" r="5" fill="#6366f1" stroke="#fff" stroke-width="2"/>`;
+  });
+
+  // Labels
+  pillars.forEach((p, i) => {
+    const a = angles[i];
+    const lx = cx+Math.cos(a)*(R+24), ly = cy+Math.sin(a)*(R+24);
+    const anchor = lx < cx-8 ? "end" : lx > cx+8 ? "start" : "middle";
+    html += `<text x="${lx}" y="${ly-4}" text-anchor="${anchor}" font-size="11" fill="#475569" font-family="Assistant,sans-serif">${p.icon} ${p.label}</text>`;
+    html += `<text x="${lx}" y="${ly+9}" text-anchor="${anchor}" font-size="11" fill="#6366f1" font-family="Assistant,sans-serif" font-weight="700">${p.avgPct}%</text>`;
+  });
+
+  svg.innerHTML = html;
+}
+
+function renderClassInsights(pillars, total) {
+  const sorted = [...pillars].sort((a, b) => b.avgPct - a.avgPct);
+  const high = sorted[0];
+  const low  = sorted[sorted.length - 1];
+
+  const recHigh = high.avgPct >= 70
+    ? "מצוין — הכיתה מגיעה לרמה גבוהה. שקלו להעמיק עם תרגול גל 2."
+    : "רמה בינונית-גבוהה. מומלץ לחזק עם פעילויות חיזוק מתקדמות.";
+
+  const recLow = low.level1 > total * 0.4
+    ? `${low.level1} מתוך ${total} תלמידים טרם התחילו — מומלץ להקדיש שיעור ייעודי לעמוד זה.`
+    : `רמה בינונית-נמוכה. מומלץ לשלב תרגולים מ-${low.label} בשיעורי הליבה.`;
+
+  const el = document.getElementById("cp-insights");
+  if (!el) return;
+
+  el.innerHTML = `
+    <div class="cp-insight-card insight-high">
+      <div class="cp-insight-icon">${high.icon}</div>
+      <div>
+        <div class="cp-insight-label high">⬆ עמוד החוזקה הכיתתי</div>
+        <div class="cp-insight-text">${high.label} — ${high.avgPct}% ממוצע</div>
+        <div class="cp-insight-rec">${recHigh}</div>
+      </div>
+    </div>
+    <div class="cp-insight-card insight-low">
+      <div class="cp-insight-icon">${low.icon}</div>
+      <div>
+        <div class="cp-insight-label low">⬇ עמוד הדורש תשומת לב</div>
+        <div class="cp-insight-text">${low.label} — ${low.avgPct}% ממוצע</div>
+        <div class="cp-insight-rec">${recLow}</div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:10px;text-align:center;line-height:1.5;">
+      ניתוח אוטומטי • ${total} סטודנטים • ${new Date().toLocaleDateString("he-IL")}
+    </div>`;
+}
+
+function renderDistributionBars(pillars, total) {
+  const el = document.getElementById("cp-distributions");
+  if (!el) return;
+
+  el.innerHTML = pillars.map(p => {
+    const pct1 = Math.round(p.level1 / total * 100);
+    const pct2 = Math.round(p.level2 / total * 100);
+    const pct3 = Math.round(p.level3 / total * 100);
+    return `
+      <div class="dist-row">
+        <div class="dist-label">
+          <span>${p.icon} ${p.label}</span>
+          <span style="color:#64748b;font-size:12px;">${p.level3} מתוך ${total} הושלמו</span>
+        </div>
+        <div class="dist-bar-track">
+          <div class="dist-seg dist-seg-1" style="width:${pct1}%;" title="${p.level1} לא התחילו"></div>
+          <div class="dist-seg dist-seg-2" style="width:${pct2}%;" title="${p.level2} גל 1"></div>
+          <div class="dist-seg dist-seg-3" style="width:${pct3}%;" title="${p.level3} הושלם"></div>
+        </div>
+        <div style="display:flex;gap:14px;font-size:10px;color:#94a3b8;margin-top:3px;">
+          <span>${p.level1} טרם החלו</span>
+          <span>${p.level2} גל 1</span>
+          <span>${p.level3} הושלמו ✓</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function printClassProfile() {
+  window.print();
 }
 
 // ─── Welcome greeting + user badge ───
