@@ -7,7 +7,22 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-
+<style>
+/* v8.5 — Skill-Academic Balance */
+.balance-preview {
+  background: linear-gradient(135deg,#eef2ff,#f0fdf4);
+  border: 1.5px solid #c7d2fe;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e1b4b;
+  text-align: center;
+  margin-bottom: 16px;
+  letter-spacing: .3px;
+  transition: background .3s;
+}
+</style>
 <title>MilEd.One – כיתה חכמה</title>
 
 </head>
@@ -71,6 +86,17 @@
     <h2>🎓 למידה משולבת מיומנויות</h2>
     <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:14px;">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</p>
 
+    <!-- ─── Balance Weight Editor (v8.5) ─── -->
+    <div class="balance-preview" id="balance-preview-label">⚖️ איזון ציון: 70% אקדמי + 30% מיומנות</div>
+    <div class="field">
+      <label>משקל אקדמי (%) — <strong id="balance-aw-display">70</strong></label>
+      <input type="range" id="balance-aw-slider" min="0" max="100" step="5" value="70"
+        oninput="updateBalanceSlider(this.value)"
+        style="width:100%;accent-color:#6c5ce7;margin-top:6px;">
+    </div>
+    <button class="btn btn-blue" onclick="saveBalance()" style="margin-bottom:16px;width:100%;">💾 שמור איזון ציון</button>
+    <hr style="margin:0 0 14px;border:none;border-top:1px solid #e2e8f0;">
+
     <div class="field">
       <label>נושא שיעור / יחידת לימוד</label>
       <input type="text" id="syllabusTopicInput" placeholder="לדוג׳: כתיבת ביקורת ספרותית...">
@@ -101,6 +127,33 @@
       </thead>
       <tbody id="syllabus-tbody"></tbody>
     </table>
+
+    <hr class="workspace-divider">
+
+    <h2>⚖️ איזון תוכן–מיומנויות</h2>
+    <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:14px;">
+      קבע את משקל המיומנויות בהערכת הקורס
+    </p>
+
+    <div class="field">
+      <label>משקל תוכן ↔ מיומנויות</label>
+      <input type="range" id="balance-slider" min="0" max="100" value="70"
+        style="width:100%;accent-color:#6366f1;cursor:pointer;margin-bottom:8px;"
+        oninput="updateBalancePreview(this.value)">
+    </div>
+    <div class="balance-preview" id="balance-preview">70% תוכן / 30% מיומנויות</div>
+
+    <p style="font-size:11px;font-weight:600;color:var(--color-text-muted);margin-bottom:6px;letter-spacing:.3px;">
+      מפת עמודי מיומנות לפי הסילבוס
+    </p>
+    <div style="text-align:center;margin-bottom:8px;">
+      <svg id="pillar-radar-svg" viewBox="0 0 220 220" width="190" height="190"
+        style="display:block;margin:0 auto;"></svg>
+      <p id="pillar-radar-hint" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;">
+        הוסף שיוכי סילבוס כדי לראות את המפה
+      </p>
+    </div>
+
   </div>
 
   <!-- RIGHT: Live view -->
@@ -421,8 +474,33 @@ function removeSyllabusRow(i) {
 
 renderSyllabusTable();
 
+// ─── Balance Weight Editor (v8.5) ───
+function initBalanceEditor() {
+  if (!window.MiledBalance) return;
+  const bal = MiledBalance.getBalance(null); // global balance
+  document.getElementById("balance-aw-slider").value     = bal.academicWeight;
+  document.getElementById("balance-aw-display").textContent = bal.academicWeight;
+  updateBalanceSlider(bal.academicWeight);
+}
+
+function updateBalanceSlider(aw) {
+  const sw = 100 - aw;
+  document.getElementById("balance-aw-display").textContent  = aw;
+  document.getElementById("balance-preview-label").textContent =
+    `⚖️ איזון ציון: ${aw}% אקדמי + ${sw}% מיומנות`;
+}
+
+function saveBalance() {
+  if (!window.MiledBalance) { alert("balance.js לא נטען"); return; }
+  const aw  = parseInt(document.getElementById("balance-aw-slider").value, 10);
+  const bal = MiledBalance.setBalance(null, aw); // save to global
+  const preview = `✅ נשמר — ${bal.academicWeight}% אקדמי + ${bal.skillWeight}% מיומנות`;
+  document.getElementById("balance-preview-label").textContent = preview;
+}
+
 // ─── Welcome greeting + user badge ───
 window.addEventListener("load", () => {
+  initBalanceEditor();
   if (!window.MiledAuth) return;
   const user = MiledAuth.getUser();
   if (user) {
@@ -434,6 +512,7 @@ window.addEventListener("load", () => {
 });
 </script>
 
+<script src="/balance.js"></script>
 <!-- Firebase SDK + Auth utility -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>

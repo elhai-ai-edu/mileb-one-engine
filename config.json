@@ -1,6 +1,12 @@
 {
-  "system_version": "5.2 - Workshop Ready",
+  "system_version": "5.3 - Skill-Academic Balance",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
+
+  "balance": {
+    "_description": "ברירות מחדל לאיזון הציון הכפול — מחושב על ידי balance.js / window.MiledBalance",
+    "academicWeight": 70,
+    "skillWeight": 30
+  },
 
   "_systemPromptExport": {
     "_description": "שכבת הגדרת ייצוא prompt מלא ל-LLM חיצוני",
@@ -226,6 +232,12 @@
               { "id": 5, "label": "בחירת פתרון ונימוקים" },
               { "id": 6, "label": "כתיבת המסמך המסכם" },
               { "id": 7, "label": "הצגה בפני הקהל" }
+            ],
+            "requiredPillars": [
+              { "pillar": "resilience", "stageIds": [1, 2], "label": "זיהוי בעיה ועמידות בפני קושי" },
+              { "pillar": "academic",   "stageIds": [3, 6], "label": "חשיבה ביקורתית וכתיבה אקדמית" },
+              { "pillar": "social",     "stageIds": [4, 5], "label": "בחינת חלופות ועבודת צוות" },
+              { "pillar": "career",     "stageIds": [7],    "label": "פרזנטציה מקצועית ותקשורת" }
             ]
           }
         }
@@ -263,6 +275,12 @@
               { "id": 5, "label": "בחירת פתרון ונימוקים" },
               { "id": 6, "label": "כתיבת המסמך המסכם" },
               { "id": 7, "label": "הצגה בפני הקהל" }
+            ],
+            "requiredPillars": [
+              { "pillar": "resilience", "stageIds": [1, 2], "label": "זיהוי בעיה ועמידות בפני קושי" },
+              { "pillar": "academic",   "stageIds": [3, 6], "label": "חשיבה ביקורתית וכתיבה אקדמית" },
+              { "pillar": "social",     "stageIds": [4, 5], "label": "בחינת חלופות ועבודת צוות" },
+              { "pillar": "career",     "stageIds": [7],    "label": "פרזנטציה מקצועית ותקשורת" }
             ]
           }
         }
@@ -290,6 +308,12 @@
           ],
           "project": {
             "name": "פרויקט ראיון חיים — סמסטר א",
+            "requiredPillars": [
+              { "pillar": "academic",   "stageIds": [1, 2, 4, 5], "label": "תכנון, תימלול וניתוח תוכן" },
+              { "pillar": "social",     "stageIds": [3],           "label": "תקשורת בין-אישית וראיון" },
+              { "pillar": "resilience", "stageIds": [6, 7],        "label": "חיבור ל חיים והרהור אישי" },
+              { "pillar": "academic",   "stageIds": [8],           "label": "כתיבה אקדמית ועיבוד" }
+            ],
             "stages": [
               { "id": 1, "label": "בחירת שאלות לראיון" },
               { "id": 2, "label": "מציאת מרואיין וקביעת מועד" },
@@ -310,6 +334,11 @@
           ],
           "project": {
             "name": "פרויקט ראיון חיים — סמסטר ב",
+            "requiredPillars": [
+              { "pillar": "resilience", "stageIds": [1, 2, 5], "label": "עמידות, שינוי והתמודדות" },
+              { "pillar": "social",     "stageIds": [3],        "label": "תקשורת בין-אישית וראיון" },
+              { "pillar": "academic",   "stageIds": [4, 6, 7, 8], "label": "ניתוח, חיבור לתיאוריה וכתיבה" }
+            ],
             "stages": [
               { "id": 1, "label": "בחירת שאלות על שינוי ועמידות" },
               { "id": 2, "label": "מציאת מרואיין וקביעת מועד" },
@@ -359,6 +388,11 @@
           "label": "סמסטר א",
           "project": {
             "name": "סקירת ספרות עיונית",
+            "requiredPillars": [
+              { "pillar": "academic",   "stageIds": [1, 2, 3, 4, 5, 6, 7, 8, 9], "label": "חשיבה ביקורתית, מחקר וסינתזה" },
+              { "pillar": "tools",      "stageIds": [6],                           "label": "שימוש בכלים טכנולוגיים (NotebookLM)" },
+              { "pillar": "academic",   "stageIds": [10, 11, 12, 13, 14, 15],      "label": "בדיקת מהימנות, כתיבה וניסוח" }
+            ],
             "stages": [
               { "id": 1,  "label": "בחירת נושא כללי" },
               { "id": 2,  "label": "סקירה כללית — סוגיות, חוקרים ומילות מפתח" },
