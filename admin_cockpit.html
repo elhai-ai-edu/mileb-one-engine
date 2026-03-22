@@ -120,6 +120,18 @@
       הוסף משתמשים ספציפיים עם תפקיד מותאם — גם אם הדומיין שלהם אינו מורשה.
     </p>
 
+    <!-- Filter bar + bulk actions -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+      <label style="font-size:11px;color:#64748b;white-space:nowrap;">סנן לפי כיתה:</label>
+      <select id="class-filter-select" onchange="applyUserFilter()"
+        style="padding:6px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;min-width:140px;">
+        <option value="">כל הכיתות</option>
+      </select>
+      <button onclick="deleteSelectedUsers()"
+        style="padding:6px 14px;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;font-size:12px;color:#ef4444;cursor:pointer;white-space:nowrap;">🗑️ מחק מסומנים</button>
+      <label style="font-size:11px;color:#94a3b8;margin-right:auto;" id="selected-count-label"></label>
+    </div>
+
     <div id="auth-users-list" style="margin-bottom:14px;min-height:32px;"></div>
 
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
@@ -200,7 +212,19 @@
     </div>
   </div>
 
-  <!-- ── Part D: Class Lifecycle Management ── -->
+  <!-- ── Part D: Class XP Leaderboard ── -->
+  <div class="panel">
+    <h2 style="display:flex;align-items:center;gap:10px;">
+      🏆 ליגת XP לפי כיתה
+      <button onclick="loadClassXP()" style="padding:4px 12px;background:#f1f5f9;border:1.5px solid #e2e8f0;border-radius:7px;font-size:11px;color:#64748b;cursor:pointer;">רענן</button>
+    </h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:14px;">סיכום XP ופעילות לפי קבוצה — מבוסס על מידע מ-<code>/sessions</code> ו-<code>/authorized_users</code>.</p>
+    <div id="class-xp-list" style="min-height:40px;">
+      <div class="miled-spinner">טוען...</div>
+    </div>
+  </div>
+
+  <!-- ── Part E: Class Lifecycle Management ── -->
   <div class="panel">
     <h2>📅 ניהול מחזור חיים של קבוצות</h2>
     <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
@@ -556,6 +580,7 @@ document.addEventListener("click", function(e) {
           loadInstitutions();
           loadAuthorizedUsers();
           loadClassLifecycle();
+          loadClassXP();
           checkRetentionCleanup();
         })
         .catch(function(e) {
@@ -578,7 +603,7 @@ function switchTab(tab){
     if (btn) btn.classList.toggle("active", tab === t);
   });
   if(tab === "config" && config && Object.keys(config).length) render();
-  if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); loadClassLifecycle(); }
+  if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); loadClassLifecycle(); loadClassXP(); }
   if(tab === "lexicon")  { loadLexiconWords(); }
 }
 
@@ -690,42 +715,121 @@ async function deleteInstitution(key) {
 }
 
 // ─── Authorized Users ───
+let _authUsersCache = {}; // key → val, all entries
+
 async function loadAuthorizedUsers() {
   const el = document.getElementById("auth-users-list");
   try {
     const data = await dbFetch("/authorized_users.json");
     const badge = document.getElementById("users-count-badge");
-    if (!data || !Object.keys(data).length) {
+    _authUsersCache = data || {};
+    const entries = Object.entries(_authUsersCache);
+
+    if (!entries.length) {
       el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>';
       if (badge) { badge.innerText = "0 משתמשים"; badge.style.display = "inline-block"; }
+      updateClassFilterDropdown(entries);
       return;
     }
-    const entries = Object.entries(data);
+
     if (badge) { badge.innerText = `${entries.length} משתמשים`; badge.style.display = "inline-block"; }
-    const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed", student:"#0891b2" };
-    const rows = entries.map(([key, val]) =>
-      `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
-        <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;">${val.email || key.replace(/_at_/g,"@").replace(/_/g,".")}</span>
-        <span style="font-size:11px;padding:3px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;">${val.role || '—'}</span>
-        ${val.classId
-          ? `<span style="font-size:12px;padding:3px 10px;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:700;white-space:nowrap;border:1px solid #fde68a;">📚 ${val.classId}</span>`
-          : `<span style="font-size:12px;color:#cbd5e1;white-space:nowrap;">ללא כיתה</span>`
-        }
-        <span style="font-size:12px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;">${val.institutionId || ''}</span>
-        <button onclick="toggleBypassLock('${key}', ${!!val.isBypassingLock})"
-          title="${val.isBypassingLock ? 'בטל גישה מיוחדת' : 'אפשר גישה לאחר נעילה'}"
-          style="background:${val.isBypassingLock ? '#dcfce7' : '#f8fafc'};border:1px solid ${val.isBypassingLock ? '#86efac' : '#e2e8f0'};border-radius:6px;color:${val.isBypassingLock ? '#166534' : '#94a3b8'};cursor:pointer;font-size:11px;padding:3px 9px;white-space:nowrap;">
-          ${val.isBypassingLock ? '✅ עוקף נעילה' : '🔓 גישה לאחר נעילה'}</button>
-        <button onclick="deleteAuthorizedUser('${key}')"
-          title="מחק משתמש"
-          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:14px;padding:3px 8px;line-height:1;white-space:nowrap;transition:background .15s;"
-          onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">🗑️</button>
-      </div>`
-    ).join("");
-    el.innerHTML = rows;
+    updateClassFilterDropdown(entries);
+    renderUserRows(entries);
   } catch(e) {
     el.innerHTML = `<div><p style="color:#ef4444;font-size:12px;margin:0;">${e.message}</p>${reAuthBtn()}</div>`;
   }
+}
+
+function updateClassFilterDropdown(entries) {
+  const sel = document.getElementById("class-filter-select");
+  if (!sel) return;
+  const current = sel.value;
+  const classes = [...new Set(entries.map(([,v]) => v.classId).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">כל הכיתות</option>' +
+    classes.map(c => `<option value="${c}"${c===current?' selected':''}>${c}</option>`).join("");
+}
+
+function applyUserFilter() {
+  const filterClass = (document.getElementById("class-filter-select")?.value || "").trim();
+  const entries = Object.entries(_authUsersCache);
+  const filtered = filterClass ? entries.filter(([,v]) => v.classId === filterClass) : entries;
+  renderUserRows(filtered);
+}
+
+function renderUserRows(entries) {
+  const el = document.getElementById("auth-users-list");
+  if (!el) return;
+  const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed", student:"#0891b2" };
+
+  // Header row with select-all checkbox
+  const header = `<div style="display:flex;align-items:center;gap:10px;padding:5px 12px;font-size:11px;color:#94a3b8;font-weight:600;border-bottom:1px solid #f1f5f9;margin-bottom:4px;">
+    <input type="checkbox" id="select-all-users" onchange="toggleSelectAllUsers(this.checked)"
+      style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;">
+    <span style="flex:2;">מייל</span>
+    <span style="min-width:70px;">תפקיד</span>
+    <span style="min-width:100px;">כיתה</span>
+    <span style="flex:1;">מוסד</span>
+    <span style="min-width:120px;"></span>
+  </div>`;
+
+  const rows = entries.map(([key, val]) => {
+    const email = val.email || key.replace(/_at_/g,"@").replace(/_/g,".");
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:5px;border:1px solid #e2e8f0;" data-key="${key}">
+      <input type="checkbox" class="user-select-cb" data-key="${key}" data-email="${email}"
+        onchange="updateSelectedCount()"
+        style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;flex-shrink:0;">
+      <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${email}">${email}</span>
+      <span style="font-size:11px;padding:3px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;min-width:70px;">${val.role || '—'}</span>
+      ${val.classId
+        ? `<span style="font-size:12px;padding:3px 10px;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:700;white-space:nowrap;border:1px solid #fde68a;min-width:100px;">📚 ${val.classId}</span>`
+        : `<span style="font-size:12px;color:#cbd5e1;white-space:nowrap;min-width:100px;">ללא כיתה</span>`
+      }
+      <span style="font-size:11px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;">${val.institutionId || ''}</span>
+      <div style="display:flex;gap:5px;min-width:120px;">
+        <button onclick="toggleBypassLock('${key}', ${!!val.isBypassingLock})"
+          title="${val.isBypassingLock ? 'בטל גישה מיוחדת' : 'אפשר גישה לאחר נעילה'}"
+          style="background:${val.isBypassingLock ? '#dcfce7' : '#f8fafc'};border:1px solid ${val.isBypassingLock ? '#86efac' : '#e2e8f0'};border-radius:6px;color:${val.isBypassingLock ? '#166534' : '#94a3b8'};cursor:pointer;font-size:11px;padding:3px 8px;white-space:nowrap;">
+          ${val.isBypassingLock ? '✅ נעילה' : '🔓 גישה'}</button>
+        <button onclick="deleteAuthorizedUser('${key}')"
+          title="מחק משתמש"
+          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:14px;padding:3px 8px;line-height:1;white-space:nowrap;"
+          onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='none'">🗑️</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  el.innerHTML = header + (rows || '<p style="font-size:13px;color:#94a3b8;padding:8px 12px;">אין תוצאות לפילטר הנוכחי.</p>');
+  updateSelectedCount();
+}
+
+function toggleSelectAllUsers(checked) {
+  document.querySelectorAll(".user-select-cb").forEach(cb => cb.checked = checked);
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checked = document.querySelectorAll(".user-select-cb:checked");
+  const label = document.getElementById("selected-count-label");
+  if (label) label.innerText = checked.length ? `${checked.length} מסומנים` : "";
+}
+
+async function deleteSelectedUsers() {
+  const checked = [...document.querySelectorAll(".user-select-cb:checked")];
+  if (!checked.length) { alert("לא סומן אף משתמש."); return; }
+
+  const emails = checked.map(cb => cb.dataset.email).join("\n");
+  if (!confirm(`האם למחוק ${checked.length} משתמשים?\n\n${emails}`)) return;
+  if (!confirm(`אישור סופי: מחיקת ${checked.length} משתמשים היא בלתי הפיכה. להמשיך?`)) return;
+
+  let deleted = 0, failed = 0;
+  for (const cb of checked) {
+    try {
+      await dbFetch(`/authorized_users/${cb.dataset.key}.json`, { method: "DELETE" });
+      deleted++;
+    } catch { failed++; }
+  }
+  alert(`✅ נמחקו: ${deleted}${failed ? ` | נכשלו: ${failed}` : ""}`);
+  loadAuthorizedUsers();
 }
 
 async function addUserRole() {
@@ -1029,6 +1133,79 @@ async function deleteClassData(classId) {
   } catch(e) {
     msg.style.color = "#ef4444";
     msg.innerText = e.message;
+  }
+}
+
+async function loadClassXP() {
+  const el = document.getElementById("class-xp-list");
+  if (!el) return;
+  el.innerHTML = '<div class="miled-spinner">טוען...</div>';
+  try {
+    // Load authorized_users for class membership
+    const users = await dbFetch("/authorized_users.json") || {};
+    // Load sessions for XP data
+    const sessions = await dbFetch("/sessions.json") || {};
+
+    // Build classId → {members, xpTotal, lastActive} map
+    const classMap = {};
+    // Count members per class
+    Object.values(users).forEach(u => {
+      if (!u.classId) return;
+      if (!classMap[u.classId]) classMap[u.classId] = { members: 0, xpTotal: 0, sessions: 0, lastActive: 0 };
+      classMap[u.classId].members++;
+    });
+
+    // Build email→classId lookup
+    const emailToClass = {};
+    Object.values(users).forEach(u => {
+      const email = u.email;
+      if (email && u.classId) emailToClass[email.toLowerCase()] = u.classId;
+    });
+
+    // Aggregate XP from sessions/{studentId}/{courseId}.xp
+    Object.entries(sessions).forEach(([studentId, courses]) => {
+      if (typeof courses !== "object") return;
+      Object.values(courses).forEach(sess => {
+        const classId = sess.classId || null;
+        const xp = (sess.xp || 0);
+        const lastSeen = sess.lastSeen || 0;
+        if (classId && classMap[classId]) {
+          classMap[classId].xpTotal += xp;
+          classMap[classId].sessions++;
+          if (lastSeen > classMap[classId].lastActive) classMap[classId].lastActive = lastSeen;
+        }
+      });
+    });
+
+    const sorted = Object.entries(classMap).sort((a,b) => b[1].xpTotal - a[1].xpTotal);
+    if (!sorted.length) {
+      el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין נתוני XP עדיין — הסטודנטים צריכים להיכנס לפחות פעם אחת.</p>';
+      return;
+    }
+
+    const maxXP = sorted[0][1].xpTotal || 1;
+    el.innerHTML = sorted.map(([classId, d], i) => {
+      const pct = Math.round((d.xpTotal / maxXP) * 100);
+      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i+1}.`;
+      const lastDate = d.lastActive ? new Date(d.lastActive).toLocaleDateString("he-IL") : "—";
+      return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 16px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+          <span style="font-size:18px;">${medal}</span>
+          <strong style="font-size:14px;color:#1e1b4b;direction:ltr;">${classId}</strong>
+          <span style="font-size:12px;color:#64748b;">${d.members} סטודנטים</span>
+          <span style="font-size:13px;font-weight:700;color:#6366f1;margin-right:auto;">${d.xpTotal.toLocaleString()} XP</span>
+        </div>
+        <div style="background:#e0e7ff;border-radius:4px;height:6px;overflow:hidden;">
+          <div style="height:100%;background:#6366f1;border-radius:4px;width:${pct}%;transition:width .4s;"></div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:5px;font-size:11px;color:#94a3b8;">
+          <span>📚 ${d.sessions} סשנים</span>
+          <span>🕐 פעיל לאחרונה: ${lastDate}</span>
+        </div>
+      </div>`;
+    }).join("");
+  } catch(e) {
+    el.innerHTML = `<p style="color:#ef4444;font-size:12px;">${e.message}</p>`;
   }
 }
 

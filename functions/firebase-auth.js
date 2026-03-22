@@ -141,13 +141,15 @@ export async function handler(event) {
   let role;
   try {
     const snap = await userRef.get();
+    const classId = authorizedUserData?.classId || null;
     if (snap.exists()) {
-      // Returning user: keep stored role; refresh metadata
+      // Returning user: keep stored role; refresh metadata + sync classId
       role = snap.val().role || "student";
       await userRef.update({
         lastSeen: Date.now(), email,
         displayName: name || email,
-        institutionId
+        institutionId,
+        ...(classId !== null ? { classId } : {})
       });
     } else {
       // New user: use authorized_users role override if present, else "student"
@@ -157,6 +159,7 @@ export async function handler(event) {
         displayName: name || email,
         role,
         institutionId,
+        classId,
         createdAt: Date.now(),
         lastSeen:  Date.now()
       });
