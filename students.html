@@ -14,7 +14,7 @@
   <h2>MilEd.One</h2>
   <a href="/students.html" class="active">קורסים</a>
   <a href="/skills.html">מיומנויות</a>
-  <a href="/student_dashboard.html">הסטטוס שלי</a>
+  <a href="/student_dashboard.html" id="status-link">הסטטוס שלי</a>
 </div>
 
 <div class="main">
@@ -29,11 +29,27 @@
     <p>בחר קורס להיכנס למרחב הלמידה</p>
     <div id="course-list" class="grid"></div>
     <br>
-    <a href="/" onclick="sessionStorage.clear()" class="btn btn-blue">← חזרה למסך הבית</a>
+    <a href="#" onclick="navigateHome()" class="btn btn-blue">← חזרה למסך הבית</a>
   </div>
 </div>
 
 <script>
+// ─── Dynamic navigation (v7.8) ───
+(function() {
+  function getRole() {
+    try { return JSON.parse(sessionStorage.getItem("miled_auth") || "null")?.role; } catch { return null; }
+  }
+  const role = getRole() || sessionStorage.getItem("facultyRole");
+  const isFaculty = role === "faculty" || role === "superadmin";
+  if (isFaculty) {
+    const sl = document.getElementById("status-link");
+    if (sl) sl.style.display = "none";
+  }
+  window.navigateHome = function() {
+    if (isFaculty) { window.location.href = "/lecturer_cockpit.html"; }
+    else { sessionStorage.clear(); window.location.href = "/student_dashboard.html"; }
+  };
+})();
 
 let CONFIG = null;
 
