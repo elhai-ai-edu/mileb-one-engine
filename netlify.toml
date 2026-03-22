@@ -39,6 +39,11 @@
   status = 200
 
 [[redirects]]
+  from = "/api/text-puzzle/*"
+  to   = "/.netlify/functions/text_puzzle_api"
+  status = 200
+
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200

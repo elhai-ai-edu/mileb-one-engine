@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<title>פאזל טקסט — MilEd.One</title>
+<style>
+/* ─── Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Assistant', sans-serif; background: #f0f4ff;
+  min-height: 100vh; color: #1e1b4b;
+}
+
+/* ─── Topbar ─── */
+.pz-topbar {
+  background: #1e1b4b; color: #fff;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px 20px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,.25);
+}
+.pz-title    { font-size: 16px; font-weight: 700; flex: 1; }
+.level-badge {
+  font-size: 11px; font-weight: 700; padding: 4px 11px;
+  border-radius: 20px; background: rgba(255,255,255,.15); color: #c7d2fe;
+  white-space: nowrap;
+}
+/* X-Ray toggle */
+.xray-wrap  { display: flex; align-items: center; gap: 7px; font-size: 12px; color: #a5b4fc; }
+.xray-label { font-weight: 600; }
+.xray-toggle {
+  position: relative; width: 40px; height: 22px; cursor: pointer;
+  background: #3730a3; border-radius: 11px; transition: background .2s;
+}
+.xray-toggle.on { background: #818cf8; }
+.xray-knob {
+  position: absolute; top: 3px; right: 3px;
+  width: 16px; height: 16px; border-radius: 50%; background: #fff;
+  transition: transform .2s;
+}
+.xray-toggle.on .xray-knob { transform: translateX(-18px); }
+.xray-hint { font-size: 11px; color: #818cf8; }
+
+/* ─── Main layout ─── */
+.pz-body {
+  max-width: 780px; margin: 0 auto; padding: 20px 16px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+/* ─── Instruction card ─── */
+.pz-instruction {
+  background: #fff; border: 1.5px solid #c7d2fe; border-radius: 12px;
+  padding: 14px 18px; font-size: 13px; color: #4338ca; line-height: 1.6;
+}
+.pz-instruction strong { color: #1e1b4b; }
+
+/* ─── Block zones ─── */
+.zone-label {
+  font-size: 12px; font-weight: 700; color: #64748b;
+  letter-spacing: .5px; text-transform: uppercase; margin-bottom: 8px;
+}
+
+/* SOURCE zone — brick shelf */
+.source-zone {
+  background: #fff; border: 1.5px dashed #c7d2fe; border-radius: 14px;
+  padding: 14px; display: flex; flex-wrap: wrap; gap: 8px;
+  min-height: 64px; transition: border-color .2s;
+}
+.source-zone.drag-over { border-color: #818cf8; background: #eef2ff; }
+
+/* ANSWER zone — numbered slots */
+.answer-zone {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.answer-slot {
+  display: flex; align-items: stretch; gap: 10px;
+}
+.slot-num {
+  min-width: 28px; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: #94a3b8;
+}
+.slot-target {
+  flex: 1; min-height: 52px;
+  background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 10px;
+  display: flex; align-items: center; padding: 8px 12px;
+  transition: border-color .2s, background .2s;
+  cursor: default;
+}
+.slot-target.drag-over { border-color: #818cf8; background: #eef2ff; }
+.slot-target.correct   { border-color: #86efac; background: #f0fdf4; }
+.slot-target.incorrect { border-color: #fca5a5; background: #fef2f2; }
+.slot-placeholder {
+  color: #94a3b8; font-size: 12px; font-style: italic; user-select: none;
+}
+
+/* ─── Bricks (blocks) ─── */
+.brick {
+  display: inline-flex; flex-direction: column; align-items: flex-start;
+  padding: 10px 14px; border-radius: 10px;
+  border: 2px solid transparent;
+  background: #fff; cursor: grab;
+  box-shadow: 0 2px 6px rgba(0,0,0,.08);
+  transition: box-shadow .15s, transform .15s, opacity .15s;
+  user-select: none; max-width: 100%;
+  position: relative;
+}
+.brick:hover   { box-shadow: 0 6px 18px rgba(0,0,0,.14); transform: translateY(-2px); }
+.brick.dragging { opacity: .45; transform: scale(.97); cursor: grabbing; }
+.brick-text    { font-size: 13px; line-height: 1.6; color: #1e1b4b; direction: rtl; }
+.brick-role    {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+  margin-top: 5px; color: #fff; opacity: 0; transition: opacity .2s;
+  pointer-events: none;
+}
+/* X-Ray mode */
+body.xray-mode .brick-role { opacity: 1; }
+body.xray-mode .brick-text { opacity: 0; height: 0; overflow: hidden; }
+body.xray-mode .brick { align-items: center; justify-content: center; }
+body.xray-mode .brick-role {
+  font-size: 14px; padding: 6px 14px; border-radius: 8px; margin-top: 0;
+}
+
+/* Slot brick (placed in answer slot) */
+.slot-target .brick { width: 100%; cursor: grab; box-shadow: none; }
+.slot-target .brick:hover { box-shadow: 0 2px 8px rgba(0,0,0,.10); }
+
+/* ─── Action row ─── */
+.pz-actions {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.pz-btn {
+  padding: 10px 20px; border-radius: 9px; border: none; cursor: pointer;
+  font-family: 'Assistant', sans-serif; font-size: 14px; font-weight: 600;
+  transition: opacity .15s, box-shadow .15s;
+}
+.pz-btn:disabled { opacity: .45; cursor: default; }
+.pz-btn.primary  { background: #4338ca; color: #fff; box-shadow: 0 2px 8px rgba(67,56,202,.3); }
+.pz-btn.primary:hover:not(:disabled)  { box-shadow: 0 4px 14px rgba(67,56,202,.45); }
+.pz-btn.hint     { background: #fff; color: #4338ca; border: 1.5px solid #c7d2fe; }
+.pz-btn.hint:hover:not(:disabled) { background: #eef2ff; }
+.pz-btn.reset    { background: #fff; color: #64748b; border: 1.5px solid #e2e8f0; }
+.pz-btn.reset:hover:not(:disabled) { background: #f8fafc; }
+
+/* ─── Bot chat panel ─── */
+.bot-panel {
+  background: #fff; border: 1.5px solid #e2e8f0; border-radius: 14px;
+  overflow: hidden; display: none;
+}
+.bot-panel.visible { display: block; }
+.bot-panel-header  {
+  background: #eef2ff; padding: 10px 16px;
+  font-size: 13px; font-weight: 700; color: #4338ca;
+  display: flex; align-items: center; gap: 8px;
+}
+.bot-messages { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.bot-msg {
+  background: #eef2ff; color: #3730a3; border-radius: 10px 10px 3px 10px;
+  padding: 10px 14px; font-size: 13px; line-height: 1.65; max-width: 90%;
+  animation: msgPop .25s ease;
+}
+@keyframes msgPop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── Success banner ─── */
+.success-banner {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 1.5px solid #86efac; border-radius: 14px;
+  padding: 20px; text-align: center; display: none;
+}
+.success-banner.show { display: block; animation: msgPop .35s ease; }
+.success-icon  { font-size: 36px; margin-bottom: 8px; }
+.success-title { font-size: 18px; font-weight: 700; color: #065f46; margin-bottom: 4px; }
+.success-sub   { font-size: 13px; color: #16a34a; }
+
+/* ─── Reflection modal ─── */
+.modal-bg {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  display: none; align-items: center; justify-content: center;
+  z-index: 300; padding: 20px;
+}
+.modal-bg.open { display: flex; }
+.modal {
+  background: #fff; border-radius: 18px; padding: 28px;
+  max-width: 500px; width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  animation: msgPop .3s ease;
+}
+.modal-title { font-size: 18px; font-weight: 700; color: #1e1b4b; margin-bottom: 6px; }
+.modal-subtitle { font-size: 13px; color: #64748b; margin-bottom: 18px; line-height: 1.5; }
+.modal-q { font-size: 14px; font-weight: 600; color: #4338ca; margin-bottom: 12px; line-height: 1.5; }
+.modal textarea {
+  width: 100%; padding: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  font-family: 'Assistant', sans-serif; font-size: 13px; resize: vertical;
+  min-height: 90px; margin-bottom: 10px; direction: rtl;
+}
+.modal textarea:focus { outline: none; border-color: #818cf8; }
+.modal-upload {
+  border: 1.5px dashed #c7d2fe; border-radius: 10px; padding: 12px;
+  text-align: center; font-size: 12px; color: #64748b; margin-bottom: 14px;
+  cursor: pointer; transition: border-color .2s;
+}
+.modal-upload:hover { border-color: #818cf8; color: #4338ca; }
+.modal-upload input { display: none; }
+.upload-preview { font-size: 12px; color: #16a34a; margin-top: 4px; }
+.xp-pill {
+  display: inline-block; font-size: 13px; font-weight: 700;
+  background: #fef3c7; color: #92400e; padding: 4px 14px; border-radius: 20px;
+  margin-bottom: 14px;
+}
+.modal-feedback {
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+  padding: 12px 14px; font-size: 13px; color: #065f46; line-height: 1.6;
+  margin-bottom: 14px; display: none;
+}
+
+/* ─── XP flash ─── */
+@keyframes xpPop {
+  0%   { opacity: 0; transform: translateY(20px) scale(.8); }
+  50%  { opacity: 1; transform: translateY(-8px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-24px) scale(1); }
+}
+.xp-flash {
+  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+  background: #4338ca; color: #fff; font-size: 18px; font-weight: 700;
+  padding: 12px 28px; border-radius: 30px; z-index: 500;
+  box-shadow: 0 6px 20px rgba(67,56,202,.4);
+  animation: xpPop 2s ease forwards;
+  pointer-events: none;
+}
+
+/* ─── Error state ─── */
+.pz-error {
+  background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 12px;
+  padding: 20px; text-align: center; color: #dc2626; font-size: 14px;
+}
+
+/* ─── Loading ─── */
+.pz-loading {
+  text-align: center; padding: 40px; color: #64748b; font-size: 14px;
+}
+.pz-loading::before {
+  content: ""; display: block; width: 32px; height: 32px;
+  border: 3px solid #e2e8f0; border-top-color: #6366f1;
+  border-radius: 50%; animation: spin .7s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Mobile ─── */
+@media (max-width: 500px) {
+  .pz-topbar { padding: 10px 14px; gap: 8px; }
+  .pz-body   { padding: 14px 10px; gap: 14px; }
+  .brick     { font-size: 12px; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ─── Topbar ─── -->
+<div class="pz-topbar">
+  <span class="pz-title" id="pz-title">פאזל טקסט</span>
+  <span class="level-badge" id="level-badge">טוען...</span>
+  <div class="xray-wrap">
+    <span class="xray-label">🔬 X-Ray</span>
+    <div class="xray-toggle" id="xray-toggle" onclick="toggleXRay()" title="הצג תפקידים רטוריים">
+      <div class="xray-knob"></div>
+    </div>
+    <span class="xray-hint" id="xray-hint">כבוי</span>
+  </div>
+  <a href="/students.html" style="font-size:12px;color:#a5b4fc;text-decoration:none;">← חזרה</a>
+</div>
+
+<!-- ─── Body ─── -->
+<div class="pz-body" id="pz-body">
+  <div class="pz-loading" id="pz-loading">טוען פאזל...</div>
+</div>
+
+<!-- ─── Reflection Modal ─── -->
+<div class="modal-bg" id="reflect-modal">
+  <div class="modal">
+    <div class="modal-title">💬 לאחר הפתרון — שלב הרפלקציה</div>
+    <div class="modal-subtitle">
+      כדי לקבל את ה-XP שלך, ענה על השאלה הבאה. אין תשובה "נכונה" — רק מחשבה אמיתית.
+    </div>
+    <div class="modal-q" id="reflect-question"></div>
+
+    <textarea id="reflect-text" placeholder="כתוב את מחשבתך כאן (לפחות 20 מילים)..."></textarea>
+
+    <label class="modal-upload" onclick="document.getElementById('reflect-file').click()">
+      📎 או צרף הקלטת קול / תמונת כתב יד
+      <input type="file" id="reflect-file" accept="audio/*,image/*" onchange="handleFileUpload(this)">
+      <div class="upload-preview" id="upload-preview"></div>
+    </label>
+
+    <div class="modal-feedback" id="reflect-feedback"></div>
+
+    <div class="xp-pill" id="xp-pill" style="display:none;"></div>
+
+    <button class="pz-btn primary" id="reflect-submit-btn" onclick="submitReflection()">
+      שלח רפלקציה ← קבל XP
+    </button>
+  </div>
+</div>
+
+<script>
+
+// ─────────────────────────────
+// State
+// ─────────────────────────────
+
+const params    = new URLSearchParams(location.search);
+const puzzleId  = params.get("puzzleId");
+const DB_URL    = "https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app";
+
+let puzzle        = null;  // full puzzle data from Firebase
+let blocks        = [];    // all block objects
+let correctOrder  = [];    // block IDs in correct order
+let slots         = [];    // current answer arrangement [slotIndex] = blockId | null
+let xrayOn        = false;
+let hintCount     = 0;
+let solveStart    = Date.now();
+let solved        = false;
+let reflectQuestion = "";
+
+// ─── Drag state ───
+let dragId      = null; // block ID being dragged
+let dragSource  = null; // "source" | slotIndex(number)
+
+// ─────────────────────────────
+// Bootstrap
+// ─────────────────────────────
+
+async function init() {
+  if (!puzzleId) { showError("לא צוין מזהה פאזל בכתובת. השתמש ב: ?puzzleId=xxx"); return; }
+
+  try {
+    const res = await fetch(`${DB_URL}/puzzles/${puzzleId}.json`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    puzzle = await res.json();
+    if (!puzzle?.blocks?.length) throw new Error("פאזל ריק או לא קיים");
+  } catch (e) {
+    showError(`לא ניתן לטעון את הפאזל: ${e.message}`);
+    return;
+  }
+
+  blocks       = puzzle.blocks;
+  correctOrder = blocks.map(b => b.id); // blocks stored in correct order
+  slots        = new Array(blocks.length).fill(null);
+
+  document.getElementById("pz-title").innerText = puzzle.title || "פאזל טקסט";
+  document.getElementById("level-badge").innerText = puzzle.levelHe || puzzle.level || "";
+  document.title = (puzzle.title || "פאזל טקסט") + " — MilEd.One";
+
+  solveStart = Date.now();
+  renderPuzzle();
+}
+
+// ─────────────────────────────
+// Render
+// ─────────────────────────────
+
+function renderPuzzle() {
+  const body = document.getElementById("pz-body");
+  const lc   = puzzle.level;
+
+  const instructionMap = {
+    macro: "גרור את הפסקאות לסדר הנכון — מהמבוא ועד המסקנה. כל פסקה ממלאת תפקיד רטורי ייחודי.",
+    mid:   "גרור את המשפטים לסדר הנכון כדי לבנות פסקה קוהרנטית עם הגיון מחברים.",
+    micro: "גרור את המילים/הצירופים לסדר הנכון כדי לבנות משפט תקין."
+  };
+
+  // Shuffle for display (Fisher-Yates, seeded by puzzleId so shuffle is deterministic)
+  const shuffledIds = shuffle([...correctOrder]);
+
+  body.innerHTML = `
+    <!-- Instruction -->
+    <div class="pz-instruction">
+      <strong>המשימה:</strong> ${instructionMap[lc] || "סדר מחדש את הבלוקים לפי ההגיון הנכון."}
+      ${puzzle.typicalErrors?.length ? `<br><span style="color:#64748b;font-size:12px;">⚠️ שגיאות נפוצות: ${puzzle.typicalErrors[0]}</span>` : ""}
+    </div>
+
+    <!-- Source zone -->
+    <div>
+      <div class="zone-label">🧱 קוביות להרכבה</div>
+      <div class="source-zone" id="source-zone"
+           ondragover="onDragOver(event,'source')" ondrop="onDrop(event,'source')">
+        ${shuffledIds.map(id => brickHTML(id, true)).join("")}
+      </div>
+    </div>
+
+    <!-- Answer zone -->
+    <div>
+      <div class="zone-label">📋 סדר הפתרון שלך</div>
+      <div class="answer-zone" id="answer-zone">
+        ${Array.from({length: blocks.length}, (_, i) => `
+          <div class="answer-slot">
+            <span class="slot-num">${i+1}</span>
+            <div class="slot-target" id="slot-${i}"
+                 ondragover="onDragOver(event,${i})" ondrop="onDrop(event,${i})">
+              <span class="slot-placeholder">גרור קוביה לכאן...</span>
+            </div>
+          </div>`).join("")}
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="pz-actions">
+      <button class="pz-btn primary" id="check-btn" onclick="checkAnswer()">✅ בדוק תשובה</button>
+      <button class="pz-btn hint"  id="hint-btn"  onclick="getHint()">💡 רמז (${hintCount === 0 ? "בלי הגבלה" : hintCount + " רמזים עד כה"})</button>
+      <button class="pz-btn reset" onclick="resetPuzzle()">↩ התחל מחדש</button>
+    </div>
+
+    <!-- Success banner -->
+    <div class="success-banner" id="success-banner">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">פתרת את הפאזל!</div>
+      <div class="success-sub">ממשיך לשלב הרפלקציה...</div>
+    </div>
+
+    <!-- Bot panel -->
+    <div class="bot-panel" id="bot-panel">
+      <div class="bot-panel-header">🤖 הבוט הסוקרטי — רמזים</div>
+      <div class="bot-messages" id="bot-messages"></div>
+    </div>
+  `;
+
+  // Set drag events on bricks in source zone
+  activateBricks();
+}
+
+function brickHTML(blockId, inSource) {
+  const b = blocks.find(x => x.id === blockId);
+  if (!b) return "";
+  const bg   = b.roleColor + "18";  // translucent fill
+  const border = b.roleColor;
+  return `
+    <div class="brick" id="brick-${b.id}" draggable="true"
+         style="border-color:${border};background:${bg};"
+         data-id="${b.id}"
+         ondragstart="onDragStart(event,'${b.id}','${inSource ? "source" : "slot"}')"
+         ondragend="onDragEnd(event)">
+      <span class="brick-text">${escHtml(b.content)}</span>
+      <span class="brick-role" style="background:${b.roleColor};">${escHtml(b.role)}</span>
+    </div>`;
+}
+
+// ─────────────────────────────
+// Drag & Drop (Mouse)
+// ─────────────────────────────
+
+function onDragStart(e, blockId, source) {
+  dragId     = blockId;
+  dragSource = source === "source" ? "source" : parseInt(source);
+  e.dataTransfer.effectAllowed = "move";
+  setTimeout(() => {
+    const el = document.getElementById("brick-" + blockId);
+    if (el) el.classList.add("dragging");
+  }, 0);
+}
+
+function onDragEnd(e) {
+  if (dragId) {
+    const el = document.getElementById("brick-" + dragId);
+    if (el) el.classList.remove("dragging");
+  }
+  document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
+}
+
+function onDragOver(e, target) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = "move";
+  // Visual highlight
+  document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
+  const el = target === "source"
+    ? document.getElementById("source-zone")
+    : document.getElementById("slot-" + target);
+  if (el) el.classList.add("drag-over");
+}
+
+function onDrop(e, target) {
+  e.preventDefault();
+  document.querySelectorAll(".drag-over").forEach(el => el.classList.remove("drag-over"));
+  if (!dragId) return;
+
+  if (target === "source") {
+    // Return to source
+    if (typeof dragSource === "number") {
+      slots[dragSource] = null;
+    }
+    moveBrickToSource(dragId);
+  } else {
+    const slotIdx = parseInt(target);
+    // If slot occupied, swap
+    const evicted = slots[slotIdx];
+    if (typeof dragSource === "number") {
+      slots[dragSource] = evicted || null;
+      if (evicted) moveBrickToSlot(evicted, dragSource);
+      else clearSlot(dragSource);
+    } else {
+      // From source — remove from source zone
+      removeBrickFromSource(dragId);
+      if (evicted) moveBrickToSource(evicted);
+    }
+    slots[slotIdx] = dragId;
+    moveBrickToSlot(dragId, slotIdx);
+  }
+  dragId = dragSource = null;
+}
+
+// ─────────────────────────────
+// Touch drag support
+// ─────────────────────────────
+
+let touchBlock   = null;
+let touchClone   = null;
+let touchSrcSlot = null; // null = source zone, number = slot index
+
+function activateBricks() {
+  document.querySelectorAll(".brick").forEach(el => {
+    el.addEventListener("touchstart", touchStart, { passive: false });
+    el.addEventListener("touchmove",  touchMove,  { passive: false });
+    el.addEventListener("touchend",   touchEnd,   { passive: false });
+  });
+}
+
+function touchStart(e) {
+  const brick = e.currentTarget;
+  touchBlock   = brick.dataset.id;
+  touchSrcSlot = getSlotOfBrick(touchBlock);
+
+  // Clone for visual tracking
+  touchClone = brick.cloneNode(true);
+  touchClone.style.cssText = `
+    position:fixed;pointer-events:none;z-index:999;opacity:.85;
+    width:${brick.offsetWidth}px;transform:scale(1.04);
+    border:2px solid #818cf8;box-shadow:0 8px 24px rgba(0,0,0,.2);`;
+  positionClone(e.touches[0]);
+  document.body.appendChild(touchClone);
+  brick.style.opacity = ".3";
+  e.preventDefault();
+}
+
+function touchMove(e) {
+  if (!touchClone) return;
+  positionClone(e.touches[0]);
+  e.preventDefault();
+}
+
+function touchEnd(e) {
+  if (!touchClone || !touchBlock) return;
+  const touch = e.changedTouches[0];
+  touchClone.remove(); touchClone = null;
+  document.getElementById("brick-" + touchBlock).style.opacity = "";
+
+  // Find drop target
+  const dropEl = document.elementFromPoint(touch.clientX, touch.clientY);
+  const slotEl = dropEl?.closest(".slot-target");
+  const srcEl  = dropEl?.closest(".source-zone");
+
+  if (slotEl) {
+    const slotIdx = parseInt(slotEl.id.replace("slot-", ""));
+    const evicted = slots[slotIdx];
+    if (touchSrcSlot !== null) {
+      slots[touchSrcSlot] = evicted || null;
+      if (evicted) moveBrickToSlot(evicted, touchSrcSlot);
+      else clearSlot(touchSrcSlot);
+    } else {
+      removeBrickFromSource(touchBlock);
+      if (evicted) moveBrickToSource(evicted);
+    }
+    slots[slotIdx] = touchBlock;
+    moveBrickToSlot(touchBlock, slotIdx);
+  } else if (srcEl && touchSrcSlot !== null) {
+    slots[touchSrcSlot] = null;
+    clearSlot(touchSrcSlot);
+    moveBrickToSource(touchBlock);
+  }
+
+  touchBlock = touchSrcSlot = null;
+}
+
+function positionClone(touch) {
+  if (!touchClone) return;
+  touchClone.style.left = (touch.clientX - touchClone.offsetWidth / 2) + "px";
+  touchClone.style.top  = (touch.clientY - 30) + "px";
+}
+
+function getSlotOfBrick(id) {
+  const idx = slots.indexOf(id);
+  return idx === -1 ? null : idx;
+}
+
+// ─────────────────────────────
+// DOM manipulation helpers
+// ─────────────────────────────
+
+function moveBrickToSlot(blockId, slotIdx) {
+  const slotEl = document.getElementById("slot-" + slotIdx);
+  if (!slotEl) return;
+  slotEl.innerHTML = brickHTML(blockId, false);
+  activateBrickEl(document.getElementById("brick-" + blockId));
+}
+
+function clearSlot(slotIdx) {
+  const slotEl = document.getElementById("slot-" + slotIdx);
+  if (!slotEl) return;
+  slotEl.innerHTML = `<span class="slot-placeholder">גרור קוביה לכאן...</span>`;
+}
+
+function moveBrickToSource(blockId) {
+  const src = document.getElementById("source-zone");
+  if (!src) return;
+  const existing = document.getElementById("brick-" + blockId);
+  if (existing) existing.remove();
+  src.insertAdjacentHTML("beforeend", brickHTML(blockId, true));
+  activateBrickEl(document.getElementById("brick-" + blockId));
+}
+
+function removeBrickFromSource(blockId) {
+  const el = document.querySelector(`#source-zone #brick-${blockId}`);
+  if (el) el.remove();
+}
+
+function activateBrickEl(el) {
+  if (!el) return;
+  el.addEventListener("touchstart", touchStart, { passive: false });
+  el.addEventListener("touchmove",  touchMove,  { passive: false });
+  el.addEventListener("touchend",   touchEnd,   { passive: false });
+}
+
+// ─────────────────────────────
+// Check Answer
+// ─────────────────────────────
+
+function checkAnswer() {
+  if (solved) return;
+  const filled = slots.filter(Boolean);
+  if (filled.length < blocks.length) {
+    addBotMsg("עדיין יש משבצות ריקות — מלא את כל המקומות לפני הבדיקה. 🙂");
+    showBotPanel();
+    return;
+  }
+
+  let allCorrect = true;
+  slots.forEach((id, i) => {
+    const slotEl = document.getElementById("slot-" + i);
+    if (!slotEl) return;
+    const correct = id === correctOrder[i];
+    slotEl.classList.toggle("correct",   correct);
+    slotEl.classList.toggle("incorrect", !correct);
+    if (!correct) allCorrect = false;
+  });
+
+  if (allCorrect) {
+    onSolved();
+  } else {
+    hintCount++;
+    updateHintBtn();
+    const wrongCount = slots.filter((id, i) => id !== correctOrder[i]).length;
+    addBotMsg(`יש ${wrongCount} ${wrongCount === 1 ? "בלוק" : "בלוקים"} במקום הלא נכון. המשך לנסות! 💪`);
+    showBotPanel();
+  }
+}
+
+async function onSolved() {
+  solved = true;
+  document.getElementById("check-btn").disabled = true;
+  document.getElementById("hint-btn").disabled  = true;
+
+  // Show success banner
+  const banner = document.getElementById("success-banner");
+  if (banner) banner.classList.add("show");
+
+  // Wait a beat then open reflection
+  setTimeout(openReflectModal, 1800);
+}
+
+// ─────────────────────────────
+// Hint (Socratic)
+// ─────────────────────────────
+
+async function getHint() {
+  if (solved) return;
+  const hintBtn = document.getElementById("hint-btn");
+  hintBtn.disabled = true;
+  hintBtn.textContent = "מחשב...";
+
+  try {
+    const res = await fetch("/api/text-puzzle/hint", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        blocks,
+        currentOrder: slots.filter(Boolean),
+        correctOrder,
+        level: puzzle.level,
+        hintCount
+      })
+    });
+    const data = await res.json();
+    hintCount++;
+    addBotMsg(data.question || "נסה לחשוב על התפקיד הרטורי של הבלוק — מה קודם למה?");
+    showBotPanel();
+  } catch {
+    addBotMsg("חשוב: איזה תפקיד רטורי חייב להופיע ראשון לפי ההגיון האקדמי?");
+    showBotPanel();
+  } finally {
+    hintBtn.disabled = false;
+    updateHintBtn();
+  }
+}
+
+function updateHintBtn() {
+  const btn = document.getElementById("hint-btn");
+  if (btn) btn.textContent = `💡 רמז (${hintCount} עד כה)`;
+}
+
+// ─────────────────────────────
+// Reset
+// ─────────────────────────────
+
+function resetPuzzle() {
+  solved = false; hintCount = 0; solveStart = Date.now();
+  // Clear all slot classes
+  slots.forEach((id, i) => {
+    const el = document.getElementById("slot-" + i);
+    if (el) { el.classList.remove("correct","incorrect"); }
+  });
+  slots = new Array(blocks.length).fill(null);
+  renderPuzzle();
+}
+
+// ─────────────────────────────
+// X-Ray toggle
+// ─────────────────────────────
+
+function toggleXRay() {
+  xrayOn = !xrayOn;
+  document.body.classList.toggle("xray-mode", xrayOn);
+  const tog  = document.getElementById("xray-toggle");
+  const hint = document.getElementById("xray-hint");
+  tog.classList.toggle("on", xrayOn);
+  hint.textContent = xrayOn ? "תפקידים" : "כבוי";
+}
+
+// ─────────────────────────────
+// Bot panel helpers
+// ─────────────────────────────
+
+function addBotMsg(text) {
+  const msgs = document.getElementById("bot-messages");
+  if (!msgs) return;
+  const div = document.createElement("div");
+  div.className = "bot-msg";
+  div.textContent = text;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showBotPanel() {
+  const panel = document.getElementById("bot-panel");
+  if (panel) panel.classList.add("visible");
+}
+
+// ─────────────────────────────
+// Reflection modal
+// ─────────────────────────────
+
+async function openReflectModal() {
+  // Generate a reflection question
+  const defaultQ = `מה הפתיח (${blocks[0]?.role || "בלוק ראשון"}) עושה שהשאר לא יכולים לעשות? למה הסדר שגילית הוא הנכון?`;
+
+  try {
+    // Use a simple Socratic question based on level
+    const qMap = {
+      macro: "חשוב על הפסקה הראשונה שבחרת — מדוע היא חייבת להופיע שם ולא במקום אחר?",
+      mid:   "מה היה קורה אם הייתה מחליף את המשפט הראשון עם המשפט האחרון? מה הייתה מרגיש הקורא?",
+      micro: "איזו מילה 'עוגנת' את המשפט — ולמה היא חייבת להיות דווקא במקום שמצאת?"
+    };
+    reflectQuestion = qMap[puzzle.level] || defaultQ;
+  } catch {
+    reflectQuestion = defaultQ;
+  }
+
+  document.getElementById("reflect-question").textContent = reflectQuestion;
+  document.getElementById("reflect-modal").classList.add("open");
+}
+
+let uploadedFile = null;
+
+function handleFileUpload(input) {
+  uploadedFile = input.files[0];
+  const preview = document.getElementById("upload-preview");
+  if (preview && uploadedFile) {
+    preview.textContent = `✅ קובץ נבחר: ${uploadedFile.name}`;
+  }
+}
+
+async function submitReflection() {
+  const text   = document.getElementById("reflect-text").value.trim();
+  const btn    = document.getElementById("reflect-submit-btn");
+  const fbDiv  = document.getElementById("reflect-feedback");
+  const xpPill = document.getElementById("xp-pill");
+
+  if (!text && !uploadedFile) {
+    document.getElementById("reflect-text").style.borderColor = "#fca5a5";
+    return;
+  }
+  if (text.split(/\s+/).length < 5 && !uploadedFile) {
+    document.getElementById("reflect-text").style.borderColor = "#fca5a5";
+    addBotMsg("כתוב לפחות 5 מילים בתיבת הרפלקציה 🙏");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "שולח...";
+
+  try {
+    const res = await fetch("/api/text-puzzle/reflect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        studentAnswer: text || `[קובץ: ${uploadedFile?.name}]`,
+        puzzleLevel: puzzle.level,
+        solveTimeSeconds: Math.round((Date.now() - solveStart) / 1000)
+      })
+    });
+    const data = await res.json();
+    const xp   = data.xpEarned || 10;
+
+    fbDiv.textContent = data.feedback || "כל הכבוד! שאלה מעמיקה לחשיבה המשכית.";
+    fbDiv.style.display = "block";
+    xpPill.textContent  = `🏆 +${xp} XP נצברו!`;
+    xpPill.style.display = "inline-block";
+    btn.textContent      = "תודה! ✅";
+
+    // Flash XP notification
+    flashXP(xp);
+
+    // Save XP to localStorage (compatible with existing XP system)
+    const existingXP = parseInt(localStorage.getItem("miled_xp") || "0");
+    localStorage.setItem("miled_xp", String(existingXP + xp));
+
+    // Close modal after 4 seconds
+    setTimeout(() => {
+      document.getElementById("reflect-modal").classList.remove("open");
+    }, 4500);
+
+  } catch {
+    fbDiv.textContent    = "כל הכבוד על הפתרון! המשך לעמוד הקורסים לראות את ה-XP שלך.";
+    fbDiv.style.display  = "block";
+    xpPill.textContent   = "🏆 +10 XP";
+    xpPill.style.display = "inline-block";
+    flashXP(10);
+    btn.textContent = "סגור ✅";
+    setTimeout(() => document.getElementById("reflect-modal").classList.remove("open"), 3000);
+  }
+}
+
+function flashXP(amount) {
+  const el = document.createElement("div");
+  el.className   = "xp-flash";
+  el.textContent = `+${amount} XP 🏆`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2100);
+}
+
+// ─────────────────────────────
+// Utilities
+// ─────────────────────────────
+
+function showError(msg) {
+  document.getElementById("pz-loading").remove();
+  document.getElementById("pz-body").innerHTML =
+    `<div class="pz-error">⚠️ ${escHtml(msg)}</div>`;
+}
+
+function escHtml(s) {
+  return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function shuffle(arr) {
+  // Seeded Fisher-Yates: seed from puzzleId characters
+  let seed = [...(puzzleId || "abc")].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const rand = () => { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 1) / 0x7fffffff; };
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ─────────────────────────────
+// Start
+// ─────────────────────────────
+init();
+
+</script>
+
+</body>
+</html>

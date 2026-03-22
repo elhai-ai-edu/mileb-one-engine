@@ -73,6 +73,7 @@
 <div class="mgmt-tabs">
   <button id="tab-btn-security" class="mgmt-tab-btn active" onclick="switchTab('security')">🔐 משתמשים ואבטחה</button>
   <button id="tab-btn-config"   class="mgmt-tab-btn"        onclick="switchTab('config')">⚙️ עורך Config</button>
+  <button id="tab-btn-textlab"  class="mgmt-tab-btn"        onclick="switchTab('textlab')">🧪 מעבדת טקסט</button>
   <a href="/cockpit.html" class="mgmt-tab-btn" style="text-decoration:none;background:#f1f5f9;color:#64748b;">📊 ביצועים ומיומנויות →</a>
 </div>
 
@@ -229,6 +230,100 @@
 
 </div>
 
+<!-- ─── TEXT LAB TAB ─── -->
+<div id="tab-textlab" style="display:none;">
+
+  <div style="background:#eef2ff;border:1.5px solid #c7d2fe;border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:13px;color:#4338ca;line-height:1.6;">
+    <strong>🧪 מעבדת הטקסט — יצירת פאזל סוקרטי</strong><br>
+    הדבק טקסט גולמי → בחר רמה → AI יפרק אותו לבלוקים עם תפקידים רטוריים → שמור כפאזל לסטודנטים.
+  </div>
+
+  <!-- Step 1: Input -->
+  <div class="panel" style="margin-bottom:16px;">
+    <h2>שלב 1 — פרטי הפאזל</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם הפאזל</label>
+        <input id="tl-title" type="text" placeholder="לדוגמה: פרק מבוא — גרונטולוגיה"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">רמת הפאזל</label>
+        <select id="tl-level"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="macro">מאקרו — סדר פסקאות (היגיון חיבורי)</option>
+          <option value="mid" selected>מיד — סדר משפטים (היגיון פסקה)</option>
+          <option value="micro">מיקרו — סדר מילים (לקסיקלי/דקדוקי)</option>
+        </select>
+      </div>
+    </div>
+
+    <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">הדבק את הטקסט הגולמי</label>
+    <textarea id="tl-text" rows="8" dir="rtl"
+      placeholder="הדבק כאן פסקה, פרק קצר, או קטע לניתוח. עבור מאקרו — מספר פסקאות; מיד — פסקה אחת; מיקרו — משפט אחד."
+      style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;resize:vertical;font-family:'Assistant',sans-serif;box-sizing:border-box;"></textarea>
+
+    <div style="margin-top:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <button class="btn btn-blue" onclick="parsePuzzleText()" id="tl-parse-btn" style="padding:9px 20px;">
+        🤖 נתח עם AI ←
+      </button>
+      <span id="tl-parse-status" style="font-size:12px;color:#64748b;"></span>
+    </div>
+
+    <!-- Credentials (inline, shown after first parse) -->
+    <div id="tl-creds" style="display:none;margin-top:14px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+      <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;">🔐 אימות מנהל (נדרש לשמירה)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <input id="tl-user" type="text"     placeholder="שם משתמש" dir="ltr"
+          style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;">
+        <input id="tl-pass" type="password" placeholder="סיסמה"    dir="ltr"
+          style="padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;">
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Preview -->
+  <div id="tl-preview" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <h2>שלב 2 — תצוגה מקדימה של הבלוקים</h2>
+      <p style="font-size:12px;color:#64748b;margin-bottom:14px;">
+        זה הסדר ה<strong>נכון</strong> — כפי שנותח ע"י ה-AI. הסטודנטים יקבלו גרסה מעורבבת.
+        אפשר ללחוץ על בלוק כדי לערוך את התפקיד שלו.
+      </p>
+      <div id="tl-blocks-preview" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;">שגיאות אופייניות (לרמז הסוקרטי)</div>
+        <div id="tl-errors-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+    </div>
+
+    <!-- Step 3: Save -->
+    <div class="panel">
+      <h2>שלב 3 — שמירה ושיתוף</h2>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-green" onclick="savePuzzle()" id="tl-save-btn" style="padding:9px 22px;">
+          💾 שמור פאזל ב-Firebase
+        </button>
+        <button class="btn" onclick="parsePuzzleText()" style="background:#f1f5f9;color:#64748b;padding:9px 16px;">
+          🔄 נתח שוב
+        </button>
+      </div>
+      <p id="tl-save-status" style="font-size:13px;margin-top:10px;min-height:18px;font-weight:600;"></p>
+      <div id="tl-share-link" style="display:none;margin-top:10px;">
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:4px;">🔗 קישור לסטודנטים</label>
+        <div style="display:flex;gap:8px;">
+          <input id="tl-link-input" type="text" readonly dir="ltr"
+            style="flex:1;padding:8px 10px;border:1.5px solid #c7d2fe;border-radius:8px;font-size:13px;background:#eef2ff;color:#4338ca;">
+          <button onclick="copyPuzzleLink()" class="btn btn-blue" style="padding:8px 14px;white-space:nowrap;">העתק</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 </div>
 
 <script>
@@ -360,9 +455,10 @@ document.addEventListener("click", function(e) {
 
 // ─── TAB SWITCHING ───
 function switchTab(tab){
-  ["config","security"].forEach(t => {
+  ["config","security","textlab"].forEach(t => {
     document.getElementById("tab-" + t).style.display = tab === t ? "" : "none";
-    document.getElementById("tab-btn-" + t).classList.toggle("active", tab === t);
+    const btn = document.getElementById("tab-btn-" + t);
+    if (btn) btn.classList.toggle("active", tab === t);
   });
   if(tab === "config" && config && Object.keys(config).length) render();
   if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); loadClassLifecycle(); }
@@ -954,6 +1050,148 @@ async function createUser(){
       document.getElementById("create-msg").innerText = data.error||"שגיאה";
     }
   } catch(e){ document.getElementById("create-msg").innerText = "שגיאת חיבור."; }
+}
+
+// ─── Text Lab ───
+
+let tlParsedBlocks    = [];
+let tlParsedLevel     = "";
+let tlTypicalErrors   = [];
+
+async function parsePuzzleText() {
+  const text  = document.getElementById("tl-text").value.trim();
+  const level = document.getElementById("tl-level").value;
+  const btn   = document.getElementById("tl-parse-btn");
+  const status = document.getElementById("tl-parse-status");
+
+  if (!text || text.length < 20) { status.style.color = "#ef4444"; status.innerText = "נא להדביק טקסט (לפחות 20 תווים)."; return; }
+
+  // Show credential fields
+  document.getElementById("tl-creds").style.display = "";
+
+  const user = document.getElementById("tl-user").value.trim();
+  const pass = document.getElementById("tl-pass").value;
+  if (!user || !pass) { status.style.color = "#ef4444"; status.innerText = "הזן שם משתמש וסיסמה לפני הניתוח."; return; }
+
+  btn.disabled = true;
+  status.style.color = "#6366f1";
+  status.innerText = "🤖 AI מנתח את הטקסט...";
+
+  try {
+    const res = await fetch("/api/text-puzzle/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, level, requesterUsername: user, requesterPassword: pass })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "ניתוח נכשל");
+
+    tlParsedBlocks  = data.blocks;
+    tlParsedLevel   = data.level;
+    tlTypicalErrors = data.typicalErrors || [];
+
+    status.style.color = "#16a34a";
+    status.innerText = `✅ ${data.blocks.length} בלוקים זוהו (רמה: ${data.levelHe})`;
+    renderParsePreview();
+  } catch(e) {
+    status.style.color = "#ef4444";
+    status.innerText = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderParsePreview() {
+  const preview = document.getElementById("tl-preview");
+  const container = document.getElementById("tl-blocks-preview");
+  const errorsList = document.getElementById("tl-errors-list");
+  preview.style.display = "";
+
+  container.innerHTML = tlParsedBlocks.map((b, i) => `
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;">
+      <span style="min-width:22px;font-weight:700;color:#94a3b8;font-size:13px;">${i+1}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;color:#1e1b4b;line-height:1.6;margin-bottom:4px;">${escHtmlAdmin(b.content)}</div>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;color:#fff;background:${b.roleColor};">${escHtmlAdmin(b.role)}</span>
+      </div>
+      <select onchange="updateBlockRole(${i}, this.value)"
+        style="padding:4px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;font-family:'Assistant',sans-serif;">
+        ${getRolesForLevel(tlParsedLevel).map(r => `<option ${r === b.role ? 'selected' : ''}>${r}</option>`).join("")}
+      </select>
+    </div>`).join("");
+
+  errorsList.innerHTML = tlTypicalErrors.map((err, i) => `
+    <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#92400e;background:#fef3c7;padding:6px 10px;border-radius:7px;">
+      <span style="font-weight:700;">${i+1}.</span> ${escHtmlAdmin(err)}
+    </div>`).join("");
+}
+
+function getRolesForLevel(level) {
+  const ROLES = {
+    macro: ["מבוא","טענה מרכזית","טיעון","ראיה","פרכה","הסתייגות","מעבר","מסקנה"],
+    mid:   ["פתיחת פסקה","ראיה","פרשנות","מחבר לוגי","הסתייגות","דוגמה","הפניה","סיכום"],
+    micro: ["נושא","פועל","מושא","הקשר","מחבר","מרחב","תנאי","זמן"]
+  };
+  return ROLES[level] || ROLES.mid;
+}
+
+function updateBlockRole(idx, newRole) {
+  if (tlParsedBlocks[idx]) tlParsedBlocks[idx].role = newRole;
+}
+
+async function savePuzzle() {
+  const user   = document.getElementById("tl-user").value.trim();
+  const pass   = document.getElementById("tl-pass").value;
+  const title  = document.getElementById("tl-title").value.trim() || "פאזל ללא שם";
+  const status = document.getElementById("tl-save-status");
+  const btn    = document.getElementById("tl-save-btn");
+
+  if (!tlParsedBlocks.length) { status.style.color="#ef4444"; status.innerText="אין בלוקים לשמירה — נתח תחילה."; return; }
+  if (!user || !pass)         { status.style.color="#ef4444"; status.innerText="הזן פרטי אימות."; return; }
+
+  btn.disabled = true;
+  status.style.color = "#6366f1";
+  status.innerText = "שומר...";
+
+  try {
+    const levelHe = { macro:"מאקרו — פסקאות", mid:"מיד — משפטים", micro:"מיקרו — מילים" }[tlParsedLevel] || tlParsedLevel;
+    const res = await fetch("/api/text-puzzle/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        puzzle: { title, blocks: tlParsedBlocks, level: tlParsedLevel, levelHe, typicalErrors: tlTypicalErrors },
+        requesterUsername: user,
+        requesterPassword: pass
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "שמירה נכשלה");
+
+    status.style.color = "#16a34a";
+    status.innerText = `✅ הפאזל נשמר! מזהה: ${data.puzzleId}`;
+
+    const shareLink = location.origin + (data.shareUrl || `/text_puzzle.html?puzzleId=${data.puzzleId}`);
+    document.getElementById("tl-link-input").value = shareLink;
+    document.getElementById("tl-share-link").style.display = "";
+  } catch(e) {
+    status.style.color = "#ef4444";
+    status.innerText = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function copyPuzzleLink() {
+  const input = document.getElementById("tl-link-input");
+  navigator.clipboard.writeText(input.value).catch(() => {
+    input.select(); document.execCommand("copy");
+  });
+  const btn = input.nextElementSibling;
+  if (btn) { btn.textContent = "✅ הועתק!"; setTimeout(() => { btn.textContent = "העתק"; }, 2000); }
+}
+
+function escHtmlAdmin(s) {
+  return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
 </script>
