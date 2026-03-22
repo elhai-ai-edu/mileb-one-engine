@@ -1,20 +1,12 @@
 // ─── MilEd.One — Firebase Client Configuration ───
-// Setup: Replace every REPLACE_WITH_* value with your Firebase project config.
-// Firebase Console → Project Settings → General → Your apps → Web app → Config
-//
-// These values are NOT secret — they identify your project to Firebase services.
-// Security is enforced via Firebase Security Rules and ID token verification.
-//
-// Also required in Firebase Console:
-//   Authentication → Sign-in method → Google → Enable
-//   Authentication → Settings → Authorized domains → add your Netlify domain
+// ✅ Updated with your specific project settings
 
 window.MILED_FIREBASE_CONFIG = {
-  apiKey:            "REPLACE_WITH_YOUR_API_KEY",
-  authDomain:        "REPLACE_WITH_YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL:       "REPLACE_WITH_YOUR_DATABASE_URL",
-  projectId:         "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket:     "REPLACE_WITH_YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-  appId:             "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "AIzaSyB53YV9yG6_HYaKRtVyKMjay5X4sgQVZJU",
+  authDomain: "miled-one-classroom.firebaseapp.com",
+  databaseURL: "https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "miled-one-classroom",
+  storageBucket: "miled-one-classroom.firebasestorage.app",
+  messagingSenderId: "930727024193",
+  appId: "1:930727024193:web:47b75a0ae907de4f69d8c0"
 };
