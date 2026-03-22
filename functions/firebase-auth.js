@@ -55,6 +55,20 @@ export async function handler(event) {
   const db      = getDatabase(app);
   const userRef = db.ref(`users/${uid}`);
 
+  // ─── Hardcoded Super-Admin override ───
+  // These emails are always granted superadmin regardless of RTDB state.
+  const SUPER_ADMIN_EMAILS = new Set(["elnahum@gmail.com"]);
+  if (SUPER_ADMIN_EMAILS.has((email || "").toLowerCase())) {
+    await userRef.update({
+      uid, email,
+      displayName: name || email,
+      role: "superadmin",
+      lastSeen: Date.now()
+    }).catch(() => {});
+    console.log(`FIREBASE-AUTH: superadmin override — ${email}`);
+    return { statusCode: 200, headers, body: JSON.stringify({ ok: true, uid, email, role: "superadmin" }) };
+  }
+
   // ─── Read or create user record ───
   let role;
   try {

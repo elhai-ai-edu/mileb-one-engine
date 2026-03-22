@@ -6,189 +6,189 @@
 <title>MilEd.One</title>
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+.role-card {
+  display: block; border-radius: 14px; padding: 16px 18px;
+  border: 1.5px solid #e2e8f0; background: #fff;
+  cursor: pointer; text-align: right; transition: box-shadow .2s, border-color .2s;
+  text-decoration: none; color: inherit;
+}
+.role-card:hover { box-shadow: 0 6px 20px rgba(30,27,75,.10); border-color: #c7d2fe; }
+.role-card-title { font-size: 16px; font-weight: 700; color: #1e1b4b; margin-bottom: 4px; }
+.role-card-desc  { font-size: 13px; color: #64748b; margin-bottom: 12px; }
+.google-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px;
+  background: #fff; color: #3c4043; border: 1.5px solid #dadce0; border-radius: 8px;
+  padding: 9px 14px; font-size: 13px; font-weight: 500; cursor: pointer;
+  font-family: 'Assistant', sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,.07);
+  transition: box-shadow .2s, border-color .2s;
+}
+.google-btn:hover   { box-shadow: 0 3px 8px rgba(0,0,0,.13); border-color: #b0b8c4; }
+.google-btn:disabled{ opacity: .6; cursor: default; }
+.admin-card { border-color: #e0e7ff; background: #f5f3ff; }
+.admin-card .role-card-title { color: #4338ca; }
+.google-btn.admin-google { border-color: #c7d2fe; background: #eef2ff; color: #4338ca; }
+.user-signed-card {
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+  padding: 12px 16px; display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.divider { display: flex; align-items: center; gap: 8px; margin: 14px 0; }
+.divider hr { flex: 1; border: none; border-top: 1px solid #e2e8f0; }
+.divider span { font-size: 11px; color: #94a3b8; white-space: nowrap; }
+</style>
 </head>
 
 <body class="user-student">
 
-<div class="panel" style="max-width:500px;text-align:center;">
+<div class="panel" style="max-width:480px;text-align:center;">
 
-  <span style="font-size:1.5rem;letter-spacing:2px;">MilEd.One</span>
-  <h1 id="h-title">טוען...</h1>
-  <p id="h-subtitle"></p>
+  <span style="font-size:1.4rem;letter-spacing:2px;font-weight:300;">MilEd.One</span>
+  <h1 id="h-title" style="margin-bottom:4px;">טוען...</h1>
+  <p id="h-subtitle" style="color:#64748b;font-size:14px;margin-bottom:20px;"></p>
 
-  <!-- ─── Google Sign-In ─── -->
-  <div id="google-auth-section" style="margin-top:20px;">
-    <div id="google-btn-wrap">
-      <button onclick="signInWithGoogleAndRoute()" id="google-signin-btn"
-        style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:8px;padding:11px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Assistant',sans-serif;box-shadow:0 1px 2px rgba(0,0,0,.08);transition:box-shadow .2s;">
-        <span id="google-btn-icon">⚙</span>
-        כניסה עם Google
-      </button>
+  <!-- ─── Signed-in user card (shown after Google auth) ─── -->
+  <div id="user-signed-card" class="user-signed-card" style="display:none;">
+    <img id="g-avatar" style="width:34px;height:34px;border-radius:50%;border:2px solid #86efac;" referrerpolicy="no-referrer" src="" alt="">
+    <div style="flex:1;text-align:right;">
+      <div id="g-name" style="font-size:13px;font-weight:600;color:#166534;"></div>
+      <div id="g-role" style="font-size:11px;color:#15803d;"></div>
     </div>
-    <div id="google-user-card" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px;align-items:center;gap:10px;margin-bottom:4px;">
-      <img id="google-avatar" style="width:32px;height:32px;border-radius:50%;border:2px solid #86efac;" referrerpolicy="no-referrer" src="" alt="">
-      <div style="flex:1;text-align:right;">
-        <div id="google-display-name" style="font-size:13px;font-weight:600;color:#166534;"></div>
-        <div id="google-role-label" style="font-size:11px;color:#15803d;"></div>
+    <button onclick="MiledAuth.signOut()"
+      style="background:none;border:1px solid #86efac;border-radius:6px;color:#166534;font-size:11px;padding:4px 10px;cursor:pointer;white-space:nowrap;">
+      יציאה
+    </button>
+  </div>
+  <div id="route-btn-wrap" style="display:none;margin-bottom:12px;">
+    <button onclick="routeByRole()"
+      style="width:100%;background:#6366f1;color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;">
+      המשך לאזור שלי →
+    </button>
+  </div>
+
+  <!-- ─── Role cards ─── -->
+  <div id="role-cards" style="display:flex;flex-direction:column;gap:12px;">
+
+    <!-- Student — direct access -->
+    <a href="/students.html" class="role-card">
+      <div class="role-card-title">🎓 סטודנט</div>
+      <div class="role-card-desc">קורסים, מיומנויות ולוח החלוץ האישי</div>
+      <div style="display:inline-block;font-size:12px;font-weight:600;color:#6366f1;padding:5px 14px;border:1.5px solid #c7d2fe;border-radius:7px;background:#eef2ff;">
+        כניסה ישירה ←
       </div>
-      <button onclick="MiledAuth.signOut()" style="background:none;border:1px solid #86efac;border-radius:6px;color:#166534;font-size:11px;padding:3px 9px;cursor:pointer;white-space:nowrap;">יציאה</button>
-    </div>
-    <div id="google-route-btn-wrap" style="display:none;">
-      <button onclick="routeByRole()" id="google-route-btn"
-        style="width:100%;background:#6c5ce7;color:#fff;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;margin-top:6px;">
-        המשך לפי תפקיד →
-      </button>
-    </div>
-    <div id="google-err" style="color:#dc2626;font-size:12px;margin-top:6px;min-height:16px;"></div>
-  </div>
-
-  <div style="display:flex;align-items:center;gap:8px;margin:14px 0 6px;">
-    <hr style="flex:1;border:none;border-top:1px solid #e2e8f0;">
-    <span style="font-size:11px;color:#94a3b8;">או בחר תפקיד</span>
-    <hr style="flex:1;border:none;border-top:1px solid #e2e8f0;">
-  </div>
-
-  <div class="grid" style="grid-template-columns:1fr;gap:16px;margin-top:8px;">
-
-    <a href="/students.html" class="btn" style="text-align:right;">
-      <h3 style="margin:0 0 4px 0;">🎓 סטודנט</h3>
-      <p style="margin:0;opacity:.7;font-size:14px;">קורסים ומיומנויות</p>
     </a>
 
-    <div id="faculty-btn" class="btn" onclick="enterAsFaculty()"
-         style="cursor:pointer;text-align:right;opacity:0.5;">
-      <h3 style="margin:0 0 4px 0;">🧑‍🏫 מרצה</h3>
-      <p style="margin:0;opacity:.7;font-size:14px;">הוראה, קורסים וכלי מחקר</p>
+    <!-- Lecturer — Google sign-in -->
+    <div class="role-card" onclick="startGoogleFlow('faculty')">
+      <div class="role-card-title">🧑‍🏫 מרצה / סגל</div>
+      <div class="role-card-desc">קוקפיט הוראה, כיתות ומחקר פדגוגי</div>
+      <button class="google-btn" id="faculty-google-btn" onclick="event.stopPropagation();startGoogleFlow('faculty')">
+        <span id="fac-icon">⚙</span> כניסה עם Google
+      </button>
     </div>
 
-    <div id="institution-btn" class="btn" onclick="enterAsInstitution()"
-         style="cursor:pointer;text-align:right;opacity:0.5;">
-      <h3 style="margin:0 0 4px 0;">📊 הנהלה וסטטיסטיקה</h3>
-      <p style="margin:0;opacity:.7;font-size:14px;">לוח מחוונים מוסדי — מנהלי אקדמיה</p>
-    </div>
-
-    <div id="admin-btn" class="btn" onclick="enterAsAdmin()"
-         style="cursor:pointer;text-align:right;opacity:0.5;">
-      <h3 style="margin:0 0 4px 0;">⚙️ ניהול מערכת</h3>
-      <p style="margin:0;opacity:.7;font-size:14px;">קוקפיט IT ותחזוקת config</p>
+    <!-- Admin / Management — Google sign-in, prominent -->
+    <div class="role-card admin-card" onclick="startGoogleFlow('admin')">
+      <div class="role-card-title">⚙️ כניסת הנהלה</div>
+      <div class="role-card-desc">לוח מנהלי, ניהול config ופקולטה</div>
+      <button class="google-btn admin-google" id="admin-google-btn" onclick="event.stopPropagation();startGoogleFlow('admin')">
+        <span id="adm-icon">⚙</span> כניסה עם Google
+      </button>
     </div>
 
   </div>
 
-  <div id="error" style="color:red;margin-top:16px;font-size:14px;"></div>
+  <div id="auth-err" style="color:#dc2626;font-size:12px;margin-top:12px;min-height:16px;"></div>
 
 </div>
 
 <script>
 
-let CONFIG = null;
+// ─── Smart routing table ───
+const ROUTE = {
+  superadmin:  "/admin_cockpit.html",
+  institution: "/institution_dashboard.html",
+  faculty:     "/lecturer_cockpit.html",
+  student:     "/student_dashboard.html",
+};
 
-async function loadConfig() {
-  const res = await fetch('/config.json?ts=' + Date.now());
-  CONFIG = await res.json();
-  document.getElementById('h-title').innerText = CONFIG.home?.main_title || 'ברוכים הבאים';
-  document.getElementById('h-subtitle').innerText = CONFIG.home?.main_subtitle || '';
-  document.getElementById('faculty-btn').style.opacity = "1";
-  document.getElementById('institution-btn').style.opacity = "1";
-  document.getElementById('admin-btn').style.opacity = "1";
-}
-
-function enterAsFaculty() {
-  // If already signed in via Google with faculty+ role, go directly
-  if (window.MiledAuth) {
-    const u = MiledAuth.getUser();
-    if (u && MiledAuth.hasRole("faculty")) { window.location.href = "/lecturer_cockpit.html"; return; }
-  }
-  // Legacy: username/password against config.json faculty_users
-  if (!CONFIG) { alert("המערכת עדיין נטענת — נסה שוב"); return; }
-  const users    = CONFIG.faculty_users || {};
-  const username = prompt("שם משתמש:");
-  if (!username) return;
-  const password = prompt("סיסמה:");
-  if (!password) return;
-  const user = users[username.trim()];
-  if (user && user.password === password.trim()) {
-    sessionStorage.setItem("facultyId",    user.id);
-    sessionStorage.setItem("facultyName",  user.name);
-    sessionStorage.setItem("faculty_auth", "true");
-    sessionStorage.setItem("facultyRole",  user.role || "faculty");
-    if (user.role === "superadmin") sessionStorage.setItem("institutionRole", "admin");
-    window.location.href = "/lecturer_cockpit.html";
-  } else {
-    document.getElementById("error").innerText = "שם משתמש או סיסמה שגויים";
-  }
-}
-
-function enterAsInstitution() {
-  if (window.MiledAuth) {
-    const u = MiledAuth.getUser();
-    if (u && MiledAuth.hasRole("institution")) { window.location.href = "/institution_dashboard.html"; return; }
-  }
-  window.location.href = "/institution_dashboard.html"; // institution_dashboard.html has its own PIN
-}
-
-function enterAsAdmin() {
-  if (window.MiledAuth) {
-    const u = MiledAuth.getUser();
-    if (u && MiledAuth.hasRole("superadmin")) { window.location.href = "/admin_cockpit.html"; return; }
-  }
-  window.location.href = "/admin_cockpit.html"; // admin_cockpit handles its own auth
-}
-
-// ─── Google Sign-In flow ───
-async function signInWithGoogleAndRoute() {
-  const btn = document.getElementById("google-signin-btn");
-  const err = document.getElementById("google-err");
-  err.innerText = "";
-  if (!window.MiledAuth) { err.innerText = "Firebase לא טעון — בדוק את firebase-init.js"; return; }
-  btn.disabled = true;
-  btn.querySelector("span") ? btn.querySelector("span").innerText = "..." : null;
-  try {
-    const user = await MiledAuth.signInWithGoogle();
-    showGoogleUserCard(user);
-  } catch (e) {
-    console.error("Google sign-in failed:", e);
-    err.innerText = e.message?.includes("popup") ? "הקופץ נחסם — אפשר חלונות קופצים ונסה שוב." : "כניסה נכשלה. נסה שוב.";
-    btn.disabled = false;
-  }
-}
-
-function showGoogleUserCard(user) {
-  const ROLE_LABEL = { student:"סטודנט", faculty:"סגל", institution:"הנהלה", superadmin:"מנהל מערכת" };
-  document.getElementById("google-btn-wrap").style.display   = "none";
-  const card = document.getElementById("google-user-card");
-  card.style.display = "flex";
-  if (user.photoURL) document.getElementById("google-avatar").src = user.photoURL;
-  else document.getElementById("google-avatar").style.display = "none";
-  document.getElementById("google-display-name").innerText = user.displayName || user.email;
-  document.getElementById("google-role-label").innerText   = "תפקיד: " + (ROLE_LABEL[user.role] || user.role);
-  document.getElementById("google-route-btn-wrap").style.display = "";
-  document.getElementById("google-route-btn").innerText = "המשך כ-" + (ROLE_LABEL[user.role] || user.role) + " →";
-}
-
+// Route by signed-in user's role; unknown defaults to Pioneer Dashboard
 function routeByRole() {
   const user = window.MiledAuth?.getUser();
   if (!user) return;
-  const dest = { student:"/students.html", faculty:"/lecturer_cockpit.html", institution:"/institution_dashboard.html", superadmin:"/admin_cockpit.html" };
-  window.location.href = dest[user.role] || "/students.html";
+  window.location.href = ROUTE[user.role] || "/student_dashboard.html";
+}
+
+// ─── Google sign-in flow ───
+async function startGoogleFlow(hint) {
+  const err = document.getElementById("auth-err");
+  err.innerText = "";
+  if (!window.MiledAuth) { err.innerText = "Firebase לא טעון — בדוק את firebase-init.js"; return; }
+
+  // Disable both Google buttons while working
+  ["faculty-google-btn", "admin-google-btn"].forEach(id => {
+    const b = document.getElementById(id); if (b) b.disabled = true;
+  });
+
+  try {
+    const user = await MiledAuth.signInWithGoogle();
+    showSignedInCard(user);
+    // Auto-route immediately — no extra click needed
+    routeByRole();
+  } catch (e) {
+    console.error("Google sign-in failed:", e);
+    err.innerText = e.message?.includes("popup")
+      ? "הקופץ נחסם — אפשר חלונות קופצים ונסה שוב."
+      : "כניסה נכשלה. נסה שוב.";
+    ["faculty-google-btn", "admin-google-btn"].forEach(id => {
+      const b = document.getElementById(id); if (b) b.disabled = false;
+    });
+  }
+}
+
+// ─── Show signed-in user card ───
+function showSignedInCard(user) {
+  const ROLE_LABEL = { student:"סטודנט", faculty:"סגל", institution:"הנהלה", superadmin:"מנהל מערכת" };
+  const card = document.getElementById("user-signed-card");
+  const avatar = document.getElementById("g-avatar");
+  if (user.photoURL) { avatar.src = user.photoURL; }
+  else { avatar.style.display = "none"; }
+  document.getElementById("g-name").innerText = user.displayName || user.email;
+  document.getElementById("g-role").innerText  = "תפקיד: " + (ROLE_LABEL[user.role] || user.role);
+  card.style.display = "flex";
+  document.getElementById("route-btn-wrap").style.display = "";
+  document.getElementById("role-cards").style.display = "none";
+}
+
+// ─── Load config title/subtitle ───
+async function loadConfig() {
+  try {
+    const res = await fetch('/config.json?ts=' + Date.now());
+    const cfg = await res.json();
+    document.getElementById('h-title').innerText    = cfg.home?.main_title    || 'ברוכים הבאים';
+    document.getElementById('h-subtitle').innerText = cfg.home?.main_subtitle || '';
+  } catch {
+    document.getElementById('h-title').innerText = 'ברוכים הבאים';
+  }
 }
 
 loadConfig();
 
-// Restore signed-in state if user has an active Google session
+// ─── Restore existing Google session on page load ───
 window.addEventListener("load", () => {
-  if (window.MiledAuth) {
-    const u = MiledAuth.getUser();
-    if (u) showGoogleUserCard(u);
-    // Swap ⚙ placeholder for the real Google SVG icon once SDK loaded
-    const iconEl = document.getElementById("google-btn-icon");
-    if (iconEl) iconEl.outerHTML = MiledAuth.GOOGLE_ICON;
-  }
+  if (!window.MiledAuth) return;
+  // Replace ⚙ placeholder with real Google SVG icon
+  ["fac-icon", "adm-icon"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.outerHTML = MiledAuth.GOOGLE_ICON || el.outerHTML;
+  });
+  // If already signed in, show user card
+  const u = MiledAuth.getUser();
+  if (u) showSignedInCard(u);
 });
 
 </script>
 
-<!-- Firebase SDK + Auth utility (loaded last — non-blocking) -->
+<!-- Firebase SDK + Auth utility -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/firebase-init.js"></script>
