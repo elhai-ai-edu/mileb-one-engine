@@ -146,77 +146,144 @@
 }
 .skill-action-card.animating { animation: cardFlip 0.3s ease-out; }
 
-/* ─── v8.7 Synergy Dashboard ─── */
-.synergy-container { padding: 6px 8px 12px !important; max-width: 100% !important; }
-
-.synergy-grid {
+/* ─── v8.9 Skill Pioneer Dashboard ─── */
+.pioneer-container { padding: 6px 8px 12px !important; max-width: 100% !important; }
+.pioneer-grid {
   display: grid;
-  grid-template-columns: 30% 40% 30%;
+  grid-template-columns: 55% 45%;
   min-height: calc(100vh - 110px);
-  border: 1px solid #e2e8f0;
+  border: 1px solid #1e1b4b;
   border-radius: 14px;
   overflow: hidden;
   background: #fff;
   margin-bottom: 12px;
 }
-.syn-panel {
-  padding: 12px 14px;
+
+/* ── Left: Command Center ── */
+.pioneer-left {
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  gap: 14px;
+  border-left: 1px solid #e2e8f0;
   overflow-y: auto;
 }
-.syn-panel + .syn-panel { border-right: 1px solid #e2e8f0; }
-.syn-middle { background: #f8fafc; align-items: center; }
-.syn-panel-header {
-  font-size: 11px; font-weight: 700; color: #475569; letter-spacing: .5px;
-  text-transform: uppercase; padding-bottom: 8px;
-  border-bottom: 1px solid #f1f5f9; margin-bottom: 10px; flex-shrink: 0;
+.pioneer-section-header {
+  font-size: 10px; font-weight: 700; color: #64748b;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  padding-bottom: 6px; border-bottom: 1px solid #f1f5f9; margin-bottom: 8px;
+}
+.mini-radar-wrap { display: flex; align-items: center; gap: 14px; }
+.mini-radar-stats { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.mini-stat { font-size: 11px; color: #475569; display: flex; align-items: center; gap: 6px; line-height: 1.4; }
+.mini-stat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.pioneer-course-item { padding: 8px 10px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 5px; background: #f8fafc; }
+.pioneer-course-name { font-size: 12px; font-weight: 600; color: #1e293b; }
+.pioneer-course-bar { height: 3px; background: #e2e8f0; border-radius: 3px; margin-top: 5px; overflow: hidden; }
+.pioneer-course-bar-fill { height: 100%; background: #6366f1; border-radius: 3px; transition: width .6s; }
+.action-blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.action-block { border-radius: 10px; border: 1.5px solid #e2e8f0; padding: 10px; background: #fff; }
+.action-block.needs-block { border-color: #fecaca; background: #fff5f5; }
+.action-block.rec-block   { border-color: #dbeafe; background: #eff6ff; }
+.action-block-title { font-size: 10px; font-weight: 700; margin-bottom: 7px; letter-spacing: 0.3px; }
+.action-block.needs-block .action-block-title { color: #dc2626; }
+.action-block.rec-block   .action-block-title { color: #2563eb; }
+.action-skill-link {
+  display: block; font-size: 11px; color: #1e293b; text-decoration: none;
+  padding: 4px 0; border-bottom: 1px solid #f1f5f9; transition: color .15s;
+}
+.action-skill-link:last-child { border-bottom: none; }
+.action-skill-link:hover { color: #6366f1; }
+
+/* ── Right: Hero Panel ── */
+.pioneer-right {
+  background: linear-gradient(165deg, #0f172a 0%, #1e1b4b 60%, #1a1534 100%);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 18px 16px 14px; position: relative; overflow: hidden;
+}
+.pioneer-right::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.11) 1px, transparent 1px);
+  background-size: 22px 22px; pointer-events: none;
 }
 
-/* Course cards */
-.syn-course-card {
-  padding: 9px 11px; border-radius: 9px;
-  border: 1.5px solid #e2e8f0; margin-bottom: 7px;
-  cursor: default; transition: border-color .2s, background .2s; background: #fff;
-}
-.syn-course-card:hover { border-color: #6366f1; background: #eef2ff; }
-.syn-course-name { font-size: 13px; font-weight: 600; color: #1e293b; }
-.syn-course-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
-.syn-course-bar { height: 4px; background: #f1f5f9; border-radius: 4px; margin-top: 6px; overflow: hidden; }
-.syn-course-bar-fill { height: 100%; border-radius: 4px; background: #6366f1; transition: width .6s; }
+/* XP Bar */
+.xp-bar-container { width: 100%; z-index: 1; margin-bottom: 12px; }
+.xp-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.xp-level-badge { font-size: 12px; font-weight: 700; color: #fbbf24; letter-spacing: 0.4px; }
+.xp-label { font-size: 11px; color: rgba(255,255,255,0.55); }
+.xp-track { height: 8px; background: rgba(255,255,255,0.1); border-radius: 20px; overflow: hidden; }
+.xp-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg,#6366f1,#a78bfa,#fbbf24); transition: width 1s cubic-bezier(0.34,1.56,0.64,1); }
 
-/* Radar axis hover effects */
-.radar-axis { transition: stroke .15s, stroke-width .15s; }
-.radar-axis.axis-highlight { stroke: #6366f1 !important; stroke-width: 2.5 !important; }
-.radar-label-group { transition: opacity .15s; }
-.radar-label-group.axis-dim { opacity: 0.25; }
+/* Hero area */
+.hero-area { position: relative; width: 210px; height: 210px; flex-shrink: 0; z-index: 1; }
+.hero-svg { width: 110px; height: 170px; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); }
 
-/* Right column skill items */
-.syn-skills-section { margin-bottom: 10px; }
-.syn-skills-label {
-  font-size: 10px; font-weight: 700; letter-spacing: .4px;
-  padding: 3px 9px; border-radius: 20px; display: inline-block; margin-bottom: 7px;
+/* Equipment slots */
+.equip-slot {
+  position: absolute; width: 42px; height: 42px; border-radius: 50%;
+  background: rgba(255,255,255,0.07); border: 2px solid rgba(255,255,255,0.18);
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  cursor: pointer; transition: box-shadow 0.3s, border-color 0.3s; z-index: 2;
 }
-.syn-skills-label.needs       { background: #fee2e2; color: #dc2626; }
-.syn-skills-label.recommended { background: #fffbeb; color: #b45309; }
-.syn-skill-item {
-  display: flex; align-items: center; gap: 7px; padding: 7px 9px;
-  border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 5px;
-  text-decoration: none; color: inherit; background: #fff; transition: background .15s;
+.equip-slot.level-0 { border-color: rgba(255,255,255,0.15); opacity: 0.5; }
+.equip-slot.level-1 { border-color: #818cf8; box-shadow: 0 0 10px rgba(99,102,241,0.55); }
+.equip-slot.level-2 { border-color: #fbbf24; box-shadow: 0 0 14px rgba(251,191,36,0.65); animation: equipGlow 2s ease-in-out infinite; }
+/* individual hover preserves translation */
+.equip-slot[data-pillar="academic"]   { top:6px; left:50%; transform:translateX(-50%); }
+.equip-slot[data-pillar="resilience"] { top:50%; right:2px; transform:translateY(-50%); }
+.equip-slot[data-pillar="social"]     { top:50%; left:2px;  transform:translateY(-50%); }
+.equip-slot[data-pillar="tools"]      { bottom:14px; right:18px; }
+.equip-slot[data-pillar="career"]     { bottom:14px; left:18px; }
+.equip-slot[data-pillar="academic"]:hover   { transform:translateX(-50%) scale(1.2); }
+.equip-slot[data-pillar="resilience"]:hover { transform:translateY(-50%) scale(1.2); }
+.equip-slot[data-pillar="social"]:hover     { transform:translateY(-50%) scale(1.2); }
+.equip-slot[data-pillar="tools"]:hover      { transform:scale(1.2); }
+.equip-slot[data-pillar="career"]:hover     { transform:scale(1.2); }
+
+@keyframes equipGlow {
+  0%,100% { box-shadow: 0 0 8px rgba(251,191,36,0.4); }
+  50%      { box-shadow: 0 0 22px rgba(251,191,36,0.9); }
 }
-.syn-skill-item:hover { background: #f8fafc; }
-.syn-skill-item.needs-item { border-color: #fecaca; background: #fff5f5; }
-.syn-skill-item.needs-item:hover { background: #fee2e2; }
-.syn-skill-icon { font-size: 15px; flex-shrink: 0; }
-.syn-skill-name { font-size: 12px; font-weight: 600; color: #1e293b; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.syn-skill-badge { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 700; flex-shrink: 0; }
-.syn-skill-badge.needs-badge { background: #fecaca; color: #b91c1c; }
-.syn-skill-badge.rec-badge   { background: #dbeafe; color: #2563eb; }
+@keyframes xpFloat {
+  0%   { opacity:1; transform:translateX(-50%) translateY(0); }
+  100% { opacity:0; transform:translateX(-50%) translateY(-60px); }
+}
+.xp-float {
+  position:absolute; font-size:17px; font-weight:700; color:#fbbf24;
+  pointer-events:none; z-index:10; left:50%; top:40%;
+  animation:xpFloat 1.1s ease-out forwards;
+}
+
+/* Pillar modal */
+.pillar-modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:900;
+  display:none; align-items:center; justify-content:center;
+}
+.pillar-modal-overlay.open { display:flex; }
+.pillar-modal {
+  background:#fff; border-radius:18px; padding:28px;
+  max-width:420px; width:90%; max-height:80vh; overflow-y:auto;
+  direction:rtl; box-shadow:0 20px 60px rgba(0,0,0,0.25);
+}
+.pillar-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+.pillar-modal-title  { font-size:17px; font-weight:700; color:#1e293b; }
+.pillar-modal-close  { background:none; border:none; font-size:22px; cursor:pointer; color:#94a3b8; line-height:1; }
+.pillar-modal-skill-row {
+  display:flex; align-items:center; gap:10px; padding:10px 12px;
+  border-radius:10px; border:1px solid #e2e8f0; margin-bottom:8px;
+  text-decoration:none; color:inherit; background:#f8fafc; transition:background .15s;
+}
+.pillar-modal-skill-row:hover { background:#eef2ff; border-color:#c7d2fe; }
+.pillar-modal-skill-status { font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; flex-shrink:0; }
+.status-not-started { background:#fee2e2; color:#dc2626; }
+.status-wave1 { background:rgba(99,102,241,0.1); color:#4338ca; }
+.status-wave2 { background:#d1fae5; color:#065f46; }
 
 @media (max-width: 768px) {
-  .synergy-grid { grid-template-columns: 1fr; min-height: auto; }
-  .syn-panel + .syn-panel { border-right: none; border-top: 1px solid #e2e8f0; }
+  .pioneer-grid { grid-template-columns: 1fr; }
+  .pioneer-right { min-height: 340px; }
+  .action-blocks-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -233,52 +300,80 @@
 <div class="main">
 
   <div class="topbar">
-    <span>🕸️ לוח הסינרגיה</span>
-    <span style="font-size:11px;color:var(--color-text-muted);margin-right:auto;">קורסים ↔ מיומנויות</span>
+    <span>🧭 לוח החלוץ</span>
+    <span style="font-size:11px;color:var(--color-text-muted);margin-right:auto;">מסלול הצמיחה האישי שלך</span>
     <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn">← יציאה</button>
   </div>
 
-  <div class="container synergy-container">
+  <div class="container pioneer-container">
 
     <div id="status-error" style="color:#dc2626;margin-bottom:8px;display:none;"></div>
 
-    <!-- ─── Synergy Grid (v8.7) ─── -->
-    <div class="synergy-grid">
+    <!-- ─── Pioneer Grid (v8.9) ─── -->
+    <div class="pioneer-grid">
 
-      <!-- LEFT 30%: Academic Dimension -->
-      <div class="syn-panel syn-left">
-        <div class="syn-panel-header">📚 המימד האקדמי</div>
-        <div id="syn-courses">
-          <div style="color:var(--color-text-muted);font-size:12px;text-align:center;padding:20px 0;">⏳ טוען...</div>
-        </div>
-      </div>
+      <!-- LEFT 55%: Command Center -->
+      <div class="pioneer-left">
 
-      <!-- MIDDLE 40%: Integration Bridge -->
-      <div class="syn-panel syn-middle">
-        <div class="syn-panel-header" style="text-align:center;width:100%;">🕸️ גשר האינטגרציה</div>
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%;">
-          <div style="text-align:center;">
-            <svg id="synergy-radar-svg" viewBox="0 0 260 260"
-              style="width:min(100%,230px);height:auto;display:block;margin:0 auto;"></svg>
-            <p id="synergy-radar-hint" style="font-size:11px;color:var(--color-text-muted);margin-top:6px;">
-              השלם מיומנויות כדי לראות את הגשר
-            </p>
+        <!-- Mini radar + strain stats -->
+        <div>
+          <div class="pioneer-section-header">🕸️ סינרגיה ועומס</div>
+          <div class="mini-radar-wrap">
+            <svg id="mini-radar-svg" viewBox="0 0 160 160" style="width:130px;height:130px;flex-shrink:0;"></svg>
+            <div class="mini-radar-stats" id="mini-radar-stats">
+              <div class="mini-stat" style="color:var(--color-text-muted);">⏳ טוען...</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- RIGHT 30%: Skills Profile -->
-      <div class="syn-panel syn-right">
-        <div class="syn-panel-header">⭐ פרופיל המיומנויות</div>
-
-        <div class="syn-skills-section">
-          <div class="syn-skills-label needs">🔴 מה צריך? — חובה</div>
-          <div id="syn-needs"></div>
+        <!-- Current courses -->
+        <div>
+          <div class="pioneer-section-header">📚 הקורסים שלי</div>
+          <div id="pioneer-courses">
+            <div style="font-size:12px;color:var(--color-text-muted);">⏳ טוען...</div>
+          </div>
+          <a href="/skills.html" style="display:block;text-align:center;font-size:11px;color:#6366f1;margin-top:6px;font-weight:600;text-decoration:none;">→ כל המיומנויות</a>
         </div>
 
-        <div class="syn-skills-section">
-          <div class="syn-skills-label recommended">📘 מה כדאי? — מומלץ</div>
-          <div id="syn-recommended"></div>
+        <!-- Action blocks -->
+        <div>
+          <div class="pioneer-section-header">⚡ פעולות</div>
+          <div class="action-blocks-grid">
+            <div class="action-block needs-block">
+              <div class="action-block-title">🔴 מה צריך?</div>
+              <div id="pioneer-needs"></div>
+            </div>
+            <div class="action-block rec-block">
+              <div class="action-block-title">📘 מה כדאי?</div>
+              <div id="pioneer-recommended"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT 45%: Skill Pioneer Hero -->
+      <div class="pioneer-right">
+
+        <!-- Level + XP Bar -->
+        <div class="xp-bar-container">
+          <div class="xp-bar-header">
+            <span class="xp-level-badge" id="xp-level-badge">⭐ רמה 1 — מתחיל</span>
+            <span class="xp-label" id="xp-label">0 XP</span>
+          </div>
+          <div class="xp-track">
+            <div class="xp-fill" id="xp-fill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Explorer figure + equipment slots -->
+        <div class="hero-area" id="hero-area">
+          <svg class="hero-svg" id="explorer-svg" viewBox="0 0 100 160" xmlns="http://www.w3.org/2000/svg"></svg>
+          <!-- equipment slots injected by JS -->
+        </div>
+
+        <div style="color:rgba(255,255,255,0.45);font-size:11px;margin-top:10px;z-index:1;text-align:center;">
+          לחץ על ציוד לפרטי מיומנות
         </div>
 
       </div>
@@ -380,133 +475,220 @@ fetch('/config.json?ts=' + Date.now())
   });
 
 // ════════════════════════════════════════════════════════════════
-// SYNERGY DASHBOARD (v8.7)
+// PIONEER DASHBOARD (v8.9)
 // ════════════════════════════════════════════════════════════════
 
+const BOT_ICONS = {
+  diag_1:"🔍", learning_skills_full:"📘", employability_skills_full:"💼",
+  support:"🤝", presentation:"🎤", academic_writing:"✍️", research_skills:"🔬",
+};
+
+// ─── Pillar score helper ───
 function getPillarScore(pillarId, allSkills) {
   const relevant = allSkills.filter(s => (PILLAR_MAP[s.id] || "academic") === pillarId);
   if (!relevant.length) return 0;
   return relevant.reduce((sum, s) => sum + s.status.pct, 0) / relevant.length / 100;
 }
 
-// ─── Pentagon Spider Chart ───
-function buildPentagonRadar(allSkills) {
-  const svg = document.getElementById("synergy-radar-svg");
-  if (!svg) return;
+// ─── XP system ───
+const XP_LEVELS = [
+  { level:1, xpNeeded:0,   title:"מתחיל",   icon:"🌱" },
+  { level:2, xpNeeded:100, title:"חוקר",     icon:"🔍" },
+  { level:3, xpNeeded:250, title:"בנאי",     icon:"⚒️"  },
+  { level:4, xpNeeded:450, title:"מיומן",    icon:"🎯" },
+  { level:5, xpNeeded:700, title:"מומחה",    icon:"🌟" },
+  { level:6, xpNeeded:999, title:"צ׳מפיון",  icon:"🏆" },
+];
 
-  const cx = 130, cy = 130, R = 90;
+function calcXP(allSkills) {
+  return allSkills.reduce((sum, s) => {
+    if (s.status.wave2) return sum + 150;
+    if (s.status.wave1) return sum + 50;
+    return sum;
+  }, 0);
+}
+
+function calcLevel(xp) {
+  let current = XP_LEVELS[0];
+  for (const lvl of XP_LEVELS) { if (xp >= lvl.xpNeeded) current = lvl; }
+  const idx  = XP_LEVELS.indexOf(current);
+  const next = XP_LEVELS[idx + 1];
+  const pct  = next ? Math.round(((xp - current.xpNeeded) / (next.xpNeeded - current.xpNeeded)) * 100) : 100;
+  return { ...current, xp, pct };
+}
+
+// ─── Equipment config ───
+const EQUIPMENT = [
+  { pillar:"academic",   icon:"🔦", name:"פנס הראש",  desc:"למידה וחשיבה"       },
+  { pillar:"resilience", icon:"🧭", name:"מצפן",       desc:"ניהול עצמי וחוסן"   },
+  { pillar:"social",     icon:"🎒", name:"תרמיל",      desc:"תקשורת ועבודת צוות" },
+  { pillar:"tools",      icon:"📱", name:"טאבלט",      desc:"כלים וטכנולוגיה"    },
+  { pillar:"career",     icon:"🛡️", name:"מגן",        desc:"מוכנות לקריירה"     },
+];
+
+function getEquipLevel(pillarId, allSkills) {
+  const score = getPillarScore(pillarId, allSkills);
+  if (score >= 0.8) return 2;
+  if (score >= 0.4) return 1;
+  return 0;
+}
+
+// ─── XP Bar ───
+function renderXPBar(allSkills) {
+  const xp   = calcXP(allSkills);
+  const info = calcLevel(xp);
+  const badge = document.getElementById("xp-level-badge");
+  const label = document.getElementById("xp-label");
+  const fill  = document.getElementById("xp-fill");
+  if (badge) badge.textContent = `${info.icon} רמה ${info.level} — ${info.title}`;
+  if (label) label.textContent = `${xp} XP`;
+  if (fill)  fill.style.width  = info.pct + "%";
+}
+
+// ─── Explorer SVG Avatar ───
+function buildExplorerSVG() {
+  const svg = document.getElementById("explorer-svg");
+  if (!svg) return;
+  svg.innerHTML = `
+    <!-- Hat brim -->
+    <rect x="28" y="27" width="44" height="6" rx="3" fill="#3730a3"/>
+    <!-- Hat crown -->
+    <rect x="34" y="13" width="32" height="16" rx="5" fill="#4f46e5"/>
+    <!-- Hat band -->
+    <rect x="34" y="25" width="32" height="4" rx="2" fill="#312e81"/>
+    <!-- Headlamp -->
+    <circle cx="50" cy="20" r="6" fill="#fbbf24" opacity="0.9"/>
+    <circle cx="50" cy="20" r="3.5" fill="#fff" opacity="0.75"/>
+    <!-- Face -->
+    <ellipse cx="50" cy="45" rx="14" ry="16" fill="#fde68a"/>
+    <!-- Eyes -->
+    <circle cx="44" cy="43" r="2.5" fill="#1e1b4b"/>
+    <circle cx="56" cy="43" r="2.5" fill="#1e1b4b"/>
+    <circle cx="45" cy="42" r="1" fill="white"/>
+    <circle cx="57" cy="42" r="1" fill="white"/>
+    <!-- Smile -->
+    <path d="M44 51 Q50 56 56 51" stroke="#b45309" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- Jacket -->
+    <rect x="32" y="61" width="36" height="40" rx="7" fill="#4f46e5"/>
+    <!-- Lapels -->
+    <path d="M50 63 L40 70 L43 80 L50 75 L57 80 L60 70 Z" fill="#3730a3"/>
+    <!-- Left arm -->
+    <rect x="18" y="63" width="14" height="30" rx="6" fill="#4f46e5"/>
+    <!-- Right arm -->
+    <rect x="68" y="63" width="14" height="30" rx="6" fill="#4f46e5"/>
+    <!-- Hands -->
+    <ellipse cx="25" cy="96" rx="7" ry="5" fill="#fde68a"/>
+    <ellipse cx="75" cy="96" rx="7" ry="5" fill="#fde68a"/>
+    <!-- Belt -->
+    <rect x="32" y="99" width="36" height="6" rx="3" fill="#1e1b4b"/>
+    <rect x="46" y="99" width="8" height="6" rx="2" fill="#fbbf24"/>
+    <!-- Legs -->
+    <rect x="34" y="104" width="13" height="36" rx="6" fill="#1e293b"/>
+    <rect x="53" y="104" width="13" height="36" rx="6" fill="#1e293b"/>
+    <!-- Boots -->
+    <ellipse cx="40" cy="142" rx="10" ry="6" fill="#0f172a"/>
+    <ellipse cx="60" cy="142" rx="10" ry="6" fill="#0f172a"/>
+  `;
+}
+
+// ─── Equipment slots ───
+function renderEquipmentSlots(allSkills) {
+  const area = document.getElementById("hero-area");
+  if (!area) return;
+  area.querySelectorAll(".equip-slot").forEach(el => el.remove());
+  EQUIPMENT.forEach(eq => {
+    const level = getEquipLevel(eq.pillar, allSkills);
+    const slot  = document.createElement("div");
+    slot.className      = `equip-slot level-${level}`;
+    slot.dataset.pillar = eq.pillar;
+    slot.title          = `${eq.name} — ${eq.desc}`;
+    slot.textContent    = eq.icon;
+    slot.onclick        = () => openPillarModal(eq.pillar, allSkills);
+    area.appendChild(slot);
+  });
+}
+
+// ─── Mini Pentagon Radar (left panel) ───
+function buildMiniRadar(allSkills) {
+  const svg   = document.getElementById("mini-radar-svg");
+  const stats = document.getElementById("mini-radar-stats");
+  if (!svg) return;
+  const cx = 80, cy = 80, R = 58;
   const angles = PILLARS.map((_, i) => (-90 + i * 72) * Math.PI / 180);
   const vals   = PILLARS.map(p => getPillarScore(p.id, allSkills));
-  const hasData = vals.some(v => v > 0.01);
   let html = "";
 
   // Rings
-  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
+  [0.33, 0.66, 1.0].forEach(pct => {
     const pts = angles.map(a => `${cx+Math.cos(a)*R*pct},${cy+Math.sin(a)*R*pct}`).join(" ");
-    html += `<polygon points="${pts}" fill="${pct < 1 ? 'rgba(241,245,249,0.5)' : 'none'}" stroke="#e2e8f0" stroke-width="${pct === 1 ? 1.5 : 1}"/>`;
+    html += `<polygon points="${pts}" fill="none" stroke="${pct===1?'#cbd5e1':'#e2e8f0'}" stroke-width="${pct===1?1.5:1}"/>`;
   });
-
-  // Axes — IDs for hover highlighting
+  // Axes
   angles.forEach((a, i) => {
-    html += `<line id="axis-${PILLARS[i].id}" class="radar-axis"
-      x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*R}" y2="${cy+Math.sin(a)*R}"
-      stroke="#cbd5e1" stroke-width="1.5"/>`;
+    html += `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*R}" y2="${cy+Math.sin(a)*R}" stroke="#e2e8f0" stroke-width="1"/>`;
   });
-
   // Data polygon
-  if (hasData) {
-    const dataPts = angles.map((a, i) => {
+  if (vals.some(v => v > 0.01)) {
+    const pts = angles.map((a, i) => {
       const v = Math.max(0.05, vals[i]);
       return `${cx+Math.cos(a)*R*v},${cy+Math.sin(a)*R*v}`;
     }).join(" ");
-    html += `<polygon points="${dataPts}" fill="rgba(99,102,241,0.15)" stroke="#6366f1" stroke-width="2"/>`;
-    angles.forEach((a, i) => {
-      const v = Math.max(0.05, vals[i]);
-      const px = cx+Math.cos(a)*R*v, py = cy+Math.sin(a)*R*v;
-      const col = vals[i] === 0 ? "#fca5a5" : vals[i] >= 0.8 ? "#10b981" : "#6366f1";
-      html += `<circle cx="${px}" cy="${py}" r="5" fill="${col}" stroke="#fff" stroke-width="2"/>`;
-    });
+    html += `<polygon points="${pts}" fill="rgba(99,102,241,0.18)" stroke="#6366f1" stroke-width="1.5"/>`;
   }
-
-  // Labels — grouped for hover dimming
+  // Icons
   PILLARS.forEach((p, i) => {
-    const a = angles[i];
-    const lx = cx+Math.cos(a)*(R+28), ly = cy+Math.sin(a)*(R+28);
-    const anchor = lx < cx-8 ? "end" : lx > cx+8 ? "start" : "middle";
-    const pct = Math.round(vals[i]*100);
-    html += `<g id="label-${p.id}" class="radar-label-group">
-      <text x="${lx}" y="${ly-5}" text-anchor="${anchor}" font-size="11" fill="#475569" font-family="Assistant,sans-serif">${p.icon} ${p.label}</text>
-      <text x="${lx}" y="${ly+8}" text-anchor="${anchor}" font-size="11" fill="${pct > 0 ? '#6366f1' : '#94a3b8'}" font-family="Assistant,sans-serif" font-weight="700">${pct}%</text>
-    </g>`;
+    const lx = cx + Math.cos(angles[i]) * (R + 12);
+    const ly = cy + Math.sin(angles[i]) * (R + 12);
+    html += `<text x="${lx}" y="${ly+4}" text-anchor="middle" font-size="13" font-family="Arial">${p.icon}</text>`;
   });
-
   svg.innerHTML = html;
-  const hint = document.getElementById("synergy-radar-hint");
-  if (hint) hint.style.display = hasData ? "none" : "";
+
+  // Stats sidebar
+  if (stats) {
+    const sorted = [...PILLARS].map(p => ({ ...p, score: getPillarScore(p.id, allSkills) }))
+                               .sort((a, b) => a.score - b.score);
+    const weakest   = sorted[0];
+    const strongest = sorted[sorted.length - 1];
+    stats.innerHTML = `
+      <div class="mini-stat">
+        <span class="mini-stat-dot" style="background:#ef4444;"></span>
+        <span>חלש: ${weakest.icon} ${weakest.label}<br>(${Math.round(weakest.score*100)}%)</span>
+      </div>
+      <div class="mini-stat">
+        <span class="mini-stat-dot" style="background:#10b981;"></span>
+        <span>חזק: ${strongest.icon} ${strongest.label}<br>(${Math.round(strongest.score*100)}%)</span>
+      </div>
+      <div class="mini-stat" style="margin-top:4px;font-weight:600;color:#6366f1;">
+        <span class="mini-stat-dot" style="background:#6366f1;"></span>
+        <span>${calcXP(allSkills)} XP נצברו</span>
+      </div>`;
+  }
 }
 
-// ─── Left: Course list with hover connectors ───
-function renderSynergyLeft(courses) {
-  const el = document.getElementById("syn-courses");
-  if (!el) return;
-
-  const syllabus      = JSON.parse(localStorage.getItem("miled_syllabus") || "[]");
-  const mappedPillars = [...new Set(syllabus.map(r => r.pillar))];
-  const defaultConn   = ["academic"];
-
-  const courseIds = Object.keys(courses);
-  if (!courseIds.length) {
-    el.innerHTML = `<div style="color:var(--color-text-muted);font-size:12px;text-align:center;padding:20px 0;">אין קורסים רשומים</div>`;
-    return;
+// ─── Command Center: courses + action blocks ───
+function renderCommandCenter(allSkills, courses) {
+  // Courses
+  const coursesEl = document.getElementById("pioneer-courses");
+  if (coursesEl) {
+    const courseIds = Object.keys(courses);
+    if (!courseIds.length) {
+      coursesEl.innerHTML = `<div style="font-size:12px;color:var(--color-text-muted);">אין קורסים</div>`;
+    } else {
+      coursesEl.innerHTML = courseIds.map(id => {
+        const status = getDraftStatus(id);
+        return `<div class="pioneer-course-item">
+          <div class="pioneer-course-name">📚 ${courses[id].name}</div>
+          <div class="pioneer-course-bar">
+            <div class="pioneer-course-bar-fill" style="width:${status.pct}%"></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
   }
 
-  el.innerHTML = courseIds.map(id => {
-    const course       = courses[id];
-    const status       = getDraftStatus(id);
-    const pillarsAttr  = (mappedPillars.length ? mappedPillars : defaultConn).join(",");
-    return `
-      <div class="syn-course-card" data-pillars="${pillarsAttr}"
-           onmouseenter="highlightCourseAxes('${pillarsAttr}',true)"
-           onmouseleave="highlightCourseAxes('',false)">
-        <div class="syn-course-name">📚 ${course.name}</div>
-        <div class="syn-course-meta">${status.label}</div>
-        <div class="syn-course-bar">
-          <div class="syn-course-bar-fill" style="width:${status.pct}%"></div>
-        </div>
-      </div>`;
-  }).join('') +
-  `<a href="/skills.html" style="display:block;text-align:center;font-size:12px;color:#6366f1;margin-top:8px;font-weight:600;text-decoration:none;">
-    → כל המיומנויות
-  </a>`;
-}
-
-// ─── Hover: highlight axes corresponding to hovered course ───
-function highlightCourseAxes(pillarsStr, active) {
-  const activeSet = active && pillarsStr ? new Set(pillarsStr.split(",")) : new Set();
-  PILLARS.forEach(p => {
-    const axis  = document.getElementById("axis-"  + p.id);
-    const label = document.getElementById("label-" + p.id);
-    if (!active) {
-      axis?.classList.remove("axis-highlight");
-      label?.classList.remove("axis-dim");
-    } else if (activeSet.has(p.id)) {
-      axis?.classList.add("axis-highlight");
-      label?.classList.remove("axis-dim");
-    } else {
-      axis?.classList.remove("axis-highlight");
-      label?.classList.add("axis-dim");
-    }
-  });
-}
-
-// ─── Right: Needs (🔴) / Recommended (📘) split ───
-function renderSynergyRight(allSkills) {
-  // Needs: wave1 not done → must do first
+  // Action blocks
   const needs = allSkills.filter(s => !s.status.wave1);
-  // Recommended: wave1 done, wave2 not done → enhancement
   const recommended = allSkills.filter(s => s.status.wave1 && !s.status.wave2);
-
-  // Sort recommended: lowest pillar score first (most urgent pillar rises to top)
   const pillarScores = {};
   PILLARS.forEach(p => pillarScores[p.id] = getPillarScore(p.id, allSkills));
   recommended.sort((a, b) =>
@@ -514,43 +696,83 @@ function renderSynergyRight(allSkills) {
     (pillarScores[PILLAR_MAP[b.id] || "academic"] || 0)
   );
 
-  const needsEl = document.getElementById("syn-needs");
-  const recEl   = document.getElementById("syn-recommended");
+  const needsEl = document.getElementById("pioneer-needs");
+  const recEl   = document.getElementById("pioneer-recommended");
 
   if (needsEl) {
     needsEl.innerHTML = needs.length === 0
-      ? `<div style="font-size:12px;color:#059669;text-align:center;padding:6px;">✓ כל אבחוני החובה הושלמו</div>`
-      : needs.slice(0, 5).map(s => {
+      ? `<div style="font-size:11px;color:#059669;">✓ הכל הושלם!</div>`
+      : needs.slice(0, 4).map(s => {
           const p = PILLARS.find(p => p.id === (PILLAR_MAP[s.id] || "academic")) || PILLARS[0];
-          return `<a href="${resolveSkillUrl(s.id)}" class="syn-skill-item needs-item">
-            <span class="syn-skill-icon">${p.icon}</span>
-            <span class="syn-skill-name">${s.bot.name}</span>
-            <span class="syn-skill-badge needs-badge">🔴 חובה</span>
-          </a>`;
+          return `<a href="${resolveSkillUrl(s.id)}" class="action-skill-link">${p.icon} ${s.bot.name}</a>`;
         }).join('');
   }
 
   if (recEl) {
     recEl.innerHTML = recommended.length === 0
-      ? `<div style="font-size:12px;color:#64748b;text-align:center;padding:6px;">${needs.length === 0 ? '🎉 הכל הושלם!' : 'השלם אבחון תחילה'}</div>`
-      : recommended.slice(0, 5).map(s => {
+      ? `<div style="font-size:11px;color:#64748b;">${needs.length===0?'🎉 הושלם!':'השלם חובה תחילה'}</div>`
+      : recommended.slice(0, 4).map(s => {
           const p = PILLARS.find(p => p.id === (PILLAR_MAP[s.id] || "academic")) || PILLARS[0];
-          return `<a href="${resolveSkillUrl(s.id)}" class="syn-skill-item">
-            <span class="syn-skill-icon">📘</span>
-            <span class="syn-skill-name">${s.bot.name}</span>
-            <span class="syn-skill-badge rec-badge">גל 2 →</span>
-          </a>`;
+          return `<a href="${resolveSkillUrl(s.id)}" class="action-skill-link"
+                     onclick="showXPAnimation(event)">${p.icon} ${s.bot.name}</a>`;
         }).join('');
   }
 }
 
-// ─── Master refresh (called on load + visibilitychange) ───
+// ─── XP float animation on "מה כדאי" click ───
+function showXPAnimation(event) {
+  event.preventDefault();
+  const href = event.currentTarget.href;
+  const heroArea = document.getElementById("hero-area");
+  if (!heroArea) { window.location.href = href; return; }
+  const float = document.createElement("div");
+  float.className = "xp-float";
+  float.textContent = "+50 XP ⚡";
+  heroArea.appendChild(float);
+  setTimeout(() => { float.remove(); window.location.href = href; }, 900);
+}
+
+// ─── Pillar detail modal ───
+function openPillarModal(pillarId, allSkills) {
+  const overlay = document.getElementById("pillar-modal-overlay");
+  const title   = document.getElementById("pillar-modal-title");
+  const body    = document.getElementById("pillar-modal-body");
+  if (!overlay) return;
+  const pillar = PILLARS.find(p => p.id === pillarId);
+  const eq     = EQUIPMENT.find(e => e.pillar === pillarId);
+  const skills = allSkills.filter(s => (PILLAR_MAP[s.id] || "academic") === pillarId);
+  title.textContent = `${pillar?.icon || ""} ${pillar?.label || pillarId} — ${eq?.name || ""}`;
+  body.innerHTML = !skills.length
+    ? `<p style="color:var(--color-text-muted);font-size:14px;">אין מיומנויות לעמוד זה עדיין.</p>`
+    : skills.map(s => {
+        const sc   = s.status.wave2 ? "status-wave2" : s.status.wave1 ? "status-wave1" : "status-not-started";
+        const st   = s.status.wave2 ? "הושלם ✓" : s.status.wave1 ? "גל 1 ✓" : "טרם התחיל";
+        const icon = BOT_ICONS[s.id] || "⭐";
+        return `<a href="${resolveSkillUrl(s.id)}" class="pillar-modal-skill-row">
+          <span style="font-size:20px;">${icon}</span>
+          <span style="flex:1;font-size:13px;font-weight:600;">${s.bot.name}</span>
+          <span class="pillar-modal-skill-status ${sc}">${st}</span>
+        </a>`;
+      }).join('');
+  body.innerHTML += `<div style="margin-top:14px;text-align:center;">
+    <a href="/skills.html" class="btn btn-blue" style="font-size:13px;padding:8px 20px;">→ כל המיומנויות</a>
+  </div>`;
+  overlay.classList.add("open");
+}
+
+function closePillarModal() {
+  document.getElementById("pillar-modal-overlay")?.classList.remove("open");
+}
+
+// ─── Master refresh ───
 function refreshSkillsPanel() {
   if (!_config) return;
   const allSkills = buildAllSkills(_config);
-  renderSynergyLeft(_config.my_courses || {});
-  buildPentagonRadar(allSkills);
-  renderSynergyRight(allSkills);
+  renderXPBar(allSkills);
+  buildExplorerSVG();
+  renderEquipmentSlots(allSkills);
+  buildMiniRadar(allSkills);
+  renderCommandCenter(allSkills, _config.my_courses || {});
 }
 
 // ─── Skill Progress Widget — kept for backward compat, not rendered in v8.7 ───
@@ -620,5 +842,18 @@ if (skillMode && classId) {
 </script>
 
 <script src="/balance.js"></script>
+
+<!-- ─── Pillar Detail Modal ─── -->
+<div class="pillar-modal-overlay" id="pillar-modal-overlay"
+     onclick="if(event.target===this)closePillarModal()">
+  <div class="pillar-modal" id="pillar-modal">
+    <div class="pillar-modal-header">
+      <span class="pillar-modal-title" id="pillar-modal-title"></span>
+      <button class="pillar-modal-close" onclick="closePillarModal()">✕</button>
+    </div>
+    <div id="pillar-modal-body"></div>
+  </div>
+</div>
+
 </body>
 </html>
