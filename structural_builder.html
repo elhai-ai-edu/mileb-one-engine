@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MilEd.One — בונה מבנה הכתיבה</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ── Layout ── */
+body { background: #f1f5f9; font-family: 'Assistant', sans-serif; }
+.sb-layout {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 18px;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+@media (max-width: 720px) {
+  .sb-layout { grid-template-columns: 1fr; }
+  .sb-sidebar { order: -1; }
+}
+
+/* ── Mode Tabs ── */
+.mode-tabs {
+  display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap;
+}
+.mode-tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 10px; border: 2px solid #e2e8f0;
+  background: #fff; font-size: 13px; font-weight: 700; cursor: pointer;
+  color: #64748b; transition: all .18s; font-family: 'Assistant', sans-serif;
+}
+.mode-tab:hover { border-color: #a5b4fc; color: #4338ca; }
+.mode-tab.active.word  { border-color: #818cf8; background: #eef2ff; color: #4338ca; }
+.mode-tab.active.sentence { border-color: #34d399; background: #ecfdf5; color: #065f46; }
+.mode-tab.active.paragraph { border-color: #fb923c; background: #fff7ed; color: #9a3412; }
+.mode-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+}
+.word .mode-dot      { background: #6366f1; }
+.sentence .mode-dot  { background: #10b981; }
+.paragraph .mode-dot { background: #f97316; }
+
+/* ── Main Panel ── */
+.sb-main-panel {
+  background: #fff; border-radius: 16px;
+  border: 1px solid #e2e8f0; padding: 22px;
+}
+.sb-mode-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+}
+.sb-mode-badge {
+  font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px;
+  letter-spacing: 0.4px;
+}
+.sb-mode-badge.word      { background: #eef2ff; color: #4338ca; }
+.sb-mode-badge.sentence  { background: #ecfdf5; color: #065f46; }
+.sb-mode-badge.paragraph { background: #fff7ed; color: #9a3412; }
+.sb-puzzle-nav {
+  display: flex; align-items: center; gap: 10px; font-size: 12px; color: #94a3b8;
+}
+.sb-nav-btn {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px;
+  padding: 4px 11px; cursor: pointer; font-size: 12px; font-family: 'Assistant', sans-serif;
+  transition: background .15s;
+}
+.sb-nav-btn:hover { background: #f1f5f9; }
+.sb-nav-btn:disabled { opacity: .4; cursor: default; }
+
+.sb-prompt {
+  font-size: 14px; font-weight: 600; color: #1e1b4b; margin-bottom: 16px;
+  padding: 12px 14px; background: #f8fafc; border-radius: 10px;
+  border-right: 3px solid #818cf8;
+}
+.sb-prompt.sentence { border-color: #34d399; }
+.sb-prompt.paragraph { border-color: #fb923c; }
+
+/* ── Drag Zone ── */
+.sb-drop-zone {
+  min-height: 80px; background: #f8fafc; border: 2px dashed #cbd5e1;
+  border-radius: 12px; padding: 12px; margin-bottom: 14px;
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start;
+  transition: border-color .2s, background .2s;
+}
+.sb-drop-zone.paragraph-zone { flex-direction: column; flex-wrap: nowrap; gap: 8px; }
+.sb-drop-zone.drag-over { border-color: #818cf8; background: #eef2ff; }
+.sb-drop-zone.sentence.drag-over { border-color: #34d399; background: #ecfdf5; }
+.sb-drop-zone.paragraph.drag-over { border-color: #fb923c; background: #fff7ed; }
+
+.sb-label { font-size: 11px; color: #94a3b8; margin-bottom: 6px; font-weight: 600; }
+
+/* ── Draggable Blocks ── */
+.sb-block {
+  position: relative;
+  padding: 8px 13px; border-radius: 9px; border: 1.5px solid #e2e8f0;
+  background: #fff; cursor: grab; user-select: none;
+  font-size: 14px; font-weight: 600; color: #1e1b4b;
+  direction: rtl; transition: box-shadow .15s, border-color .15s, opacity .15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.sb-block:hover { box-shadow: 0 4px 12px rgba(30,27,75,.12); border-color: #a5b4fc; }
+.sb-block.dragging { opacity: .4; cursor: grabbing; }
+.sb-block.paragraph-block {
+  padding: 12px 16px; width: 100%; box-sizing: border-box;
+  font-size: 13px; line-height: 1.55;
+}
+.sb-block.correct  { border-color: #86efac !important; background: #f0fdf4 !important; }
+.sb-block.incorrect{ border-color: #fca5a5 !important; background: #fff5f5 !important; }
+.sb-block .check-icon {
+  position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+  font-size: 14px; display: none;
+}
+.sb-block.correct .check-icon  { display: block; }
+.sb-block.incorrect .check-icon{ display: block; }
+
+/* X-Ray overlay */
+.sb-block .xray-label {
+  display: none;
+  position: absolute; inset: 0; border-radius: 8px;
+  background: rgba(99,102,241,.92); color: #fff;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.5px;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 4px;
+}
+.sb-block.sentence-block .xray-label { background: rgba(16,185,129,.92); }
+.sb-block.paragraph-block .xray-label { background: rgba(249,115,22,.92); }
+.xray-active .xray-label { display: flex; }
+
+/* ── Source pool ── */
+.sb-pool {
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+}
+.sb-pool.paragraph-pool { flex-direction: column; }
+
+/* ── Action Bar ── */
+.sb-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.sb-btn {
+  padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700;
+  cursor: pointer; border: none; font-family: 'Assistant', sans-serif; transition: all .17s;
+}
+.sb-btn-check  { background: #6366f1; color: #fff; }
+.sb-btn-check:hover  { background: #4f46e5; }
+.sb-btn-xray   { background: #fff; color: #4338ca; border: 2px solid #a5b4fc; }
+.sb-btn-xray:hover   { background: #eef2ff; }
+.sb-btn-reset  { background: #f8fafc; color: #64748b; border: 1.5px solid #e2e8f0; }
+.sb-btn-reset:hover  { background: #f1f5f9; }
+.sb-btn.sentence .sb-btn-check { background: #10b981; }
+.sb-btn.paragraph .sb-btn-check { background: #f97316; }
+
+/* ── Feedback ── */
+.sb-feedback {
+  margin-top: 14px; padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; display: none;
+}
+.sb-feedback.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.sb-feedback.error   { background: #fff5f5; color: #991b1b; border: 1px solid #fecaca; }
+.sb-feedback.info    { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+
+/* ── Checker hints ── */
+.sb-checker {
+  margin-top: 12px; padding: 12px 16px; border-radius: 10px;
+  background: #fffbeb; border: 1px solid #fde68a; display: none;
+}
+.sb-checker-title { font-size: 12px; font-weight: 800; color: #92400e; margin-bottom: 6px; }
+.sb-checker ul { margin: 0; padding-right: 16px; }
+.sb-checker li { font-size: 12px; color: #78350f; margin-bottom: 3px; }
+
+/* ── Sidebar ── */
+.sb-sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+.sb-skill-card {
+  background: #fff; border-radius: 14px; border: 1.5px solid #e2e8f0;
+  padding: 16px 18px;
+}
+.sb-skill-title { font-size: 12px; font-weight: 800; color: #94a3b8; margin-bottom: 10px; letter-spacing: 0.4px; }
+.sb-skill-item  { margin-bottom: 12px; }
+.sb-skill-name  { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #1e1b4b; margin-bottom: 4px; }
+.sb-skill-xp    { font-size: 11px; color: #6366f1; font-weight: 700; }
+.sb-skill-bar   { height: 7px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+.sb-skill-fill  { height: 100%; border-radius: 99px; transition: width .5s ease; }
+.fill-grammar  { background: linear-gradient(90deg, #818cf8, #6366f1); }
+.fill-flow     { background: linear-gradient(90deg, #34d399, #10b981); }
+.fill-rhetoric { background: linear-gradient(90deg, #fb923c, #f97316); }
+
+.sb-info-card {
+  background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; padding: 14px;
+}
+.sb-info-card h4 { font-size: 12px; font-weight: 800; color: #64748b; margin: 0 0 8px; }
+.sb-info-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; color: #475569;
+}
+.sb-info-row:last-child { border-bottom: none; }
+.sb-info-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+</style>
+</head>
+
+<body class="user-student">
+
+<div class="sb-layout">
+
+  <!-- ════ MAIN COLUMN ════ -->
+  <div>
+
+    <!-- Header -->
+    <div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div>
+          <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:1px;">MilEd.One</span>
+          <h1 style="font-size:22px;font-weight:800;color:#1e1b4b;margin:2px 0 4px;">בונה מבנה הכתיבה</h1>
+          <p style="font-size:13px;color:#64748b;margin:0;">סדר, בדוק וצבור XP — שלוש רמות מבנה אחת, שלוש מיומנויות שונות</p>
+        </div>
+        <a href="/skills.html" style="font-size:12px;color:#6366f1;text-decoration:none;font-weight:600;">← חזרה למיומנויות</a>
+      </div>
+    </div>
+
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+      <button class="mode-tab word active" onclick="switchMode('word', this)">
+        <span class="mode-dot"></span> 🔤 רמת מילה
+      </button>
+      <button class="mode-tab sentence" onclick="switchMode('sentence', this)">
+        <span class="mode-dot"></span> 📝 רמת משפט
+      </button>
+      <button class="mode-tab paragraph" onclick="switchMode('paragraph', this)">
+        <span class="mode-dot"></span> 📄 רמת פסקה
+      </button>
+    </div>
+
+    <!-- Main Puzzle Panel -->
+    <div class="sb-main-panel" id="puzzle-panel">
+
+      <div class="sb-mode-header">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span id="mode-badge" class="sb-mode-badge word"></span>
+          <span id="mode-skill-label" style="font-size:12px;color:#64748b;"></span>
+        </div>
+        <div class="sb-puzzle-nav">
+          <button class="sb-nav-btn" id="prev-btn" onclick="navigate(-1)">◄ הקודם</button>
+          <span id="puzzle-counter" style="font-weight:700;color:#1e1b4b;"></span>
+          <button class="sb-nav-btn" id="next-btn" onclick="navigate(1)">הבא ►</button>
+        </div>
+      </div>
+
+      <div id="mode-desc" style="font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:14px;"></div>
+
+      <div id="prompt-box" class="sb-prompt"></div>
+
+      <!-- Pool: source blocks -->
+      <div class="sb-label" id="pool-label">בלוקים לסידור:</div>
+      <div id="block-pool" class="sb-pool"></div>
+
+      <!-- Drop zone: answer area -->
+      <div class="sb-label">אזור התשובה — גרור לכאן בסדר הנכון:</div>
+      <div id="drop-zone" class="sb-drop-zone" id="drop-zone"></div>
+
+      <!-- Actions -->
+      <div class="sb-actions">
+        <button class="sb-btn sb-btn-check" id="check-btn" onclick="checkAnswer()">✓ בדוק</button>
+        <button class="sb-btn sb-btn-xray" id="xray-btn" onclick="toggleXRay()">🔬 X-Ray: ראה שלד</button>
+        <button class="sb-btn sb-btn-reset" onclick="resetPuzzle()">↺ אפס</button>
+      </div>
+
+      <!-- Feedback -->
+      <div id="sb-feedback" class="sb-feedback"></div>
+
+      <!-- Checker hints -->
+      <div id="sb-checker" class="sb-checker">
+        <div class="sb-checker-title" id="checker-title"></div>
+        <ul id="checker-hints"></ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════ SIDEBAR ════ -->
+  <div class="sb-sidebar">
+
+    <!-- Skill XP -->
+    <div class="sb-skill-card">
+      <div class="sb-skill-title">📊 ניקוד מיומנויות</div>
+
+      <div class="sb-skill-item">
+        <div class="sb-skill-name">
+          <span>דקדוק ואוצר מילים</span>
+          <span class="sb-skill-xp" id="xp-grammar-label">0 XP</span>
+        </div>
+        <div class="sb-skill-bar"><div class="sb-skill-fill fill-grammar" id="bar-grammar" style="width:0%;"></div></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;">רמת מילה</div>
+      </div>
+
+      <div class="sb-skill-item">
+        <div class="sb-skill-name">
+          <span>זרימה לוגית</span>
+          <span class="sb-skill-xp" id="xp-flow-label">0 XP</span>
+        </div>
+        <div class="sb-skill-bar"><div class="sb-skill-fill fill-flow" id="bar-flow" style="width:0%;"></div></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;">רמת משפט</div>
+      </div>
+
+      <div class="sb-skill-item" style="margin-bottom:0;">
+        <div class="sb-skill-name">
+          <span>עיצוב ורטוריקה</span>
+          <span class="sb-skill-xp" id="xp-rhetoric-label">0 XP</span>
+        </div>
+        <div class="sb-skill-bar"><div class="sb-skill-fill fill-rhetoric" id="bar-rhetoric" style="width:0%;"></div></div>
+        <div style="font-size:10px;color:#94a3b8;margin-top:2px;">רמת פסקה</div>
+      </div>
+    </div>
+
+    <!-- Mode Guide -->
+    <div class="sb-info-card">
+      <h4>מדריך רמות</h4>
+      <div class="sb-info-row">
+        <span class="sb-info-dot" style="background:#6366f1;"></span>
+        <div><strong>מילה</strong> — סדר מילים ותחביר</div>
+      </div>
+      <div class="sb-info-row">
+        <span class="sb-info-dot" style="background:#10b981;"></span>
+        <div><strong>משפט</strong> — מילות קישור וזרימה</div>
+      </div>
+      <div class="sb-info-row">
+        <span class="sb-info-dot" style="background:#f97316;"></span>
+        <div><strong>פסקה</strong> — תבנית ורטורית מלאה</div>
+      </div>
+    </div>
+
+    <!-- XP Legend -->
+    <div class="sb-info-card">
+      <h4>כיצד מרוויחים XP?</h4>
+      <div class="sb-info-row"><span>✅</span><div>ניחוש ראשון: <strong>10 XP</strong></div></div>
+      <div class="sb-info-row"><span>🔁</span><div>ניחוש שני: <strong>5 XP</strong></div></div>
+      <div class="sb-info-row"><span>🔬</span><div>X-Ray לפני בדיקה: אין קנס</div></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  PUZZLE DATA
+// ═══════════════════════════════════════════════════
+
+const PUZZLES = {
+
+  word: [
+    {
+      prompt: "סדר את המילים ליצירת משפט אקדמי תקין:",
+      words:   ["הטכנולוגיה", "שינתה", "את", "שיטות", "הלמידה", "המסורתיות"],
+      correct: [0, 1, 2, 3, 4, 5],
+      xray:    ["נושא", "פועל", "מ\"מ", "מושא-שם", "מושא-ראשי", "תואר-שם"],
+      checker: checkWordOrder,
+      skill: "grammar"
+    },
+    {
+      prompt: "סדר את המילים ליצירת משפט אקדמי תקין:",
+      words:   ["יש", "לחינוך", "השפעה", "מכרעת", "על", "עתיד", "החברה"],
+      correct: [0, 1, 2, 3, 4, 5, 6],
+      xray:    ["פועל עזר", "נושא", "מושא", "תואר", "מ\"מ", "יחס-שם", "מושא-שם"],
+      checker: checkWordOrder,
+      skill: "grammar"
+    },
+    {
+      prompt: "סדר את המילים ליצירת משפט אקדמי תקין:",
+      words:   ["נמצא", "כי", "המחקר", "גדולה", "לסביבה", "יש", "חשיבות"],
+      correct: [2, 0, 6, 5, 3, 4, 1],
+      xray:    ["נושא", "פועל", "מושא", "פועל עזר", "תואר", "מ\"מ", "מחבר"],
+      checker: checkWordOrder,
+      skill: "grammar"
+    }
+  ],
+
+  sentence: [
+    {
+      prompt: "סדר את המשפטים ליצירת פסקה טיעונית קוהרנטית:",
+      sentences: [
+        { text: "ראשית, הטכנולוגיה הדיגיטלית שינתה לחלוטין את אופן הלמידה בבתי הספר.", connector: "ראשית", order: 0 },
+        { text: "בנוסף לכך, כלים דיגיטליים מאפשרים לתלמידים גישה למידע בכל זמן ומקום.", connector: "בנוסף", order: 1 },
+        { text: "עם זאת, יש לקחת בחשבון את הסכנות הטמונות בשימוש מופרז במסכים.", connector: "עם זאת", order: 2 },
+        { text: "לסיכום, האיזון הנכון הוא המפתח לשילוב מוצלח של טכנולוגיה בחינוך.", connector: "לסיכום", order: 3 }
+      ],
+      connectorSequence: ["ראשית", "בנוסף", "עם זאת", "לסיכום"],
+      xray: ["פתיחה", "הרחבה", "נגד-טענה", "סיכום"],
+      skill: "flow",
+      template: "טיעונית (פתיחה ← הרחבה ← נגד ← סיכום)"
+    },
+    {
+      prompt: "סדר את המשפטים ליצירת פסקה תיאורית קוהרנטית:",
+      sentences: [
+        { text: "תחילה, חשוב להגדיר מהי האוריינות האקדמית ומדוע היא נחוצה.", connector: "תחילה", order: 0 },
+        { text: "לאחר מכן, נבחן את מרכיביה העיקריים: קריאה ביקורתית, כתיבה מנומקת ושיח אקדמי.", connector: "לאחר מכן", order: 1 },
+        { text: "כמו כן, נסקור מחקרים העוסקים בפיתוח מיומנויות אלו בקרב סטודנטים.", connector: "כמו כן", order: 2 },
+        { text: "בסופו של דבר, ניתן לומר כי אוריינות אקדמית היא מיומנות יסוד ברת-הערכה.", connector: "בסופו", order: 3 }
+      ],
+      connectorSequence: ["תחילה", "לאחר מכן", "כמו כן", "בסופו"],
+      xray: ["הגדרה", "פירוט", "הרחבה", "הסקה"],
+      skill: "flow",
+      template: "תיאורית (הגדרה ← פירוט ← הרחבה ← הסקה)"
+    }
+  ],
+
+  paragraph: [
+    {
+      prompt: "סדר את הפסקאות ליצירת מאמר טיעוני מלא:",
+      type: "argumentative",
+      blocks: [
+        {
+          text: "החינוך הדיגיטלי הפך לנושא מרכזי בשיח הפדגוגי העכשווי. בעידן שבו טכנולוגיה חודרת לכל תחום חיים, עולה השאלה: האם הכלים הדיגיטליים משפרים את הישגי התלמידים?",
+          role: "Opening", roleHe: "פתיחה / הצגת שאלה", order: 0
+        },
+        {
+          text: "מחקרים רבים מצביעים על כך שכלים דיגיטליים מגבירים מוטיבציה וגישה למידע. לדוגמה, מחקר של OECD (2023) מצא כי שימוש מושכל בטבלטים הגביר ציונים ב-15% בקרב תלמידים יסודיים.",
+          role: "Evidence", roleHe: "ראיה / נתון", order: 1
+        },
+        {
+          text: "עם זאת, מבקרים טוענים כי התלות הטכנולוגית פוגעת ביכולת הריכוז ובחשיבה עמוקה. ממצאים של Rosen (2022) מראים ירידה בזמן הריכוז הממוצע של בני נוער ב-30% בעשור האחרון.",
+          role: "Counter", roleHe: "נגד-טענה", order: 2
+        },
+        {
+          text: "לסיכום, הטכנולוגיה אינה טובה ואינה רעה כשלעצמה — הכל תלוי בדרך השימוש. שילוב מאוזן, המוביל על ידי מורה מנוסה, הוא המפתח להצלחה פדגוגית.",
+          role: "Conclusion", roleHe: "סיכום / עמדה", order: 3
+        }
+      ],
+      correctSequence: ["Opening", "Evidence", "Counter", "Conclusion"],
+      template: "פסקה טיעונית",
+      skill: "rhetoric"
+    },
+    {
+      prompt: "סדר את הפסקאות ליצירת סקירת ספרות מובנית:",
+      type: "literature",
+      blocks: [
+        {
+          text: "סקירה זו עוסקת בהשפעת הכתיבה האקדמית על הישגי סטודנטים במכללות. מטרתה להציג את המחקרים הרלוונטיים ולגזור מהם מסקנות מעשיות.",
+          role: "Introduction", roleHe: "הקדמה / מטרת הסקירה", order: 0
+        },
+        {
+          text: "מחקרים מהשנים 2018–2022 מצאו קשר חיובי בין כתיבה רפלקטיבית לבין הצלחה אקדמית. Flower & Hayes (2019) הדגישו את חשיבות תהליך הכתיבה על פני התוצר הסופי.",
+          role: "Review1", roleHe: "סקירה ראשונה", order: 1
+        },
+        {
+          text: "לעומת זאת, חוקרים אחרים כגון Bereiter & Scardamalia (2021) טענו כי כתיבה ללא הנחיה מובנית עלולה לחזק טעויות מחשבתיות. הם המליצו על 'כתיבה לבנייה' (knowledge building).",
+          role: "Review2", roleHe: "סקירה שנייה / ניגוד", order: 2
+        },
+        {
+          text: "נוכח הממצאים הסותרים, ניתן להסיק כי הקשר בין כתיבה להישגים מורכב ותלוי הקשר. המחקר העתידי יידרש לבחון את גורמי הרקע המתערבים.",
+          role: "Synthesis", roleHe: "סינתזה / מסקנה", order: 3
+        }
+      ],
+      correctSequence: ["Introduction", "Review1", "Review2", "Synthesis"],
+      template: "סקירת ספרות",
+      skill: "rhetoric"
+    }
+  ]
+};
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+
+const XP_KEY = "miled_builder_xp";
+const MAX_XP  = 100;
+
+let state = {
+  mode:    "word",
+  puzzleIdx: 0,
+  xrayOn:  false,
+  attempts: 0,       // attempts for current puzzle
+  solved:  {},       // { "word-0": true, ... }
+  xp:      loadXP()
+};
+
+function loadXP() {
+  try { return JSON.parse(sessionStorage.getItem(XP_KEY) || "null") || { grammar:0, flow:0, rhetoric:0 }; }
+  catch { return { grammar:0, flow:0, rhetoric:0 }; }
+}
+function saveXP() {
+  sessionStorage.setItem(XP_KEY, JSON.stringify(state.xp));
+  renderXP();
+}
+
+// ═══════════════════════════════════════════════════
+//  DRAG & DROP ENGINE
+// ═══════════════════════════════════════════════════
+
+let dragSrc   = null;  // the block element being dragged
+let dragFrom  = null;  // "pool" or "zone"
+
+function makeDraggable(el, fromArea) {
+  el.setAttribute("draggable", "true");
+
+  el.addEventListener("dragstart", e => {
+    dragSrc  = el;
+    dragFrom = fromArea;
+    setTimeout(() => el.classList.add("dragging"), 0);
+    e.dataTransfer.effectAllowed = "move";
+  });
+  el.addEventListener("dragend", () => {
+    el.classList.remove("dragging");
+    dragSrc = null;
+  });
+}
+
+function setupDropZone(el, insertionMode) {
+  el.addEventListener("dragover", e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    el.classList.add("drag-over");
+
+    if (insertionMode === "sorted" && dragSrc) {
+      const afterEl = getDragAfterElement(el, e.clientY);
+      if (!afterEl) el.appendChild(dragSrc);
+      else el.insertBefore(dragSrc, afterEl);
+    }
+  });
+
+  el.addEventListener("dragleave", () => el.classList.remove("drag-over"));
+
+  el.addEventListener("drop", e => {
+    e.preventDefault();
+    el.classList.remove("drag-over");
+    if (!dragSrc) return;
+    clearFeedback();
+    if (insertionMode === "word") {
+      el.appendChild(dragSrc);
+      makeDraggable(dragSrc, "zone");
+    } else {
+      // sorted paragraph/sentence — already repositioned in dragover
+      makeDraggable(dragSrc, "zone");
+    }
+  });
+}
+
+function setupPoolAsDropTarget(poolEl) {
+  poolEl.addEventListener("dragover", e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  });
+  poolEl.addEventListener("drop", e => {
+    e.preventDefault();
+    if (!dragSrc) return;
+    clearFeedback();
+    poolEl.appendChild(dragSrc);
+    makeDraggable(dragSrc, "pool");
+  });
+}
+
+function getDragAfterElement(container, y) {
+  const draggables = [...container.querySelectorAll(".sb-block:not(.dragging)")];
+  return draggables.reduce((closest, el) => {
+    const box = el.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) return { offset, element: el };
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER ENGINE
+// ═══════════════════════════════════════════════════
+
+const MODE_META = {
+  word:      { label: "רמת מילה",   badgeClass: "word",      skillKey: "grammar",  skillName: "דקדוק ואוצר מילים", descBg: "#eef2ff", descColor: "#3730a3" },
+  sentence:  { label: "רמת משפט",   badgeClass: "sentence",  skillKey: "flow",     skillName: "זרימה לוגית",       descBg: "#ecfdf5", descColor: "#065f46" },
+  paragraph: { label: "רמת פסקה",   badgeClass: "paragraph", skillKey: "rhetoric", skillName: "עיצוב ורטוריקה",    descBg: "#fff7ed", descColor: "#9a3412" }
+};
+
+const MODE_DESCRIPTIONS = {
+  word:      "בדיקת <strong>סדר מילים ותחביר</strong> — הצב כל מילה במקומה הנכון ליצירת משפט תקין ואקדמי.",
+  sentence:  "בדיקת <strong>מילות קישור וקוהרנטיות</strong> — סדר את המשפטים כך שמילות הקישור יוצרות זרימה הגיונית.",
+  paragraph: "בדיקת <strong>תבנית ורטורית</strong> — סדר את הפסקאות לפי הסכמה המבנית הנדרשת."
+};
+
+function render() {
+  const meta   = MODE_META[state.mode];
+  const pool   = document.getElementById("block-pool");
+  const zone   = document.getElementById("drop-zone");
+  const badge  = document.getElementById("mode-badge");
+  const desc   = document.getElementById("mode-desc");
+  const prompt = document.getElementById("prompt-box");
+  const puzzles = PUZZLES[state.mode];
+  const pz      = puzzles[state.puzzleIdx];
+
+  // Headers
+  badge.className = `sb-mode-badge ${meta.badgeClass}`;
+  badge.innerText = meta.label;
+  document.getElementById("mode-skill-label").innerText = `→ מיומנות: ${meta.skillName}`;
+  desc.innerHTML = MODE_DESCRIPTIONS[state.mode];
+  desc.style.cssText = `font-size:12px;padding:8px 12px;border-radius:8px;margin-bottom:14px;background:${meta.descBg};color:${meta.descColor};`;
+
+  prompt.className = `sb-prompt ${meta.badgeClass}`;
+  prompt.innerText = pz.prompt;
+
+  // Counter
+  document.getElementById("puzzle-counter").innerText = `${state.puzzleIdx + 1} / ${puzzles.length}`;
+  document.getElementById("prev-btn").disabled = state.puzzleIdx === 0;
+  document.getElementById("next-btn").disabled = state.puzzleIdx === puzzles.length - 1;
+
+  // Drop zone class
+  zone.className = `sb-drop-zone ${state.mode === "paragraph" ? "paragraph-zone " : ""}${meta.badgeClass}`;
+  zone.innerHTML = "";
+  pool.className = `sb-pool ${state.mode === "paragraph" ? "paragraph-pool" : ""}`;
+  pool.innerHTML = "";
+
+  clearFeedback();
+  state.xrayOn = false;
+  state.attempts = 0;
+  document.getElementById("xray-btn").innerText = "🔬 X-Ray: ראה שלד";
+
+  // Build blocks
+  if (state.mode === "word") {
+    renderWordPuzzle(pz, pool, zone);
+  } else if (state.mode === "sentence") {
+    renderSentencePuzzle(pz, pool, zone);
+  } else {
+    renderParagraphPuzzle(pz, pool, zone);
+  }
+
+  setupDropZone(zone, state.mode === "word" ? "word" : "sorted");
+  setupPoolAsDropTarget(pool);
+
+  document.getElementById("pool-label").innerText =
+    state.mode === "word" ? "מילים לסידור:" :
+    state.mode === "sentence" ? "משפטים לסידור:" : "פסקאות לסידור:";
+}
+
+function renderWordPuzzle(pz, pool, zone) {
+  const shuffled = shuffle([...pz.words.map((w, i) => ({ w, i }))]);
+  shuffled.forEach(({ w, i }) => {
+    const el = makeBlock(w, i, "word-block", pz.xray[i]);
+    pool.appendChild(el);
+    makeDraggable(el, "pool");
+  });
+}
+
+function renderSentencePuzzle(pz, pool, zone) {
+  const shuffled = shuffle([...pz.sentences.map((s, i) => ({ s, i }))]);
+  shuffled.forEach(({ s, i }) => {
+    const el = makeBlock(s.text, i, "sentence-block", pz.xray[i]);
+    el.style.minWidth = "100%";
+    el.style.width    = "100%";
+    el.style.boxSizing = "border-box";
+    pool.appendChild(el);
+    makeDraggable(el, "pool");
+  });
+}
+
+function renderParagraphPuzzle(pz, pool, zone) {
+  const shuffled = shuffle([...pz.blocks.map((b, i) => ({ b, i }))]);
+  shuffled.forEach(({ b, i }) => {
+    const el = makeBlock(b.text, i, "paragraph-block", b.roleHe);
+    pool.appendChild(el);
+    makeDraggable(el, "pool");
+  });
+}
+
+function makeBlock(text, dataIdx, cls, xrayLabel) {
+  const el = document.createElement("div");
+  el.className = `sb-block ${cls}`;
+  el.dataset.idx = dataIdx;
+  el.innerHTML = `<span class="check-icon"></span><span class="xray-label">${xrayLabel}</span>${text}`;
+  return el;
+}
+
+// ═══════════════════════════════════════════════════
+//  CHECKERS
+// ═══════════════════════════════════════════════════
+
+function checkAnswer() {
+  const zone   = document.getElementById("drop-zone");
+  const blocks = [...zone.querySelectorAll(".sb-block")];
+
+  if (!blocks.length) {
+    showFeedback("info", "גרור לפחות כמה בלוקים לאזור התשובה לפני הבדיקה.");
+    return;
+  }
+
+  state.attempts++;
+
+  let result;
+  if (state.mode === "word")      result = checkWordOrder(blocks);
+  else if (state.mode === "sentence") result = checkSentenceOrder(blocks);
+  else                             result = checkParagraphOrder(blocks);
+
+  const puzKey = `${state.mode}-${state.puzzleIdx}`;
+  const alreadySolved = state.solved[puzKey];
+  const skillKey = MODE_META[state.mode].skillKey;
+
+  if (result.perfect) {
+    if (!alreadySolved) {
+      const xp = state.attempts === 1 ? 10 : 5;
+      state.xp[skillKey] = Math.min(MAX_XP, state.xp[skillKey] + xp);
+      state.solved[puzKey] = true;
+      saveXP();
+      showFeedback("success", `🎉 מצוין! כל הבלוקים במקום הנכון. +${xp} XP למיומנות ${MODE_META[state.mode].skillName}!`);
+    } else {
+      showFeedback("success", "✅ תשובה נכונה! (כבר קיבלת XP על תרגיל זה)");
+    }
+    hideChecker();
+  } else {
+    showFeedback("error", `❌ ${result.wrongCount} בלוק/ים במקום לא נכון. נסה שוב — רמזים למטה:`);
+    showChecker(result.hints);
+  }
+}
+
+function checkWordOrder(blocks) {
+  const pz = PUZZLES.word[state.puzzleIdx];
+  const zoneBlocks = [...document.getElementById("drop-zone").querySelectorAll(".sb-block")];
+
+  if (zoneBlocks.length !== pz.words.length) {
+    return { perfect: false, wrongCount: pz.words.length - zoneBlocks.length, hints: ["יש להציב את כל המילים באזור התשובה."] };
+  }
+
+  let wrong = 0;
+  const hints = [];
+  zoneBlocks.forEach((el, pos) => {
+    const idx = parseInt(el.dataset.idx);
+    const correctPos = pz.correct.indexOf(idx);
+    const icon = el.querySelector(".check-icon");
+    if (correctPos === pos) {
+      el.classList.add("correct"); el.classList.remove("incorrect");
+      icon.innerText = "✓";
+    } else {
+      el.classList.add("incorrect"); el.classList.remove("correct");
+      icon.innerText = "✗";
+      wrong++;
+      hints.push(`"${pz.words[idx]}" אינה במקום הנכון.`);
+    }
+  });
+  return { perfect: wrong === 0, wrongCount: wrong, hints };
+}
+
+function checkSentenceOrder(blocks) {
+  const pz = PUZZLES.sentence[state.puzzleIdx];
+  const zoneBlocks = [...document.getElementById("drop-zone").querySelectorAll(".sb-block")];
+
+  if (zoneBlocks.length !== pz.sentences.length) {
+    return { perfect: false, wrongCount: pz.sentences.length - zoneBlocks.length, hints: ["יש להציב את כל המשפטים באזור התשובה."] };
+  }
+
+  let wrong = 0;
+  const hints = [];
+  const connSeq = pz.connectorSequence;
+
+  zoneBlocks.forEach((el, pos) => {
+    const idx    = parseInt(el.dataset.idx);
+    const sent   = pz.sentences[idx];
+    const icon   = el.querySelector(".check-icon");
+    const expectedConnector = connSeq[pos];
+    if (sent.connector === expectedConnector) {
+      el.classList.add("correct"); el.classList.remove("incorrect");
+      icon.innerText = "✓";
+    } else {
+      el.classList.add("incorrect"); el.classList.remove("correct");
+      icon.innerText = "✗";
+      wrong++;
+      hints.push(`מיקום ${pos + 1}: מצפים למילת קישור "${expectedConnector}", קיבלנו "${sent.connector}".`);
+    }
+  });
+
+  if (!wrong) return { perfect: true };
+
+  // Connector logic hints
+  const connectors = zoneBlocks.map(el => pz.sentences[parseInt(el.dataset.idx)].connector);
+  const firstConn  = connectors[0];
+  if (firstConn && firstConn !== connSeq[0])
+    hints.push(`הפסקה הראשונה אמורה להתחיל ב-"${connSeq[0]}" (פתיחה).`);
+
+  return { perfect: false, wrongCount: wrong, hints };
+}
+
+function checkParagraphOrder(blocks) {
+  const pz = PUZZLES.paragraph[state.puzzleIdx];
+  const zoneBlocks = [...document.getElementById("drop-zone").querySelectorAll(".sb-block")];
+
+  if (zoneBlocks.length !== pz.blocks.length) {
+    return { perfect: false, wrongCount: pz.blocks.length - zoneBlocks.length, hints: ["יש להציב את כל הפסקאות באזור התשובה."] };
+  }
+
+  let wrong = 0;
+  const hints = [];
+  zoneBlocks.forEach((el, pos) => {
+    const idx      = parseInt(el.dataset.idx);
+    const block    = pz.blocks[idx];
+    const expected = pz.correctSequence[pos];
+    const icon     = el.querySelector(".check-icon");
+    if (block.role === expected) {
+      el.classList.add("correct"); el.classList.remove("incorrect");
+      icon.innerText = "✓";
+    } else {
+      el.classList.add("incorrect"); el.classList.remove("correct");
+      icon.innerText = "✗";
+      wrong++;
+      hints.push(`מיקום ${pos + 1}: מצפים ל"${expected}", קיבלנו "${block.role}". בתבנית ${pz.template} — ${block.roleHe} לא מתאים כאן.`);
+    }
+  });
+  return { perfect: wrong === 0, wrongCount: wrong, hints };
+}
+
+// ═══════════════════════════════════════════════════
+//  X-RAY
+// ═══════════════════════════════════════════════════
+
+function toggleXRay() {
+  state.xrayOn = !state.xrayOn;
+  const panel = document.getElementById("puzzle-panel");
+  const btn   = document.getElementById("xray-btn");
+  if (state.xrayOn) {
+    panel.classList.add("xray-active");
+    btn.innerText = "🔬 X-Ray: הסתר שלד";
+  } else {
+    panel.classList.remove("xray-active");
+    btn.innerText = "🔬 X-Ray: ראה שלד";
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  FEEDBACK & CHECKER
+// ═══════════════════════════════════════════════════
+
+function showFeedback(type, msg) {
+  const el = document.getElementById("sb-feedback");
+  el.className = `sb-feedback ${type}`;
+  el.innerHTML = msg;
+  el.style.display = "block";
+}
+
+function clearFeedback() {
+  const el = document.getElementById("sb-feedback");
+  el.style.display = "none";
+  el.innerText = "";
+  hideChecker();
+  document.querySelectorAll(".sb-block").forEach(b => {
+    b.classList.remove("correct","incorrect");
+    const icon = b.querySelector(".check-icon");
+    if (icon) icon.innerText = "";
+  });
+}
+
+function showChecker(hints) {
+  const el   = document.getElementById("sb-checker");
+  const list = document.getElementById("checker-hints");
+  const titleMap = {
+    word: "🔍 בודק תחביר — מה לתקן:",
+    sentence: "🔍 בודק מילות קישור — מה לתקן:",
+    paragraph: "🔍 בודק תבנית ורטורית — מה לתקן:"
+  };
+  document.getElementById("checker-title").innerText = titleMap[state.mode];
+  list.innerHTML = hints.map(h => `<li>${h}</li>`).join("");
+  el.style.display = "block";
+}
+
+function hideChecker() {
+  document.getElementById("sb-checker").style.display = "none";
+}
+
+// ═══════════════════════════════════════════════════
+//  XP RENDERING
+// ═══════════════════════════════════════════════════
+
+function renderXP() {
+  const skills = { grammar: "grammar", flow: "flow", rhetoric: "rhetoric" };
+  Object.entries(skills).forEach(([key]) => {
+    const val = state.xp[key] || 0;
+    document.getElementById(`xp-${key}-label`).innerText = `${val} XP`;
+    document.getElementById(`bar-${key}`).style.width = `${val}%`;
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  CONTROLS
+// ═══════════════════════════════════════════════════
+
+function switchMode(mode, btn) {
+  state.mode = mode;
+  state.puzzleIdx = 0;
+  document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
+  btn.classList.add("active");
+  render();
+}
+
+function navigate(dir) {
+  const puzzles = PUZZLES[state.mode];
+  state.puzzleIdx = Math.max(0, Math.min(puzzles.length - 1, state.puzzleIdx + dir));
+  render();
+}
+
+function resetPuzzle() {
+  render();
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  // Make sure it's not already sorted
+  return arr;
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════
+
+renderXP();
+render();
+</script>
+
+</body>
+</html>
