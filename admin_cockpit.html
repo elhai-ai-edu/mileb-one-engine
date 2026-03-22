@@ -145,6 +145,56 @@
     </div>
   </div>
 
+  <!-- ── Part C: Batch Email Import ── -->
+  <div class="panel">
+    <h2>📋 הוספת רשימה (ייבוא מרוכז)</h2>
+    <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
+      הדבק רשימת מיילים (שורה אחת לכל מייל) והקצה לכיתה ספציפית.
+      כל מייל ברשימה יתווסף ל<strong>authorized_users</strong> — הכרחי לכניסה בפיילוט.
+    </p>
+
+    <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:14px;margin-bottom:14px;font-size:12px;color:#92400e;">
+      💡 <strong>הגיון הדאבל-לוק:</strong> גם אם הדומיין של הסטודנט מורשה, הכניסה חסומה עד שהמייל מופיע ברשימה זו.
+    </div>
+
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם כיתה / קבוצה</label>
+          <input id="batch-class" type="text" placeholder="Cohort_A / כיתה-א" dir="ltr"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תפקיד</label>
+          <select id="batch-role"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            <option value="student">סטודנט (student)</option>
+            <option value="faculty">מרצה (faculty)</option>
+            <option value="institution">הנהלה (institution)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מוסד (institutionId)</label>
+          <input id="batch-inst" type="text" placeholder="college_ac_il" dir="ltr"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">רשימת מיילים — שורה אחת לכל מייל</label>
+        <textarea id="batch-emails" rows="7" dir="ltr"
+          placeholder="student1@college.ac.il&#10;student2@college.ac.il&#10;lecturer@college.ac.il"
+          style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:monospace;resize:vertical;box-sizing:border-box;"></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="btn btn-green" onclick="batchImport()" style="padding:9px 20px;">
+          ייבא רשימה →
+        </button>
+        <span id="batch-count" style="font-size:12px;color:#64748b;"></span>
+      </div>
+      <p id="batch-progress" style="font-size:13px;margin:8px 0 0;min-height:18px;font-weight:600;"></p>
+    </div>
+  </div>
+
 </div>
 
 <!-- ─── CONFIG EDITOR TAB ─── -->
@@ -341,14 +391,15 @@ async function loadAuthorizedUsers() {
     const res   = await fetch(`${dbUrl()}/authorized_users.json?auth=${token}`);
     const data  = await res.json();
     if (!data) { el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>'; return; }
-    const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed" };
+    const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed", student:"#0891b2" };
     const rows = Object.entries(data).map(([key, val]) =>
       `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
-        <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;">${val.email || key}</span>
-        <span style="font-size:11px;padding:2px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;">${val.role}</span>
-        <span style="font-size:12px;color:#94a3b8;flex:1;">${val.institutionId || ''}</span>
+        <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;">${val.email || key}</span>
+        <span style="font-size:11px;padding:2px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;">${val.role}</span>
+        ${val.classId ? `<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:#fef9c3;color:#854d0e;font-weight:600;white-space:nowrap;">${val.classId}</span>` : ''}
+        <span style="font-size:12px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${val.institutionId || ''}</span>
         <button onclick="deleteAuthorizedUser('${key}')"
-          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:11px;padding:3px 9px;">מחק</button>
+          style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:11px;padding:3px 9px;white-space:nowrap;">מחק</button>
       </div>`
     ).join("");
     el.innerHTML = rows || '<p style="font-size:13px;color:#94a3b8;">אין הרשאות אישיות עדיין.</p>';
@@ -386,6 +437,64 @@ async function deleteAuthorizedUser(key) {
     await fetch(`${dbUrl()}/authorized_users/${key}.json?auth=${token}`, { method: "DELETE" });
     loadAuthorizedUsers();
   } catch(e) { alert(e.message); }
+}
+
+// ─── Batch Import ───
+// Live counter: update email count as user types
+document.addEventListener("input", function(e) {
+  if (e.target.id !== "batch-emails") return;
+  const count = e.target.value.split(/[\n,;]+/)
+    .map(s => s.trim()).filter(s => s.includes("@")).length;
+  const el = document.getElementById("batch-count");
+  if (el) el.innerText = count ? `${count} מיילים זוהו` : "";
+});
+
+async function batchImport() {
+  const rawText = document.getElementById("batch-emails").value;
+  const classId = document.getElementById("batch-class").value.trim() || "batch";
+  const role    = document.getElementById("batch-role").value;
+  const instId  = document.getElementById("batch-inst").value.trim() || "manual";
+  const progress = document.getElementById("batch-progress");
+
+  const emails = rawText.split(/[\n,;]+/)
+    .map(e => e.trim().toLowerCase())
+    .filter(e => e.includes("@") && e.includes("."));
+
+  if (!emails.length) {
+    progress.style.color = "#ef4444";
+    progress.innerText = "לא נמצאו מיילים תקינים ברשימה.";
+    return;
+  }
+
+  progress.style.color = "#6366f1";
+  progress.innerText = `מייבא ${emails.length} מיילים...`;
+
+  let success = 0, failed = 0;
+  try {
+    const token = await getFirebaseToken();
+    const now   = Date.now();
+
+    // Write all entries in parallel
+    await Promise.all(emails.map(async email => {
+      const key = email.replace(/\./g, "_").replace(/@/g, "_at_");
+      const res = await fetch(`${dbUrl()}/authorized_users/${key}.json?auth=${token}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, role, institutionId: instId, classId, createdAt: now })
+      });
+      if (res.ok) success++; else failed++;
+    }));
+
+    progress.style.color = "#16a34a";
+    progress.innerText = `✅ יובאו ${success} מיילים לכיתה '${classId}'` +
+      (failed ? ` — ${failed} נכשלו` : "") + ".";
+    document.getElementById("batch-emails").value = "";
+    document.getElementById("batch-count").innerText = "";
+    loadAuthorizedUsers();
+  } catch(e) {
+    progress.style.color = "#ef4444";
+    progress.innerText = e.message;
+  }
 }
 
 // ─── CONFIG EDITOR ───

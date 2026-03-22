@@ -79,37 +79,49 @@ export async function handler(event) {
     return { statusCode: 200, headers, body: JSON.stringify({ ok: true, uid, email, role: "superadmin", institutionId: "superadmin" }) };
   }
 
-  // ─── Institution lookup ───
-  const domain   = emailLower.split("@")[1] || "";
-  const dKey     = domainKey(domain);
-  const eKey     = emailKey(emailLower);
+  // ─── Double-Lock: domain check + mandatory authorized_users whitelist ───
+  // Both checks run, but authorized_users is the gate that grants access.
+  // Domain check only determines which rejection message to show.
+  const domain = emailLower.split("@")[1] || "";
+  const dKey   = domainKey(domain);
+  const eKey   = emailKey(emailLower);
 
-  let institutionId      = null;
+  let domainRecognized   = false;
   let authorizedUserData = null;
 
-  // 1. Check /institutions/{domainKey}
+  // 1. Check /institutions/{domainKey} (for context / rejection message)
   try {
     const instSnap = await db.ref(`institutions/${dKey}`).get();
     if (instSnap.exists()) {
-      institutionId = dKey;
-      console.log(`FIREBASE-AUTH: domain match — ${domain} → ${institutionId}`);
+      domainRecognized = true;
+      console.log(`FIREBASE-AUTH: domain recognized — ${domain}`);
     }
   } catch {}
 
-  // 2. Check /authorized_users/{emailKey} (manual whitelist)
+  // 2. Check /authorized_users/{emailKey} — REQUIRED to grant access
   try {
     const auSnap = await db.ref(`authorized_users/${eKey}`).get();
     if (auSnap.exists()) {
       authorizedUserData = auSnap.val();
-      if (!institutionId) {
-        institutionId = authorizedUserData.institutionId || "manual";
-        console.log(`FIREBASE-AUTH: authorized_users match — ${email} → ${institutionId}`);
-      }
+      console.log(`FIREBASE-AUTH: authorized_users match — ${email}`);
     }
   } catch {}
 
-  // 3. Block if unknown
-  if (!institutionId) {
+  // 3. Block if not in authorized_users (double-lock enforcement)
+  if (!authorizedUserData) {
+    if (domainRecognized) {
+      // Known institution but user not whitelisted for this pilot
+      console.warn(`FIREBASE-AUTH: pilot block — known domain '${domain}' but ${email} not in authorized_users`);
+      return {
+        statusCode: 403,
+        headers,
+        body: JSON.stringify({
+          ok: false,
+          error: "גישתך למערכת טרם אושרה לפיילוט הנוכחי. אנא פנה למרצה."
+        })
+      };
+    }
+    // Entirely unknown domain
     console.warn(`FIREBASE-AUTH: blocked — unknown domain '${domain}' for ${email}`);
     return {
       statusCode: 403,
@@ -120,6 +132,10 @@ export async function handler(event) {
       })
     };
   }
+
+  // Authorized — resolve institutionId (prefer authorized_users record, fall back to domain key)
+  const institutionId = authorizedUserData.institutionId
+    || (domainRecognized ? dKey : "manual");
 
   // ─── Read or create user record ───
   let role;
