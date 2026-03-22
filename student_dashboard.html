@@ -500,7 +500,7 @@ fetch('/config.json?ts=' + Date.now())
     e.innerText = "שגיאה בטעינת הנתונים. נסה לרענן.";
   });
 
-// ─── Skill Progress Widget (v8.4) ───
+// ─── Skill Progress Widget (v8.5) — with Course Impact ───
 function renderSkillProgressWidget() {
   const PILLAR_META = [
     { id: "academic",   icon: "🎓", label: "למידה וחשיבה",    color: "#6366f1",
@@ -515,6 +515,10 @@ function renderSkillProgressWidget() {
       skills: ["employability_skills_full"] },
   ];
 
+  // Course impact: which pillars are mapped in the lecturer's syllabus
+  const syllabusRows      = JSON.parse(localStorage.getItem("miled_syllabus") || "[]");
+  const syllabusedPillars = new Set(syllabusRows.map(r => r.pillar));
+
   const wrap = document.getElementById("pillar-progress-bars");
   if (!wrap) return;
 
@@ -525,8 +529,18 @@ function renderSkillProgressWidget() {
       pct = Math.round(total / p.skills.length);
     }
     const stateLabel = pct === 0 ? "טרם החל" : pct < 60 ? "בתהליך" : pct < 100 ? "מתקדם" : "הושלם ✓";
+
+    // Course impact line — shown when the lecturer mapped topics to this pillar
+    const hasImpact = syllabusedPillars.has(p.id);
+    const impactHtml = hasImpact
+      ? `<div style="font-size:11px;color:#059669;margin-top:5px;display:flex;align-items:center;gap:5px;">
+           <span style="background:#dcfce7;color:#15803d;padding:1px 7px;border-radius:20px;font-weight:700;font-size:10px;">📌 השפעת קורס</span>
+           <span>ביצועיך בקורס משפיעים ישירות על מיומנות זו</span>
+         </div>`
+      : "";
+
     return `
-      <div style="margin-bottom:16px;">
+      <div style="margin-bottom:18px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
           <span style="font-size:13px;font-weight:600;color:#1e293b;">${p.icon} ${p.label}</span>
           <span style="font-size:12px;color:#64748b;">${pct}% — ${stateLabel}</span>
@@ -534,6 +548,7 @@ function renderSkillProgressWidget() {
         <div style="height:9px;background:#f1f5f9;border-radius:6px;overflow:hidden;">
           <div style="height:100%;width:${pct}%;background:${p.color};border-radius:6px;transition:width .7s ease;"></div>
         </div>
+        ${impactHtml}
       </div>`;
   }).join('');
 }

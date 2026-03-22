@@ -70,6 +70,7 @@
 
         <div id="skill-context-banner" class="skill-context-banner" style="display:none;">
           🎓 <strong>למידה משולבת מיומנויות:</strong> <span id="skill-context-label"></span>
+          <span id="skill-weight-badge" style="display:none;"></span>
         </div>
 
         <div id="chat-window" class="chat-panel-messages">
@@ -502,6 +503,28 @@ function updateSkillContextBanner(botType) {
   if (!banner) return;
   if (label) {
     document.getElementById("skill-context-label").textContent = label;
+
+    // Skill Weight badge (v8.5) — from URL override or syllabus mapping count
+    const urlWeight    = params.get("skillWeight");
+    const syllabusRows = JSON.parse(localStorage.getItem("miled_syllabus") || "[]");
+    const mappedCount  = syllabusRows.filter(r => r.pillar === pillar).length;
+    let weightText, weightStyle;
+    if (urlWeight === "high" || mappedCount >= 3) {
+      weightText  = "ערך מיומנות: השפעה גבוהה ⬆";
+      weightStyle = "background:#dcfce7;color:#15803d;";
+    } else if (urlWeight === "medium" || mappedCount >= 1) {
+      weightText  = "ערך מיומנות: השפעה בינונית";
+      weightStyle = "background:#fef9c3;color:#854d0e;";
+    } else {
+      weightText  = "ערך מיומנות: השפעה בסיסית";
+      weightStyle = "background:#f1f5f9;color:#475569;";
+    }
+    const wb = document.getElementById("skill-weight-badge");
+    if (wb) {
+      wb.textContent = weightText;
+      wb.style.cssText = `display:inline-block;margin-right:10px;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;${weightStyle}`;
+    }
+
     banner.style.display = "";
   } else {
     banner.style.display = "none";

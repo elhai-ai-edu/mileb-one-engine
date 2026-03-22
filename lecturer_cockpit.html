@@ -463,6 +463,7 @@ function addSyllabusRow() {
   document.getElementById("syllabusTopicInput").value = "";
   document.getElementById("syllabusPillarSelect").value = "";
   renderSyllabusTable();
+  renderPillarRadar();
 }
 
 function removeSyllabusRow(i) {
@@ -470,9 +471,88 @@ function removeSyllabusRow(i) {
   rows.splice(i, 1);
   localStorage.setItem(_SYLLABUS_KEY, JSON.stringify(rows));
   renderSyllabusTable();
+  renderPillarRadar();
 }
 
 renderSyllabusTable();
+renderPillarRadar();
+
+// ─── Balance Preview Slider (v8.5) ───
+function updateBalancePreview(val) {
+  const content = parseInt(val);
+  const skills  = 100 - content;
+  const el = document.getElementById("balance-preview");
+  if (el) el.textContent = `${content}% תוכן / ${skills}% מיומנויות`;
+  localStorage.setItem("miled_balance_content", val);
+}
+
+// ─── Pillar Radar from Syllabus (v8.5) ───
+function renderPillarRadar() {
+  const svg = document.getElementById("pillar-radar-svg");
+  if (!svg) return;
+  const rows = loadSyllabus();
+  const PILLAR_KEYS  = ["academic","resilience","social","tools","career"];
+  const PILLAR_ICONS = { academic:"🎓", resilience:"🧘", social:"🤝", tools:"💻", career:"💼" };
+  const PILLAR_HE    = { academic:"למידה", resilience:"חוסן", social:"חברה", tools:"כלים", career:"קריירה" };
+
+  const counts = {};
+  PILLAR_KEYS.forEach(k => counts[k] = 0);
+  rows.forEach(r => { if (r.pillar in counts) counts[r.pillar]++; });
+  const maxCount = Math.max(1, ...Object.values(counts));
+
+  const cx = 110, cy = 110, R = 72;
+  const angles = PILLAR_KEYS.map((_, i) => (-90 + i * 72) * Math.PI / 180);
+  let html = "";
+
+  // Rings
+  [0.33, 0.66, 1.0].forEach(pct => {
+    const pts = angles.map(a => `${cx+Math.cos(a)*R*pct},${cy+Math.sin(a)*R*pct}`).join(" ");
+    html += `<polygon points="${pts}" fill="none" stroke="#e2e8f0" stroke-width="1"/>`;
+  });
+  // Axes
+  angles.forEach(a => {
+    html += `<line x1="${cx}" y1="${cy}" x2="${cx+Math.cos(a)*R}" y2="${cy+Math.sin(a)*R}" stroke="#e2e8f0" stroke-width="1.5"/>`;
+  });
+
+  const vals = PILLAR_KEYS.map(k => counts[k] / maxCount);
+  const hasData = vals.some(v => v > 0);
+
+  if (hasData) {
+    const dataPts = angles.map((a, i) => {
+      const v = Math.max(0.06, vals[i]);
+      return `${cx+Math.cos(a)*R*v},${cy+Math.sin(a)*R*v}`;
+    }).join(" ");
+    html += `<polygon points="${dataPts}" fill="rgba(99,102,241,0.18)" stroke="#6366f1" stroke-width="2"/>`;
+    angles.forEach((a, i) => {
+      const v = Math.max(0.06, vals[i]);
+      const px = cx+Math.cos(a)*R*v, py = cy+Math.sin(a)*R*v;
+      html += `<circle cx="${px}" cy="${py}" r="${3 + vals[i]*5}" fill="#6366f1" stroke="#fff" stroke-width="1.5"/>`;
+    });
+  }
+
+  // Labels
+  PILLAR_KEYS.forEach((key, i) => {
+    const a = angles[i];
+    const lx = cx+Math.cos(a)*(R+22), ly = cy+Math.sin(a)*(R+22);
+    const anchor = lx < cx-5 ? "end" : lx > cx+5 ? "start" : "middle";
+    html += `<text x="${lx}" y="${ly-4}" text-anchor="${anchor}" font-size="11" fill="#64748b" font-family="Assistant,sans-serif">${PILLAR_ICONS[key]} ${PILLAR_HE[key]}</text>`;
+    if (counts[key] > 0)
+      html += `<text x="${lx}" y="${ly+9}" text-anchor="${anchor}" font-size="10" fill="#6366f1" font-family="Assistant,sans-serif" font-weight="600">${counts[key]} נושאים</text>`;
+  });
+
+  svg.innerHTML = html;
+  const hint = document.getElementById("pillar-radar-hint");
+  if (hint) hint.style.display = hasData ? "none" : "";
+}
+
+// Restore saved balance slider
+(function() {
+  const saved = localStorage.getItem("miled_balance_content");
+  if (saved) {
+    const sl = document.getElementById("balance-slider");
+    if (sl) { sl.value = saved; updateBalancePreview(saved); }
+  }
+})();
 
 // ─── Balance Weight Editor (v8.5) ───
 function initBalanceEditor() {
