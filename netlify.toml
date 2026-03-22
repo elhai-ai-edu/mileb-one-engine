@@ -50,10 +50,30 @@
 
 [[redirects]]
   from = "/institution"
-  to = "/institution.html"
+  to = "/institution_dashboard.html"
+  status = 200
+
+[[redirects]]
+  from = "/institution_dashboard"
+  to = "/institution_dashboard.html"
   status = 200
 
 [[redirects]]
   from = "/admin"
-  to = "/admin_dashboard.html"
+  to = "/admin_cockpit.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin_cockpit"
+  to = "/admin_cockpit.html"
+  status = 200
+
+[[redirects]]
+  from = "/lecturer-cockpit"
+  to = "/lecturer_cockpit.html"
+  status = 200
+
+[[redirects]]
+  from = "/student-dashboard"
+  to = "/student_dashboard.html"
   status = 200

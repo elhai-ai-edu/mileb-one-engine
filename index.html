@@ -122,17 +122,17 @@ function enterAsFaculty() {
 function enterAsInstitution() {
   if (window.MiledAuth) {
     const u = MiledAuth.getUser();
-    if (u && MiledAuth.hasRole("institution")) { window.location.href = "/institution.html"; return; }
+    if (u && MiledAuth.hasRole("institution")) { window.location.href = "/institution_dashboard.html"; return; }
   }
-  window.location.href = "/institution.html"; // institution.html has its own PIN
+  window.location.href = "/institution_dashboard.html"; // institution_dashboard.html has its own PIN
 }
 
 function enterAsAdmin() {
   if (window.MiledAuth) {
     const u = MiledAuth.getUser();
-    if (u && MiledAuth.hasRole("superadmin")) { window.location.href = "/admin_dashboard.html"; return; }
+    if (u && MiledAuth.hasRole("superadmin")) { window.location.href = "/admin_cockpit.html"; return; }
   }
-  window.location.href = "/admin_dashboard.html"; // admin_dashboard handles its own auth
+  window.location.href = "/admin_cockpit.html"; // admin_cockpit handles its own auth
 }
 
 // ─── Google Sign-In flow ───
@@ -169,7 +169,7 @@ function showGoogleUserCard(user) {
 function routeByRole() {
   const user = window.MiledAuth?.getUser();
   if (!user) return;
-  const dest = { student:"/students.html", faculty:"/faculty.html", institution:"/institution.html", superadmin:"/admin_dashboard.html" };
+  const dest = { student:"/students.html", faculty:"/faculty.html", institution:"/institution_dashboard.html", superadmin:"/admin_cockpit.html" };
   window.location.href = dest[user.role] || "/students.html";
 }
 

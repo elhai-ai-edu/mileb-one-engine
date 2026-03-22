@@ -28,7 +28,7 @@ window.MiledAuth = (() => {
     }
     if (user.role === "superadmin") {
       sessionStorage.setItem("institutionRole", "admin");
-      // Cockpit and admin_dashboard check cockpit_token; synthesise one from uid
+      // cockpit.html and admin_cockpit.html check cockpit_token; synthesise one from uid
       sessionStorage.setItem("cockpit_token", "gauth_" + user.uid);
       sessionStorage.setItem("cockpit_user", JSON.stringify({
         id:   user.uid,
