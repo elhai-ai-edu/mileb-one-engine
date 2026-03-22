@@ -7,14 +7,14 @@
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — לוח מחוונים מוסדי</title>
 
-<!-- ─── Route Guard: requires institution role OR legacy faculty/PIN auth ─── -->
+<!-- ─── Route Guard: requires institution role (Google auth) ─── -->
 <script>(function(){
-  var ss = sessionStorage, auth = null;
-  try { auth = JSON.parse(ss.getItem("miled_auth")||"null"); } catch(e){}
+  var auth = null;
+  try { auth = JSON.parse(sessionStorage.getItem("miled_auth")||"null"); } catch(e){}
   var LEVEL = {student:0,faculty:1,institution:2,superadmin:3};
-  var newOk    = auth && (LEVEL[auth.role]||0) >= LEVEL.institution;
-  var legacyOk = ss.getItem("faculty_auth")==="true" || ss.getItem("inst_auth")==="true";
-  if (!newOk && !legacyOk) { document.documentElement.style.visibility="hidden"; location.replace("/"); }
+  if (!auth || (LEVEL[auth.role]||0) < LEVEL.institution) {
+    document.documentElement.style.visibility="hidden"; location.replace("/");
+  }
 }());</script>
 
 <style>
@@ -44,34 +44,27 @@
 
 <body class="management-theme">
 
-<!-- ─── AUTH OVERLAY ─── -->
-<div id="auth-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,15,30,0.92);display:flex;align-items:center;justify-content:center;z-index:999;">
-  <div class="auth-card">
-    <h2>MilEd.One — הנהלה</h2>
-    <p>נדרשת הרשאת מנהל מוסדי</p>
-    <button id="inst-google-btn" onclick="signInInstWithGoogle()"
-      style="width:100%;display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:8px;padding:10px 16px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Assistant',sans-serif;margin-bottom:12px;">
-      כניסה עם Google
-    </button>
-    <div style="display:flex;align-items:center;gap:8px;margin:8px 0;">
-      <hr style="flex:1;border:none;border-top:1px solid #333;"><span style="font-size:11px;color:#888;">או קוד גישה</span>
-      <hr style="flex:1;border:none;border-top:1px solid #333;">
-    </div>
-    <input id="inst-pass" type="password" placeholder="קוד גישה"
-      onkeydown="if(event.key==='Enter') attemptLogin()">
-    <button class="auth-btn-primary" onclick="attemptLogin()">כניסה</button>
-    <p id="auth-error" class="auth-error"></p>
-  </div>
-</div>
-
 <!-- ─── MAIN CONTENT ─── -->
-<div id="main-content" style="display:none;" class="panel">
+<div id="main-content" class="panel">
 
   <div class="userbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <span>לוח מחוונים מוסדי — MilEd.One</span>
     <span id="version-badge" style="font-size:11px;color:var(--color-text-muted);"></span>
     <span style="margin-right:auto;"></span>
     <span id="user-badge"></span>
+    <!-- ─── Super-Admin Role Switcher ─── -->
+    <div id="role-switcher" style="position:relative;display:none;">
+      <button onclick="document.getElementById('sw-menu').style.display=document.getElementById('sw-menu').style.display==='none'?'block':'none'"
+        style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;">
+        🔀 החלף תפקיד
+      </button>
+      <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
+        <a href="/student_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 לוח סטודנט</a>
+        <a href="/lecturer_cockpit.html"  style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 קוקפיט מרצה</a>
+        <a href="/institution_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#065f46;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
+        <a href="/admin_cockpit.html"     style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
+      </div>
+    </div>
     <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn">← יציאה</button>
   </div>
 
@@ -203,53 +196,26 @@
 
 <script>
 
-// ─── Auth ───
-// Accept existing faculty session (superadmin) OR institution PIN
-const INST_PIN = "miled2026";
-
-function attemptLogin() {
-  const pin = document.getElementById("inst-pass").value.trim();
-  if (pin === INST_PIN) {
-    sessionStorage.setItem("inst_auth", "true"); // legacy flag for guard
-    unlock();
-  } else {
-    document.getElementById("auth-error").innerText = "קוד גישה שגוי";
-  }
-}
-
-function unlock() {
-  document.getElementById("auth-overlay").style.display = "none";
-  document.getElementById("main-content").style.display = "";
+// ─── Auth (Google-only) ───
+// Route guard already redirected unauthenticated users; just init UI.
+(function() {
   if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
-  loadData();
-}
-
-async function signInInstWithGoogle() {
-  const btn = document.getElementById("inst-google-btn");
-  const err = document.getElementById("auth-error");
-  err.innerText = "";
-  if (!window.MiledAuth) { err.innerText = "Firebase לא טעון"; return; }
-  btn.disabled = true; btn.innerText = "מתחבר...";
   try {
-    const user = await MiledAuth.signInWithGoogle();
-    const LEVEL = {student:0,faculty:1,institution:2,superadmin:3};
-    if ((LEVEL[user.role]||0) < LEVEL.institution) {
-      err.innerText = "אין הרשאת הנהלה לחשבון זה. פנה למנהל המערכת.";
-      await MiledAuth.signOut(); btn.disabled=false; btn.innerText="כניסה עם Google"; return;
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    if (auth && auth.role === "superadmin")
+      document.getElementById("role-switcher").style.display = "";
+    if (auth) {
+      const vb = document.getElementById("version-badge");
+      if (vb) vb.innerText = auth.displayName || auth.email || "";
     }
-    unlock();
-  } catch(e) {
-    err.innerText = "כניסה נכשלה. נסה שוב.";
-    btn.disabled=false; btn.innerText="כניסה עם Google";
-  }
-}
-
-// Auto-unlock: Google auth with institution+ role OR legacy faculty session OR PIN flag
-const _authSnap = JSON.parse(sessionStorage.getItem("miled_auth")||"null");
-const _LEVEL = {student:0,faculty:1,institution:2,superadmin:3};
-if (_authSnap && (_LEVEL[_authSnap.role]||0) >= _LEVEL.institution) unlock();
-else if (sessionStorage.getItem("faculty_auth") === "true") unlock();
-else if (sessionStorage.getItem("inst_auth") === "true") unlock();
+  } catch {}
+  loadData();
+}());
+document.addEventListener("click", function(e) {
+  var sw = document.getElementById("role-switcher");
+  var m  = document.getElementById("sw-menu");
+  if (sw && m && !sw.contains(e.target)) m.style.display = "none";
+});
 
 // ─── Radar Chart (SVG) — institution-wide ───
 function renderRadar(vals) {

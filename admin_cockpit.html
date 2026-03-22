@@ -7,33 +7,19 @@
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — Admin Cockpit</title>
 
-<!-- ─── Route Guard: requires superadmin ─── -->
+<!-- ─── Route Guard: requires superadmin (Google auth) ─── -->
 <script>(function(){
-  var ss = sessionStorage, auth = null;
-  try { auth = JSON.parse(ss.getItem("miled_auth")||"null"); } catch(e){}
+  var auth = null;
+  try { auth = JSON.parse(sessionStorage.getItem("miled_auth")||"null"); } catch(e){}
   var LEVEL = {student:0,faculty:1,institution:2,superadmin:3};
-  var newOk    = auth && (LEVEL[auth.role]||0) >= LEVEL.superadmin;
-  var legacyOk = (ss.getItem("faculty_auth")==="true" && ss.getItem("facultyRole")==="superadmin")
-              || !!ss.getItem("cockpit_token");
-  if (!newOk && !legacyOk) { document.documentElement.style.visibility="hidden"; location.replace("/"); }
+  if (!auth || (LEVEL[auth.role]||0) < LEVEL.superadmin) {
+    document.documentElement.style.visibility="hidden"; location.replace("/");
+  }
 }());</script>
 
 </head>
 
 <body class="management-theme">
-
-<!-- ─── AUTH OVERLAY ─── -->
-<div id="auth-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,15,30,0.92);display:flex;align-items:center;justify-content:center;z-index:999;">
-  <div class="auth-card">
-    <h2>MilEd Admin</h2>
-    <p>כניסת מנהל מערכת בלבד</p>
-    <input id="auth-user" type="text" placeholder="שם משתמש" autocomplete="username">
-    <input id="auth-pass" type="password" placeholder="סיסמה" autocomplete="current-password"
-      onkeydown="if(event.key==='Enter')attemptLogin()">
-    <button class="auth-btn-primary" onclick="attemptLogin()">כניסה</button>
-    <p id="auth-error" class="auth-error"></p>
-  </div>
-</div>
 
 <div class="panel">
 
@@ -42,6 +28,19 @@
   <span id="currentUser" style="font-size:12px;color:var(--color-text-muted);"></span>
   <span style="margin-right:auto;"></span>
   <span id="user-badge"></span>
+  <!-- ─── Super-Admin Role Switcher ─── -->
+  <div id="role-switcher" style="position:relative;display:none;">
+    <button onclick="document.getElementById('sw-menu').style.display=document.getElementById('sw-menu').style.display==='none'?'block':'none'"
+      style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;">
+      🔀 החלף תפקיד
+    </button>
+    <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
+      <a href="/student_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 לוח סטודנט</a>
+      <a href="/lecturer_cockpit.html"  style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 קוקפיט מרצה</a>
+      <a href="/institution_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
+      <a href="/admin_cockpit.html"     style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
+    </div>
+  </div>
   <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn">← יציאה</button>
 </div>
 
@@ -121,64 +120,34 @@ let config = {};
 let currentUser = null;
 const branchKeys = ["courses","faculty","skills","admin"];
 
-// ─── AUTH ───
-function isSuperAdminSession(){
-  return sessionStorage.getItem("faculty_auth") === "true" &&
-         sessionStorage.getItem("facultyRole")  === "superadmin";
-}
-
-async function attemptLogin(){
-  const username = document.getElementById("auth-user").value.trim();
-  const password = document.getElementById("auth-pass").value;
-  document.getElementById("auth-error").innerText = "";
-  if(!username || !password){
-    document.getElementById("auth-error").innerText = "יש למלא שם משתמש וסיסמה.";
-    return;
-  }
-  try{
-    const res = await fetch("/.netlify/functions/auth",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({username,password})
-    });
-    const data = await res.json();
-    if(data.ok){
-      sessionStorage.setItem("faculty_auth",  "true");
-      sessionStorage.setItem("facultyRole",   data.user.role);
-      sessionStorage.setItem("cockpit_token", data.token);
-      sessionStorage.setItem("cockpit_user",  JSON.stringify(data.user));
-      document.getElementById("auth-overlay").style.display = "none";
-      init();
-    } else {
-      document.getElementById("auth-error").innerText = "פרטים שגויים או אין הרשאת superadmin.";
-    }
-  } catch(e){
-    document.getElementById("auth-error").innerText = "שגיאת חיבור לשרת.";
-  }
-}
-
+// ─── AUTH (Google-only) ───
 async function init(){
-  const hasCockpitToken   = !!sessionStorage.getItem("cockpit_token");
-  const hasFacultySession = isSuperAdminSession();
-  if(!hasCockpitToken && !hasFacultySession){
-    document.getElementById("auth-overlay").style.display = "flex";
-    return;
+  // Route guard already handles unauthenticated users.
+  // Read current user from Google auth session.
+  if (window.MiledAuth) {
+    const u = MiledAuth.getUser();
+    if (u) {
+      document.getElementById("currentUser").innerText = (u.displayName || u.email) + " (" + u.role + ")";
+      MiledAuth.renderUserBadge("user-badge");
+    }
   }
-  const stored = sessionStorage.getItem("cockpit_user");
-  if(stored){ try{ currentUser = JSON.parse(stored); } catch{} }
-  if(!currentUser){
-    document.getElementById("auth-overlay").style.display = "flex";
-    return;
-  }
-  document.getElementById("currentUser").innerText =
-    (currentUser.name || currentUser.id) + " (" + currentUser.role + ")";
-  if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
+  // Show role switcher for superadmin
+  try {
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    if (auth && auth.role === "superadmin")
+      document.getElementById("role-switcher").style.display = "";
+  } catch {}
 
   const res = await fetch("/config.json");
   config = await res.json();
 }
 
 init();
+document.addEventListener("click", function(e) {
+  var sw = document.getElementById("role-switcher");
+  var m  = document.getElementById("sw-menu");
+  if (sw && m && !sw.contains(e.target)) m.style.display = "none";
+});
 
 // ─── TAB SWITCHING ───
 function switchTab(tab){

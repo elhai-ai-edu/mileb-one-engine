@@ -130,9 +130,34 @@
   </div>
   <span id="welcome-msg" style="font-size:13px;color:var(--color-text-muted,#6b7280);margin-inline-end:auto;align-self:center;"></span>
   <span id="user-badge" style="align-self:center;"></span>
+  <!-- ─── Super-Admin Role Switcher ─── -->
+  <div id="role-switcher" style="position:relative;display:none;align-self:center;">
+    <button onclick="document.getElementById('sw-menu').style.display=document.getElementById('sw-menu').style.display==='none'?'block':'none'"
+      style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;">
+      🔀 החלף תפקיד
+    </button>
+    <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
+      <a href="/student_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 לוח סטודנט</a>
+      <a href="/lecturer_cockpit.html"  style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 קוקפיט מרצה</a>
+      <a href="/institution_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
+      <a href="/admin_cockpit.html"     style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
+    </div>
+  </div>
   <a href="/cockpit.html#skills" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
   <div id="sessionBadge" class="session-badge closed">אין שיעור פעיל</div>
 </div>
+<script>(function(){
+  try {
+    var auth = JSON.parse(sessionStorage.getItem("miled_auth")||"null");
+    if (auth && auth.role === "superadmin")
+      document.getElementById("role-switcher").style.display = "";
+  } catch {}
+  document.addEventListener("click", function(e) {
+    var sw = document.getElementById("role-switcher");
+    var m  = document.getElementById("sw-menu");
+    if (sw && m && !sw.contains(e.target)) m.style.display = "none";
+  });
+}());</script>
 
 <div class="classroom-grid">
 
