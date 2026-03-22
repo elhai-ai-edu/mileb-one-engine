@@ -222,13 +222,23 @@ let currentUser = null;
 const branchKeys = ["courses","faculty","skills","admin"];
 
 // ─── INIT (synchronous session data — runs before Firebase SDK loads) ───
+const SUPER_ADMIN_EMAIL = "elnahum@gmail.com";
+
 async function init(){
   try {
     const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
-    if (auth && auth.role === "superadmin") {
+    // Hardcode bypass: grant admin UI access by email regardless of stored role
+    const isAdmin = (auth && auth.role === "superadmin")
+      || (auth && auth.email === SUPER_ADMIN_EMAIL);
+    if (isAdmin) {
       document.getElementById("role-switcher").style.display = "";
       document.getElementById("currentUser").innerText =
-        (auth.displayName || auth.email || "") + " (" + auth.role + ")";
+        (auth.displayName || auth.email || "") + " (superadmin)";
+      // Patch session role if it was wrong
+      if (auth && auth.email === SUPER_ADMIN_EMAIL && auth.role !== "superadmin") {
+        auth.role = "superadmin";
+        sessionStorage.setItem("miled_auth", JSON.stringify(auth));
+      }
     }
   } catch {}
   const res = await fetch("/config.json");
@@ -297,15 +307,33 @@ document.addEventListener("click", function(e) {
 
       clearTimeout(timeoutId);
 
-      // Verify superadmin from sessionStorage (set by MiledAuth during login)
+      // Hardcode bypass: allow by email regardless of stored role
       let mAuth = null;
       try { mAuth = JSON.parse(sessionStorage.getItem("miled_auth") || "null"); } catch {}
-      if (!mAuth || mAuth.role !== "superadmin") return;
+      const isAdmin = (mAuth && mAuth.role === "superadmin")
+        || fbUser.email === SUPER_ADMIN_EMAIL;
+      if (!isAdmin) return;
 
-      console.log(`Admin Auth Verified: ${fbUser.email}`);
-      if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
-      loadInstitutions();
-      loadAuthorizedUsers();
+      // Patch session role if needed
+      if (fbUser.email === SUPER_ADMIN_EMAIL && mAuth && mAuth.role !== "superadmin") {
+        mAuth.role = "superadmin";
+        sessionStorage.setItem("miled_auth", JSON.stringify(mAuth));
+      }
+
+      // Force token refresh so latest claims are active before any writes
+      fbUser.getIdToken(/* forceRefresh= */ true)
+        .then(function() {
+          console.log(`Admin Auth Verified: ${fbUser.email}`);
+          if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
+          loadInstitutions();
+          loadAuthorizedUsers();
+        })
+        .catch(function(e) {
+          console.warn("Admin Cockpit: token refresh failed —", e.message);
+          // Still try to load with existing token
+          loadInstitutions();
+          loadAuthorizedUsers();
+        });
     });
   }
 
@@ -394,9 +422,9 @@ async function loadAuthorizedUsers() {
     const ROLE_COLOR = { faculty:"#4338ca", institution:"#065f46", superadmin:"#7c3aed", student:"#0891b2" };
     const rows = Object.entries(data).map(([key, val]) =>
       `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:#f8fafc;border-radius:8px;margin-bottom:6px;border:1px solid #e2e8f0;">
-        <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;">${val.email || key}</span>
-        <span style="font-size:11px;padding:2px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;">${val.role}</span>
-        ${val.classId ? `<span style="font-size:11px;padding:2px 8px;border-radius:8px;background:#fef9c3;color:#854d0e;font-weight:600;white-space:nowrap;">${val.classId}</span>` : ''}
+        <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:2;">${val.email || key.replace(/_at_/g,"@").replace(/_/g,".")}</span>
+        <span style="font-size:11px;padding:2px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;">${val.role || '—'}</span>
+        <span style="font-size:11px;padding:2px 8px;border-radius:8px;background:#fef9c3;color:#854d0e;font-weight:600;white-space:nowrap;${val.classId ? '' : 'display:none;'}">${val.classId || ''}</span>
         <span style="font-size:12px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${val.institutionId || ''}</span>
         <button onclick="deleteAuthorizedUser('${key}')"
           style="background:none;border:1px solid #fca5a5;border-radius:6px;color:#ef4444;cursor:pointer;font-size:11px;padding:3px 9px;white-space:nowrap;">מחק</button>
