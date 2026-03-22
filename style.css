@@ -2141,11 +2141,37 @@ body.management-theme select:focus {
   background: #ecfdf5;
   border-color: #10b981;
   color: #059669;
+  animation: stepComplete 0.4s ease-out;
 }
 .stage-tab.completed::before {
   content: '✓';
   background: #10b981;
   color: white;
+}
+@keyframes stepComplete {
+  0%   { transform: scale(1); box-shadow: none; }
+  40%  { transform: scale(1.13); box-shadow: 0 0 0 6px rgba(16,185,129,0.22); }
+  70%  { transform: scale(0.97); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+
+/* ─── Logout Button ─── */
+.logout-btn {
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: var(--font-main, 'Assistant', sans-serif);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.logout-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  border-color: #fca5a5;
 }
 
 /* ═══════════════════════════════════════════════
