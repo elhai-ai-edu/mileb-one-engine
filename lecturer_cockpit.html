@@ -18,6 +18,8 @@
     <span class="brand">MilEd.One</span>
     <h1>כיתה חכמה — לוח מרצה</h1>
   </div>
+  <span id="welcome-msg" style="font-size:13px;color:var(--color-text-muted,#6b7280);margin-inline-end:auto;align-self:center;"></span>
+  <span id="user-badge" style="align-self:center;"></span>
   <a href="/cockpit.html#skills" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
   <div id="sessionBadge" class="session-badge closed">אין שיעור פעיל</div>
 </div>
@@ -327,6 +329,24 @@ async function loadInsights() {
 
 // Load insights 2 seconds after page load (non-blocking)
 setTimeout(loadInsights, 2000);
+
+// ─── Welcome greeting + user badge ───
+window.addEventListener("load", () => {
+  if (!window.MiledAuth) return;
+  const user = MiledAuth.getUser();
+  if (user) {
+    const name = user.displayName || user.email || "מרצה";
+    const firstName = name.split(" ")[0];
+    document.getElementById("welcome-msg").textContent = "ברוך הבא, מרצה " + firstName;
+    MiledAuth.renderUserBadge("user-badge");
+  }
+});
 </script>
+
+<!-- Firebase SDK + Auth utility -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/firebase-auth.js"></script>
 </body>
 </html>

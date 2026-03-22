@@ -97,7 +97,7 @@ function enterAsFaculty() {
   // If already signed in via Google with faculty+ role, go directly
   if (window.MiledAuth) {
     const u = MiledAuth.getUser();
-    if (u && MiledAuth.hasRole("faculty")) { window.location.href = "/faculty.html"; return; }
+    if (u && MiledAuth.hasRole("faculty")) { window.location.href = "/lecturer_cockpit.html"; return; }
   }
   // Legacy: username/password against config.json faculty_users
   if (!CONFIG) { alert("המערכת עדיין נטענת — נסה שוב"); return; }
@@ -113,7 +113,7 @@ function enterAsFaculty() {
     sessionStorage.setItem("faculty_auth", "true");
     sessionStorage.setItem("facultyRole",  user.role || "faculty");
     if (user.role === "superadmin") sessionStorage.setItem("institutionRole", "admin");
-    window.location.href = "/faculty.html";
+    window.location.href = "/lecturer_cockpit.html";
   } else {
     document.getElementById("error").innerText = "שם משתמש או סיסמה שגויים";
   }
@@ -169,7 +169,7 @@ function showGoogleUserCard(user) {
 function routeByRole() {
   const user = window.MiledAuth?.getUser();
   if (!user) return;
-  const dest = { student:"/students.html", faculty:"/faculty.html", institution:"/institution_dashboard.html", superadmin:"/admin_cockpit.html" };
+  const dest = { student:"/students.html", faculty:"/lecturer_cockpit.html", institution:"/institution_dashboard.html", superadmin:"/admin_cockpit.html" };
   window.location.href = dest[user.role] || "/students.html";
 }
 
