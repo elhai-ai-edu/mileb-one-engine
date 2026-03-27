@@ -19,6 +19,15 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
 const SITE_URL           = "https://cozy-seahorse-7c5204.netlify.app";
 
+const COURSE_SKILLS = new Set([
+  "s01_direct_meaning","s02_main_idea","s03_logical_structure","s04_paraphrase",
+  "s05_transformations","s06_comparison_merge","s07_critical_errors",
+  "s08_linguistic_precision","s09_text_quality","s10_visual_representation",
+  "s11_academic_writing","s12_integration"
+]);
+
+const PROFESSIONAL_GROUPS = new Set(["academic", "resilience", "social", "tools", "career"]);
+
 
 // ─────────────────────────────────────────
 // FIREBASE INIT (identical pattern to submit.js)
@@ -545,6 +554,13 @@ exports.handler = async (event) => {
       }
     }
 
+    // ─── EXTRACT skill_signal before it reaches sessions/ ───────────
+    let skillSignal = null;
+    if (sessionUpdate?.skill_signal) {
+      skillSignal = sessionUpdate.skill_signal;
+      delete sessionUpdate.skill_signal;
+    }
+
     // ─── EXTRACT CONTINUATION TOKEN METADATA (MJ-3) ───
     // Strips the hidden HTML comment from the visible reply and saves it to Firebase.
     // Format: <!-- META: {"form":"...","name":"...","tone":"...","emotionalTrajectory":"..."} -->
@@ -584,6 +600,83 @@ exports.handler = async (event) => {
       logMessage(sessionId, "user",      message),
       logMessage(sessionId, "assistant", reply)
     ]);
+
+    // ─── WRITE skill_signal to skills_mastery (fire-and-forget) ─────
+    if (skillSignal && studentId && studentId !== "anonymous") {
+      (async () => {
+        try {
+          const db = getDB();
+          const skillKey = String(skillSignal.skill || "").trim();
+          if (!skillKey) return;
+
+          const isCourseSignal =
+            botType?.startsWith("hebrew_b_") ||
+            botType === "skills_learning_full" ||
+            COURSE_SKILLS.has(skillKey);
+
+          const isProfessionalSignal =
+            botType === "skills_employability_full" ||
+            PROFESSIONAL_GROUPS.has(skillKey);
+
+          const signalSource = isProfessionalSignal ? "professional" : "course";
+          const payload = {
+            rounds:        skillSignal.rounds,
+            self:          skillSignal.self,
+            score:         skillSignal.score,
+            weak_point:    skillSignal.weak_point || null,
+            feedback:      skillSignal.feedback || null,
+            lesson:        currentStep || null,
+            ts:            Date.now(),
+            signal_source: signalSource,
+            bot_type:      botType
+          };
+
+          const refs = [];
+          if (isCourseSignal && courseId) {
+            refs.push(db.ref(`skills_mastery/${studentId}/${courseId}/${skillKey}`));
+          }
+          if (isProfessionalSignal) {
+            refs.push(db.ref(`skills_mastery/${studentId}/professional_map/${skillKey}`));
+          }
+          if (!refs.length && courseId) {
+            refs.push(db.ref(`skills_mastery/${studentId}/${courseId}/${skillKey}`));
+          }
+
+          const globalRef = db.ref(`skills_mastery/${studentId}/global_map/${skillKey}`);
+
+          const recalcAndUpdate = async (ref, meta = {}) => {
+            await ref.child("signals").push(payload);
+            const snap = await ref.child("signals").get();
+            const signals = snap.exists() ? Object.values(snap.val()) : [];
+            const total = signals.reduce((s, sig) => s + (sig.score || 0), 0);
+            const max = signals.length * 3;
+            const masteryPct = max > 0 ? Math.round((total / max) * 100) : 0;
+            const status = masteryPct >= 70 ? "proven" : masteryPct >= 30 ? "developing" : "none";
+            const recentWeakPoints = signals
+              .filter(sig => sig.score === 0 && sig.weak_point)
+              .map(sig => sig.weak_point)
+              .slice(-5);
+
+            await ref.update({
+              mastery_pct: masteryPct,
+              status,
+              exposures: signals.length,
+              last_ts: Date.now(),
+              last_updated: `lesson_${currentStep || "?"}`,
+              recent_weak_points: recentWeakPoints,
+              ...meta
+            });
+          };
+
+          await Promise.all([
+            ...refs.map(ref => recalcAndUpdate(ref, { signal_source: signalSource })),
+            recalcAndUpdate(globalRef, { signal_source: signalSource, last_course: courseId || null })
+          ]);
+        } catch (e) {
+          console.error("SKILL SIGNAL WRITE ERROR:", e.message);
+        }
+      })();
+    }
 
     return {
       statusCode: 200,

@@ -90,16 +90,90 @@ export async function handler(event){
 
       const answers = session.answers || {};
 
-      const students =
-        Object.entries(answers).map(([sid,data])=>({
+      const botType = session.botType;
+      let courseId = null;
+      if (botType === "hebrew_b_research" || botType === "hebrew_b_companion") {
+        courseId = session.classId || "hebrew_advanced_b_2026";
+      }
 
-          studentId:sid,
-          steps:data.steps || {},
-          state:data.state || "idle",
-          lastUpdated:data.lastUpdated || null,
-          lastSeen:data.lastSeen || null
+      const students = await Promise.all(
+        Object.entries(answers).map(async ([sid, data]) => {
+          const base = {
+            studentId: sid,
+            steps: data.steps || {},
+            state: data.state || "idle",
+            lastUpdated: data.lastUpdated || null,
+            lastSeen: data.lastSeen || null
+          };
 
-        }));
+          if (!courseId || sid === "anonymous") {
+            return {
+              ...base,
+              researchStage: null,
+              skillHealth: { mastery_pct: 0, hasFailure: false, failureStreak: 0, interventionFlag: false }
+            };
+          }
+
+          try {
+            const [researchSnap, skillsSnap] = await Promise.all([
+              db.ref(`sessions/${sid}/${courseId}/research_stage`).get(),
+              db.ref(`skills_mastery/${sid}/${courseId}`).get()
+            ]);
+
+            const rawStage = researchSnap.exists() ? Number(researchSnap.val()) : null;
+            const researchStage = Number.isFinite(rawStage)
+              ? Math.min(7, Math.max(1, rawStage))
+              : null;
+
+            const skillsData = skillsSnap.exists() ? skillsSnap.val() : {};
+            let totalPct = 0;
+            let skillCount = 0;
+            let hasFailure = false;
+            let maxFailureStreak = 0;
+
+            Object.values(skillsData).forEach(skillData => {
+              if (typeof skillData?.mastery_pct === "number") {
+                totalPct += skillData.mastery_pct;
+                skillCount++;
+              }
+
+              const signals = skillData?.signals ? Object.values(skillData.signals) : [];
+              const ordered = signals
+                .filter(sig => Number.isFinite(sig?.ts))
+                .sort((a, b) => a.ts - b.ts);
+
+              let streak = 0;
+              for (const sig of ordered) {
+                if (sig.score === 0) {
+                  streak++;
+                  hasFailure = true;
+                } else {
+                  streak = 0;
+                }
+                if (streak > maxFailureStreak) maxFailureStreak = streak;
+              }
+            });
+
+            return {
+              ...base,
+              researchStage,
+              skillHealth: {
+                mastery_pct: skillCount > 0 ? Math.round(totalPct / skillCount) : 0,
+                hasFailure,
+                failureStreak: maxFailureStreak,
+                interventionFlag: maxFailureStreak >= 3
+              }
+            };
+          } catch (e) {
+            console.error("DASHBOARD ENRICH ERROR:", e.message);
+            return {
+              ...base,
+              researchStage: null,
+              skillHealth: { mastery_pct: 0, hasFailure: false, failureStreak: 0, interventionFlag: false }
+            };
+          }
+        })
+      );
 
       const stats = {
         chatting:0,

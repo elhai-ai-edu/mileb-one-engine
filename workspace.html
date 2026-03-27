@@ -726,17 +726,40 @@ async function classroomJoin() {
 // ─── Lock/Unlock polling ───
 let wasStepLocked = false;
 let classroomPollTimer = null;
+let classroomPollDelay = 4000;
+const POLL_MIN = 4000;
+const POLL_MAX = 20000;
 
 function startClassroomPolling() {
-  classroomPollTimer = setInterval(pollClassroomState, 5000);
-  pollClassroomState();
+  stopClassroomPolling();
+  classroomPollDelay = POLL_MIN;
+  scheduleNextPoll(0);
+}
+
+function stopClassroomPolling() {
+  if (classroomPollTimer) {
+    clearTimeout(classroomPollTimer);
+    classroomPollTimer = null;
+  }
+}
+
+function scheduleNextPoll(delay = classroomPollDelay) {
+  stopClassroomPolling();
+  classroomPollTimer = setTimeout(pollClassroomState, delay);
 }
 
 async function pollClassroomState() {
+  if (document.hidden) {
+    scheduleNextPoll(POLL_MAX);
+    return;
+  }
+
   try {
     const res  = await fetch(
       `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=student_view`
     );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     const data = await res.json();
     const lockedSteps = data.lockedSteps || [];
     const isLocked    = lockedSteps.includes(studentId);
@@ -746,10 +769,26 @@ async function pollClassroomState() {
     // Detect transition: was locked → now unlocked
     if (wasStepLocked && !isLocked) triggerUnlockAnimation();
     wasStepLocked = isLocked;
+
+    // healthy poll lowers delay gradually
+    classroomPollDelay = Math.max(POLL_MIN, Math.floor(classroomPollDelay * 0.85));
   } catch(e) {
     console.error("Classroom poll error:", e.message);
+    // transient backend/network errors back off aggressively
+    classroomPollDelay = Math.min(POLL_MAX, Math.floor(classroomPollDelay * 1.6));
+  } finally {
+    const jitter = Math.floor(Math.random() * 600);
+    scheduleNextPoll(classroomPollDelay + jitter);
   }
 }
+
+document.addEventListener("visibilitychange", () => {
+  if (!urlSessionId) return;
+  if (!document.hidden) {
+    classroomPollDelay = POLL_MIN;
+    scheduleNextPoll(0);
+  }
+});
 
 function triggerUnlockAnimation() {
   const banner = document.getElementById("unlock-banner");

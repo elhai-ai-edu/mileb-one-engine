@@ -5,6 +5,7 @@ package-lock.json
 # Firebase credentials — NEVER commit private keys
 *firebase-adminsdk*.json
 *service-account*.json
+*service_account*.json
 *.key.json
 
 # Environment variables
