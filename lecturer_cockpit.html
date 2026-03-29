@@ -168,10 +168,22 @@
   line-height: 1.6;
   white-space: pre-wrap;
 }
+.interaction-item.reply {
+  border-color: #e9d5ff;
+  background: #faf5ff;
+}
+.interaction-item.reply .interaction-content {
+  color: #581c87;
+}
+.thread-empty {
+  color: #94a3b8; font-size: 12px; text-align: center; padding: 8px 0;
+}
 .lecturer-reply-row {
   display: flex;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #e9d5ff;
 }
 .lecturer-reply-input {
   flex: 1;
@@ -631,51 +643,78 @@ function renderDashboard(data) {
   grid.innerHTML = students.map(s => {
     const stepsArr = Object.values(s.steps || {})
       .filter(st => st && typeof st === "object")
-      .sort((a, b) => (Number(b.submittedAt) || 0) - (Number(a.submittedAt) || 0));
+      .sort((a, b) => (Number(a.submittedAt) || 0) - (Number(b.submittedAt) || 0));
+
+    // Build chronological thread: merge student steps + lecturer replies
+    const stepsFlat = stepsArr.map(st => ({
+      role: "student",
+      kind: st.kind || "message",
+      content: st.content || "",
+      ts: Number(st.submittedAt) || 0,
+      step: st.step
+    }));
+    const repliesFlat = (s.lecturerReplies || []).map(r => ({
+      role: "lecturer",
+      kind: "reply",
+      content: r.text || "",
+      ts: Number(r.ts) || 0
+    }));
+    const thread = [...stepsFlat, ...repliesFlat].sort((a, b) => a.ts - b.ts);
+    const recentThread = thread.slice(-4); // last 4 events
 
     const isLocked  = locked.includes(s.studentId);
     const hasAnswer = stepsArr.length > 0;
-    const latestKind = hasAnswer && stepsArr[0].kind === "message" ? "message" : "submission";
+    // Status based on most recent student action
+    const latestStudentStep = stepsArr[stepsArr.length - 1];
+    const latestKind = latestStudentStep?.kind === "message" ? "message" : "submission";
     const cardClass = isLocked ? "locked" : hasAnswer ? "has-answer" : "";
     const statusClass = isLocked
       ? "status-locked"
       : hasAnswer
         ? (latestKind === "message" ? "status-message" : "status-done")
         : "status-waiting";
-    const statusText  = isLocked
+    const statusText = isLocked
       ? "🔒 נעול"
       : hasAnswer
         ? (latestKind === "message" ? "💬 מסר חדש" : "📄 הוגשה עבודה")
         : "⏳ ממתין";
 
-    const stepsHtml = stepsArr.slice(0, 3).map(st => {
-      const kind = st.kind === "message" ? "message" : "submission";
-      const icon = kind === "message" ? "💬" : "📄";
-      const label = kind === "message" ? "מסר למרצה" : "הגשת עבודה";
-      const time = st.submittedAt
-        ? new Date(st.submittedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
+    const threadHtml = recentThread.map(item => {
+      const isLecturerItem = item.role === "lecturer";
+      const kindClass = isLecturerItem ? "reply"
+        : (item.kind === "message" ? "message" : "submission");
+      const icon  = isLecturerItem ? "👨‍🏫" : (item.kind === "message" ? "💬" : "📄");
+      const label = isLecturerItem ? "תגובת מרצה"
+        : (item.kind === "message" ? "מסר למרצה" : "הגשת עבודה");
+      const time = item.ts
+        ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
         : "--:--";
+      const meta = isLecturerItem
+        ? time
+        : `שלב ${item.step || "?"} • ${time}`;
 
       return `
-      <div class="interaction-item ${kind}">
+      <div class="interaction-item ${kindClass}">
         <div class="interaction-top">
           <span>${icon} ${label}</span>
-          <span class="interaction-meta">שלב ${st.step || "?"} • ${time}</span>
+          <span class="interaction-meta">${meta}</span>
         </div>
-        <div class="interaction-content">${escapeHtml(st.content || "")}</div>
-      </div>
-    `;
+        <div class="interaction-content">${escapeHtml(item.content)}</div>
+      </div>`;
     }).join('');
 
     return `
-      <div class="student-card ${cardClass}">
+      <div class="student-card ${cardClass}" id="card-${s.studentId}">
         <div class="student-top">
           <span class="student-id">👤 ${s.studentId.slice(0,10)}</span>
           <span class="student-status ${statusClass}">${statusText}</span>
         </div>
-        <div class="steps-list">${stepsHtml || '<div style="color:#64748b;font-size:12px">טרם נשלח מסר או הוגשה עבודה</div>'}</div>
+        <div class="steps-list" id="thread-${s.studentId}">${threadHtml ||
+          '<div class="thread-empty">טרם נשלחו מסרים</div>'}</div>
         <div class="lecturer-reply-row">
-          <input id="reply-${s.studentId}" class="lecturer-reply-input" placeholder="כתוב תגובה אישית לסטודנט..." oninput="setReplyDraft('${s.studentId}', this.value)" />
+          <input id="reply-${s.studentId}" class="lecturer-reply-input"
+            placeholder="כתוב תגובה לסטודנט..."
+            oninput="setReplyDraft('${s.studentId}', this.value)" />
           <button class="lecturer-reply-send" onclick="sendLecturerReply('${s.studentId}')">שלח</button>
         </div>
         <div class="card-actions">
@@ -725,6 +764,23 @@ async function sendLecturerReply(studentId) {
 
   replyDrafts[studentId] = "";
   input.value = "";
+
+  // Optimistic UI: inject the reply immediately into the card's thread
+  const threadDiv = document.getElementById(`thread-${studentId}`);
+  if (threadDiv) {
+    const emptyEl = threadDiv.querySelector(".thread-empty");
+    if (emptyEl) emptyEl.remove();
+    const timeStr = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+    const div = document.createElement("div");
+    div.className = "interaction-item reply";
+    div.innerHTML =
+      `<div class="interaction-top">` +
+      `<span>👨‍🏫 תגובת מרצה</span>` +
+      `<span class="interaction-meta">${timeStr}</span>` +
+      `</div>` +
+      `<div class="interaction-content" style="color:#581c87">${escapeHtml(text)}</div>`;
+    threadDiv.appendChild(div);
+  }
 }
 
 // ─────────────────────────────────────────

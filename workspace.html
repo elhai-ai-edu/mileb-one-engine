@@ -55,7 +55,10 @@
       </div>
 
       <div class="actions">
-        <button onclick="sendMessageToLecturer()" class="btn btn-blue">💬 שלח מסר למרצה</button>
+        <div style="position:relative;display:inline-flex;align-items:center;">
+          <button id="msg-lecturer-btn" onclick="openLecturerModal()" class="btn btn-blue">💬 שיחה עם המרצה</button>
+          <span id="lecturer-unread-badge" style="display:none;position:absolute;top:-7px;right:-7px;background:#ef4444;color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center;z-index:2;">0</span>
+        </div>
         <button onclick="submitWork()" class="btn btn-green">📄 הגש עבודה</button>
         <span id="save-indicator" class="save-indicator">—</span>
       </div>
@@ -95,6 +98,26 @@
   </div>
 </div>
 
+<!-- ─── Lecturer Chat Modal ─── -->
+<div id="lecturer-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9100;align-items:flex-end;justify-content:center;" onclick="closeLecturerModal(event)">
+  <div class="lm-modal" dir="rtl">
+    <div class="lm-header">
+      <span class="lm-title">💬 שיחה עם המרצה</span>
+      <button class="lm-close" onclick="document.getElementById('lecturer-modal-overlay').style.display='none';clearUnreadBadge()">✕</button>
+    </div>
+    <div id="lm-thread" class="lm-thread">
+      <div class="lm-empty">טרם נשלחו מסרים בשיעור זה</div>
+    </div>
+    <div class="lm-composer">
+      <textarea id="lm-input" class="lm-input" rows="3" placeholder="כתוב מסר למרצה..."></textarea>
+      <div class="lm-composer-row">
+        <button id="lm-send-btn" class="lm-send-btn" onclick="sendLecturerMessageFromModal()">💬 שלח מסר</button>
+        <span id="lm-send-status" class="lm-send-status"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ─── Team Setup Overlay (v8.2) ─── -->
 <div id="team-setup-overlay" class="team-setup-overlay" style="display:none;">
   <div class="team-setup-modal">
@@ -113,18 +136,66 @@ livePulseStyle.textContent = `
   70% { box-shadow: 0 0 0 8px rgba(34,197,94,0.00); }
   100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.00); }
 }
-.message.lecturer-message {
-  background: #faf5ff;
-  border: 1px solid #e9d5ff;
-  color: #581c87;
+/* ─── Lecturer Chat Modal ─── */
+.lm-modal {
+  background: #fff; border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 600px; max-height: 80vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.15); overflow: hidden; direction: rtl;
 }
-.lecturer-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 800;
-  color: #7e22ce;
-  margin-bottom: 4px;
-}`;
+.lm-header {
+  padding: 16px 20px 12px; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.lm-title { font-size: 16px; font-weight: 700; color: #1e1b4b; }
+.lm-close {
+  background: #f1f5f9; border: none; border-radius: 8px;
+  width: 30px; height: 30px; cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+}
+.lm-thread {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 10px; min-height: 120px;
+}
+.lm-empty { color: #94a3b8; font-size: 13px; text-align: center; margin: auto; }
+.lm-msg {
+  max-width: 82%; padding: 10px 14px; border-radius: 14px;
+  font-size: 14px; line-height: 1.5;
+}
+.lm-msg-from-student {
+  align-self: flex-start;
+  background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+}
+.lm-msg-from-lecturer {
+  align-self: flex-end;
+  background: #faf5ff; border: 1px solid #e9d5ff; color: #581c87;
+}
+.lm-msg-label {
+  font-size: 10px; font-weight: 800; margin-bottom: 5px;
+  color: inherit; opacity: .75;
+}
+.lm-msg-body { white-space: pre-wrap; }
+.lm-msg-time { font-size: 10px; color: #94a3b8; margin-top: 4px; display: block; }
+.lm-composer {
+  border-top: 1px solid #f1f5f9; padding: 12px 16px; flex-shrink: 0;
+}
+.lm-input {
+  width: 100%; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 10px 12px; font-family: inherit; font-size: 14px;
+  resize: none; outline: none; box-sizing: border-box; direction: rtl;
+}
+.lm-input:focus { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.lm-composer-row {
+  display: flex; align-items: center; justify-content: space-between; margin-top: 8px;
+}
+.lm-send-btn {
+  background: #2563eb; color: #fff; border: none; border-radius: 8px;
+  padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+.lm-send-btn:hover { background: #1d4ed8; }
+.lm-send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
+.lm-send-status { font-size: 12px; color: #64748b; }
+`;
 document.head.appendChild(livePulseStyle);
 
 const params   = new URLSearchParams(location.search);
@@ -168,7 +239,10 @@ let currentCourse  = null;
 let currentSkillBot = null;
 let currentBotType = null;
 let chatHistory    = [];
-const seenLecturerReplyIds = new Set();
+const seenLecturerReplyIds  = new Set();
+const seenStudentStepIds    = new Set();
+let lecturerUnreadCount     = 0;
+let lecturerThreadHydrated  = false;
 let saveTimer      = null;
 let isLocked       = false;
 let currentStep    = 1;
@@ -700,26 +774,132 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
-function renderLecturerMessage(content) {
+// ─────────────────────────────────────────────────
+// LECTURER CHAT THREAD HELPERS
+// ─────────────────────────────────────────────────
+
+function addToLecturerThread(item) {
+  // item: { type: "sent"|"reply", text, kind?, ts }
+  const thread = document.getElementById("lm-thread");
+  if (!thread) return;
+  const empty = thread.querySelector(".lm-empty");
+  if (empty) empty.remove();
+
+  const isReply = item.type === "reply";
   const div = document.createElement("div");
-  div.className = "message lecturer-message";
-  div.innerHTML = `<span class="lecturer-label">המרצה:</span>${escapeHtml(content)}`;
-  return div;
+  div.className = isReply ? "lm-msg lm-msg-from-lecturer" : "lm-msg lm-msg-from-student";
+
+  const label = isReply
+    ? "👨‍🏫 המרצה:"
+    : (item.kind === "submission" ? "📄 שלחת עבודה:" : "💬 שלחת מסר:");
+  const timeStr = item.ts
+    ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
+    : "";
+
+  div.innerHTML =
+    `<div class="lm-msg-label">${label}</div>` +
+    `<div class="lm-msg-body">${escapeHtml(item.text)}</div>` +
+    (timeStr ? `<span class="lm-msg-time">${timeStr}</span>` : "");
+
+  thread.appendChild(div);
+  thread.scrollTop = thread.scrollHeight;
 }
 
 function syncLecturerReplies(replies = []) {
   if (!Array.isArray(replies) || !replies.length) return;
-  const chatWindow = document.getElementById("chat-window");
-  if (!chatWindow) return;
-
+  let newCount = 0;
   replies.forEach(item => {
     if (!item?.id || !item?.text) return;
     if (seenLecturerReplyIds.has(item.id)) return;
     seenLecturerReplyIds.add(item.id);
-    chatWindow.appendChild(renderLecturerMessage(item.text));
+    addToLecturerThread({ type: "reply", text: item.text, ts: item.ts });
+    newCount++;
   });
+  if (newCount > 0) {
+    const overlay = document.getElementById("lecturer-modal-overlay");
+    if (!overlay || overlay.style.display === "none") {
+      lecturerUnreadCount += newCount;
+      updateUnreadBadge();
+    }
+  }
+}
 
-  chatWindow.scrollTop = chatWindow.scrollHeight;
+function hydrateLecturerThread(studentSteps = []) {
+  if (lecturerThreadHydrated || !Array.isArray(studentSteps) || !studentSteps.length) return;
+  lecturerThreadHydrated = true;
+  studentSteps.forEach(step => {
+    if (!step?.id || seenStudentStepIds.has(step.id)) return;
+    seenStudentStepIds.add(step.id);
+    addToLecturerThread({ type: "sent", text: step.content, kind: step.kind || "message", ts: step.ts });
+  });
+}
+
+function openLecturerModal() {
+  const overlay = document.getElementById("lecturer-modal-overlay");
+  if (!overlay) return;
+  overlay.style.display = "flex";
+  const wsTxt = (document.getElementById("student-text")?.value || "").trim();
+  const lmInput = document.getElementById("lm-input");
+  if (lmInput && wsTxt && !lmInput.value) lmInput.value = wsTxt;
+  const thread = document.getElementById("lm-thread");
+  if (thread) thread.scrollTop = thread.scrollHeight;
+  clearUnreadBadge();
+  if (lmInput) lmInput.focus();
+}
+
+function closeLecturerModal(evt) {
+  if (evt && evt.target !== document.getElementById("lecturer-modal-overlay")) return;
+  document.getElementById("lecturer-modal-overlay").style.display = "none";
+}
+
+function clearUnreadBadge() {
+  lecturerUnreadCount = 0;
+  updateUnreadBadge();
+}
+
+function updateUnreadBadge() {
+  const badge = document.getElementById("lecturer-unread-badge");
+  if (!badge) return;
+  if (lecturerUnreadCount > 0) {
+    badge.textContent = lecturerUnreadCount > 9 ? "9+" : String(lecturerUnreadCount);
+    badge.style.display = "flex";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+async function sendLecturerMessageFromModal() {
+  const input  = document.getElementById("lm-input");
+  const btn    = document.getElementById("lm-send-btn");
+  const status = document.getElementById("lm-send-status");
+  const text   = input?.value?.trim() || "";
+  if (!text) { input?.focus(); return; }
+  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+
+  if (btn) btn.disabled = true;
+  if (status) status.textContent = "שולח...";
+
+  try {
+    const res = await fetch("/.netlify/functions/classroom", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "submit", sessionId, studentId,
+        step: currentStep, content: text, type: "message"
+      })
+    });
+    if (res.ok) {
+      addToLecturerThread({ type: "sent", text, kind: "message", ts: Date.now() });
+      input.value = "";
+      if (status) { status.textContent = "נשלח ✓"; setTimeout(() => { status.textContent = ""; }, 2000); }
+    } else {
+      if (status) status.textContent = "שגיאה בשליחה";
+    }
+  } catch (e) {
+    if (status) status.textContent = "שגיאת רשת";
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function sendMessage() {
@@ -828,34 +1008,32 @@ function restoreDraft() {
 // שליחה למרצה
 // ─────────────────────────────
 
-async function postWorkToLecturer(type) {
-  const text = document.getElementById("student-text").value.trim();
-  if (!text) { alert("כתוב משהו לפני שליחה"); return; }
-
-  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
-
-  await fetch("/.netlify/functions/classroom", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action:    "submit",
-      sessionId,
-      studentId,
-      step:      currentStep,
-      content:   text,
-      type
-    })
-  });
-
-  alert(type === "message" ? "המסר נשלח למרצה" : "העבודה הוגשה בהצלחה");
-}
-
+// Legacy shim — opens the lecture chat modal
 async function sendMessageToLecturer() {
-  await postWorkToLecturer("message");
+  openLecturerModal();
 }
 
 async function submitWork() {
-  await postWorkToLecturer("submission");
+  const text = document.getElementById("student-text").value.trim();
+  if (!text) { alert("כתוב משהו לפני שליחה"); return; }
+  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+
+  const res = await fetch("/.netlify/functions/classroom", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "submit", sessionId, studentId,
+      step: currentStep, content: text, type: "submission"
+    })
+  });
+
+  if (res.ok) {
+    // Mirror the submission into the lecturer thread so student can see it
+    addToLecturerThread({ type: "sent", text, kind: "submission", ts: Date.now() });
+    alert("העבודה הוגשה בהצלחה");
+  } else {
+    alert("שגיאה בהגשה — נסה שוב");
+  }
 }
 
 // ─────────────────────────────
@@ -950,6 +1128,7 @@ async function pollClassroomState() {
     const isLocked = !!data.stepLocked;
     setLiveSessionBadge(!!data.sessionActive);
     syncLecturerReplies(data.lecturerReplies || []);
+    hydrateLecturerThread(data.studentSteps || []);
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
 

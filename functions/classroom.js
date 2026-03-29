@@ -101,12 +101,20 @@ export async function handler(event){
 
       const students = await Promise.all(
         Object.entries(answers).map(async ([sid, data]) => {
+          const lecturerRepliesForStudent = Object.entries(
+            session.students?.[sid]?.lecturer_replies || {}
+          )
+            .map(([id, item]) => ({ id, text: item?.text || "", ts: item?.ts || 0 }))
+            .filter(item => item.text)
+            .sort((a, b) => a.ts - b.ts);
+
           const base = {
             studentId: sid,
             steps: data.steps || {},
             state: data.state || "idle",
             lastUpdated: data.lastUpdated || null,
-            lastSeen: data.lastSeen || null
+            lastSeen: data.lastSeen || null,
+            lecturerReplies: lecturerRepliesForStudent
           };
 
           if (!courseId || sid === "anonymous") {
@@ -236,6 +244,19 @@ export async function handler(event){
       .sort((a, b) => (a.ts || 0) - (b.ts || 0))
       .slice(-20);
 
+    const studentStepsRaw = session.students?.[studentId]?.steps ||
+                             session.answers?.[studentId]?.steps || {};
+    const studentSteps = Object.entries(studentStepsRaw)
+      .map(([id, item]) => ({
+        id,
+        content: item?.content || "",
+        kind: item?.kind || "message",
+        step: item?.step || null,
+        ts: item?.submittedAt || 0
+      }))
+      .filter(item => item.content)
+      .sort((a, b) => a.ts - b.ts);
+
     return ok({
 
       broadcast:session.broadcast || null,
@@ -244,7 +265,8 @@ export async function handler(event){
       stepVersion:session.stepVersion || 0,
       stepLocked:studentLocked,
       sessionActive:session.active !== false,
-      lecturerReplies
+      lecturerReplies,
+      studentSteps
 
     });
 
