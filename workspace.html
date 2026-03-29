@@ -81,6 +81,17 @@
 
             <!-- left column: writing area -->
             <div class="workspace-writing-col">
+              <!-- Active Task Banner — appears when lecturer pushes a task -->
+              <div id="active-task-banner" class="active-task-banner" style="display:none;">
+                <div class="atb-header">
+                  <span class="atb-icon">🚀</span>
+                  <div>
+                    <div class="atb-label">משימה פעילה — מהמרצה</div>
+                    <div id="active-task-title" class="atb-title"></div>
+                  </div>
+                </div>
+                <div id="active-task-instructions" class="atb-instructions"></div>
+              </div>
               <div class="workspace-editor-wrap">
                 <div id="lock-overlay" class="workspace-lock-overlay" style="display:none;">
                   🔒 השלב נעול — המרצה יפתח אותו בקרוב
@@ -476,6 +487,24 @@ livePulseStyle.textContent = `
     max-height: 240px;
   }
 }
+/* ── Active Task Banner ── */
+.active-task-banner {
+  border: 2px solid #6366f1;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  animation: taskSlideIn .3s ease;
+}
+@keyframes taskSlideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.atb-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.atb-icon { font-size: 20px; }
+.atb-label { font-size: 10px; font-weight: 800; color: #6366f1; letter-spacing: .4px; text-transform: uppercase; }
+.atb-title { font-size: 15px; font-weight: 800; color: #3730a3; }
+.atb-instructions { font-size: 13px; color: #4338ca; line-height: 1.6; white-space: pre-wrap; }
 `;
 document.head.appendChild(livePulseStyle);
 
@@ -1367,6 +1396,24 @@ function setLiveSessionBadge(isLive) {
   if (isLive) showFeed();
 }
 
+// ── Active Task injection ──
+let lastActiveTaskTs = 0;
+
+function showActiveTask(task) {
+  if (!task || !task.title) return;
+  if ((task.pushedAt || 0) <= lastActiveTaskTs) return;  // already shown
+  lastActiveTaskTs = task.pushedAt || Date.now();
+  const banner = document.getElementById("active-task-banner");
+  const titleEl = document.getElementById("active-task-title");
+  const instEl  = document.getElementById("active-task-instructions");
+  if (!banner) return;
+  if (titleEl) titleEl.textContent = task.title;
+  if (instEl)  instEl.textContent  = task.instructions || "";
+  instEl.style.display = task.instructions ? "" : "none";
+  banner.style.display = "";
+  banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 // ─────────────────────────────
 // autosave
 // ─────────────────────────────
@@ -1537,6 +1584,7 @@ async function pollClassroomState() {
     setLiveSessionBadge(!!data.sessionActive);
     syncLecturerReplies(data.lecturerReplies || []);
     hydrateLecturerThread(data.studentSteps || []);
+    if (data.active_task) showActiveTask(data.active_task);
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
 

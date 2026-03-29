@@ -73,6 +73,14 @@ export async function handler(event){
     const { action, sessionId, studentId, facultyId } =
       event.queryStringParameters || {};
 
+    // templates — no active session needed
+    if(action === "templates"){
+      const classId = event.queryStringParameters?.classId;
+      if(!classId) return err("classId required");
+      const snap = await db.ref(`lesson_templates/${classId}`).once("value");
+      return ok({ templates: snap.val() || {} });
+    }
+
     if(!sessionId) return err("sessionId required");
 
     const snap =
@@ -267,7 +275,8 @@ export async function handler(event){
       stepLocked:studentLocked,
       sessionActive:session.active !== false,
       lecturerReplies,
-      studentSteps
+      studentSteps,
+      active_task: session.active_task || null
 
     });
 
@@ -279,6 +288,21 @@ export async function handler(event){
       headers,
       body:JSON.stringify({error:"Method not allowed"})
     };
+
+  // save_template works without an active session
+  if(action === "save_template"){
+    const { classId, templateName, steps, facultyId: fid } = body;
+    if(!classId || !Array.isArray(steps)) return err("classId and steps[] required");
+    if(!fid) return err("facultyId required");
+    const templateId = "tpl_" + Date.now();
+    await db.ref(`lesson_templates/${classId}/${templateId}`).set({
+      name: templateName || "תבנית שיעור",
+      steps,
+      savedAt: Date.now(),
+      facultyId: fid
+    });
+    return ok({ ok:true, templateId });
+  }
 
   if(!sessionId) return err("sessionId required");
 
@@ -333,7 +357,7 @@ export async function handler(event){
   const facultyId = body.facultyId;
 
   const teacherActions =
-    ["broadcast","lock","unlock","close","set_step","lecturer_reply"];
+    ["broadcast","lock","unlock","close","set_step","lecturer_reply","push_task","export_session"];
 
   if(teacherActions.includes(action)){
 
@@ -592,6 +616,52 @@ export async function handler(event){
     }
 
     return ok({ok:true});
+
+  }
+
+  if(action === "push_task"){
+
+    const { title, instructions, step } = body;
+    if(!title) return err("title required");
+    const now = Date.now();
+    const taskData = {
+      title,
+      instructions: instructions || "",
+      step: step || 1,
+      pushedAt: now
+    };
+    await sessionRef.update({ active_task: taskData });
+    // log for export journal
+    await db.ref(`sessions/${sessionId}/task_log`).push({ ...taskData, facultyId });
+    return ok({ ok:true });
+
+  }
+
+  if(action === "export_session"){
+
+    const [taskLogSnap, studentsSnap] = await Promise.all([
+      db.ref(`sessions/${sessionId}/task_log`).once("value"),
+      db.ref(`sessions/${sessionId}/students`).once("value")
+    ]);
+    const taskLog = Object.values(taskLogSnap.val() || {})
+      .sort((a,b) => (a.pushedAt||0) - (b.pushedAt||0));
+    const studentsData = studentsSnap.val() || {};
+    const studentResponses = Object.entries(studentsData)
+      .flatMap(([sid, sdata]) =>
+        Object.values(sdata.steps || {}).map(s => ({ ...s, studentId: sid }))
+      )
+      .sort((a,b) => (a.submittedAt||0) - (b.submittedAt||0));
+    return ok({
+      sessionId,
+      exportedAt: Date.now(),
+      session: {
+        classId: session.classId || null,
+        openedAt: session.openedAt || null,
+        closedAt: session.closedAt || null
+      },
+      taskLog,
+      studentResponses
+    });
 
   }
 

@@ -108,6 +108,76 @@
   border-radius: 0 0 18px 18px;
 }
 @media (max-width: 640px) { .cp-two-col { grid-template-columns: 1fr; } }
+
+/* ─── Lesson Planner ─── */
+.panel-sub { font-size: 12px; color: var(--color-text-muted, #64748b); margin: -4px 0 12px; line-height: 1.5; }
+.lp-input {
+  width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 8px 10px; font-family: inherit; font-size: 13px; color: #1e293b;
+  outline: none; box-sizing: border-box; margin-bottom: 6px;
+}
+.lp-input:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.lp-textarea {
+  width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: 8px 10px; font-family: inherit; font-size: 13px; color: #1e293b;
+  resize: vertical; outline: none; box-sizing: border-box; margin-bottom: 6px;
+}
+.lp-textarea:focus { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+.lp-step-form {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 10px; margin-bottom: 10px;
+}
+.lesson-steps-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; min-height: 16px; }
+.lesson-steps-empty { color: #94a3b8; font-size: 12px; text-align: center; padding: 8px 0; }
+.lesson-step-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 10px;
+}
+.lesson-step-num {
+  min-width: 22px; height: 22px; border-radius: 50%; background: #6366f1; color: #fff;
+  font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.lesson-step-content { flex: 1; min-width: 0; }
+.lesson-step-title { font-size: 13px; font-weight: 700; color: #0f172a; }
+.lesson-step-inst { font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.4; }
+.lesson-step-remove {
+  background: none; border: none; cursor: pointer; color: #94a3b8;
+  font-size: 14px; padding: 0 2px; flex-shrink: 0; margin-top: 1px;
+}
+.lesson-step-remove:hover { color: #ef4444; }
+.lp-save-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+/* ─── DJ Booth ─── */
+.dj-booth-steps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 4px; min-height: 16px; }
+.dj-empty { color: #94a3b8; font-size: 12px; text-align: center; padding: 12px 0; }
+.dj-step {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 10px 12px; transition: border-color .2s ease;
+}
+.dj-step:hover { border-color: #a5b4fc; }
+.dj-step-info { flex: 1; min-width: 0; display: flex; align-items: flex-start; gap: 8px; }
+.dj-step-num {
+  min-width: 24px; height: 24px; border-radius: 50%; background: #ede9fe; color: #4f46e5;
+  font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.dj-step-title { font-size: 13px; font-weight: 700; color: #1e1b4b; }
+.dj-step-inst { font-size: 11px; color: #64748b; margin-top: 2px; line-height: 1.4; }
+.dj-push-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #fff; border: none; border-radius: 8px;
+  padding: 7px 14px; font-size: 13px; font-weight: 700;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  font-family: inherit; transition: opacity .15s ease;
+}
+.dj-push-btn:hover:not(:disabled) { opacity: 0.88; }
+.dj-push-btn:disabled { opacity: 0.45; cursor: not-allowed; background: #94a3b8; }
+.dj-push-btn.pushed { background: #059669; }
+/* ─── Broadcast details accordion ─── */
+.broadcast-details { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-top: 4px; }
+.broadcast-details summary { font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; user-select: none; }
+.broadcast-details[open] summary { color: #334155; }
 @media print {
   body > *:not(.class-profiler-overlay) { display: none !important; }
   .class-profiler-overlay {
@@ -274,9 +344,10 @@
 
     <div id="sessionControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
-      <div id="activeSessionControls" style="display:none;align-items:center;gap:10px;">
+      <div id="activeSessionControls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
         <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
         <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
+        <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן הוראה</button>
       </div>
     </div>
 
@@ -289,26 +360,62 @@
 
     <hr class="workspace-divider">
 
-    <h2>📡 שדר לכיתה</h2>
+    <!-- ─── Lesson Planner (Library) ─── -->
+    <h2>📚 לוח שיעורים</h2>
+    <p class="panel-sub">הגדר שלבי שיעור לפני הכיתה — שמור לשימוש חוזר</p>
 
-    <div class="field">
-      <label>טקסט / שאלה / מאמר</label>
-      <textarea id="broadcastText" placeholder="הכנס טקסט, שאלה, או קטע מאמר שכל התלמידים יראו..."></textarea>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <select id="template-select" class="lp-input" style="margin:0;flex:1;">
+        <option value="">— טען תבנית שמורה —</option>
+      </select>
+      <button class="btn btn-outline" onclick="loadSelectedTemplate()" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">📥 טען</button>
     </div>
 
-    <div class="field">
-      <label>שלב מספר</label>
-      <input type="number" id="stepNum" value="1" min="1" max="10" class="step-num-input">
+    <div class="lp-step-form">
+      <input type="text" id="step-title-input" placeholder="כותרת השלב (חובה)" class="lp-input">
+      <textarea id="step-instructions-input" placeholder="הוראות / הסבר לסטודנטים (אופציונלי)" class="lp-textarea" rows="2"></textarea>
+      <button class="btn btn-outline" onclick="addLessonStep()" style="width:100%;font-size:13px;">+ הוסף שלב</button>
     </div>
 
-    <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+    <div id="lesson-steps-list" class="lesson-steps-list">
+      <div class="lesson-steps-empty">טרם הוגדרו שלבים</div>
+    </div>
 
-    <div id="broadcastPreview" style="display:none" class="broadcast-preview">
-      <strong>⚡ שודר לתלמידים:</strong>
-      <span id="broadcastPreviewText"></span>
+    <div class="lp-save-row">
+      <input type="text" id="template-name-input" placeholder="שם התבנית" class="lp-input" style="margin:0;flex:1;">
+      <button class="btn btn-green" onclick="saveTemplate()" style="font-size:12px;padding:7px 14px;white-space:nowrap;flex-shrink:0;">💾 שמור</button>
     </div>
 
     <hr class="workspace-divider">
+
+    <!-- ─── DJ Booth (Live Controller) ─── -->
+    <h2>🏛 במת המרצה</h2>
+    <p class="panel-sub" id="dj-booth-status">פתח שיעור והגדר שלבים כדי לדחוף משימות לסטודנטים</p>
+    <div id="dj-booth-steps" class="dj-booth-steps">
+      <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
+    </div>
+
+    <hr class="workspace-divider">
+
+    <!-- ─── Quick Broadcast (collapsed) ─── -->
+    <details class="broadcast-details">
+      <summary>📡 שידור מהיר לכיתה</summary>
+      <div style="padding-top:10px;">
+        <div class="field">
+          <label>טקסט / שאלה / מאמר</label>
+          <textarea id="broadcastText" placeholder="הכנס טקסט, שאלה, או קטע מאמר שכל התלמידים יראו..."></textarea>
+        </div>
+        <div class="field">
+          <label>שלב מספר</label>
+          <input type="number" id="stepNum" value="1" min="1" max="10" class="step-num-input">
+        </div>
+        <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+        <div id="broadcastPreview" style="display:none" class="broadcast-preview">
+          <strong>⚡ שודר לתלמידים:</strong>
+          <span id="broadcastPreviewText"></span>
+        </div>
+      </div>
+    </details>
 
     <h2>🎓 למידה משולבת מיומנויות</h2>
     <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:14px;">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</p>
@@ -582,6 +689,8 @@ async function openSession() {
   document.getElementById('sessionIdDisplay').innerHTML =
     `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
 
+  if (classId) loadTemplates(classId);
+  renderDJBooth();
   startPolling();
 }
 
@@ -1217,6 +1326,163 @@ window.addEventListener("load", () => {
     MiledAuth.renderUserBadge("user-badge");
   }
 });
+
+// ═══════════════════════════════════════════
+// LESSON PLANNER
+// ═══════════════════════════════════════════
+let lessonSteps = [];
+
+function addLessonStep() {
+  const title = document.getElementById("step-title-input").value.trim();
+  const instructions = document.getElementById("step-instructions-input").value.trim();
+  if (!title) { alert("הוסף כותרת לשלב"); return; }
+  lessonSteps.push({ title, instructions });
+  document.getElementById("step-title-input").value = "";
+  document.getElementById("step-instructions-input").value = "";
+  renderLessonSteps();
+}
+
+function removeLessonStep(i) {
+  lessonSteps.splice(i, 1);
+  renderLessonSteps();
+}
+
+function renderLessonSteps() {
+  const container = document.getElementById("lesson-steps-list");
+  if (!container) return;
+  if (!lessonSteps.length) {
+    container.innerHTML = '<div class="lesson-steps-empty">טרם הוגדרו שלבים</div>';
+  } else {
+    container.innerHTML = lessonSteps.map((s, i) => `
+      <div class="lesson-step-item">
+        <div class="lesson-step-num">${i + 1}</div>
+        <div class="lesson-step-content">
+          <div class="lesson-step-title">${escapeHtml(s.title)}</div>
+          ${s.instructions ? `<div class="lesson-step-inst">${escapeHtml(s.instructions)}</div>` : ""}
+        </div>
+        <button class="lesson-step-remove" onclick="removeLessonStep(${i})">✕</button>
+      </div>`).join("");
+  }
+  renderDJBooth();
+}
+
+async function saveTemplate() {
+  const opt  = document.querySelector("#botSelect option:checked");
+  const classId = opt?.dataset?.type === "course" ? opt.value : null;
+  if (!classId) { alert("בחר קורס לפני שמירת תבנית"); return; }
+  if (!lessonSteps.length) { alert("הוסף שלבים לפני השמירה"); return; }
+  const name = document.getElementById("template-name-input").value.trim() ||
+    `שיעור ${new Date().toLocaleDateString("he-IL")}`;
+  const res = await callClassroom({ action: "save_template", classId, templateName: name, steps: lessonSteps, facultyId });
+  if (res.ok) {
+    document.getElementById("template-name-input").value = "";
+    loadTemplates(classId);
+    const btn = document.querySelector(".lp-save-row button");
+    if (btn) { const orig = btn.textContent; btn.textContent = "✅ נשמר!"; setTimeout(() => { btn.textContent = orig; }, 2000); }
+  } else {
+    alert("שגיאה: " + (res.error || "נסה שוב"));
+  }
+}
+
+async function loadTemplates(classId) {
+  if (!classId) return;
+  try {
+    const res  = await fetch(`/.netlify/functions/classroom?action=templates&classId=${classId}`);
+    const data = await res.json();
+    const sel  = document.getElementById("template-select");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
+    Object.entries(data.templates || {})
+      .sort(([,a],[,b]) => (b.savedAt||0) - (a.savedAt||0))
+      .forEach(([id, tpl]) => {
+        const opt = document.createElement("option");
+        opt.value = id;
+        opt.textContent = tpl.name || id;
+        opt.dataset.steps = JSON.stringify(tpl.steps || []);
+        sel.appendChild(opt);
+      });
+  } catch(e) { console.error("loadTemplates error:", e); }
+}
+
+function loadSelectedTemplate() {
+  const sel = document.getElementById("template-select");
+  const opt = sel?.options[sel.selectedIndex];
+  if (!opt?.value) { alert("בחר תבנית"); return; }
+  try {
+    lessonSteps = JSON.parse(opt.dataset.steps || "[]");
+    renderLessonSteps();
+  } catch(e) { alert("שגיאה בטעינת התבנית"); }
+}
+
+// ═══════════════════════════════════════════
+// DJ BOOTH — Live Controller
+// ═══════════════════════════════════════════
+
+function renderDJBooth() {
+  const container = document.getElementById("dj-booth-steps");
+  if (!container) return;
+  const statusEl = document.getElementById("dj-booth-status");
+  if (!lessonSteps.length) {
+    container.innerHTML = '<div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>';
+    if (statusEl) statusEl.textContent = "פתח שיעור והגדר שלבים כדי לדחוף משימות";
+    return;
+  }
+  if (statusEl) statusEl.textContent = sessionId
+    ? `${lessonSteps.length} שלבים מוכנים — לחץ 🚀 לדחיפת משימה לסטודנטים`
+    : `${lessonSteps.length} שלבים — פתח שיעור כדי להפעיל את הדחיפה`;
+  container.innerHTML = lessonSteps.map((s, i) => `
+    <div class="dj-step" id="dj-step-${i}">
+      <div class="dj-step-info">
+        <div class="dj-step-num">${i + 1}</div>
+        <div>
+          <div class="dj-step-title">${escapeHtml(s.title)}</div>
+          ${s.instructions ? `<div class="dj-step-inst">${escapeHtml(s.instructions).slice(0,90)}${s.instructions.length>90?"...":""}</div>` : ""}
+        </div>
+      </div>
+      <button class="dj-push-btn" onclick="pushTask(${i})" ${!sessionId ? 'disabled title="פתח שיעור תחילה"' : ""}>🚀 דחוף</button>
+    </div>`).join("");
+}
+
+async function pushTask(stepIdx) {
+  if (!sessionId) { alert("פתח שיעור תחילה"); return; }
+  const step = lessonSteps[stepIdx];
+  if (!step) return;
+  const res = await callClassroom({
+    action: "push_task", sessionId, facultyId,
+    title: step.title, instructions: step.instructions || "", step: stepIdx + 1
+  });
+  if (res.ok) {
+    const btn = document.querySelector(`#dj-step-${stepIdx} .dj-push-btn`);
+    if (btn) {
+      btn.textContent = "✅ נדחף!";
+      btn.classList.add("pushed");
+      setTimeout(() => { btn.textContent = "🚀 דחוף"; btn.classList.remove("pushed"); }, 3000);
+    }
+  } else {
+    alert("שגיאה בדחיפת המשימה: " + (res.error || ""));
+  }
+}
+
+// ═══════════════════════════════════════════
+// EXPORT — Teaching Journal
+// ═══════════════════════════════════════════
+
+async function exportSession() {
+  if (!sessionId) { alert("אין שיעור פעיל לייצוא"); return; }
+  try {
+    const res = await callClassroom({ action: "export_session", sessionId, facultyId });
+    if (!res.sessionId) { alert("שגיאה בייצוא"); return; }
+    const filename =
+      `teaching_journal_${sessionId.slice(0,12)}_${new Date().toLocaleDateString("he-IL").replace(/\//g,"-")}.json`;
+    const blob = new Blob([JSON.stringify(res, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    alert("שגיאה בייצוא: " + e.message);
+  }
+}
 </script>
 
 <script src="/balance.js"></script>
