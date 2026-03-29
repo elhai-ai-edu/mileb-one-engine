@@ -251,6 +251,7 @@ export async function handler(event){
         id,
         content: item?.content || "",
         kind: item?.kind || "message",
+        tag: item?.tag || "general",
         step: item?.step || null,
         ts: item?.submittedAt || 0
       }))
@@ -437,11 +438,14 @@ export async function handler(event){
     const stepNum = Number(step) || 1;
     const kind = type === "message" ? "message" : "submission";
     const now = Date.now();
+    const VALID_TAGS = ["research", "task", "general"];
+    const tag = VALID_TAGS.includes(body.tag) ? body.tag : "general";
     const entry = {
 
       step:stepNum,
       content,
       kind,
+      tag,
       submittedAt:now
 
     };

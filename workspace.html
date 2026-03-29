@@ -195,6 +195,15 @@ livePulseStyle.textContent = `
 .lm-send-btn:hover { background: #1d4ed8; }
 .lm-send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
 .lm-send-status { font-size: 12px; color: #64748b; }
+/* ─── Tag chips in lecturer thread ─── */
+.lm-tag-chip {
+  display: inline-block; font-size: 10px; font-weight: 700;
+  border-radius: 999px; padding: 2px 8px; margin-bottom: 6px;
+  letter-spacing: .3px;
+}
+.lm-tag-research { background: #fef9c3; color: #713f12; border: 1px solid #fde68a; }
+.lm-tag-task     { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+.lm-tag-general  { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
 `;
 document.head.appendChild(livePulseStyle);
 
@@ -778,8 +787,21 @@ function escapeHtml(text) {
 // LECTURER CHAT THREAD HELPERS
 // ─────────────────────────────────────────────────
 
+// Derive a context tag from the currently active bot and lesson step.
+// Returns: "research" | "task" | "general"
+function detectMessageTag() {
+  const bt = (currentBotType || "").toLowerCase();
+  if (bt.includes("research") || bt.includes("qualitative")) return "research";
+  if (currentStep && currentStep > 1) return "task";
+  return "general";
+}
+
+// Map tag → display icon
+const TAG_ICONS = { research: "🔎", task: "📝", general: "💬" };
+function tagIcon(tag) { return TAG_ICONS[tag] || TAG_ICONS.general; }
+
 function addToLecturerThread(item) {
-  // item: { type: "sent"|"reply", text, kind?, ts }
+  // item: { type: "sent"|"reply", text, kind?, tag?, ts }
   const thread = document.getElementById("lm-thread");
   if (!thread) return;
   const empty = thread.querySelector(".lm-empty");
@@ -789,15 +811,26 @@ function addToLecturerThread(item) {
   const div = document.createElement("div");
   div.className = isReply ? "lm-msg lm-msg-from-lecturer" : "lm-msg lm-msg-from-student";
 
-  const label = isReply
-    ? "👨‍🏫 המרצה:"
-    : (item.kind === "submission" ? "📄 שלחת עבודה:" : "💬 שלחת מסר:");
+  let label;
+  if (isReply) {
+    label = "👨‍🏫 המרצה:";
+  } else if (item.kind === "submission") {
+    label = `📄 שלחת עבודה:`;
+  } else {
+    const icon = tagIcon(item.tag || "general");
+    const tagLabel = item.tag === "research" ? "מחקר"
+                   : item.tag === "task"     ? `שלב ${item.step || currentStep || ""}`
+                   : "מסר";
+    label = `${icon} שלחת ${tagLabel}:`;
+  }
+
   const timeStr = item.ts
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
 
   div.innerHTML =
     `<div class="lm-msg-label">${label}</div>` +
+    (item.tag && !isReply ? `<span class="lm-tag-chip lm-tag-${item.tag}">${tagIcon(item.tag)} ${item.tag}</span>` : "") +
     `<div class="lm-msg-body">${escapeHtml(item.text)}</div>` +
     (timeStr ? `<span class="lm-msg-time">${timeStr}</span>` : "");
 
@@ -830,7 +863,14 @@ function hydrateLecturerThread(studentSteps = []) {
   studentSteps.forEach(step => {
     if (!step?.id || seenStudentStepIds.has(step.id)) return;
     seenStudentStepIds.add(step.id);
-    addToLecturerThread({ type: "sent", text: step.content, kind: step.kind || "message", ts: step.ts });
+    addToLecturerThread({
+      type: "sent",
+      text: step.content,
+      kind: step.kind || "message",
+      tag: step.tag || "general",
+      step: step.step,
+      ts: step.ts
+    });
   });
 }
 
@@ -880,16 +920,17 @@ async function sendLecturerMessageFromModal() {
   if (status) status.textContent = "שולח...";
 
   try {
+    const tag = detectMessageTag();
     const res = await fetch("/.netlify/functions/classroom", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "submit", sessionId, studentId,
-        step: currentStep, content: text, type: "message"
+        step: currentStep, content: text, type: "message", tag
       })
     });
     if (res.ok) {
-      addToLecturerThread({ type: "sent", text, kind: "message", ts: Date.now() });
+      addToLecturerThread({ type: "sent", text, kind: "message", tag, step: currentStep, ts: Date.now() });
       input.value = "";
       if (status) { status.textContent = "נשלח ✓"; setTimeout(() => { status.textContent = ""; }, 2000); }
     } else {
@@ -1023,13 +1064,13 @@ async function submitWork() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "submit", sessionId, studentId,
-      step: currentStep, content: text, type: "submission"
+      step: currentStep, content: text, type: "submission", tag: "task"
     })
   });
 
   if (res.ok) {
     // Mirror the submission into the lecturer thread so student can see it
-    addToLecturerThread({ type: "sent", text, kind: "submission", ts: Date.now() });
+    addToLecturerThread({ type: "sent", text, kind: "submission", tag: "task", step: currentStep, ts: Date.now() });
     alert("העבודה הוגשה בהצלחה");
   } else {
     alert("שגיאה בהגשה — נסה שוב");
