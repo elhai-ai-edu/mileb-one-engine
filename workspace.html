@@ -567,11 +567,60 @@ function selectBot(botType, label, linkEl) {
   triggerBotOpening();  // ← הבוט פותח את השיחה
 }
 
+function findBotTypeSource(botType) {
+  if (!CONFIG || !botType) return null;
+
+  const courseItems = Object.values(CONFIG.branches?.courses?.items || {});
+  if (courseItems.some(bot => bot?.botType === botType)) return "branches.courses.items";
+
+  const facultyItems = Object.values(CONFIG.branches?.faculty?.items || {});
+  if (facultyItems.some(bot => bot?.botType === botType)) return "branches.faculty.items";
+
+  const universalItems = Object.values(CONFIG.universal?.items || {});
+  if (universalItems.some(bot => bot?.botType === botType)) return "universal.items";
+
+  return null;
+}
+
+function guardBotTypeOrWarn(botType, origin) {
+  if (!botType) return false;
+  if (!CONFIG) return true; // config not loaded yet — don't block pre-init edge cases
+
+  const source = findBotTypeSource(botType);
+  if (source) {
+    console.info(`[BOT-GUARD][${origin}] OK: ${botType} (${source})`);
+    return true;
+  }
+
+  const knownCourse  = Object.values(CONFIG.branches?.courses?.items || {}).map(b => b?.botType).filter(Boolean);
+  const knownFaculty = Object.values(CONFIG.branches?.faculty?.items || {}).map(b => b?.botType).filter(Boolean);
+
+  console.error(`[BOT-GUARD][${origin}] MISSING BOT TYPE`, {
+    requestedBotType: botType,
+    courseId,
+    skillId,
+    sessionId,
+    knownCourseBotTypes: knownCourse,
+    knownFacultyBotTypes: knownFaculty
+  });
+
+  const msg = "אופס! הבוט הזה עדיין בשלבי הגדרה. המרצה יעדכן כשהוא יהיה מוכן.";
+  alert(msg);
+  const chatWindow = document.getElementById("chat-window");
+  if (chatWindow) {
+    chatWindow.appendChild(renderMessage("assistant", msg));
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+  return false;
+}
+
 // ─────────────────────────────
 // פתיחת שיחה אוטומטית ← שינוי 2
 // ─────────────────────────────
 
 async function triggerBotOpening() {
+  if (!guardBotTypeOrWarn(currentBotType, "triggerBotOpening")) return;
+
   const chatWindow = document.getElementById("chat-window");
   const loading    = document.createElement("div");
   loading.className = "message ai bot-message";
@@ -636,6 +685,8 @@ async function sendMessage() {
     alert("בחר בוט תחילה מהתפריט");
     return;
   }
+
+  if (!guardBotTypeOrWarn(currentBotType, "sendMessage")) return;
 
   const text = document.getElementById("user-input").value.trim();
   if (!text) return;
