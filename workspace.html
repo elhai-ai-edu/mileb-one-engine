@@ -598,6 +598,16 @@ async function triggerBotOpening() {
       })
     });
     const data = await res.json();
+    if (!res.ok) {
+      console.error("[triggerBotOpening] Chat init failed", {
+        status: res.status,
+        error: data?.error || null,
+        requestedBotType: currentBotType,
+        courseId,
+        skillId,
+        sessionId
+      });
+    }
     loading.remove();
     if (data.reply) {
       chatWindow.appendChild(renderMessage("assistant", data.reply));
@@ -661,6 +671,16 @@ async function sendMessage() {
     });
 
     const data = await res.json();
+    if (!res.ok) {
+      console.error("[sendMessage] Chat request failed", {
+        status: res.status,
+        error: data?.error || null,
+        requestedBotType: currentBotType,
+        courseId,
+        skillId,
+        sessionId
+      });
+    }
     loading.remove();
 
     const reply = data.reply || "שגיאה";

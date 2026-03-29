@@ -1,5 +1,5 @@
 {
-  "system_version": "5.8 - Infrastructure Sync v9.8.0",
+  "system_version": "5.9 - Bot Routing Fix v9.8.1",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "balance": {
@@ -80,6 +80,13 @@
           "botType": "course_gerontology", "function": "learning", "phase": "development",
           "thinkingBudget": 1024, "systemPrompt": "אתה מלווה לימודי גרונטולוגיה תוך עידוד חשיבה ביקורתית ויישומית.",
           "scope": "global", "owner": "system", "createdAt": "2026-03-02"
+        },
+        "course_hebrew_advanced_companion": {
+          "name": "🤖 בוט קורס — עברית מתקדמים", "_layer": "course_general",
+          "botType": "course_hebrew_advanced_companion", "function": "learning", "phase": "development",
+          "thinkingBudget": 1024,
+          "systemPrompt": "אתה מלווה קורס עברית מתקדמים באופן כללי. תפקידך ללוות למידה שוטפת, להסביר מושגים, לסייע בהתארגנות למשימות, ולשאול שאלות מקדמות חשיבה. אל תחליף את הסטודנט בכתיבה מלאה. כשמבקשים עזרה בפרויקט מחקר או הגשה, הפנה בעדינות לבוט הייעודי של המשימה תוך שמירה על רצף למידה.",
+          "scope": "global", "owner": "system", "createdAt": "2026-03-29"
         },
         "socratic_student": {
           "name": "עברית מתקדמים — בוט חקר", "_layer": "course_general",
@@ -243,7 +250,8 @@
         }
       },
       "bots": {
-        "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
+        "main": { "botType": "course_hebrew_advanced_companion", "label": "🤖 בוט הקורס" },
+        "research": { "botType": "course_qualitative_research", "label": "🔎 בוט מחקר" },
         "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
       },
       "universal_bots": ["support", "presentation"]
