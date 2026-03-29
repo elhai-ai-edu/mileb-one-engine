@@ -144,7 +144,6 @@
     </div>
   </div>
   <a href="/cockpit.html#skills" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
-  <div id="sessionBadge" class="session-badge closed">אין שיעור פעיל</div>
 </div>
 <script>(function(){
   try {
@@ -170,8 +169,13 @@
       <select id="botSelect"><option value="">טוען...</option></select>
     </div>
 
-    <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
-    <button class="btn btn-red"   id="closeBtn" onclick="closeSession()" disabled>■ סגור שיעור</button>
+    <div id="sessionControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
+      <div id="activeSessionControls" style="display:none;align-items:center;gap:10px;">
+        <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
+        <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
+      </div>
+    </div>
 
     <div id="sessionInfo" style="display:none">
       <div class="session-id-box">
@@ -382,6 +386,17 @@ let pollTimer   = null;
 let currentBot  = null;
 let CONFIG      = null;  // stored for openSession() lookup
 
+function setSessionControls(isActive) {
+  const openBtn = document.getElementById('openBtn');
+  const activeControls = document.getElementById('activeSessionControls');
+  const broadcastBtn = document.getElementById('broadcastBtn');
+  if (!openBtn || !activeControls || !broadcastBtn) return;
+
+  openBtn.style.display = isActive ? 'none' : '';
+  activeControls.style.display = isActive ? 'flex' : 'none';
+  broadcastBtn.disabled = !isActive;
+}
+
 // ─────────────────────────────────────────
 // LOAD CONFIG → populate bot selector
 // Only show real courses (my_courses) + faculty tools.
@@ -453,13 +468,9 @@ async function openSession() {
   const res = await callClassroom({ action: "open", sessionId, facultyId, botType, classId });
   if (!res.ok) { alert("שגיאה בפתיחת שיעור"); return; }
 
-  document.getElementById('sessionBadge').textContent = "✅ שיעור פעיל";
-  document.getElementById('sessionBadge').className   = "session-badge";
   document.getElementById('sessionInfo').style.display = "block";
   document.getElementById('sessionIdDisplay').textContent = sessionId;
-  document.getElementById('openBtn').disabled   = true;
-  document.getElementById('closeBtn').disabled  = false;
-  document.getElementById('broadcastBtn').disabled = false;
+  setSessionControls(true);
 
   // Share URL for students — now points to workspace.html with courseId
   document.getElementById('sessionIdDisplay').innerHTML =
@@ -491,11 +502,9 @@ async function closeSession() {
   await callClassroom({ action: "close", sessionId, facultyId });
 
   clearInterval(pollTimer);
-  document.getElementById('sessionBadge').textContent = "■ שיעור הסתיים";
-  document.getElementById('sessionBadge').className   = "session-badge closed";
-  document.getElementById('openBtn').disabled  = false;
-  document.getElementById('closeBtn').disabled = true;
-  document.getElementById('broadcastBtn').disabled = true;
+  document.getElementById('sessionInfo').style.display = "none";
+  document.getElementById('sessionIdDisplay').textContent = "";
+  setSessionControls(false);
 }
 
 // ─────────────────────────────────────────
