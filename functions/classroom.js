@@ -222,6 +222,20 @@ export async function handler(event){
       studentId &&
       (session.lockedSteps || []).includes(studentId);
 
+    const lecturerRepliesRaw =
+      session.students?.[studentId]?.lecturer_replies || {};
+
+    const lecturerReplies = Object.entries(lecturerRepliesRaw)
+      .map(([id, item]) => ({
+        id,
+        text: item?.text || "",
+        ts: item?.ts || 0,
+        facultyId: item?.facultyId || null
+      }))
+      .filter(item => item.text)
+      .sort((a, b) => (a.ts || 0) - (b.ts || 0))
+      .slice(-20);
+
     return ok({
 
       broadcast:session.broadcast || null,
@@ -229,7 +243,8 @@ export async function handler(event){
       currentStep:session.currentStep || 1,
       stepVersion:session.stepVersion || 0,
       stepLocked:studentLocked,
-      sessionActive:session.active !== false
+      sessionActive:session.active !== false,
+      lecturerReplies
 
     });
 
@@ -295,7 +310,7 @@ export async function handler(event){
   const facultyId = body.facultyId;
 
   const teacherActions =
-    ["broadcast","lock","unlock","close","set_step"];
+    ["broadcast","lock","unlock","close","set_step","lecturer_reply"];
 
   if(teacherActions.includes(action)){
 
@@ -466,6 +481,27 @@ export async function handler(event){
     ).set(Date.now());
 
     return ok({ok:true,state});
+
+  }
+
+  if(action === "lecturer_reply"){
+
+    const { studentId, text } = body;
+
+    if(!studentId) return err("studentId required");
+    if(!text || !String(text).trim()) return err("text required");
+
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/lecturer_replies`
+    ).push({
+
+      text:String(text).trim(),
+      ts:Date.now(),
+      facultyId
+
+    });
+
+    return ok({ok:true});
 
   }
 

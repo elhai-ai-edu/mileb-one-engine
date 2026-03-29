@@ -168,6 +168,37 @@
   line-height: 1.6;
   white-space: pre-wrap;
 }
+.lecturer-reply-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.lecturer-reply-input {
+  flex: 1;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+.lecturer-reply-input:focus {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+.lecturer-reply-send {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lecturer-reply-send:hover {
+  background: #1d4ed8;
+}
 </style>
 <title>MilEd.One – כיתה חכמה</title>
 
@@ -437,6 +468,7 @@ let pollTimer   = null;
 let currentBot  = null;
 let CONFIG      = null;  // stored for openSession() lookup
 const ACTIVE_SESSIONS_NODE = "active_sessions";
+const replyDrafts = {};
 
 function setSessionControls(isActive) {
   const openBtn = document.getElementById('openBtn');
@@ -642,12 +674,21 @@ function renderDashboard(data) {
           <span class="student-status ${statusClass}">${statusText}</span>
         </div>
         <div class="steps-list">${stepsHtml || '<div style="color:#64748b;font-size:12px">טרם נשלח מסר או הוגשה עבודה</div>'}</div>
+        <div class="lecturer-reply-row">
+          <input id="reply-${s.studentId}" class="lecturer-reply-input" placeholder="כתוב תגובה אישית לסטודנט..." oninput="setReplyDraft('${s.studentId}', this.value)" />
+          <button class="lecturer-reply-send" onclick="sendLecturerReply('${s.studentId}')">שלח</button>
+        </div>
         <div class="card-actions">
           <button class="card-btn card-btn-unlock" onclick="unlockStudent('${s.studentId}')">🔓 פתח שלב</button>
           <button class="card-btn card-btn-lock"   onclick="lockStudent('${s.studentId}')">🔒 נעל</button>
         </div>
       </div>`;
   }).join('');
+
+  Object.entries(replyDrafts).forEach(([sid, text]) => {
+    const input = document.getElementById(`reply-${sid}`);
+    if (input && !input.matches(":focus")) input.value = text;
+  });
 }
 
 // ─────────────────────────────────────────
@@ -658,6 +699,32 @@ async function unlockStudent(studentId) {
 }
 async function lockStudent(studentId) {
   await callClassroom({ action: "lock", sessionId, facultyId, studentId });
+}
+
+function setReplyDraft(studentId, text) {
+  replyDrafts[studentId] = text;
+}
+
+async function sendLecturerReply(studentId) {
+  const input = document.getElementById(`reply-${studentId}`);
+  const text = input?.value?.trim() || "";
+  if (!text) return;
+
+  const res = await callClassroom({
+    action: "lecturer_reply",
+    sessionId,
+    facultyId,
+    studentId,
+    text
+  });
+
+  if (!res?.ok) {
+    alert("שליחת התגובה נכשלה");
+    return;
+  }
+
+  replyDrafts[studentId] = "";
+  input.value = "";
 }
 
 // ─────────────────────────────────────────

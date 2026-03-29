@@ -112,6 +112,18 @@ livePulseStyle.textContent = `
   0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.60); }
   70% { box-shadow: 0 0 0 8px rgba(34,197,94,0.00); }
   100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.00); }
+}
+.message.lecturer-message {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  color: #581c87;
+}
+.lecturer-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: #7e22ce;
+  margin-bottom: 4px;
 }`;
 document.head.appendChild(livePulseStyle);
 
@@ -156,6 +168,7 @@ let currentCourse  = null;
 let currentSkillBot = null;
 let currentBotType = null;
 let chatHistory    = [];
+const seenLecturerReplyIds = new Set();
 let saveTimer      = null;
 let isLocked       = false;
 let currentStep    = 1;
@@ -680,6 +693,35 @@ function renderMessage(role, content) {
   return div;
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function renderLecturerMessage(content) {
+  const div = document.createElement("div");
+  div.className = "message lecturer-message";
+  div.innerHTML = `<span class="lecturer-label">המרצה:</span>${escapeHtml(content)}`;
+  return div;
+}
+
+function syncLecturerReplies(replies = []) {
+  if (!Array.isArray(replies) || !replies.length) return;
+  const chatWindow = document.getElementById("chat-window");
+  if (!chatWindow) return;
+
+  replies.forEach(item => {
+    if (!item?.id || !item?.text) return;
+    if (seenLecturerReplyIds.has(item.id)) return;
+    seenLecturerReplyIds.add(item.id);
+    chatWindow.appendChild(renderLecturerMessage(item.text));
+  });
+
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+}
+
 async function sendMessage() {
   if (!currentBotType) {
     alert("בחר בוט תחילה מהתפריט");
@@ -907,6 +949,7 @@ async function pollClassroomState() {
     const data = await res.json();
     const isLocked = !!data.stepLocked;
     setLiveSessionBadge(!!data.sessionActive);
+    syncLecturerReplies(data.lecturerReplies || []);
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
 
