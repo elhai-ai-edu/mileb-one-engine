@@ -389,7 +389,7 @@ export async function handler(event){
 
   if(action === "submit"){
 
-    const { studentId, step, content } = body;
+    const { studentId, step, content, type } = body;
 
     if(!studentId)
       return err("studentId required");
@@ -398,43 +398,45 @@ export async function handler(event){
       return err("content required");
 
     const stepNum = Number(step) || 1;
-
-    await db.ref(
-      `sessions/${sessionId}/answers/${studentId}/steps/${stepNum}`
-    ).set({
+    const kind = type === "message" ? "message" : "submission";
+    const now = Date.now();
+    const entry = {
 
       step:stepNum,
       content,
-      submittedAt:Date.now()
+      kind,
+      submittedAt:now
 
-    });
+    };
+
+    const answerEntryRef = db.ref(
+      `sessions/${sessionId}/answers/${studentId}/steps`
+    ).push();
+
+    const studentEntryRef = db.ref(
+      `sessions/${sessionId}/students/${studentId}/steps`
+    ).push();
+
+    await answerEntryRef.set(entry);
 
     await db.ref(
       `sessions/${sessionId}/answers/${studentId}/state`
-    ).set("submitted");
+    ).set(kind === "message" ? "chatting" : "submitted");
 
     await db.ref(
       `sessions/${sessionId}/answers/${studentId}/lastUpdated`
-    ).set(Date.now());
+    ).set(now);
 
     // Mirror for cockpit consumers reading sessions/{sessionId}/students
-    await db.ref(
-      `sessions/${sessionId}/students/${studentId}/steps/${stepNum}`
-    ).set({
-
-      step:stepNum,
-      content,
-      submittedAt:Date.now()
-
-    });
+    await studentEntryRef.set(entry);
 
     await db.ref(
       `sessions/${sessionId}/students/${studentId}/state`
-    ).set("submitted");
+    ).set(kind === "message" ? "chatting" : "submitted");
 
     await db.ref(
       `sessions/${sessionId}/students/${studentId}/lastUpdated`
-    ).set(Date.now());
+    ).set(now);
 
     return ok({ok:true,step:stepNum});
 

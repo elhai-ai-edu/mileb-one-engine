@@ -117,6 +117,57 @@
   .cp-header { position: static; }
   .cp-close, .cp-footer, .profiler-btn-bar { display: none !important; }
 }
+
+/* v8.7 — Lecturer Interaction Feed clarity */
+.student-card {
+  padding: 16px;
+  border-radius: 14px;
+}
+.student-status {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+}
+.status-message {
+  background: rgba(59,130,246,0.12);
+  color: #1d4ed8;
+}
+.steps-list {
+  font-size: 13px;
+}
+.interaction-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+.interaction-item.message {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+.interaction-item.submission {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+.interaction-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.interaction-meta {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+.interaction-content {
+  font-size: 13px;
+  color: #0f172a;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
 </style>
 <title>MilEd.One – כיתה חכמה</title>
 
@@ -548,20 +599,41 @@ function renderDashboard(data) {
   grid.innerHTML = students.map(s => {
     const stepsArr = Object.values(s.steps || {})
       .filter(st => st && typeof st === "object")
-      .sort((a, b) => (Number(a.step) || 0) - (Number(b.step) || 0));
+      .sort((a, b) => (Number(b.submittedAt) || 0) - (Number(a.submittedAt) || 0));
 
     const isLocked  = locked.includes(s.studentId);
     const hasAnswer = stepsArr.length > 0;
+    const latestKind = hasAnswer && stepsArr[0].kind === "message" ? "message" : "submission";
     const cardClass = isLocked ? "locked" : hasAnswer ? "has-answer" : "";
-    const statusClass = isLocked ? "status-locked" : hasAnswer ? "status-done" : "status-waiting";
-    const statusText  = isLocked ? "🔒 נעול" : hasAnswer ? "✅ הגיש" : "⏳ ממתין";
+    const statusClass = isLocked
+      ? "status-locked"
+      : hasAnswer
+        ? (latestKind === "message" ? "status-message" : "status-done")
+        : "status-waiting";
+    const statusText  = isLocked
+      ? "🔒 נעול"
+      : hasAnswer
+        ? (latestKind === "message" ? "💬 מסר חדש" : "📄 הוגשה עבודה")
+        : "⏳ ממתין";
 
-    const stepsHtml = stepsArr.map(st => `
-      <div class="step-item">
-        <div class="step-label">שלב ${st.step}</div>
-        <div class="step-content">${escapeHtml(st.content || "")}</div>
+    const stepsHtml = stepsArr.slice(0, 3).map(st => {
+      const kind = st.kind === "message" ? "message" : "submission";
+      const icon = kind === "message" ? "💬" : "📄";
+      const label = kind === "message" ? "מסר למרצה" : "הגשת עבודה";
+      const time = st.submittedAt
+        ? new Date(st.submittedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
+        : "--:--";
+
+      return `
+      <div class="interaction-item ${kind}">
+        <div class="interaction-top">
+          <span>${icon} ${label}</span>
+          <span class="interaction-meta">שלב ${st.step || "?"} • ${time}</span>
+        </div>
+        <div class="interaction-content">${escapeHtml(st.content || "")}</div>
       </div>
-    `).join('');
+    `;
+    }).join('');
 
     return `
       <div class="student-card ${cardClass}">
@@ -569,7 +641,7 @@ function renderDashboard(data) {
           <span class="student-id">👤 ${s.studentId.slice(0,10)}</span>
           <span class="student-status ${statusClass}">${statusText}</span>
         </div>
-        <div class="steps-list">${stepsHtml || '<div style="color:#aaa;font-size:.8rem">טרם הגיש</div>'}</div>
+        <div class="steps-list">${stepsHtml || '<div style="color:#64748b;font-size:12px">טרם נשלח מסר או הוגשה עבודה</div>'}</div>
         <div class="card-actions">
           <button class="card-btn card-btn-unlock" onclick="unlockStudent('${s.studentId}')">🔓 פתח שלב</button>
           <button class="card-btn card-btn-lock"   onclick="lockStudent('${s.studentId}')">🔒 נעל</button>

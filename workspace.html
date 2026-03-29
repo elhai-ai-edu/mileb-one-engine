@@ -55,7 +55,8 @@
       </div>
 
       <div class="actions">
-        <button onclick="submitWork()" class="btn btn-blue">📤 שלח למרצה</button>
+        <button onclick="sendMessageToLecturer()" class="btn btn-blue">💬 שלח מסר למרצה</button>
+        <button onclick="submitWork()" class="btn btn-green">📄 הגש עבודה</button>
         <span id="save-indicator" class="save-indicator">—</span>
       </div>
     </div>
@@ -66,6 +67,10 @@
 
         <div class="chat-panel-header">
           <span id="active-bot-name">בחר בוט</span>
+          <span id="live-session-badge" style="display:none;margin-right:auto;background:#ecfdf3;color:#065f46;border:1px solid #86efac;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;align-items:center;gap:6px;">
+            <span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 0 0 rgba(34,197,94,0.6);animation:livePulse 1.6s infinite;"></span>
+            שיעור פעיל
+          </span>
         </div>
 
         <div id="skill-context-banner" class="skill-context-banner" style="display:none;">
@@ -100,6 +105,15 @@
 </div>
 
 <script>
+
+const livePulseStyle = document.createElement("style");
+livePulseStyle.textContent = `
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(34,197,94,0.60); }
+  70% { box-shadow: 0 0 0 8px rgba(34,197,94,0.00); }
+  100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.00); }
+}`;
+document.head.appendChild(livePulseStyle);
 
 const params   = new URLSearchParams(location.search);
 const courseId = params.get("courseId") || "";
@@ -670,6 +684,12 @@ function handleKey(e) {
   }
 }
 
+function setLiveSessionBadge(isLive) {
+  const badge = document.getElementById("live-session-badge");
+  if (!badge) return;
+  badge.style.display = isLive ? "inline-flex" : "none";
+}
+
 // ─────────────────────────────
 // autosave
 // ─────────────────────────────
@@ -695,7 +715,7 @@ function restoreDraft() {
 // שליחה למרצה
 // ─────────────────────────────
 
-async function submitWork() {
+async function postWorkToLecturer(type) {
   const text = document.getElementById("student-text").value.trim();
   if (!text) { alert("כתוב משהו לפני שליחה"); return; }
 
@@ -709,11 +729,20 @@ async function submitWork() {
       sessionId,
       studentId,
       step:      currentStep,
-      content:   text
+      content:   text,
+      type
     })
   });
 
-  alert("העבודה נשלחה למרצה ✅");
+  alert(type === "message" ? "המסר נשלח למרצה" : "העבודה הוגשה בהצלחה");
+}
+
+async function sendMessageToLecturer() {
+  await postWorkToLecturer("message");
+}
+
+async function submitWork() {
+  await postWorkToLecturer("submission");
 }
 
 // ─────────────────────────────
@@ -745,6 +774,7 @@ async function discoverActiveSession() {
     // Found one — inject it as if it came from the URL
     urlSessionId = data.sessionId;
     sessionId    = data.sessionId;
+    setLiveSessionBadge(true);
     classroomJoin();
   } catch (e) {
     const dbUrlRaw = window.MILED_FIREBASE_CONFIG?.databaseURL || "";
@@ -760,6 +790,7 @@ async function classroomJoin() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "join", sessionId, studentId })
   });
+  setLiveSessionBadge(true);
   startClassroomPolling();
 }
 
@@ -804,6 +835,7 @@ async function pollClassroomState() {
 
     const data = await res.json();
     const isLocked = !!data.stepLocked;
+    setLiveSessionBadge(!!data.sessionActive);
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
 
