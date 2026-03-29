@@ -755,14 +755,15 @@ async function pollClassroomState() {
   }
 
   try {
+    // Use the student path (studentId param) — not the faculty dashboard path.
+    // classroom.js returns { stepLocked: bool, sessionActive: bool, broadcast, currentStep }
     const res  = await fetch(
-      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=student_view`
+      `/.netlify/functions/classroom?sessionId=${sessionId}&studentId=${studentId}`
     );
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
-    const lockedSteps = data.lockedSteps || [];
-    const isLocked    = lockedSteps.includes(studentId);
+    const isLocked = !!data.stepLocked;
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
 

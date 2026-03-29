@@ -380,28 +380,46 @@ sessionStorage.setItem("facultyId", facultyId);
 let sessionId   = null;
 let pollTimer   = null;
 let currentBot  = null;
+let CONFIG      = null;  // stored for openSession() lookup
 
 // ─────────────────────────────────────────
 // LOAD CONFIG → populate bot selector
+// Only show real courses (my_courses) + faculty tools.
+// branches.courses.items are generic shared bots — not class sessions.
 // ─────────────────────────────────────────
 fetch('/config.json').then(r => r.json()).then(config => {
+  CONFIG = config;
   const sel = document.getElementById('botSelect');
-  sel.innerHTML = '<option value="">— בחר בוט —</option>';
+  sel.innerHTML = '<option value="">— בחר קורס או כלי —</option>';
 
-  // faculty tools
-  for (const [id, bot] of Object.entries(config.branches?.faculty?.items || {})) {
-    const opt = document.createElement('option');
-    opt.value = bot.botType;
-    opt.textContent = bot.name;
-    sel.appendChild(opt);
+  // ── Real courses from my_courses (same source as students.html + workspace.html) ──
+  const courses = config.my_courses || {};
+  if (Object.keys(courses).length) {
+    const grp = document.createElement('optgroup');
+    grp.label = '📚 קורסים';
+    for (const [courseId, course] of Object.entries(courses)) {
+      const opt = document.createElement('option');
+      opt.value = courseId;               // courseId, not botType
+      opt.dataset.type = 'course';
+      opt.textContent = course.name;
+      grp.appendChild(opt);
+    }
+    sel.appendChild(grp);
   }
 
-  // courses
-  for (const [id, bot] of Object.entries(config.branches?.courses?.items || {})) {
-    const opt = document.createElement('option');
-    opt.value = bot.botType;
-    opt.textContent = "📚 " + bot.name;
-    sel.appendChild(opt);
+  // ── Faculty tools ──
+  const facultyItems = config.branches?.faculty?.items || {};
+  if (Object.keys(facultyItems).length) {
+    const grp = document.createElement('optgroup');
+    grp.label = '🧑‍🏫 כלי הוראה';
+    for (const [id, bot] of Object.entries(facultyItems)) {
+      const opt = document.createElement('option');
+      opt.value = bot.botType;
+      opt.dataset.type = 'faculty';
+      opt.textContent = bot.name;
+      grp.appendChild(opt);
+    }
+    sel.appendChild(grp);
   }
 }).catch(e => console.error("Config load error:", e));
 
@@ -409,12 +427,30 @@ fetch('/config.json').then(r => r.json()).then(config => {
 // OPEN SESSION
 // ─────────────────────────────────────────
 async function openSession() {
-  currentBot = document.getElementById('botSelect').value;
-  if (!currentBot) { alert("בחר בוט/קורס תחילה"); return; }
+  const selectedValue = document.getElementById('botSelect').value;
+  const selectedOpt   = document.querySelector(`#botSelect option[value="${selectedValue}"]`);
+  const selType       = selectedOpt?.dataset?.type || 'faculty';
 
-  sessionId = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+  if (!selectedValue) { alert("בחר קורס תחילה"); return; }
 
-  const res = await callClassroom({ action: "open", sessionId, facultyId, botType: currentBot });
+  // Resolve botType + classId depending on selection type
+  let botType, classId, studentURL;
+  if (selType === 'course' && CONFIG?.my_courses?.[selectedValue]) {
+    classId  = selectedValue;
+    botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
+    studentURL = `${location.origin}/workspace.html?courseId=${classId}&sessionId=SESSION_ID`;
+  } else {
+    // Faculty tool — no classId, botType is the value directly
+    botType    = selectedValue;
+    classId    = null;
+    studentURL = `${location.origin}/workspace.html?sessionId=SESSION_ID`;
+  }
+
+  currentBot = botType;
+  sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+  studentURL = studentURL.replace('SESSION_ID', sessionId);
+
+  const res = await callClassroom({ action: "open", sessionId, facultyId, botType, classId });
   if (!res.ok) { alert("שגיאה בפתיחת שיעור"); return; }
 
   document.getElementById('sessionBadge').textContent = "✅ שיעור פעיל";
@@ -425,8 +461,7 @@ async function openSession() {
   document.getElementById('closeBtn').disabled  = false;
   document.getElementById('broadcastBtn').disabled = false;
 
-  // Share URL for students
-  const studentURL = `${location.origin}/chat.html?sessionId=${sessionId}&botType=${currentBot}`;
+  // Share URL for students — now points to workspace.html with courseId
   document.getElementById('sessionIdDisplay').innerHTML =
     `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
 
