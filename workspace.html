@@ -6,6 +6,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>body { background-color: yellow !important; }</style>
 <title>MilEd — מרחב עבודה</title>
 </head>
 
@@ -72,10 +73,26 @@
           <!-- inner 2-col split: right=history, left=writing (RTL: first child → right) -->
           <div class="workspace-inner-split">
             <!-- right column: conversation history -->
-            <div class="workspace-history-col">
-              <div class="waf-col-header">💬 שיחה עם המרצה</div>
-              <div id="waf-stream" class="waf-stream">
-                <div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>
+            <!-- right column: conversation history + class wall -->
+            <div class="workspace-history-col" id="history-col">
+              <div class="waf-col-header">
+                <div class="waf-header-tabs">
+                  <button class="waf-tab waf-tab-active" id="tab-thread" onclick="switchWallTab('thread')">💬 שיחה</button>
+                  <button class="waf-tab" id="tab-wall" onclick="switchWallTab('wall')">🌐 קיר הכיתה<span id="wall-new-dot" class="wall-new-dot" style="display:none;"></span></button>
+                </div>
+                <button type="button" class="btn-wall-focus" id="wall-focus-btn" onclick="toggleWallFocus()" title="הרחב / כווץ">⤢</button>
+              </div>
+              <!-- private thread panel -->
+              <div id="waf-stream-panel" class="waf-panel">
+                <div id="waf-stream" class="waf-stream">
+                  <div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>
+                </div>
+              </div>
+              <!-- class wall panel -->
+              <div id="class-wall-panel" class="waf-panel" style="display:none;">
+                <div id="class-wall-grid" class="class-wall-grid">
+                  <div class="wall-empty">טרם פורסמו הודעות לקיר הכיתה</div>
+                </div>
               </div>
             </div>
 
@@ -99,12 +116,31 @@
                 <div id="unlock-banner" class="unlock-banner" style="display:none;">
                   🎉 השלב נפתח! המרצה שחרר אותך — כעת תוכל להמשיך.
                 </div>
-                <textarea id="student-text"
+                <textarea id="final-chat-input"
                   placeholder="כתוב כאן את העבודה שלך..."
                   class="workspace-textarea">
                 </textarea>
               </div>
+              <!-- Audio Recording Bar -->
+              <div id="audio-recording-bar" class="audio-recording-bar" style="display:none;">
+                <div id="audio-rec-active" class="audio-rec-active" style="display:none;">
+                  <span class="rec-pulse"></span>
+                  <span id="rec-timer" class="rec-timer">00:00</span>
+                  <button type="button" onclick="stopRecording()" class="btn-rec-stop">⬛ עצור הקלטה</button>
+                </div>
+                <div id="audio-rec-review" class="audio-rec-review" style="display:none;">
+                  <audio id="audio-preview" controls class="audio-preview-player"></audio>
+                  <div class="audio-review-btns">
+                    <button type="button" onclick="sendAudioMessage()" class="btn btn-blue btn-rec-send">📤 שלח סיפור</button>
+                    <button type="button" onclick="discardRecording()" class="btn-rec-discard">✕ בטל</button>
+                  </div>
+                </div>
+              </div>
               <div class="actions workspace-actions">
+                <button type="button" id="visibility-toggle" onclick="toggleVisibility()" class="btn-visibility">🔒 מרצה בלבד</button>
+                <div class="final-mic-debug-wrap">
+                  <button type="button" id="final-mic-btn" onclick="startRecording()" class="final-mic-btn" title="הקלט סיפור קול">🎙️</button>
+                </div>
                 <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
                 <button onclick="submitWork()" class="workspace-secondary-action">📄 הגש עבודה</button>
                 <span id="save-indicator" class="save-indicator">—</span>
@@ -156,6 +192,9 @@
 </div>
 
 <script>
+
+console.log('--- SYSTEM LIVE v2 ---');
+alert('System Updated');
 
 const livePulseStyle = document.createElement("style");
 livePulseStyle.textContent = `
@@ -353,9 +392,106 @@ livePulseStyle.textContent = `
   background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
   box-sizing: border-box;
   resize: vertical;
+  position: relative;
+  z-index: 1;
 }
 .workspace-actions {
   flex-wrap: wrap;
+  align-items: center;
+  position: relative;
+  z-index: 3;
+}
+/* ── Mic button ── */
+.final-mic-btn {
+  appearance: none;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, transform .1s ease;
+  flex-shrink: 0;
+}
+.final-mic-btn:hover { background: #e2e8f0; }
+.final-mic-btn.recording {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  animation: micRecordingPulse 1.5s ease infinite;
+}
+@keyframes micRecordingPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,.35); }
+  50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+/* ── Audio recording bar ── */
+.audio-recording-bar {
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  margin-top: 6px;
+  direction: rtl;
+}
+.audio-rec-active {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+@keyframes recDot {
+  0%, 100% { opacity: 1;  transform: scale(1); }
+  50%       { opacity: .4; transform: scale(1.35); }
+}
+.rec-pulse {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: recDot 1s ease infinite;
+}
+.rec-timer {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 14px;
+  color: #0f172a;
+  min-width: 40px;
+}
+.btn-rec-stop {
+  appearance: none;
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #b91c1c;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.audio-rec-review {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.audio-preview-player {
+  height: 32px;
+  flex: 1;
+  min-width: 160px;
+}
+.audio-review-btns { display: flex; gap: 6px; }
+.btn-rec-send { padding: 7px 14px !important; font-size: 13px !important; }
+.btn-rec-discard {
+  appearance: none;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  font-family: inherit;
 }
 .workspace-primary-action {
   padding: 14px 20px;
@@ -384,10 +520,14 @@ livePulseStyle.textContent = `
 /* ─── Inner 2-col split ─── */
 .workspace-inner-split {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  grid-template-columns: 1fr 2fr;
   gap: 14px;
   align-items: start;
-  /* page is RTL so first child (history-col) lands on the RIGHT */
+  transition: grid-template-columns 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* RTL: first column → right visual (history-col 33%), second → left (writing-col 66%) */
+}
+.workspace-inner-split.wall-focused {
+  grid-template-columns: 2fr 1fr; /* history expands to 66% */
 }
 .workspace-history-col {
   display: flex;
@@ -406,13 +546,127 @@ livePulseStyle.textContent = `
   gap: 10px;
 }
 .waf-col-header {
-  padding: 9px 13px 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #334155;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 6px 0 4px;
   background: #f1f5f9;
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
+}
+.waf-header-tabs { display: flex; flex: 1; }
+.waf-tab {
+  appearance: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  padding: 9px 10px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.waf-tab.waf-tab-active { color: #1d4ed8; border-bottom-color: #1d4ed8; }
+.wall-new-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  background: #ef4444;
+  border-radius: 50%;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+.btn-wall-focus {
+  appearance: none;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font-size: 15px;
+  cursor: pointer;
+  color: #94a3b8;
+  align-self: center;
+  flex-shrink: 0;
+  transition: color .15s, background .15s;
+  line-height: 1;
+}
+.btn-wall-focus:hover { background: #e2e8f0; color: #334155; }
+.btn-wall-focus.focused { color: #1d4ed8; }
+/* Wall panel wrapper */
+.waf-panel {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+/* Class wall grid */
+.class-wall-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.wall-empty { color: #94a3b8; font-size: 12px; text-align: center; padding: 12px 0; }
+.wall-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15,23,42,.06);
+  animation: wallCardIn .25s ease;
+}
+@keyframes wallCardIn {
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.wall-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.wall-card-author { font-size: 11px; font-weight: 800; color: #475569; }
+.wall-card-time   { font-size: 10px; color: #94a3b8; }
+.wall-card-body   { font-size: 13px; color: #0f172a; line-height: 1.6; white-space: pre-wrap; }
+.wall-card-audio  { width: 100%; height: 32px; margin-top: 4px; display: block; }
+.wall-card-footer { margin-top: 8px; display: flex; justify-content: flex-end; }
+.btn-wall-reply {
+  appearance: none;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s;
+}
+.btn-wall-reply:hover { background: #e2e8f0; }
+/* Visibility toggle */
+.btn-visibility {
+  appearance: none;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 8px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s, border-color .15s, color .15s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.btn-visibility.public {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #15803d;
 }
 /* ─── Workspace Activity Feed ─── */
 .waf-stream {
@@ -429,6 +683,7 @@ livePulseStyle.textContent = `
 .waf-msg-student   { color: #1d4ed8; }
 .waf-msg-submission { color: #15803d; }
 .waf-msg-lecturer  { color: #6d28d9; }
+.waf-msg-audio     { color: #b45309; }
 .waf-msg-meta {
   display: flex; align-items: baseline; gap: 6px; margin-bottom: 1px;
 }
@@ -438,14 +693,54 @@ livePulseStyle.textContent = `
 .waf-send-status  { font-size: 12px; color: #64748b; }
 /* writing column layout overrides */
 .workspace-writing-col .workspace-actions {
-  flex-direction: column;
-  gap: 7px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .workspace-writing-col .workspace-primary-action,
 .workspace-writing-col .workspace-secondary-action {
-  width: 100%;
+  width: auto;
+  min-height: 40px;
   text-align: center;
   box-sizing: border-box;
+}
+.workspace-writing-col .final-mic-btn {
+  min-height: 40px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 4;
+  visibility: visible;
+  opacity: 1 !important;
+}
+
+#final-mic-btn {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative;
+  z-index: 5;
+}
+.final-mic-debug-wrap {
+  border: 2px solid #ef4444;
+  border-radius: 10px;
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  position: relative;
+  z-index: 5;
+}
+.workspace-writing-col .btn-visibility {
+  min-height: 40px;
+}
+.workspace-writing-col .save-indicator,
+.workspace-writing-col .waf-send-status {
+  align-self: flex-end;
 }
 @media (max-width: 1180px) {
   .workspace-layout {
@@ -477,6 +772,8 @@ livePulseStyle.textContent = `
     min-height: 460px;
   }
   .workspace-lobby {
+  .workspace-inner-split,
+  .workspace-inner-split.wall-focused {
     grid-template-columns: 1fr;
   }
   .workspace-inner-split {
@@ -557,6 +854,22 @@ let isLocked       = false;
 let currentStep    = 1;
 let assignedTeamRole = sessionStorage.getItem("teamRole_" + (params.get("courseId") || "")) || null;
 let workspaceMode  = "lobby";
+
+// ── Class Wall state ──
+let wallFocused       = false;
+let wallTab           = "thread";   // "thread" | "wall"
+let messageVisibility = "private";  // "private" | "public"
+const seenWallPostIds = new Set();
+let classWallPosts    = [];
+
+function clearStudentTextarea() {
+  const textarea = document.getElementById("final-chat-input");
+  if (!textarea) return;
+  textarea.value = "";
+  localStorage.setItem(storageKey, "");
+  const saveEl = document.getElementById("save-indicator");
+  if (saveEl) saveEl.innerText = "נשמר";
+}
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -643,14 +956,14 @@ function setWorkspaceContext(mode) {
 
 function enterLiveClassroom() {
   setWorkspaceContext("classroom");
-  document.getElementById("student-text")?.focus();
+  document.getElementById("final-chat-input")?.focus();
 }
 
 function enterProjectWorkspace() {
   if (!maybeSelectUnifiedProjectBot()) {
     setWorkspaceContext("project");
   }
-  document.getElementById("student-text")?.focus();
+  document.getElementById("final-chat-input")?.focus();
 }
 
 function returnToLobby() {
@@ -906,7 +1219,7 @@ function initSkillMode() {
   document.getElementById("universal-menu").innerHTML = "";
 
   // Relabel textarea for notes
-  const ta = document.getElementById("student-text");
+  const ta = document.getElementById("final-chat-input");
   if (ta) ta.placeholder = "📝 רשמות ותובנות מהאבחון...";
 
   setWorkspaceContext("classroom");
@@ -1235,9 +1548,120 @@ function showFeed() { /* no-op — history col visible by default in the split l
 // ─── Chronological feed store ───
 let feedItems = [];
 
+// ─────────────────────────────
+// Class Wall
+// ─────────────────────────────
+
+function toggleWallFocus() {
+  wallFocused = !wallFocused;
+  const split = document.querySelector(".workspace-inner-split");
+  const btn   = document.getElementById("wall-focus-btn");
+  if (!split) return;
+  split.classList.toggle("wall-focused", wallFocused);
+  if (btn) {
+    btn.textContent = wallFocused ? "⤡" : "⤢";
+    btn.classList.toggle("focused", wallFocused);
+  }
+}
+
+function switchWallTab(tab) {
+  wallTab = tab;
+  document.getElementById("waf-stream-panel").style.display  = tab === "thread" ? "" : "none";
+  document.getElementById("class-wall-panel").style.display  = tab === "wall"   ? "" : "none";
+  document.getElementById("tab-thread").classList.toggle("waf-tab-active", tab === "thread");
+  document.getElementById("tab-wall").classList.toggle("waf-tab-active",   tab === "wall");
+  if (tab === "wall") {
+    const dot = document.getElementById("wall-new-dot");
+    if (dot) dot.style.display = "none";
+  }
+}
+
+function toggleVisibility() {
+  messageVisibility = messageVisibility === "private" ? "public" : "private";
+  const btn = document.getElementById("visibility-toggle");
+  if (!btn) return;
+  if (messageVisibility === "public") {
+    btn.textContent = "🌐 שתף עם הכיתה";
+    btn.classList.add("public");
+  } else {
+    btn.textContent = "🔒 מרצה בלבד";
+    btn.classList.remove("public");
+  }
+}
+
+function buildWallCard(post) {
+  const isAudio = typeof post.content === "string" && post.content.startsWith("data:audio/");
+  const authorLabel = "סטודנט " + (post.studentId || "?").slice(-4);
+  const timeStr = post.ts
+    ? new Date(post.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
+    : "";
+  const replyQuote = isAudio
+    ? "[🎙️ הקלטה של " + authorLabel + "]"
+    : post.content.slice(0, 80);
+  const bodyHtml = isAudio
+    ? "<audio controls class=\"wall-card-audio\" src=\"" + post.content + "\"></audio>"
+    : "<div class=\"wall-card-body\">" + escapeHtml(post.content) + "</div>";
+  const safeId = escapeHtml(String(post.id));
+  const safeReply = JSON.stringify(replyQuote);
+  return "<div class=\"wall-card\" id=\"wc-" + safeId + "\">"
+    + "<div class=\"wall-card-header\">"
+    + "<span class=\"wall-card-author\">👤 " + escapeHtml(authorLabel) + "</span>"
+    + "<span class=\"wall-card-time\">" + timeStr + "</span>"
+    + "</div>"
+    + bodyHtml
+    + "<div class=\"wall-card-footer\">"
+    + "<button type=\"button\" class=\"btn-wall-reply\" onclick=\"replyToWallPost(" + safeReply + ")\">↩ השב</button>"
+    + "</div></div>";
+}
+
+function renderClassWall(posts) {
+  const grid = document.getElementById("class-wall-grid");
+  if (!grid) return;
+  if (!posts.length) {
+    grid.innerHTML = "<div class=\"wall-empty\">טרם פורסמו הודעות לקיר הכיתה</div>";
+    return;
+  }
+  grid.innerHTML = posts.map(p => buildWallCard(p)).join("");
+}
+
+function syncClassWall(incoming = []) {
+  if (!Array.isArray(incoming)) return;
+  let hasNew = false;
+  incoming.forEach(post => {
+    if (!post?.id || seenWallPostIds.has(post.id)) return;
+    seenWallPostIds.add(post.id);
+    classWallPosts.push(post);
+    hasNew = true;
+  });
+  if (!hasNew) return;
+  classWallPosts.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  renderClassWall(classWallPosts);
+  if (wallTab !== "wall") {
+    const dot = document.getElementById("wall-new-dot");
+    if (dot) dot.style.display = "";
+  }
+}
+
+function replyToWallPost(quote) {
+  const textarea = document.getElementById("final-chat-input");
+  if (!textarea) return;
+  const prefix = "> " + quote + "\n\n";
+  textarea.value = prefix + textarea.value;
+  textarea.focus();
+  textarea.setSelectionRange(prefix.length, prefix.length);
+  textarea.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 function addToActivityFeed(item) {
   // item: { type: "sent"|"reply", text, kind?, tag?, step?, ts }
   if (!item.ts) item.ts = Date.now();
+  const isDuplicate = feedItems.some(existing => {
+    if (item.sourceId && existing.sourceId && existing.sourceId === item.sourceId) return true;
+    const sameText = (existing.text || "") === (item.text || "");
+    const withinFiveSeconds = Math.abs((existing.ts || 0) - (item.ts || 0)) <= 5000;
+    return sameText && withinFiveSeconds;
+  });
+  if (isDuplicate) return;
   feedItems.push({...item});
   feedItems.sort((a, b) => (a.ts || 0) - (b.ts || 0));
   renderFeedDOM();
@@ -1246,15 +1670,18 @@ function addToActivityFeed(item) {
 function buildFeedEntry(item) {
   const isReply      = item.type === "reply";
   const isSubmission = item.kind === "submission";
+  const isAudioItem  = item.kind === "audio";
 
   const div = document.createElement("div");
   div.className = "waf-msg " + (isReply ? "waf-msg-lecturer"
     : isSubmission ? "waf-msg-submission"
+    : isAudioItem  ? "waf-msg-audio"
     : "waf-msg-student");
 
   let senderLabel;
   if (isReply)           senderLabel = "המרצה";
   else if (isSubmission) senderLabel = `הגשה — שלב ${item.step || currentStep || ""}`;
+  else if (isAudioItem)  senderLabel = `🎙️ הקלטת קול — שלב ${item.step || currentStep || ""}`;
   else                   senderLabel = "את/ה";
 
   const timeStr = item.ts
@@ -1292,7 +1719,7 @@ function syncLecturerReplies(replies = []) {
     if (!item?.id || !item?.text) return;
     if (seenLecturerReplyIds.has(item.id)) return;
     seenLecturerReplyIds.add(item.id);
-    addToActivityFeed({ type: "reply", text: item.text, ts: item.ts });
+    addToActivityFeed({ type: "reply", text: item.text, ts: item.ts, sourceId: `reply_${item.id}` });
   });
 }
 
@@ -1302,13 +1729,15 @@ function hydrateLecturerThread(studentSteps = []) {
   studentSteps.forEach(step => {
     if (!step?.id || seenStudentStepIds.has(step.id)) return;
     seenStudentStepIds.add(step.id);
+    if (step.kind === "public") return; // public posts go to the wall, not the private thread
     addToActivityFeed({
       type: "sent",
       text: step.content,
       kind: step.kind || "message",
       tag: step.tag || "general",
       step: step.step,
-      ts: step.ts
+      ts: step.ts,
+      sourceId: `step_${step.id}`
     });
   });
 }
@@ -1420,11 +1849,11 @@ function showActiveTask(task) {
 
 const storageKey = `miled_ws_${courseId}_${studentId}`;
 
-document.getElementById("student-text").addEventListener("input", () => {
+document.getElementById("final-chat-input").addEventListener("input", () => {
   document.getElementById("save-indicator").innerText = "כותב...";
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
-    localStorage.setItem(storageKey, document.getElementById("student-text").value);
+    localStorage.setItem(storageKey, document.getElementById("final-chat-input").value);
     document.getElementById("save-indicator").innerText =
       "נשמר (" + new Date().toLocaleTimeString("he-IL") + ")";
   }, 500);
@@ -1432,7 +1861,7 @@ document.getElementById("student-text").addEventListener("input", () => {
 
 function restoreDraft() {
   const saved = localStorage.getItem(storageKey);
-  if (saved) document.getElementById("student-text").value = saved;
+  if (saved) document.getElementById("final-chat-input").value = saved;
 }
 
 // ─────────────────────────────
@@ -1440,26 +1869,39 @@ function restoreDraft() {
 // ─────────────────────────────
 
 async function sendMessageToLecturer() {
-  const text = document.getElementById("student-text").value.trim();
+  const editor = document.getElementById("final-chat-input");
+  const text = editor?.value.trim() || "";
   if (!text) { alert("כתוב משהו לפני שליחה"); return; }
   if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+  editor.value = "";
+  localStorage.setItem(storageKey, "");
+
+  clearStudentTextarea();
 
   const statusEl = document.getElementById("waf-send-status");
   if (statusEl) statusEl.textContent = "שולח...";
 
   const tag = detectMessageTag();
+  const isPublic = messageVisibility === "public";
+  const msgType  = isPublic ? "public" : "message";
   try {
     const res = await fetch("/.netlify/functions/classroom", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "submit", sessionId, studentId,
-        step: currentStep, content: text, type: "message", tag
+        step: currentStep, content: text, type: msgType, tag
       })
     });
     if (res.ok) {
-      addToActivityFeed({ type: "sent", text, kind: "message", tag, step: currentStep, ts: Date.now() });
-      if (statusEl) { statusEl.textContent = "נשלח ✓"; setTimeout(() => { statusEl.textContent = ""; }, 2000); }
+      if (isPublic) {
+        syncClassWall([{ id: "local_" + Date.now(), studentId, content: text,
+          kind: "public", tag, step: currentStep, ts: Date.now() }]);
+        if (statusEl) { statusEl.textContent = "פורסם לקיר ✓"; setTimeout(() => { statusEl.textContent = ""; }, 2000); }
+      } else {
+        addToActivityFeed({ type: "sent", text, kind: "message", tag, step: currentStep, ts: Date.now() });
+        if (statusEl) { statusEl.textContent = "נשלח ✓"; setTimeout(() => { statusEl.textContent = ""; }, 2000); }
+      }
     } else {
       if (statusEl) statusEl.textContent = "שגיאה — נסה שוב";
     }
@@ -1468,8 +1910,123 @@ async function sendMessageToLecturer() {
   }
 }
 
+// ─────────────────────────────
+// Audio Recording
+// ─────────────────────────────
+
+let mediaRecorder  = null;
+let audioChunks    = [];
+let recTimerInterval = null;
+let recSeconds     = 0;
+let recordedBlob   = null;
+const REC_MAX_SECONDS = 120; // 2-minute cap
+
+async function startRecording() {
+  const micBtn = document.getElementById("final-mic-btn");
+  if (micBtn && micBtn.classList.contains("recording")) return; // already recording
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : "audio/webm";
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks = [];
+    recSeconds  = 0;
+
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(recTimerInterval);
+      recordedBlob = new Blob(audioChunks, { type: mimeType });
+      const url = URL.createObjectURL(recordedBlob);
+      document.getElementById("audio-preview").src = url;
+      document.getElementById("audio-rec-active").style.display = "none";
+      document.getElementById("audio-rec-review").style.display = "flex";
+    };
+
+    mediaRecorder.start(250);
+    document.getElementById("audio-recording-bar").style.display = "";
+    document.getElementById("audio-rec-active").style.display   = "flex";
+    document.getElementById("audio-rec-review").style.display   = "none";
+    if (micBtn) micBtn.classList.add("recording");
+
+    recTimerInterval = setInterval(() => {
+      recSeconds++;
+      const m = String(Math.floor(recSeconds / 60)).padStart(2, "0");
+      const s = String(recSeconds % 60).padStart(2, "0");
+      document.getElementById("rec-timer").textContent = `${m}:${s}`;
+      if (recSeconds >= REC_MAX_SECONDS) stopRecording();
+    }, 1000);
+
+  } catch (e) {
+    alert("לא ניתן לגשת למיקרופון. ודא שהרשית גישה: " + e.message);
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+  const micBtn = document.getElementById("final-mic-btn");
+  if (micBtn) micBtn.classList.remove("recording");
+}
+
+function discardRecording() {
+  recordedBlob = null;
+  const previewEl = document.getElementById("audio-preview");
+  if (previewEl.src) { URL.revokeObjectURL(previewEl.src); previewEl.src = ""; }
+  document.getElementById("audio-recording-bar").style.display  = "none";
+  document.getElementById("audio-rec-active").style.display     = "none";
+  document.getElementById("audio-rec-review").style.display     = "none";
+}
+
+async function sendAudioMessage() {
+  if (!recordedBlob) return;
+  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+
+  clearStudentTextarea();
+
+  const statusEl = document.getElementById("waf-send-status");
+  if (statusEl) statusEl.textContent = "ממיר הקלטה...";
+
+  const reader = new FileReader();
+  reader.onloadend = async () => {
+    const dataUrl = reader.result; // "data:audio/webm;base64,..."
+    if (statusEl) statusEl.textContent = "שולח...";
+    const isPublicAudio = messageVisibility === "public";
+    try {
+      const res = await fetch("/.netlify/functions/classroom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "submit", sessionId, studentId,
+          step: currentStep, content: dataUrl,
+          type: isPublicAudio ? "public" : "audio", tag: "general"
+        })
+      });
+      if (res.ok) {
+        if (isPublicAudio) {
+          syncClassWall([{ id: "local_audio_" + Date.now(), studentId, content: dataUrl,
+            kind: "public", tag: "general", step: currentStep, ts: Date.now() }]);
+          discardRecording();
+          if (statusEl) { statusEl.textContent = "הקלטה פורסמה לקיר ✓"; setTimeout(() => { statusEl.textContent = ""; }, 2500); }
+        } else {
+          addToActivityFeed({ type: "sent", text: "[🎙️ הקלטת קול]", kind: "audio",
+            tag: "general", step: currentStep, ts: Date.now() });
+          discardRecording();
+          if (statusEl) { statusEl.textContent = "הקלטה נשלחה ✓"; setTimeout(() => { statusEl.textContent = ""; }, 2500); }
+        }
+      } else {
+        if (statusEl) statusEl.textContent = "שגיאה — נסה שוב";
+      }
+    } catch (e) {
+      if (statusEl) statusEl.textContent = "שגיאת רשת";
+    }
+  };
+  reader.onerror = () => { if (statusEl) statusEl.textContent = "שגיאה בהמרת אודיו"; };
+  reader.readAsDataURL(recordedBlob);
+}
+
 async function submitWork() {
-  const text = document.getElementById("student-text").value.trim();
+  const text = document.getElementById("final-chat-input").value.trim();
   if (!text) { alert("כתוב משהו לפני שליחה"); return; }
   if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
 
@@ -1584,6 +2141,7 @@ async function pollClassroomState() {
     setLiveSessionBadge(!!data.sessionActive);
     syncLecturerReplies(data.lecturerReplies || []);
     hydrateLecturerThread(data.studentSteps || []);
+    syncClassWall(data.publicPosts || []);
     if (data.active_task) showActiveTask(data.active_task);
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
@@ -1598,30 +2156,6 @@ async function pollClassroomState() {
     console.error("Classroom poll error:", e.message);
     // transient backend/network errors back off aggressively
     classroomPollDelay = Math.min(POLL_MAX, Math.floor(classroomPollDelay * 1.6));
-  } finally {
-    const jitter = Math.floor(Math.random() * 600);
-    scheduleNextPoll(classroomPollDelay + jitter);
-  }
-}
-
-document.addEventListener("visibilitychange", () => {
-  if (!urlSessionId) return;
-  if (!document.hidden) {
-    classroomPollDelay = POLL_MIN;
-    scheduleNextPoll(0);
-  }
-});
-
-function triggerUnlockAnimation() {
-  const banner = document.getElementById("unlock-banner");
-  if (!banner) return;
-  banner.style.display = "";
-  banner.classList.remove("unlock-animate");
-  // Force reflow so animation restarts
-  void banner.offsetWidth;
-  banner.classList.add("unlock-animate");
-  setTimeout(() => {
-    banner.style.display = "none";
     banner.classList.remove("unlock-animate");
   }, 4000);
 }
@@ -1670,11 +2204,11 @@ async function checkCourseLock() {
         <div style="font-size:16px;font-weight:700;color:#dc2626;margin-bottom:8px;">הגישה לקורס זה הסתיימה</div>
         <div style="font-size:13px;color:#64748b;">תאריך נעילה: ${dateStr}</div>
       </div>`;
-    const inp = document.getElementById("chat-input");
+    const inp = document.getElementById("user-input");
     if (inp) { inp.disabled = true; inp.placeholder = "הגישה לקורס נסגרה"; }
     const sendBtn = document.querySelector(".send-btn");
     if (sendBtn) sendBtn.disabled = true;
-    const ta = document.getElementById("student-text");
+    const ta = document.getElementById("final-chat-input");
     if (ta) { ta.disabled = true; ta.style.opacity = "0.5"; }
     const submitBtn = document.querySelector(".actions .btn-blue");
     if (submitBtn) submitBtn.disabled = true;
