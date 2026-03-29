@@ -192,7 +192,7 @@
   .cp-close, .cp-footer, .profiler-btn-bar { display: none !important; }
 }
 
-/* v8.7 — Lecturer Interaction Feed clarity */
+/* v8.7 — Lecturer Interaction Feed clarity (flat two-side chat) */
 .student-card {
   padding: 16px;
   border-radius: 14px;
@@ -208,46 +208,35 @@
 }
 .steps-list {
   font-size: 13px;
-}
-.interaction-item {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-.interaction-item.message {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-}
-.interaction-item.submission {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-}
-.interaction-top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: 12px;
-  font-weight: 700;
+  flex-direction: column;
+  gap: 6px;
 }
-.interaction-meta {
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 600;
+.thread-msg {
+  display: flex;
+  flex-direction: column;
+  max-width: 92%;
+  padding: 1px 0;
 }
-.interaction-content {
+.thread-msg.from-student {
+  align-self: flex-end;
+  text-align: right;
+  color: #1d4ed8;
+}
+.thread-msg.from-lecturer {
+  align-self: flex-start;
+  text-align: left;
+  color: #6d28d9;
+}
+.thread-msg-body {
   font-size: 13px;
-  color: #0f172a;
   line-height: 1.6;
   white-space: pre-wrap;
 }
-.interaction-item.reply {
-  border-color: #e9d5ff;
-  background: #faf5ff;
-}
-.interaction-item.reply .interaction-content {
-  color: #581c87;
+.thread-msg-time {
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 1px;
 }
 .thread-empty {
   color: #94a3b8; font-size: 12px; text-align: center; padding: 8px 0;
@@ -259,39 +248,72 @@
   padding-top: 10px;
   border-top: 1px dashed #e9d5ff;
 }
-/* Context tag chips inside mini-thread */
-.ctag {
-  display: inline-block; font-size: 10px; font-weight: 700;
-  border-radius: 999px; padding: 1px 7px; margin: 2px 0 5px;
-  letter-spacing: .3px;
-}
-.ctag-research { background: #fef9c3; color: #713f12; border: 1px solid #fde68a; }
-.ctag-task     { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
-.ctag-general  { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
-/* Audio interaction item */
-.interaction-item.audio {
-  border-color: #fde68a;
-  background: #fffbeb;
-}
 .cockpit-audio-player {
-  width: 100%;
-  height: 32px;
-  margin-top: 4px;
+  width: 260px;
+  max-width: 100%;
+  height: 30px;
+  margin-top: 3px;
   display: block;
 }
+/* Cockpit Tabs */
+#cockpit-nav {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px 24px;
+  background: #1e3a8a !important;
+  color: white !important;
+  border-bottom: 4px solid #1e40af;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.35);
+  margin-bottom: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10000 !important;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+.classroom-grid { margin-top: 20px; }
+.panel { display: none; margin-top: 20px; }
+.panel.active { display: block !important; }
+.cockpit-tab-btn {
+  appearance: none;
+  border: 2.5px solid rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.12);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 12px 28px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  min-width: 130px;
+  text-align: center;
+}
+.cockpit-tab-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: #ffffff;
+}
+.cockpit-tab-btn.active {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #1e3a8a !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  font-weight: 800;
+}
+[data-tab-panel] { display: none; }
+[data-tab-panel].active { display: block; }
 .status-audio {
   background: rgba(245,158,11,.12);
   color: #b45309;
   border-radius: 999px;
+}
 .status-public {
   background: rgba(34,197,94,.12);
   color: #15803d;
   border-radius: 999px;
-}
-.interaction-item.public {
-  border-color: #bbf7d0;
-  background: #f0fdf4;
-}
 }
 .lecturer-reply-input {
   flex: 1;
@@ -325,7 +347,14 @@
 </head>
 <body class="management-theme">
 
-<div class="top-bar">
+<div id="cockpit-nav">
+  <button class="cockpit-tab-btn" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>סילבוס</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>הכנת שיעור</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>ניהול שיעור חי</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>יומן</span></button>
+</div>
+
+<div class="top-bar" style="margin-top:0; top:74px; z-index:9999;">
   <div>
     <span class="brand">MilEd.One</span>
     <h1>כיתה חכמה — לוח מרצה</h1>
@@ -362,8 +391,7 @@
 
 <div class="classroom-grid">
 
-  <!-- LEFT: Controls -->
-  <div class="panel">
+  <div class="panel" data-tab-panel="live">
     <h2>🎛️ שליטת מרצה</h2>
 
     <div class="field">
@@ -389,7 +417,35 @@
 
     <hr class="workspace-divider">
 
-    <!-- ─── Lesson Planner (Library) ─── -->
+    <h2>🏛 במת המרצה</h2>
+    <p class="panel-sub" id="dj-booth-status">פתח שיעור והגדר שלבים כדי לדחוף משימות לסטודנטים</p>
+    <div id="dj-booth-steps" class="dj-booth-steps">
+      <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
+    </div>
+
+    <hr class="workspace-divider">
+
+    <details class="broadcast-details">
+      <summary>📡 שידור מהיר לכיתה</summary>
+      <div style="padding-top:10px;">
+        <div class="field">
+          <label>טקסט / שאלה / מאמר</label>
+          <textarea id="broadcastText" placeholder="הכנס טקסט, שאלה, או קטע מאמר שכל התלמידים יראו..."></textarea>
+        </div>
+        <div class="field">
+          <label>שלב מספר</label>
+          <input type="number" id="stepNum" value="1" min="1" max="10" class="step-num-input">
+        </div>
+        <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+        <div id="broadcastPreview" style="display:none" class="broadcast-preview">
+          <strong>⚡ שודר לתלמידים:</strong>
+          <span id="broadcastPreviewText"></span>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="panel" data-tab-panel="prep">
     <h2>📚 לוח שיעורים</h2>
     <p class="panel-sub">הגדר שלבי שיעור לפני הכיתה — שמור לשימוש חוזר</p>
 
@@ -414,39 +470,10 @@
       <input type="text" id="template-name-input" placeholder="שם התבנית" class="lp-input" style="margin:0;flex:1;">
       <button class="btn btn-green" onclick="saveTemplate()" style="font-size:12px;padding:7px 14px;white-space:nowrap;flex-shrink:0;">💾 שמור</button>
     </div>
+  </div>
 
-    <hr class="workspace-divider">
-
-    <!-- ─── DJ Booth (Live Controller) ─── -->
-    <h2>🏛 במת המרצה</h2>
-    <p class="panel-sub" id="dj-booth-status">פתח שיעור והגדר שלבים כדי לדחוף משימות לסטודנטים</p>
-    <div id="dj-booth-steps" class="dj-booth-steps">
-      <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
-    </div>
-
-    <hr class="workspace-divider">
-
-    <!-- ─── Quick Broadcast (collapsed) ─── -->
-    <details class="broadcast-details">
-      <summary>📡 שידור מהיר לכיתה</summary>
-      <div style="padding-top:10px;">
-        <div class="field">
-          <label>טקסט / שאלה / מאמר</label>
-          <textarea id="broadcastText" placeholder="הכנס טקסט, שאלה, או קטע מאמר שכל התלמידים יראו..."></textarea>
-        </div>
-        <div class="field">
-          <label>שלב מספר</label>
-          <input type="number" id="stepNum" value="1" min="1" max="10" class="step-num-input">
-        </div>
-        <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
-        <div id="broadcastPreview" style="display:none" class="broadcast-preview">
-          <strong>⚡ שודר לתלמידים:</strong>
-          <span id="broadcastPreviewText"></span>
-        </div>
-      </div>
-    </details>
-
-    <h2>🎓 למידה משולבת מיומנויות</h2>
+  <div class="panel" data-tab-panel="syllabus">
+      <h2>🎓 למידה משולבת מיומנויות</h2>
     <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:14px;">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</p>
 
     <!-- ─── Balance Weight Editor (v8.5) ─── -->
@@ -516,11 +543,19 @@
         הוסף שיוכי סילבוס כדי לראות את המפה
       </p>
     </div>
+  </div>
 
+  <div class="panel" data-tab-panel="journal">
+      <h2>📓 יומן וניתוח</h2>
+      <p class="panel-sub">יצוא יומן הוראה והפקת ניתוח מיומנויות כיתתי</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 ייצא יומן הוראה</button>
+        <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:13px;padding:8px 14px;">📊 פרופיל מיומנויות</button>
+      </div>
   </div>
 
   <!-- RIGHT: Live view -->
-  <div class="panel">
+  <div class="panel" data-tab-panel="live">
     <div class="live-header">
       <h2>👥 מצב הכיתה בזמן אמת</h2>
       <span class="live-count"><span id="studentCount">0</span> תלמידים</span>
@@ -537,7 +572,7 @@
 </div>
 
 <!-- ─── Analytics Bar (v8.6) ─── -->
-<div class="profiler-btn-bar">
+<div class="profiler-btn-bar" data-tab-panel="journal">
   <div>
     <div style="font-size:13px;font-weight:600;color:#1e293b;">📈 ניתוח מיומנויות כיתתי</div>
     <div style="font-size:12px;color:#64748b;margin-top:2px;">הפק דוח מצב מיומנויות לכלל הכיתה</div>
@@ -627,6 +662,16 @@ let pushedSteps = []; // session-local memory of pushed lesson step numbers
 let CONFIG      = null;  // stored for openSession() lookup
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 const replyDrafts = {};
+
+function switchCockpitTab(tabKey) {
+  document.querySelectorAll('[data-tab-panel]').forEach(panel => {
+    const match = panel.getAttribute('data-tab-panel') === tabKey;
+    panel.classList.toggle('active', match);
+  });
+  document.querySelectorAll('.cockpit-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tabTarget === tabKey);
+  });
+}
 
 function setSessionControls(isActive) {
   const openBtn = document.getElementById('openBtn');
@@ -812,8 +857,7 @@ function renderDashboard(data) {
       ts: Number(r.ts) || 0
     }));
     const thread = [...stepsFlat, ...repliesFlat].sort((a, b) => a.ts - b.ts);
-    const recentThread = thread.slice(-4); // last 4 events
-
+  const recentThread = thread.slice(-5); // keep a compact flat thread
     const isLocked  = locked.includes(s.studentId);
     const hasAnswer = stepsArr.length > 0;
     // Status based on most recent student action
@@ -845,47 +889,18 @@ function renderDashboard(data) {
       const isAudio = !isLecturerItem
         && typeof item.content === "string"
         && item.content.startsWith("data:audio/");
-      const kindClass = isLecturerItem ? "reply"
-        : (item.kind === "message" ? "message"
-          : item.kind === "audio"  ? "audio"
-          : item.kind === "public" ? "public"
-          : "submission");
-      const icon  = isLecturerItem ? "👨\u200d🏫"
-        : (item.kind === "message" ? "💬"
-          : item.kind === "audio"  ? "🎙️"
-          : item.kind === "public" ? "🌐"
-          : "📄");
-      const label = isLecturerItem ? "תגובת מרצה"
-        : (item.kind === "message" ? "מסר למרצה"
-          : item.kind === "audio"  ? "הקלטת קול"
-          : item.kind === "public" ? "פרסום לקיר"
-          : "הגשת עבודה");
+      const sideClass = isLecturerItem ? "from-lecturer" : "from-student";
       const time = item.ts
         ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
         : "--:--";
-      const meta = isLecturerItem
-        ? time
-        : `שלב ${item.step || "?"} • ${time}`;
-
-      // Tag chip (student messages only)
-      const TAG_ICONS_C = { research: "🔎", task: "📝", general: "💬" };
-      const TAG_LABELS  = { research: "מחקר", task: "משימה", general: "כללי" };
-      const tagChip = (!isLecturerItem && item.tag)
-        ? `<span class="ctag ctag-${item.tag}">${TAG_ICONS_C[item.tag] || "💬"} ${TAG_LABELS[item.tag] || item.tag}</span>`
-        : "";
-
       const contentHtml = isAudio
         ? `<audio controls class="cockpit-audio-player" src="${item.content}"></audio>`
-        : `<div class="interaction-content">${escapeHtml(item.content)}</div>`;
+        : `<div class="thread-msg-body">${escapeHtml(item.content)}</div>`;
 
       return `
-      <div class="interaction-item ${kindClass}">
-        <div class="interaction-top">
-          <span>${icon} ${label}</span>
-          <span class="interaction-meta">${meta}</span>
-        </div>
-        ${tagChip}
+      <div class="thread-msg ${sideClass}">
         ${contentHtml}
+        <div class="thread-msg-time">${time}</div>
       </div>`;
     }).join('');
 
@@ -962,13 +977,10 @@ async function sendLecturerReply(studentId) {
     if (emptyEl) emptyEl.remove();
     const timeStr = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
     const div = document.createElement("div");
-    div.className = "interaction-item reply";
+    div.className = "thread-msg from-lecturer";
     div.innerHTML =
-      `<div class="interaction-top">` +
-      `<span>👨‍🏫 תגובת מרצה</span>` +
-      `<span class="interaction-meta">${timeStr}</span>` +
-      `</div>` +
-      `<div class="interaction-content" style="color:#581c87">${escapeHtml(text)}</div>`;
+      `<div class="thread-msg-body">${escapeHtml(text)}</div>` +
+      `<div class="thread-msg-time">${timeStr}</div>`;
     threadDiv.appendChild(div);
   }
 }
@@ -1561,6 +1573,8 @@ async function exportSession() {
     alert("שגיאה בייצוא: " + e.message);
   }
 }
+
+switchCockpitTab('live');
 </script>
 
 <script src="/balance.js"></script>
