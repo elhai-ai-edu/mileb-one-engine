@@ -46,18 +46,18 @@
         <div id="workspace-lobby" class="workspace-lobby">
           <button class="workspace-lobby-card workspace-lobby-card-classroom" onclick="enterLiveClassroom()">
             <span class="workspace-lobby-icon">🏫</span>
-            <span class="workspace-lobby-title">כניסה לשיעור</span>
+            <span class="workspace-lobby-title">🤖 בוט מלווה שיעור</span>
           </button>
           <button class="workspace-lobby-card workspace-lobby-card-project" onclick="enterProjectWorkspace()">
             <span class="workspace-lobby-icon">🎓</span>
-            <span class="workspace-lobby-title">פרויקט חקר ופרזנטציה</span>
+            <span class="workspace-lobby-title">🔍 בוט מלווה חקר</span>
           </button>
         </div>
 
         <div id="workspace-editor-shell" class="workspace-editor-shell" style="display:none;">
           <!-- slim top strip: back button + live badge -->
           <div class="workspace-context-strip">
-            <button class="workspace-back-btn" onclick="returnToLobby()">← בחירה מחדש</button>
+            <button class="workspace-back-btn" onclick="enterLiveClassroom()">🤖 בוט מלווה שיעור</button>
             <span id="live-session-badge" style="display:none;background:#ecfdf3;color:#065f46;border:1px solid #86efac;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;align-items:center;gap:5px;">
               <span style="width:7px;height:7px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 0 0 rgba(34,197,94,0.6);animation:livePulse 1.6s infinite;"></span>
               שיעור פעיל
@@ -113,7 +113,10 @@
                 </textarea>
               </div>
               <div class="actions workspace-actions">
-                <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
+                <div class="workspace-send-row">
+                  <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
+                  <button id="audio-record-btn" onclick="toggleAudioRecording()" class="workspace-mic-btn" title="הקלט הודעה קולית למרצה">🎙️</button>
+                </div>
                 <button onclick="submitWork()" class="workspace-secondary-action">📄 הגש עבודה</button>
                 <span id="save-indicator" class="save-indicator">—</span>
                 <span id="waf-send-status" class="waf-send-status"></span>
@@ -469,11 +472,39 @@ livePulseStyle.textContent = `
   flex-direction: column;
   gap: 7px;
 }
+.workspace-send-row {
+  width: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
 .workspace-writing-col .workspace-primary-action,
 .workspace-writing-col .workspace-secondary-action {
   width: 100%;
   text-align: center;
   box-sizing: border-box;
+}
+.workspace-mic-btn {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 14px;
+  min-width: 52px;
+  padding: 0 12px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.workspace-mic-btn:hover {
+  background: #eef2ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.workspace-mic-btn.is-recording {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 @media (max-width: 1180px) {
   .workspace-layout {
@@ -672,20 +703,44 @@ function setWorkspaceContext(mode) {
 }
 
 function enterLiveClassroom() {
+  clearResearchContext();
+
+  if (!skillId) {
+    const lessonLink = Array.from(document.querySelectorAll("#bot-menu .bot-link"))
+      .find(link => link.dataset.workspaceKind !== "project");
+    if (lessonLink && lessonLink !== activeBotLink) {
+      lessonLink.click();
+    }
+  }
+
   setWorkspaceContext("classroom");
   document.getElementById("student-text")?.focus();
 }
 
 function enterProjectWorkspace() {
-  if (!maybeSelectUnifiedProjectBot()) {
+  const switched = maybeSelectUnifiedProjectBot();
+  if (!switched) {
     setWorkspaceContext("project");
   }
+  setResearchStepsVisible(!skillId && hasResearchStages());
   document.getElementById("student-text")?.focus();
 }
 
 function returnToLobby() {
   if (skillId) return;
   setWorkspaceContext("lobby");
+}
+
+function clearResearchContext() {
+  currentStep = 1;
+  setResearchStepsVisible(false);
+
+  const tabs = document.querySelectorAll(".stage-tab");
+  tabs.forEach((tab, idx) => {
+    tab.classList.toggle("active", idx === 0);
+    tab.classList.remove("completed");
+  });
+  document.querySelectorAll(".stepper-connector").forEach(conn => conn.classList.remove("completed"));
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1271,6 +1326,10 @@ function showFeed() { /* no-op — history col visible by default in the split l
 // ─── Chronological feed store ───
 let feedItems = [];
 let broadcastFeedItems = [];
+let audioRecorder = null;
+let audioChunks = [];
+let audioStream = null;
+let isAudioRecording = false;
 
 function addToActivityFeed(item) {
   // item: { type: "sent"|"reply", text, kind?, tag?, step?, ts }
@@ -1289,6 +1348,7 @@ function addToActivityFeed(item) {
 function buildFeedEntry(item) {
   const isReply      = item.type === "reply";
   const isSubmission = item.kind === "submission";
+  const isAudio      = item.kind === "audio" && typeof item.text === "string" && item.text.startsWith("data:audio/");
 
   const div = document.createElement("div");
   div.className = "waf-msg " + (isReply ? "waf-msg-lecturer"
@@ -1309,7 +1369,9 @@ function buildFeedEntry(item) {
     `<span class="waf-msg-sender">${senderLabel}</span>` +
     (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
     `</div>` +
-    `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`;
+    (isAudio
+      ? `<audio controls class="cockpit-audio-player" src="${item.text}"></audio>`
+      : `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`);
 
   return div;
 }
@@ -1396,6 +1458,94 @@ function hydrateLecturerThread(studentSteps = []) {
       ts: step.ts
     });
   });
+}
+
+async function toggleAudioRecording() {
+  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+
+  if (isAudioRecording) {
+    stopAudioRecording();
+    return;
+  }
+
+  const btn = document.getElementById("audio-record-btn");
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    audioRecorder = new MediaRecorder(audioStream);
+    audioRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) audioChunks.push(event.data);
+    };
+    audioRecorder.onstop = handleAudioRecordingStop;
+    audioRecorder.start();
+    isAudioRecording = true;
+    if (btn) {
+      btn.classList.add("is-recording");
+      btn.title = "עצור ושלח הקלטה";
+      btn.textContent = "⏹️";
+    }
+  } catch (e) {
+    alert("לא ניתן להפעיל מיקרופון בדפדפן זה");
+  }
+}
+
+function stopAudioRecording() {
+  if (audioRecorder && isAudioRecording) {
+    audioRecorder.stop();
+  }
+}
+
+async function handleAudioRecordingStop() {
+  const btn = document.getElementById("audio-record-btn");
+  isAudioRecording = false;
+  if (btn) {
+    btn.classList.remove("is-recording");
+    btn.title = "הקלט הודעה קולית למרצה";
+    btn.textContent = "🎙️";
+  }
+
+  if (audioStream) {
+    audioStream.getTracks().forEach(track => track.stop());
+    audioStream = null;
+  }
+
+  if (!audioChunks.length) return;
+
+  const blob = new Blob(audioChunks, { type: "audio/webm" });
+  const dataUrl = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ""));
+    reader.readAsDataURL(blob);
+  });
+
+  if (!dataUrl) return;
+
+  const statusEl = document.getElementById("waf-send-status");
+  if (statusEl) statusEl.textContent = "שולח הקלטה...";
+
+  const tag = detectMessageTag();
+  try {
+    const res = await fetch("/.netlify/functions/classroom", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "submit", sessionId, studentId,
+        step: currentStep, content: dataUrl, type: "audio", tag
+      })
+    });
+
+    if (res.ok) {
+      addToActivityFeed({ type: "sent", text: dataUrl, kind: "audio", tag, step: currentStep, ts: Date.now() });
+      if (statusEl) {
+        statusEl.textContent = "הקלטה נשלחה ✓";
+        setTimeout(() => { statusEl.textContent = ""; }, 2200);
+      }
+    } else if (statusEl) {
+      statusEl.textContent = "שגיאה בשליחת הקלטה";
+    }
+  } catch (e) {
+    if (statusEl) statusEl.textContent = "שגיאת רשת";
+  }
 }
 
 async function sendMessage() {
