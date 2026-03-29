@@ -6,7 +6,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<style>body { background-color: yellow !important; }</style>
 <title>MilEd — מרחב עבודה</title>
 </head>
 
@@ -138,9 +137,7 @@
               </div>
               <div class="actions workspace-actions">
                 <button type="button" id="visibility-toggle" onclick="toggleVisibility()" class="btn-visibility">🔒 מרצה בלבד</button>
-                <div class="final-mic-debug-wrap">
-                  <button type="button" id="final-mic-btn" onclick="startRecording()" class="final-mic-btn" title="הקלט סיפור קול">🎙️</button>
-                </div>
+                <button type="button" id="final-mic-btn" onclick="startRecording()" class="final-mic-btn" title="הקלט סיפור קול">🎙️</button>
                 <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
                 <button onclick="submitWork()" class="workspace-secondary-action">📄 הגש עבודה</button>
                 <span id="save-indicator" class="save-indicator">—</span>
@@ -192,9 +189,6 @@
 </div>
 
 <script>
-
-console.log('--- SYSTEM LIVE v2 ---');
-alert('System Updated');
 
 const livePulseStyle = document.createElement("style");
 livePulseStyle.textContent = `
@@ -404,17 +398,27 @@ livePulseStyle.textContent = `
 /* ── Mic button ── */
 .final-mic-btn {
   appearance: none;
-  background: #f1f5f9;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
   border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  padding: 10px 13px;
-  font-size: 18px;
+  padding: 0;
+  font-size: 20px;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease, transform .1s ease;
+  box-shadow: 0 6px 14px rgba(15,23,42,.10);
+  transition: background .15s ease, border-color .15s ease, transform .1s ease, box-shadow .15s ease;
   flex-shrink: 0;
 }
-.final-mic-btn:hover { background: #e2e8f0; }
+.final-mic-btn:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  box-shadow: 0 8px 16px rgba(15,23,42,.13);
+}
 .final-mic-btn.recording {
   background: #fee2e2;
   border-color: #fca5a5;
@@ -523,9 +527,11 @@ livePulseStyle.textContent = `
   grid-template-columns: 1fr 2fr;
   gap: 14px;
   align-items: start;
+  direction: rtl;
   transition: grid-template-columns 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   /* RTL: first column → right visual (history-col 33%), second → left (writing-col 66%) */
 }
+.workspace-inner-split > * { min-width: 0; }
 .workspace-inner-split.wall-focused {
   grid-template-columns: 2fr 1fr; /* history expands to 66% */
 }
@@ -581,20 +587,24 @@ livePulseStyle.textContent = `
 }
 .btn-wall-focus {
   appearance: none;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 6px;
-  font-size: 15px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 16px;
   cursor: pointer;
-  color: #94a3b8;
+  color: #334155;
   align-self: center;
   flex-shrink: 0;
-  transition: color .15s, background .15s;
+  transition: color .15s, background .15s, border-color .15s;
   line-height: 1;
 }
-.btn-wall-focus:hover { background: #e2e8f0; color: #334155; }
-.btn-wall-focus.focused { color: #1d4ed8; }
+.btn-wall-focus:hover { background: #e2e8f0; border-color: #94a3b8; color: #0f172a; }
+.btn-wall-focus.focused {
+  color: #1d4ed8;
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
 /* Wall panel wrapper */
 .waf-panel {
   flex: 1;
@@ -721,17 +731,6 @@ livePulseStyle.textContent = `
   display: flex !important;
   visibility: visible !important;
   opacity: 1 !important;
-  position: relative;
-  z-index: 5;
-}
-.final-mic-debug-wrap {
-  border: 2px solid #ef4444;
-  border-radius: 10px;
-  padding: 2px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #fff;
   position: relative;
   z-index: 5;
 }
@@ -1873,6 +1872,7 @@ async function sendMessageToLecturer() {
   const text = editor?.value.trim() || "";
   if (!text) { alert("כתוב משהו לפני שליחה"); return; }
   if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+  document.getElementById("final-chat-input").value = "";
   editor.value = "";
   localStorage.setItem(storageKey, "");
 
@@ -1981,6 +1981,7 @@ function discardRecording() {
 async function sendAudioMessage() {
   if (!recordedBlob) return;
   if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+  document.getElementById("final-chat-input").value = "";
 
   clearStudentTextarea();
 
