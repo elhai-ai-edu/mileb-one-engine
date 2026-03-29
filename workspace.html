@@ -26,15 +26,16 @@
 
   <div class="topbar workspace-topbar">
     <div class="workspace-topbar-left">
-      <span class="workspace-brand-mark">MilEd.One</span>
       <span id="course-title" class="workspace-course-title">טוען...</span>
-      <span id="hebrew-level-badge" class="workspace-meta-badge"></span>
-      <span id="role-badge" class="workspace-meta-badge" style="display:none;"></span>
     </div>
     <div class="workspace-topbar-right">
       <span id="user-badge" class="workspace-user-badge"></span>
       <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn">← יציאה</button>
     </div>
+  </div>
+  <div style="display:none;">
+    <span id="hebrew-level-badge"></span>
+    <span id="role-badge"></span>
   </div>
 
   <div class="container workspace-shell">
@@ -45,13 +46,11 @@
         <div id="workspace-lobby" class="workspace-lobby">
           <button class="workspace-lobby-card workspace-lobby-card-classroom" onclick="enterLiveClassroom()">
             <span class="workspace-lobby-icon">🏫</span>
-            <span class="workspace-lobby-title">כניסה לשיעור פעיל</span>
-            <span class="workspace-lobby-copy">מרחב כתיבה נקי לשיעור הנוכחי, בלי שלבי המחקר.</span>
+            <span class="workspace-lobby-title">כניסה לשיעור</span>
           </button>
           <button class="workspace-lobby-card workspace-lobby-card-project" onclick="enterProjectWorkspace()">
             <span class="workspace-lobby-icon">🎓</span>
-            <span class="workspace-lobby-title">עבודה על פרויקט הגמר</span>
-            <span class="workspace-lobby-copy">אותו מרחב עבודה, עם שלבי המחקר והתקדמות הפרויקט גלויים.</span>
+            <span class="workspace-lobby-title">פרויקט חקר ופרזנטציה</span>
           </button>
         </div>
 
@@ -65,7 +64,7 @@
           </div>
 
           <div id="research-steps-shell" class="research-steps-shell is-hidden">
-            <div class="research-steps-title">🔎 שלבי מחקר והתקדמות</div>
+            <div class="research-steps-title">🎓 שלבי חקר ופרזנטציה</div>
             <div id="task-tabs" class="stage-tabs-row"></div>
           </div>
 
@@ -97,8 +96,8 @@
           </div>
 
           <div class="actions workspace-actions">
-            <button onclick="submitWork()" class="btn btn-green">📄 הגש עבודה</button>
-            <button onclick="sendMessageToLecturer()" class="btn btn-blue">💬 שלח מסר למרצה</button>
+            <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
+            <button onclick="submitWork()" class="workspace-secondary-action">📄 הגש עבודה</button>
             <span id="save-indicator" class="save-indicator">—</span>
             <span id="waf-send-status" class="waf-send-status"></span>
           </div>
@@ -191,13 +190,6 @@ livePulseStyle.textContent = `
   direction: ltr;
 }
 .workspace-topbar-right { flex-shrink: 0; }
-.workspace-brand-mark {
-  font-size: 11px;
-  font-weight: 800;
-  color: #4338ca;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
 .workspace-course-title {
   font-size: 18px;
   font-weight: 700;
@@ -206,7 +198,6 @@ livePulseStyle.textContent = `
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.workspace-meta-badge,
 .workspace-user-badge {
   display: inline-flex;
   align-items: center;
@@ -248,8 +239,8 @@ livePulseStyle.textContent = `
 .workspace-lobby-card {
   border: 1px solid #dbe4ff;
   border-radius: 22px;
-  padding: 28px;
-  min-height: 220px;
+  padding: 26px;
+  min-height: 180px;
   background: linear-gradient(160deg, #ffffff 0%, #f8fbff 55%, #eef4ff 100%);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
   display: flex;
@@ -278,15 +269,9 @@ livePulseStyle.textContent = `
   line-height: 1;
 }
 .workspace-lobby-title {
-  font-size: 25px;
+  font-size: 24px;
   font-weight: 800;
   color: #0f172a;
-}
-.workspace-lobby-copy {
-  max-width: 28ch;
-  font-size: 14px;
-  color: #475569;
-  line-height: 1.8;
 }
 .workspace-editor-shell {
   background: #ffffff;
@@ -359,7 +344,7 @@ livePulseStyle.textContent = `
 }
 .workspace-textarea {
   width: 100%;
-  min-height: clamp(340px, 55vh, 760px);
+  min-height: clamp(220px, 34vh, 420px);
   padding: 18px;
   border-radius: 16px;
   border: 1px solid #d8e1f0;
@@ -368,6 +353,30 @@ livePulseStyle.textContent = `
 }
 .workspace-actions {
   flex-wrap: wrap;
+}
+.workspace-primary-action {
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 0 10px 24px rgba(55, 48, 163, 0.24);
+}
+.workspace-secondary-action {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 14px;
+  padding: 11px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, color .2s ease;
+}
+.workspace-secondary-action:hover {
+  background: #eef2f7;
+  border-color: #94a3b8;
+  color: #334155;
 }
 /* ─── Workspace Activity Feed ─── */
 .waf-feed {
@@ -508,14 +517,37 @@ const WORKSPACE_MODE_COPY = {
     subtitle: "מרחב כתיבה לשיעור השוטף. היסטוריית השיחה והמסרים נשארת מעל הטקסט."
   },
   project: {
-    title: "פרויקט הגמר",
-    subtitle: "מצב פרויקט פותח גם את שלבי המחקר כדי שתוכל לעבוד מול התקדמות המשימה."
+    title: "חקר ופרזנטציה",
+    subtitle: "מצב חקר ופרזנטציה פותח את שלבי העבודה הרלוונטיים ושומר את הכתיבה במרכז."
   }
 };
 
+const PROJECT_PRESENTATION_LABEL = "🎓 פרויקט חקר ופרזנטציה";
+
 function isResearchContextBot(botType = "", label = "") {
   const haystack = `${botType} ${label}`.toLowerCase();
-  return /research|qualitative|מחקר|🔎/.test(haystack);
+  return /research|qualitative|מחקר|חקר|פרזנטציה|🔎|🎓/.test(haystack);
+}
+
+function getUnifiedProjectBot() {
+  const bots = currentCourse?.bots || {};
+  const researchBot = bots.research;
+  const finalProjectBot = bots.final_project;
+  if (!researchBot && !finalProjectBot) return null;
+
+  const source = researchBot || finalProjectBot;
+  return {
+    key: "project_presentation",
+    botType: researchBot?.botType || source.botType || source,
+    label: PROJECT_PRESENTATION_LABEL
+  };
+}
+
+function maybeSelectUnifiedProjectBot() {
+  const projectLink = document.querySelector('[data-workspace-kind="project"]');
+  if (!projectLink) return false;
+  projectLink.click();
+  return true;
 }
 
 function updateWorkspaceHeader(mode) {
@@ -568,7 +600,9 @@ function enterLiveClassroom() {
 }
 
 function enterProjectWorkspace() {
-  setWorkspaceContext("project");
+  if (!maybeSelectUnifiedProjectBot()) {
+    setWorkspaceContext("project");
+  }
   document.getElementById("student-text")?.focus();
 }
 
@@ -846,7 +880,28 @@ function renderBotMenu() {
   const botMenu = document.getElementById("bot-menu");
   botMenu.innerHTML = "";
 
+  const renderedKeys = new Set();
+  const unifiedProjectBot = getUnifiedProjectBot();
+
   for (let key in currentCourse.bots) {
+    if (renderedKeys.has(key)) continue;
+
+    if ((key === "research" || key === "final_project") && unifiedProjectBot) {
+      if (!renderedKeys.has(unifiedProjectBot.key)) {
+        const a = document.createElement("a");
+        a.href = "#";
+        a.className = "bot-link";
+        a.innerText = unifiedProjectBot.label;
+        a.dataset.workspaceKind = "project";
+        a.onclick = (e) => { e.preventDefault(); selectBot(unifiedProjectBot.botType, unifiedProjectBot.label, a); };
+        botMenu.appendChild(a);
+        renderedKeys.add(unifiedProjectBot.key);
+      }
+      renderedKeys.add("research");
+      renderedKeys.add("final_project");
+      continue;
+    }
+
     const bot     = currentCourse.bots[key];
     const botType = bot.botType || bot;
     const label   = bot.label  || key;
@@ -854,8 +909,10 @@ function renderBotMenu() {
     a.href = "#";
     a.className = "bot-link";
     a.innerText = label;
+    if (isResearchContextBot(botType, label)) a.dataset.workspaceKind = "project";
     a.onclick = (e) => { e.preventDefault(); selectBot(botType, label, a); };
     botMenu.appendChild(a);
+    renderedKeys.add(key);
   }
 
   const universalMenu = document.getElementById("universal-menu");
@@ -1157,7 +1214,7 @@ function addToActivityFeed(item) {
     label = `📄 הגשת עבודה (שלב ${item.step || currentStep || "?"}):`;
   } else {
     const icon = tagIcon(item.tag || "general");
-    const tagLabel = item.tag === "research" ? "מחקר"
+    const tagLabel = item.tag === "research" ? "חקר ופרזנטציה"
                    : item.tag === "task"     ? `שלב ${item.step || currentStep || ""}`
                    : "מסר";
     label = `${icon} שלחת ${tagLabel}:`;
@@ -1167,8 +1224,14 @@ function addToActivityFeed(item) {
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
 
+  const tagChipLabel = item.tag === "research"
+    ? "חקר ופרזנטציה"
+    : item.tag === "task"
+    ? "משימה"
+    : "מסר";
+
   const tagChip = (!isReply && !isSubmission && item.tag)
-    ? `<span class="waf-tag-chip waf-tag-${item.tag}">${tagIcon(item.tag)} ${item.tag}</span>`
+    ? `<span class="waf-tag-chip waf-tag-${item.tag}">${tagIcon(item.tag)} ${tagChipLabel}</span>`
     : "";
 
   div.innerHTML =
