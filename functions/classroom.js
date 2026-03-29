@@ -88,7 +88,10 @@ export async function handler(event){
       if(session.facultyId !== facultyId)
         return err("not session owner");
 
-      const answers = session.answers || {};
+      const answers = {
+        ...(session.answers || {}),
+        ...(session.students || {})
+      };
 
       const botType = session.botType;
       let courseId = null;
@@ -414,6 +417,25 @@ export async function handler(event){
       `sessions/${sessionId}/answers/${studentId}/lastUpdated`
     ).set(Date.now());
 
+    // Mirror for cockpit consumers reading sessions/{sessionId}/students
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/steps/${stepNum}`
+    ).set({
+
+      step:stepNum,
+      content,
+      submittedAt:Date.now()
+
+    });
+
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/state`
+    ).set("submitted");
+
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/lastUpdated`
+    ).set(Date.now());
+
     return ok({ok:true,step:stepNum});
 
   }
@@ -433,6 +455,14 @@ export async function handler(event){
       `sessions/${sessionId}/answers/${studentId}/lastSeen`
     ).set(Date.now());
 
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/state`
+    ).set(state);
+
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/lastSeen`
+    ).set(Date.now());
+
     return ok({ok:true,state});
 
   }
@@ -445,6 +475,24 @@ export async function handler(event){
 
     await db.ref(
       `sessions/${sessionId}/answers/${studentId}`
+    ).transaction(current => {
+
+      if(current) return current;
+
+      return {
+
+        steps:{},
+        joinedAt:Date.now(),
+        lastUpdated:Date.now(),
+        lastSeen:Date.now(),
+        state:"idle"
+
+      };
+
+    });
+
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}`
     ).transaction(current => {
 
       if(current) return current;

@@ -523,6 +523,10 @@ async function fetchDashboard() {
       `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}`
     );
     const data = await res.json();
+    if (!res.ok) {
+      console.error("dashboard fetch failed:", data?.error || res.status, { sessionId, facultyId });
+      return;
+    }
     renderDashboard(data);
   } catch(e) { console.error("poll error:", e); }
 }
@@ -542,13 +546,17 @@ function renderDashboard(data) {
   const locked = data.lockedSteps || [];
 
   grid.innerHTML = students.map(s => {
+    const stepsArr = Object.values(s.steps || {})
+      .filter(st => st && typeof st === "object")
+      .sort((a, b) => (Number(a.step) || 0) - (Number(b.step) || 0));
+
     const isLocked  = locked.includes(s.studentId);
-    const hasAnswer = s.steps && s.steps.length > 0;
+    const hasAnswer = stepsArr.length > 0;
     const cardClass = isLocked ? "locked" : hasAnswer ? "has-answer" : "";
     const statusClass = isLocked ? "status-locked" : hasAnswer ? "status-done" : "status-waiting";
     const statusText  = isLocked ? "🔒 נעול" : hasAnswer ? "✅ הגיש" : "⏳ ממתין";
 
-    const stepsHtml = (s.steps || []).map(st => `
+    const stepsHtml = stepsArr.map(st => `
       <div class="step-item">
         <div class="step-label">שלב ${st.step}</div>
         <div class="step-content">${escapeHtml(st.content || "")}</div>
