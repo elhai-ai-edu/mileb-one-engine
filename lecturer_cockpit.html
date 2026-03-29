@@ -173,7 +173,11 @@
 }
 .dj-push-btn:hover:not(:disabled) { opacity: 0.88; }
 .dj-push-btn:disabled { opacity: 0.45; cursor: not-allowed; background: #94a3b8; }
-.dj-push-btn.pushed { background: #059669; }
+.dj-push-btn.pushed,
+.dj-push-btn.btn-pushed {
+  background: #10b981;
+  color: #ffffff;
+}
 /* ─── Broadcast details accordion ─── */
 .broadcast-details { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-top: 4px; }
 .broadcast-details summary { font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; user-select: none; }
@@ -619,6 +623,7 @@ sessionStorage.setItem("facultyId", facultyId);
 let sessionId   = null;
 let pollTimer   = null;
 let currentBot  = null;
+let pushedSteps = []; // session-local memory of pushed lesson step numbers
 let CONFIG      = null;  // stored for openSession() lookup
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 const replyDrafts = {};
@@ -700,6 +705,7 @@ async function openSession() {
   }
 
   currentBot = botType;
+  pushedSteps = [];
   sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
   studentURL = studentURL.replace('SESSION_ID', sessionId);
 
@@ -745,6 +751,8 @@ async function closeSession() {
   document.getElementById('sessionInfo').style.display = "none";
   document.getElementById('sessionIdDisplay').textContent = "";
   setSessionControls(false);
+  pushedSteps = [];
+  renderDJBooth();
 }
 
 // ─────────────────────────────────────────
@@ -1486,6 +1494,15 @@ function renderDJBooth() {
     ? `${lessonSteps.length} שלבים מוכנים — לחץ 🚀 לדחיפת משימה לסטודנטים`
     : `${lessonSteps.length} שלבים — פתח שיעור כדי להפעיל את הדחיפה`;
   container.innerHTML = lessonSteps.map((s, i) => `
+    ${(() => {
+      const stepNum = i + 1;
+      const isPushed = pushedSteps.includes(stepNum);
+      const btnText = isPushed ? "✅ פורסם" : "🚀 דחוף";
+      const pushedClass = isPushed ? " btn-pushed pushed" : "";
+      const disabled = (!sessionId || isPushed)
+        ? `disabled title="${!sessionId ? "פתח שיעור תחילה" : "משימה זו כבר פורסמה"}"`
+        : "";
+      return `
     <div class="dj-step" id="dj-step-${i}">
       <div class="dj-step-info">
         <div class="dj-step-num">${i + 1}</div>
@@ -1494,24 +1511,30 @@ function renderDJBooth() {
           ${s.instructions ? `<div class="dj-step-inst">${escapeHtml(s.instructions).slice(0,90)}${s.instructions.length>90?"...":""}</div>` : ""}
         </div>
       </div>
-      <button class="dj-push-btn" onclick="pushTask(${i})" ${!sessionId ? 'disabled title="פתח שיעור תחילה"' : ""}>🚀 דחוף</button>
-    </div>`).join("");
+      <button class="dj-push-btn${pushedClass}" onclick="pushTask(${i})" ${disabled}>${btnText}</button>
+    </div>`;
+    })()}
+  `).join("");
 }
 
 async function pushTask(stepIdx) {
   if (!sessionId) { alert("פתח שיעור תחילה"); return; }
   const step = lessonSteps[stepIdx];
   if (!step) return;
+  const stepNum = stepIdx + 1;
+  if (pushedSteps.includes(stepNum)) return;
   const res = await callClassroom({
     action: "push_task", sessionId, facultyId,
-    title: step.title, instructions: step.instructions || "", step: stepIdx + 1
+    title: step.title, instructions: step.instructions || "", step: stepNum
   });
   if (res.ok) {
+    pushedSteps.push(stepNum);
     const btn = document.querySelector(`#dj-step-${stepIdx} .dj-push-btn`);
     if (btn) {
-      btn.textContent = "✅ נדחף!";
-      btn.classList.add("pushed");
-      setTimeout(() => { btn.textContent = "🚀 דחוף"; btn.classList.remove("pushed"); }, 3000);
+      btn.textContent = "✅ פורסם";
+      btn.classList.add("btn-pushed", "pushed");
+      btn.disabled = true;
+      btn.title = "משימה זו כבר פורסמה";
     }
   } else {
     alert("שגיאה בדחיפת המשימה: " + (res.error || ""));
