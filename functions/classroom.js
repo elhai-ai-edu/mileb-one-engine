@@ -272,6 +272,14 @@ export async function handler(event){
 
     });
 
+    // Write index so students can auto-discover the session by courseId
+    if (classId) {
+      await db.ref(`active_sessions/${classId}`).set({
+        sessionId,
+        openedAt: Date.now()
+      });
+    }
+
     return ok({ok:true,action:"open",sessionId});
 
   }
@@ -465,6 +473,11 @@ export async function handler(event){
       closedAt:Date.now()
 
     });
+
+    // Remove the active-session index so students no longer auto-join
+    if (session.classId) {
+      await db.ref(`active_sessions/${session.classId}`).remove();
+    }
 
     return ok({ok:true});
 

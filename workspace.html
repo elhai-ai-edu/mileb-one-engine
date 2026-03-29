@@ -106,7 +106,7 @@ const courseId = params.get("courseId") || "";
 const skillId  = params.get("skillId")  || "";
 
 // sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי לכל קורס בנפרד
-const urlSessionId = params.get("sessionId") || "";
+let urlSessionId = params.get("sessionId") || "";
 let sessionId = urlSessionId;
 if (!sessionId) {
   const storageBase = skillId ? "skill_" + skillId : courseId;
@@ -359,7 +359,12 @@ async function init() {
   initRoleAssignment();
 
   // כניסה לכיתה רק אם יש sessionId מה-URL (שיעור פעיל)
-  if (urlSessionId) classroomJoin();
+  if (urlSessionId) {
+    classroomJoin();
+  } else if (courseId) {
+    // No sessionId in URL — try to discover an active session for this course
+    discoverActiveSession();
+  }
 }
 
 // ─────────────────────────────
@@ -713,6 +718,25 @@ async function submitWork() {
 // ─────────────────────────────
 // classroom join + live polling
 // ─────────────────────────────
+
+// Auto-discover an active session for this courseId by reading the
+// active_sessions/{courseId} pointer that classroom.js writes on open.
+// Uses the Firebase REST API — same pattern as checkCourseLock().
+async function discoverActiveSession() {
+  if (!courseId || !window.MILED_FIREBASE_CONFIG) return;
+  try {
+    const dbUrl = window.MILED_FIREBASE_CONFIG.databaseURL;
+    const res   = await fetch(`${dbUrl}/active_sessions/${courseId}.json`);
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data?.sessionId) return;          // no active session for this course
+
+    // Found one — inject it as if it came from the URL
+    urlSessionId = data.sessionId;
+    sessionId    = data.sessionId;
+    classroomJoin();
+  } catch { /* non-fatal — student just won't see live session */ }
+}
 
 async function classroomJoin() {
   await fetch("/.netlify/functions/classroom", {
