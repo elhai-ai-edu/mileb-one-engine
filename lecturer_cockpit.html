@@ -459,6 +459,11 @@
     <h2>📚 לוח שיעורים</h2>
     <p class="panel-sub">הגדר שלבי שיעור לפני הכיתה — שמור לשימוש חוזר</p>
 
+    <div class="field">
+      <label>בחר בוט / קורס</label>
+      <select id="botSelectPrep"><option value="">טוען...</option></select>
+    </div>
+
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <select id="template-select" class="lp-input" style="margin:0;flex:1;">
         <option value="">— טען תבנית שמורה —</option>
@@ -669,6 +674,7 @@ let pollTimer   = null;
 let currentBot  = null;
 let pushedSteps = []; // session-local memory of pushed lesson step numbers
 let CONFIG      = null;  // stored for openSession() lookup
+let currentLessonId = null; // selected courseId shared between Live/Prepare tabs
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 const replyDrafts = {};
 
@@ -708,54 +714,100 @@ function syncCockpitNavOffset() {
 // ─────────────────────────────────────────
 fetch('/config.json').then(r => r.json()).then(config => {
   CONFIG = config;
-  const sel = document.getElementById('botSelect');
-  sel.innerHTML = '<option value="">— בחר קורס או כלי —</option>';
+  const liveSel = document.getElementById('botSelect');
+  const prepSel = document.getElementById('botSelectPrep');
+  [liveSel, prepSel].forEach(sel => {
+    if (sel) sel.innerHTML = '<option value="">— בחר קורס או כלי —</option>';
+  });
 
   // ── Real courses from my_courses (same source as students.html + workspace.html) ──
   const courses = config.my_courses || {};
   if (Object.keys(courses).length) {
-    const grp = document.createElement('optgroup');
-    grp.label = '📚 קורסים';
     for (const [courseId, course] of Object.entries(courses)) {
-      const opt = document.createElement('option');
-      opt.value = courseId;               // courseId, not botType
-      opt.dataset.type = 'course';
-      opt.textContent = course.name;
-      grp.appendChild(opt);
+      [liveSel, prepSel].forEach(sel => {
+        if (!sel) return;
+        let grp = sel.querySelector('optgroup[label="📚 קורסים"]');
+        if (!grp) {
+          grp = document.createElement('optgroup');
+          grp.label = '📚 קורסים';
+          sel.appendChild(grp);
+        }
+        const opt = document.createElement('option');
+        opt.value = courseId;               // courseId, not botType
+        opt.dataset.type = 'course';
+        opt.textContent = course.name;
+        grp.appendChild(opt);
+      });
     }
-    sel.appendChild(grp);
   }
 
   // ── Faculty tools ──
   const facultyItems = config.branches?.faculty?.items || {};
   if (Object.keys(facultyItems).length) {
-    const grp = document.createElement('optgroup');
-    grp.label = '🧑‍🏫 כלי הוראה';
     for (const [id, bot] of Object.entries(facultyItems)) {
-      const opt = document.createElement('option');
-      opt.value = bot.botType;
-      opt.dataset.type = 'faculty';
-      opt.textContent = bot.name;
-      grp.appendChild(opt);
+      [liveSel, prepSel].forEach(sel => {
+        if (!sel) return;
+        let grp = sel.querySelector('optgroup[label="🧑‍🏫 כלי הוראה"]');
+        if (!grp) {
+          grp = document.createElement('optgroup');
+          grp.label = '🧑‍🏫 כלי הוראה';
+          sel.appendChild(grp);
+        }
+        const opt = document.createElement('option');
+        opt.value = bot.botType;
+        opt.dataset.type = 'faculty';
+        opt.textContent = bot.name;
+        grp.appendChild(opt);
+      });
     }
-    sel.appendChild(grp);
   }
+
+  const syncFromSelector = (sourceId) => {
+    const sourceSel = document.getElementById(sourceId);
+    const selectedValue = sourceSel?.value || "";
+    const selectors = [document.getElementById('botSelect'), document.getElementById('botSelectPrep')].filter(Boolean);
+
+    selectors.forEach(sel => {
+      if (sel.id !== sourceId) sel.value = selectedValue;
+    });
+
+    const selectedOpt = Array.from(sourceSel?.options || []).find(opt => opt.value === selectedValue) || null;
+    const selType = selectedOpt?.dataset?.type || null;
+    currentLessonId = selType === 'course' ? selectedValue : null;
+
+    if (currentLessonId) {
+      loadTemplates(currentLessonId);
+    } else {
+      const tplSel = document.getElementById("template-select");
+      if (tplSel) tplSel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
+    }
+  };
+
+  if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
+  if (prepSel) prepSel.addEventListener('change', () => syncFromSelector('botSelectPrep'));
 }).catch(e => console.error("Config load error:", e));
+
+function getSelectedTeachingContext() {
+  const liveSel = document.getElementById('botSelect');
+  const selectedValue = liveSel?.value || "";
+  const selectedOpt = Array.from(liveSel?.options || []).find(opt => opt.value === selectedValue) || null;
+  const selType = selectedOpt?.dataset?.type || 'faculty';
+  const classId = selType === 'course' ? selectedValue : null;
+  return { selectedValue, selectedOpt, selType, classId };
+}
 
 // ─────────────────────────────────────────
 // OPEN SESSION
 // ─────────────────────────────────────────
 async function openSession() {
-  const selectedValue = document.getElementById('botSelect').value;
-  const selectedOpt   = document.querySelector(`#botSelect option[value="${selectedValue}"]`);
-  const selType       = selectedOpt?.dataset?.type || 'faculty';
+  const { selectedValue, selType, classId: selectedClassId } = getSelectedTeachingContext();
 
   if (!selectedValue) { alert("בחר קורס תחילה"); return; }
 
   // Resolve botType + classId depending on selection type
   let botType, classId, studentURL;
-  if (selType === 'course' && CONFIG?.my_courses?.[selectedValue]) {
-    classId  = selectedValue;
+  if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
+    classId  = selectedClassId;
     botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
     studentURL = `${location.origin}/workspace.html?courseId=${classId}&sessionId=SESSION_ID`;
     console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}`);
@@ -1464,8 +1516,7 @@ function renderLessonSteps() {
 }
 
 async function saveTemplate() {
-  const opt  = document.querySelector("#botSelect option:checked");
-  const classId = opt?.dataset?.type === "course" ? opt.value : null;
+  const classId = currentLessonId;
   if (!classId) { alert("בחר קורס לפני שמירת תבנית"); return; }
   if (!lessonSteps.length) { alert("הוסף שלבים לפני השמירה"); return; }
   const name = document.getElementById("template-name-input").value.trim() ||
