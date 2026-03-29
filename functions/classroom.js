@@ -96,10 +96,10 @@ export async function handler(event){
       if(session.facultyId !== facultyId)
         return err("not session owner");
 
-      const answers = {
-        ...(session.answers || {}),
-        ...(session.students || {})
-      };
+      // Canonical source for cockpit student grid
+      const studentsNode = session.students || {};
+      const legacyAnswersNode = session.answers || {};
+      const studentsSource = Object.keys(studentsNode).length ? studentsNode : legacyAnswersNode;
 
       const botType = session.botType;
       let courseId = null;
@@ -108,7 +108,7 @@ export async function handler(event){
       }
 
       const students = await Promise.all(
-        Object.entries(answers).map(async ([sid, data]) => {
+        Object.entries(studentsSource).map(async ([sid, data]) => {
           const lecturerRepliesForStudent = Object.entries(
             session.students?.[sid]?.lecturer_replies || {}
           )
@@ -118,8 +118,10 @@ export async function handler(event){
 
           const base = {
             studentId: sid,
+            name: session.students?.[sid]?.name || data.name || null,
             steps: data.steps || {},
             state: data.state || "idle",
+            status: session.students?.[sid]?.status || data.status || data.state || "idle",
             lastUpdated: data.lastUpdated || null,
             lastSeen: data.lastSeen || null,
             lecturerReplies: lecturerRepliesForStudent
@@ -206,10 +208,7 @@ export async function handler(event){
           stats[s.state]++;
       });
 
-      const online =
-        students.filter(s =>
-          Date.now() - (s.lastSeen || 0) < 15000
-        ).length;
+      const online = students.filter(s => Date.now() - (s.lastSeen || 0) < 15000).length;
 
       return ok({
 
@@ -228,9 +227,10 @@ export async function handler(event){
 
     if(studentId){
 
-      await db.ref(
-        `sessions/${sessionId}/answers/${studentId}/lastSeen`
-      ).set(Date.now());
+      const now = Date.now();
+      await db.ref(`sessions/${sessionId}/answers/${studentId}/lastSeen`).set(now);
+      await db.ref(`sessions/${sessionId}/students/${studentId}/lastSeen`).set(now);
+      await db.ref(`sessions/${sessionId}/students/${studentId}/presence`).set("online");
 
     }
 
@@ -266,6 +266,21 @@ export async function handler(event){
       .filter(item => item.content)
       .sort((a, b) => a.ts - b.ts);
 
+    const publicWallRaw = session.publicWall || {};
+    const publicPosts = Object.entries(publicWallRaw)
+      .map(([id, item]) => ({
+        id,
+        studentId: item?.studentId || "?",
+        content: item?.content || "",
+        kind: "public",
+        tag: item?.tag || "general",
+        step: item?.step || null,
+        ts: item?.ts || 0
+      }))
+      .filter(item => item.content)
+      .sort((a, b) => a.ts - b.ts)
+      .slice(-50);
+
     return ok({
 
       broadcast:session.broadcast || null,
@@ -276,6 +291,7 @@ export async function handler(event){
       sessionActive:session.active !== false,
       lecturerReplies,
       studentSteps,
+      publicPosts,
       active_task: session.active_task || null
 
     });
@@ -460,7 +476,10 @@ export async function handler(event){
       return err("content required");
 
     const stepNum = Number(step) || 1;
-    const kind = type === "message" ? "message" : "submission";
+    const kind = type === "message" ? "message"
+      : type === "audio"  ? "audio"
+      : type === "public" ? "public"
+      : "submission";
     const now = Date.now();
     const VALID_TAGS = ["research", "task", "general"];
     const tag = VALID_TAGS.includes(body.tag) ? body.tag : "general";
@@ -486,7 +505,7 @@ export async function handler(event){
 
     await db.ref(
       `sessions/${sessionId}/answers/${studentId}/state`
-    ).set(kind === "message" ? "chatting" : "submitted");
+    ).set((kind === "message" || kind === "audio" || kind === "public") ? "chatting" : "submitted");
 
     await db.ref(
       `sessions/${sessionId}/answers/${studentId}/lastUpdated`
@@ -497,11 +516,18 @@ export async function handler(event){
 
     await db.ref(
       `sessions/${sessionId}/students/${studentId}/state`
-    ).set(kind === "message" ? "chatting" : "submitted");
+    ).set((kind === "message" || kind === "audio" || kind === "public") ? "chatting" : "submitted");
 
     await db.ref(
       `sessions/${sessionId}/students/${studentId}/lastUpdated`
     ).set(now);
+
+    // Public posts also fan-out to the shared wall so all students can read them
+    if (kind === "public") {
+      await db.ref(`sessions/${sessionId}/publicWall`).push({
+        studentId, content, kind: "public", tag, step: stepNum, ts: now
+      });
+    }
 
     return ok({ok:true,step:stepNum});
 
@@ -557,9 +583,13 @@ export async function handler(event){
 
   if(action === "join"){
 
-    const { studentId } = body;
+    const { studentId, studentName, status } = body;
 
     if(!studentId) return err("studentId required");
+
+    const now = Date.now();
+    const normalizedName = String(studentName || "").trim();
+    const normalizedStatus = String(status || "online").trim() || "online";
 
     await db.ref(
       `sessions/${sessionId}/answers/${studentId}`
@@ -570,9 +600,9 @@ export async function handler(event){
       return {
 
         steps:{},
-        joinedAt:Date.now(),
-        lastUpdated:Date.now(),
-        lastSeen:Date.now(),
+        joinedAt:now,
+        lastUpdated:now,
+        lastSeen:now,
         state:"idle"
 
       };
@@ -588,14 +618,24 @@ export async function handler(event){
       return {
 
         steps:{},
-        joinedAt:Date.now(),
-        lastUpdated:Date.now(),
-        lastSeen:Date.now(),
+        joinedAt:now,
+        lastUpdated:now,
+        lastSeen:now,
         state:"idle"
 
       };
 
     });
+
+    await db.ref(`sessions/${sessionId}/students/${studentId}`).update({
+      name: normalizedName || null,
+      status: normalizedStatus,
+      presence: "online",
+      lastSeen: now,
+      lastUpdated: now
+    });
+
+    await db.ref(`sessions/${sessionId}/answers/${studentId}/lastSeen`).set(now);
 
     return ok({ok:true});
 

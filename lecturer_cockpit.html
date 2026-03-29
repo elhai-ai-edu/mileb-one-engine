@@ -264,6 +264,31 @@
 .ctag-research { background: #fef9c3; color: #713f12; border: 1px solid #fde68a; }
 .ctag-task     { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
 .ctag-general  { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+/* Audio interaction item */
+.interaction-item.audio {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+.cockpit-audio-player {
+  width: 100%;
+  height: 32px;
+  margin-top: 4px;
+  display: block;
+}
+.status-audio {
+  background: rgba(245,158,11,.12);
+  color: #b45309;
+  border-radius: 999px;
+.status-public {
+  background: rgba(34,197,94,.12);
+  color: #15803d;
+  border-radius: 999px;
+}
+.interaction-item.public {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+}
 .lecturer-reply-input {
   flex: 1;
   border: 1px solid #dbeafe;
@@ -785,26 +810,48 @@ function renderDashboard(data) {
     const hasAnswer = stepsArr.length > 0;
     // Status based on most recent student action
     const latestStudentStep = stepsArr[stepsArr.length - 1];
-    const latestKind = latestStudentStep?.kind === "message" ? "message" : "submission";
+    const latestKind = latestStudentStep?.kind === "message" ? "message"
+      : latestStudentStep?.kind === "audio"   ? "audio"
+      : latestStudentStep?.kind === "public"  ? "public"
+      : "submission";
     const cardClass = isLocked ? "locked" : hasAnswer ? "has-answer" : "";
     const statusClass = isLocked
       ? "status-locked"
       : hasAnswer
-        ? (latestKind === "message" ? "status-message" : "status-done")
+        ? (latestKind === "message" ? "status-message"
+          : latestKind === "audio"  ? "status-audio"
+          : latestKind === "public" ? "status-public"
+          : "status-done")
         : "status-waiting";
     const statusText = isLocked
       ? "🔒 נעול"
       : hasAnswer
-        ? (latestKind === "message" ? "💬 מסר חדש" : "📄 הוגשה עבודה")
+        ? (latestKind === "message" ? "💬 מסר חדש"
+          : latestKind === "audio"  ? "🎙️ הקלטה חדשה"
+          : latestKind === "public" ? "🌐 פרסם לקיר"
+          : "📄 הוגשה עבודה")
         : "⏳ ממתין";
 
     const threadHtml = recentThread.map(item => {
       const isLecturerItem = item.role === "lecturer";
+      const isAudio = !isLecturerItem
+        && typeof item.content === "string"
+        && item.content.startsWith("data:audio/");
       const kindClass = isLecturerItem ? "reply"
-        : (item.kind === "message" ? "message" : "submission");
-      const icon  = isLecturerItem ? "👨‍🏫" : (item.kind === "message" ? "💬" : "📄");
+        : (item.kind === "message" ? "message"
+          : item.kind === "audio"  ? "audio"
+          : item.kind === "public" ? "public"
+          : "submission");
+      const icon  = isLecturerItem ? "👨\u200d🏫"
+        : (item.kind === "message" ? "💬"
+          : item.kind === "audio"  ? "🎙️"
+          : item.kind === "public" ? "🌐"
+          : "📄");
       const label = isLecturerItem ? "תגובת מרצה"
-        : (item.kind === "message" ? "מסר למרצה" : "הגשת עבודה");
+        : (item.kind === "message" ? "מסר למרצה"
+          : item.kind === "audio"  ? "הקלטת קול"
+          : item.kind === "public" ? "פרסום לקיר"
+          : "הגשת עבודה");
       const time = item.ts
         ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
         : "--:--";
@@ -819,6 +866,10 @@ function renderDashboard(data) {
         ? `<span class="ctag ctag-${item.tag}">${TAG_ICONS_C[item.tag] || "💬"} ${TAG_LABELS[item.tag] || item.tag}</span>`
         : "";
 
+      const contentHtml = isAudio
+        ? `<audio controls class="cockpit-audio-player" src="${item.content}"></audio>`
+        : `<div class="interaction-content">${escapeHtml(item.content)}</div>`;
+
       return `
       <div class="interaction-item ${kindClass}">
         <div class="interaction-top">
@@ -826,14 +877,18 @@ function renderDashboard(data) {
           <span class="interaction-meta">${meta}</span>
         </div>
         ${tagChip}
-        <div class="interaction-content">${escapeHtml(item.content)}</div>
+        ${contentHtml}
       </div>`;
     }).join('');
+
+    const studentLabel = s.name
+      ? `${escapeHtml(s.name)} · ${s.studentId.slice(0,8)}`
+      : s.studentId.slice(0,10);
 
     return `
       <div class="student-card ${cardClass}" id="card-${s.studentId}">
         <div class="student-top">
-          <span class="student-id">👤 ${s.studentId.slice(0,10)}</span>
+          <span class="student-id">👤 ${studentLabel}</span>
           <span class="student-status ${statusClass}">${statusText}</span>
         </div>
         <div class="steps-list" id="thread-${s.studentId}">${threadHtml ||

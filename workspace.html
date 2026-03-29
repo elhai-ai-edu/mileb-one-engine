@@ -538,11 +538,13 @@ if (skillId) {
   }
 }
 
-let studentId = sessionStorage.getItem("studentId");
+const STUDENT_ID_KEY = "miled_student_id";
+let studentId = localStorage.getItem(STUDENT_ID_KEY) || sessionStorage.getItem("studentId");
 if (!studentId) {
   studentId = "s_" + Math.random().toString(36).slice(2, 10);
-  sessionStorage.setItem("studentId", studentId);
 }
+localStorage.setItem(STUDENT_ID_KEY, studentId);
+sessionStorage.setItem("studentId", studentId);
 
 let CONFIG         = null;
 let currentCourse  = null;
@@ -858,7 +860,13 @@ async function init() {
 
   currentCourse = CONFIG.my_courses?.[courseId];
   if (!currentCourse) {
-    document.getElementById("course-title").innerText = "קורס לא נמצא";
+    document.getElementById("course-title").innerText = courseId ? "קורס לא נמצא" : "שיעור פעיל";
+    setWorkspaceContext("lobby");
+    restoreDraft();
+    // session-only links (without courseId) must still join so lecturer sees the student
+    if (urlSessionId) {
+      classroomJoin();
+    }
     return;
   }
 
@@ -1541,10 +1549,16 @@ async function discoverActiveSession() {
 }
 
 async function classroomJoin() {
+  let studentName = "";
+  try {
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    studentName = auth?.name || auth?.email || "";
+  } catch {}
+
   await fetch("/.netlify/functions/classroom", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "join", sessionId, studentId })
+    body: JSON.stringify({ action: "join", sessionId, studentId, studentName, status: "online" })
   });
   setLiveSessionBadge(true);
   startClassroomPolling();
