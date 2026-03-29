@@ -104,6 +104,7 @@
 const params   = new URLSearchParams(location.search);
 const courseId = params.get("courseId") || "";
 const skillId  = params.get("skillId")  || "";
+const ACTIVE_SESSIONS_NODE = "active_sessions";
 
 // sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי לכל קורס בנפרד
 let urlSessionId = params.get("sessionId") || "";
@@ -725,9 +726,19 @@ async function submitWork() {
 async function discoverActiveSession() {
   if (!courseId || !window.MILED_FIREBASE_CONFIG) return;
   try {
-    const dbUrl = window.MILED_FIREBASE_CONFIG.databaseURL;
-    const res   = await fetch(`${dbUrl}/active_sessions/${courseId}.json`);
-    if (!res.ok) return;
+    const dbUrlRaw = window.MILED_FIREBASE_CONFIG?.databaseURL || "";
+    const dbUrl = String(dbUrlRaw).replace(/\/+$/, "");
+    if (!dbUrl) {
+      console.error("[discoverActiveSession] Missing databaseURL in MILED_FIREBASE_CONFIG");
+      return;
+    }
+
+    const activeSessionUrl = `${dbUrl}/${ACTIVE_SESSIONS_NODE}/${courseId}.json`;
+    const res = await fetch(activeSessionUrl);
+    if (!res.ok) {
+      console.error(`[discoverActiveSession] HTTP ${res.status} at ${activeSessionUrl}`);
+      return;
+    }
     const data = await res.json();
     if (!data?.sessionId) return;          // no active session for this course
 
@@ -735,7 +746,12 @@ async function discoverActiveSession() {
     urlSessionId = data.sessionId;
     sessionId    = data.sessionId;
     classroomJoin();
-  } catch { /* non-fatal — student just won't see live session */ }
+  } catch (e) {
+    const dbUrlRaw = window.MILED_FIREBASE_CONFIG?.databaseURL || "";
+    const dbUrl = String(dbUrlRaw).replace(/\/+$/, "");
+    const activeSessionUrl = `${dbUrl}/${ACTIVE_SESSIONS_NODE}/${courseId}.json`;
+    console.error(`[discoverActiveSession] Fetch failed at ${activeSessionUrl}:`, e?.message || e);
+  }
 }
 
 async function classroomJoin() {

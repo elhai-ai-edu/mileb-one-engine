@@ -385,6 +385,7 @@ let sessionId   = null;
 let pollTimer   = null;
 let currentBot  = null;
 let CONFIG      = null;  // stored for openSession() lookup
+const ACTIVE_SESSIONS_NODE = "active_sessions";
 
 function setSessionControls(isActive) {
   const openBtn = document.getElementById('openBtn');
@@ -454,6 +455,7 @@ async function openSession() {
     classId  = selectedValue;
     botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
     studentURL = `${location.origin}/workspace.html?courseId=${classId}&sessionId=SESSION_ID`;
+    console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}`);
   } else {
     // Faculty tool — no classId, botType is the value directly
     botType    = selectedValue;
