@@ -55,12 +55,13 @@
         </div>
 
         <div id="workspace-editor-shell" class="workspace-editor-shell" style="display:none;">
+          <!-- slim top strip: back button + live badge -->
           <div class="workspace-context-strip">
-            <div>
-              <div id="workspace-mode-title" class="workspace-mode-title">מרחב העבודה</div>
-              <div id="workspace-mode-subtitle" class="workspace-mode-subtitle">בחר הקשר עבודה כדי להתחיל.</div>
-            </div>
-            <button class="workspace-back-btn" onclick="returnToLobby()">בחירה מחדש</button>
+            <button class="workspace-back-btn" onclick="returnToLobby()">← בחירה מחדש</button>
+            <span id="live-session-badge" style="display:none;background:#ecfdf3;color:#065f46;border:1px solid #86efac;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;align-items:center;gap:5px;">
+              <span style="width:7px;height:7px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 0 0 rgba(34,197,94,0.6);animation:livePulse 1.6s infinite;"></span>
+              שיעור פעיל
+            </span>
           </div>
 
           <div id="research-steps-shell" class="research-steps-shell is-hidden">
@@ -68,38 +69,37 @@
             <div id="task-tabs" class="stage-tabs-row"></div>
           </div>
 
-          <!-- אזור הפעילות: היסטוריית שיחה עם המרצה -->
-          <div id="workspace-activity-feed" class="waf-feed" style="display:none;">
-            <div class="waf-header">
-              <span class="waf-title">💬 שיחה עם המרצה</span>
-              <span id="live-session-badge" style="display:none;background:#ecfdf3;color:#065f46;border:1px solid #86efac;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;align-items:center;gap:5px;">
-                <span style="width:7px;height:7px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 0 0 rgba(34,197,94,0.6);animation:livePulse 1.6s infinite;"></span>
-                שיעור פעיל
-              </span>
+          <!-- inner 2-col split: right=history, left=writing (RTL: first child → right) -->
+          <div class="workspace-inner-split">
+            <!-- right column: conversation history -->
+            <div class="workspace-history-col">
+              <div class="waf-col-header">💬 שיחה עם המרצה</div>
+              <div id="waf-stream" class="waf-stream">
+                <div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>
+              </div>
             </div>
-            <div id="waf-stream" class="waf-stream">
-              <div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>
-            </div>
-          </div>
 
-          <div class="workspace-editor-wrap">
-            <div id="lock-overlay" class="workspace-lock-overlay" style="display:none;">
-              🔒 השלב נעול — המרצה יפתח אותו בקרוב
+            <!-- left column: writing area -->
+            <div class="workspace-writing-col">
+              <div class="workspace-editor-wrap">
+                <div id="lock-overlay" class="workspace-lock-overlay" style="display:none;">
+                  🔒 השלב נעול — המרצה יפתח אותו בקרוב
+                </div>
+                <div id="unlock-banner" class="unlock-banner" style="display:none;">
+                  🎉 השלב נפתח! המרצה שחרר אותך — כעת תוכל להמשיך.
+                </div>
+                <textarea id="student-text"
+                  placeholder="כתוב כאן את העבודה שלך..."
+                  class="workspace-textarea">
+                </textarea>
+              </div>
+              <div class="actions workspace-actions">
+                <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
+                <button onclick="submitWork()" class="workspace-secondary-action">📄 הגש עבודה</button>
+                <span id="save-indicator" class="save-indicator">—</span>
+                <span id="waf-send-status" class="waf-send-status"></span>
+              </div>
             </div>
-            <div id="unlock-banner" class="unlock-banner" style="display:none;">
-              🎉 השלב נפתח! המרצה שחרר אותך — כעת תוכל להמשיך.
-            </div>
-            <textarea id="student-text"
-              placeholder="כתוב כאן את העבודה שלך..."
-              class="workspace-textarea">
-            </textarea>
-          </div>
-
-          <div class="actions workspace-actions">
-            <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
-            <button onclick="submitWork()" class="workspace-secondary-action">📄 הגש עבודה</button>
-            <span id="save-indicator" class="save-indicator">—</span>
-            <span id="waf-send-status" class="waf-send-status"></span>
           </div>
         </div>
       </div>
@@ -284,17 +284,8 @@ livePulseStyle.textContent = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-}
-.workspace-mode-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: #0f172a;
-}
-.workspace-mode-subtitle {
-  font-size: 13px;
-  color: #64748b;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 .workspace-back-btn {
   border: 1px solid #cbd5e1;
@@ -344,12 +335,13 @@ livePulseStyle.textContent = `
 }
 .workspace-textarea {
   width: 100%;
-  min-height: clamp(220px, 34vh, 420px);
-  padding: 18px;
+  min-height: clamp(140px, 22vh, 300px);
+  padding: 14px;
   border-radius: 16px;
   border: 1px solid #d8e1f0;
   background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
   box-sizing: border-box;
+  resize: vertical;
 }
 .workspace-actions {
   flex-wrap: wrap;
@@ -378,53 +370,72 @@ livePulseStyle.textContent = `
   border-color: #94a3b8;
   color: #334155;
 }
+/* ─── Inner 2-col split ─── */
+.workspace-inner-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 14px;
+  align-items: start;
+  /* page is RTL so first child (history-col) lands on the RIGHT */
+}
+.workspace-history-col {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fafbfc;
+  overflow: hidden;
+  height: calc(100vh - 240px);
+  min-height: 260px;
+  max-height: 680px;
+}
+.workspace-writing-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.waf-col-header {
+  padding: 9px 13px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
 /* ─── Workspace Activity Feed ─── */
-.waf-feed {
-  border: 1px solid #e2e8f0; border-radius: 12px;
-  margin-bottom: 14px; overflow: hidden; background: #f8fafc;
-}
-.waf-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px 9px;
-  background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
-  font-size: 13px; font-weight: 700; color: #334155;
-}
-.waf-title { font-size: 13px; font-weight: 700; color: #1e1b4b; }
 .waf-stream {
-  max-height: 260px; overflow-y: auto;
-  padding: 12px; display: flex; flex-direction: column; gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.waf-empty { color: #94a3b8; font-size: 12px; text-align: center; padding: 10px 0; }
-.waf-msg {
-  padding: 9px 13px; border-radius: 12px; font-size: 13px; line-height: 1.5;
+.waf-empty { color: #94a3b8; font-size: 12px; text-align: center; padding: 12px 0; }
+/* flat text-only messages — no bubbles */
+.waf-msg { padding: 3px 0; font-size: 13px; line-height: 1.55; }
+.waf-msg-student   { color: #1d4ed8; }
+.waf-msg-submission { color: #15803d; }
+.waf-msg-lecturer  { color: #6d28d9; }
+.waf-msg-meta {
+  display: flex; align-items: baseline; gap: 6px; margin-bottom: 1px;
 }
-.waf-msg-student {
-  background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
-  align-self: flex-start; max-width: 90%;
-}
-.waf-msg-submission {
-  background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d;
-  align-self: flex-start; max-width: 90%;
-}
-.waf-msg-lecturer {
-  background: #faf5ff; border: 1px solid #e9d5ff; color: #581c87;
-  align-self: flex-end; max-width: 90%;
-}
-.waf-msg-label {
-  font-size: 10px; font-weight: 800; margin-bottom: 4px;
-  color: inherit; opacity: .75; display: block;
-}
+.waf-msg-sender { font-size: 11px; font-weight: 700; opacity: 0.75; }
 .waf-msg-body { white-space: pre-wrap; }
-.waf-msg-time { font-size: 10px; color: #94a3b8; margin-top: 4px; display: block; }
-.waf-tag-chip {
-  display: inline-block; font-size: 10px; font-weight: 700;
-  border-radius: 999px; padding: 1px 7px; margin-bottom: 5px;
-  letter-spacing: .3px;
-}
-.waf-tag-research { background: #fef9c3; color: #713f12; border: 1px solid #fde68a; }
-.waf-tag-task     { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
-.waf-tag-general  { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.waf-msg-time { font-size: 10px; color: #94a3b8; }
 .waf-send-status  { font-size: 12px; color: #64748b; }
+/* writing column layout overrides */
+.workspace-writing-col .workspace-actions {
+  flex-direction: column;
+  gap: 7px;
+}
+.workspace-writing-col .workspace-primary-action,
+.workspace-writing-col .workspace-secondary-action {
+  width: 100%;
+  text-align: center;
+  box-sizing: border-box;
+}
 @media (max-width: 1180px) {
   .workspace-layout {
     grid-template-columns: minmax(0, 1fr) 280px;
@@ -456,6 +467,13 @@ livePulseStyle.textContent = `
   }
   .workspace-lobby {
     grid-template-columns: 1fr;
+  }
+  .workspace-inner-split {
+    grid-template-columns: 1fr;
+  }
+  .workspace-history-col {
+    height: 240px;
+    max-height: 240px;
   }
 }
 `;
@@ -904,7 +922,7 @@ function renderBotMenu() {
 
     const bot     = currentCourse.bots[key];
     const botType = bot.botType || bot;
-    const label   = bot.label  || key;
+    const label   = key === "main" ? "🏫 חזרה לשיעור" : (bot.label || key);
     const a = document.createElement("a");
     a.href = "#";
     a.className = "bot-link";
@@ -1182,65 +1200,57 @@ function detectMessageTag() {
   return "general";
 }
 
-// Map tag → display icon
-const TAG_ICONS = { research: "🔎", task: "📝", general: "💬" };
-function tagIcon(tag) { return TAG_ICONS[tag] || TAG_ICONS.general; }
+// showFeed: history col is always visible once the editor shell is open
+function showFeed() { /* no-op — history col visible by default in the split layout */ }
 
-function showFeed() {
-  const feed = document.getElementById("workspace-activity-feed");
-  if (feed) feed.style.display = "";
-}
+// ─── Chronological feed store ───
+let feedItems = [];
 
 function addToActivityFeed(item) {
   // item: { type: "sent"|"reply", text, kind?, tag?, step?, ts }
-  showFeed();
-  const stream = document.getElementById("waf-stream");
-  if (!stream) return;
-  const empty = stream.querySelector(".waf-empty");
-  if (empty) empty.remove();
+  if (!item.ts) item.ts = Date.now();
+  feedItems.push({...item});
+  feedItems.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  renderFeedDOM();
+}
 
+function buildFeedEntry(item) {
   const isReply      = item.type === "reply";
   const isSubmission = item.kind === "submission";
 
   const div = document.createElement("div");
-  div.className = isReply ? "waf-msg waf-msg-lecturer"
-    : isSubmission ? "waf-msg waf-msg-submission"
-    : "waf-msg waf-msg-student";
+  div.className = "waf-msg " + (isReply ? "waf-msg-lecturer"
+    : isSubmission ? "waf-msg-submission"
+    : "waf-msg-student");
 
-  let label;
-  if (isReply) {
-    label = "👨‍🏫 המרצה:";
-  } else if (isSubmission) {
-    label = `📄 הגשת עבודה (שלב ${item.step || currentStep || "?"}):`;
-  } else {
-    const icon = tagIcon(item.tag || "general");
-    const tagLabel = item.tag === "research" ? "חקר ופרזנטציה"
-                   : item.tag === "task"     ? `שלב ${item.step || currentStep || ""}`
-                   : "מסר";
-    label = `${icon} שלחת ${tagLabel}:`;
-  }
+  let senderLabel;
+  if (isReply)           senderLabel = "המרצה";
+  else if (isSubmission) senderLabel = `הגשה — שלב ${item.step || currentStep || ""}`;
+  else                   senderLabel = "את/ה";
 
   const timeStr = item.ts
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
 
-  const tagChipLabel = item.tag === "research"
-    ? "חקר ופרזנטציה"
-    : item.tag === "task"
-    ? "משימה"
-    : "מסר";
-
-  const tagChip = (!isReply && !isSubmission && item.tag)
-    ? `<span class="waf-tag-chip waf-tag-${item.tag}">${tagIcon(item.tag)} ${tagChipLabel}</span>`
-    : "";
-
   div.innerHTML =
-    `<span class="waf-msg-label">${label}</span>` +
-    tagChip +
-    `<div class="waf-msg-body">${escapeHtml(item.text)}</div>` +
-    (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "");
+    `<div class="waf-msg-meta">` +
+    `<span class="waf-msg-sender">${senderLabel}</span>` +
+    (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
+    `</div>` +
+    `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`;
 
-  stream.appendChild(div);
+  return div;
+}
+
+function renderFeedDOM() {
+  const stream = document.getElementById("waf-stream");
+  if (!stream) return;
+  stream.innerHTML = "";
+  if (!feedItems.length) {
+    stream.innerHTML = '<div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>';
+    return;
+  }
+  feedItems.forEach(item => stream.appendChild(buildFeedEntry(item)));
   stream.scrollTop = stream.scrollHeight;
 }
 
