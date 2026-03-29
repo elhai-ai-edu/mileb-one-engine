@@ -73,9 +73,17 @@
           <div class="workspace-inner-split">
             <!-- right column: conversation history -->
             <div class="workspace-history-col">
-              <div class="waf-col-header">💬 שיחה עם המרצה</div>
-              <div id="waf-stream" class="waf-stream">
-                <div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>
+              <div class="waf-channel waf-channel-broadcast">
+                <div class="waf-col-header waf-col-header-broadcast">📢 שידורי כיתה</div>
+                <div id="waf-broadcast-stream" class="waf-stream waf-stream-broadcast">
+                  <div class="waf-empty">עדיין אין שידורים כלליים מהמרצה</div>
+                </div>
+              </div>
+              <div class="waf-channel waf-channel-private">
+                <div class="waf-col-header">💬 שיחה פרטית עם המרצה</div>
+                <div id="waf-stream" class="waf-stream">
+                  <div class="waf-empty">טרם נשלחו מסרים פרטיים או הוגשה עבודה בשיעור זה</div>
+                </div>
               </div>
             </div>
 
@@ -400,6 +408,20 @@ livePulseStyle.textContent = `
   min-height: 260px;
   max-height: 680px;
 }
+.waf-channel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.waf-channel-broadcast {
+  flex: 0 0 38%;
+  border-bottom: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #f8fbff 0%, #f0f7ff 100%);
+}
+.waf-channel-private {
+  flex: 1;
+  min-height: 0;
+}
 .workspace-writing-col {
   display: flex;
   flex-direction: column;
@@ -413,6 +435,11 @@ livePulseStyle.textContent = `
   background: #f1f5f9;
   border-bottom: 1px solid #e2e8f0;
   flex-shrink: 0;
+}
+.waf-col-header-broadcast {
+  color: #1d4ed8;
+  background: #eaf2ff;
+  border-bottom-color: #bfdbfe;
 }
 /* ─── Workspace Activity Feed ─── */
 .waf-stream {
@@ -429,6 +456,7 @@ livePulseStyle.textContent = `
 .waf-msg-student   { color: #1d4ed8; }
 .waf-msg-submission { color: #15803d; }
 .waf-msg-lecturer  { color: #6d28d9; }
+.waf-msg-broadcast { color: #0f4cbd; }
 .waf-msg-meta {
   display: flex; align-items: baseline; gap: 6px; margin-bottom: 1px;
 }
@@ -1242,6 +1270,7 @@ function showFeed() { /* no-op — history col visible by default in the split l
 
 // ─── Chronological feed store ───
 let feedItems = [];
+let broadcastFeedItems = [];
 
 function addToActivityFeed(item) {
   // item: { type: "sent"|"reply", text, kind?, tag?, step?, ts }
@@ -1290,10 +1319,52 @@ function renderFeedDOM() {
   if (!stream) return;
   stream.innerHTML = "";
   if (!feedItems.length) {
-    stream.innerHTML = '<div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>';
+    stream.innerHTML = '<div class="waf-empty">טרם נשלחו מסרים פרטיים או הוגשה עבודה בשיעור זה</div>';
     return;
   }
   feedItems.forEach(item => stream.appendChild(buildFeedEntry(item)));
+  stream.scrollTop = stream.scrollHeight;
+}
+
+function addToBroadcastFeed(item) {
+  if (!item.ts) item.ts = Date.now();
+  const isDuplicate = broadcastFeedItems.some(existing => {
+    const sameText = (existing.text || "") === (item.text || "");
+    const withinFiveSeconds = Math.abs((existing.ts || 0) - (item.ts || 0)) <= 5000;
+    return sameText && withinFiveSeconds;
+  });
+  if (isDuplicate) return;
+  broadcastFeedItems.push({ ...item });
+  broadcastFeedItems.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+  renderBroadcastFeedDOM();
+}
+
+function buildBroadcastEntry(item) {
+  const div = document.createElement("div");
+  div.className = "waf-msg waf-msg-broadcast";
+  const timeStr = item.ts
+    ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
+    : "";
+
+  div.innerHTML =
+    `<div class="waf-msg-meta">` +
+    `<span class="waf-msg-sender">📢 המרצה לכיתה</span>` +
+    (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
+    `</div>` +
+    `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`;
+
+  return div;
+}
+
+function renderBroadcastFeedDOM() {
+  const stream = document.getElementById("waf-broadcast-stream");
+  if (!stream) return;
+  stream.innerHTML = "";
+  if (!broadcastFeedItems.length) {
+    stream.innerHTML = '<div class="waf-empty">עדיין אין שידורים כלליים מהמרצה</div>';
+    return;
+  }
+  broadcastFeedItems.forEach(item => stream.appendChild(buildBroadcastEntry(item)));
   stream.scrollTop = stream.scrollHeight;
 }
 
@@ -1437,20 +1508,13 @@ function applyLecturerBroadcast(data) {
   if (sig === lastBroadcastSignature) return;
   lastBroadcastSignature = sig;
 
-  addToActivityFeed({
-    type: "assistant",
+  addToBroadcastFeed({
+    type: "broadcast",
     text,
     kind: "message",
     tag: "general",
     step: data?.currentStep || currentStep || 1,
     ts: ts || Date.now()
-  });
-
-  showActiveTask({
-    title: "הודעת מרצה",
-    instructions: text,
-    step: data?.currentStep || currentStep || 1,
-    pushedAt: ts || Date.now()
   });
 }
 

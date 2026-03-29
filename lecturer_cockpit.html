@@ -178,10 +178,26 @@
   background: #10b981;
   color: #ffffff;
 }
-/* ─── Broadcast details accordion ─── */
-.broadcast-details { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin-top: 4px; }
-.broadcast-details summary { font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; user-select: none; }
-.broadcast-details[open] summary { color: #334155; }
+/* ─── Broadcast block (separate from lesson steps) ─── */
+.broadcast-box {
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.broadcast-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1d4ed8;
+  margin-bottom: 6px;
+}
+.broadcast-sub {
+  font-size: 12px;
+  color: #475569;
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
 @media print {
   body > *:not(.class-profiler-overlay) { display: none !important; }
   .class-profiler-overlay {
@@ -416,11 +432,19 @@
       </div>
     </div>
 
-    <div class="field" style="margin-top:12px;">
-      <label>⚡ הודעה מהירה לכיתה (ללא שלבים)</label>
-      <textarea id="quickBroadcastText" placeholder="כתוב הודעה מיידית לכל הסטודנטים..."></textarea>
+    <div class="broadcast-box" style="margin-top:12px;">
+      <div class="broadcast-title">📢 Broadcast Message</div>
+      <p class="broadcast-sub">השידור יופיע לכולם באזור "שידורי כיתה" במסך הסטודנט, בלי לכסות את אזור המשימה הפעילה.</p>
+      <div class="field" style="margin-bottom:8px;">
+        <label>הודעת שידור כללית לכיתה</label>
+        <textarea id="broadcastText" placeholder="כתוב הודעה מיידית לכל הסטודנטים..."></textarea>
+      </div>
+      <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+      <div id="broadcastPreview" style="display:none" class="broadcast-preview">
+        <strong>⚡ שודר לתלמידים:</strong>
+        <span id="broadcastPreviewText"></span>
+      </div>
     </div>
-    <button class="btn btn-blue" id="quickBroadcastBtn" onclick="quickBroadcast()" disabled>⚡ שלח מיידית לכל הכיתה</button>
 
     <hr class="workspace-divider">
 
@@ -429,27 +453,6 @@
     <div id="dj-booth-steps" class="dj-booth-steps">
       <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
     </div>
-
-    <hr class="workspace-divider">
-
-    <details class="broadcast-details">
-      <summary>📡 שידור מהיר לכיתה</summary>
-      <div style="padding-top:10px;">
-        <div class="field">
-          <label>טקסט / שאלה / מאמר</label>
-          <textarea id="broadcastText" placeholder="הכנס טקסט, שאלה, או קטע מאמר שכל התלמידים יראו..."></textarea>
-        </div>
-        <div class="field">
-          <label>שלב מספר</label>
-          <input type="number" id="stepNum" value="1" min="1" max="10" class="step-num-input">
-        </div>
-        <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
-        <div id="broadcastPreview" style="display:none" class="broadcast-preview">
-          <strong>⚡ שודר לתלמידים:</strong>
-          <span id="broadcastPreviewText"></span>
-        </div>
-      </div>
-    </details>
   </div>
 
   <div class="panel" data-tab-panel="prep">
@@ -683,13 +686,11 @@ function setSessionControls(isActive) {
   const openBtn = document.getElementById('openBtn');
   const activeControls = document.getElementById('activeSessionControls');
   const broadcastBtn = document.getElementById('broadcastBtn');
-  const quickBroadcastBtn = document.getElementById('quickBroadcastBtn');
   if (!openBtn || !activeControls || !broadcastBtn) return;
 
   openBtn.style.display = isActive ? 'none' : '';
   activeControls.style.display = isActive ? 'flex' : 'none';
   broadcastBtn.disabled = !isActive;
-  if (quickBroadcastBtn) quickBroadcastBtn.disabled = !isActive;
 }
 
 function syncCockpitNavOffset() {
@@ -792,33 +793,15 @@ async function openSession() {
 async function broadcast() {
   if (!sessionId) { alert("פתח שיעור תחילה"); return; }
   const text = document.getElementById('broadcastText').value.trim();
-  const step = parseInt(document.getElementById('stepNum').value) || 1;
   if (!text) { alert("הכנס טקסט לשידור"); return; }
 
-  const res = await callClassroom({ action: "broadcast", sessionId, facultyId, text, step });
+  const res = await callClassroom({ action: "broadcast", sessionId, facultyId, text });
   if (!res?.ok) {
     alert("שגיאה בשידור לכיתה");
     return;
   }
 
-  const preview = document.getElementById('broadcastPreview');
-  document.getElementById('broadcastPreviewText').textContent = text.slice(0, 120) + (text.length > 120 ? "..." : "");
-  preview.style.display = "block";
-}
-
-async function quickBroadcast() {
-  if (!sessionId) { alert("פתח שיעור תחילה"); return; }
-  const input = document.getElementById('quickBroadcastText');
-  const text = input?.value?.trim() || "";
-  if (!text) { alert("כתוב הודעה לפני שידור"); return; }
-
-  const res = await callClassroom({ action: "broadcast", sessionId, facultyId, text });
-  if (!res?.ok) {
-    alert("שגיאה בשידור המהיר");
-    return;
-  }
-
-  input.value = "";
+  document.getElementById('broadcastText').value = "";
   const preview = document.getElementById('broadcastPreview');
   document.getElementById('broadcastPreviewText').textContent = text.slice(0, 120) + (text.length > 120 ? "..." : "");
   preview.style.display = "block";
