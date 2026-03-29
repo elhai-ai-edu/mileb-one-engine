@@ -42,6 +42,22 @@
       <div id="task-tabs" class="stage-tabs-row"></div>
 
       <div style="position:relative;">
+
+      <!-- אזור הפעילות: היסטוריית שיחה עם המרצה -->
+      <div id="workspace-activity-feed" class="waf-feed" style="display:none;">
+        <div class="waf-header">
+          <span class="waf-title">💬 שיחה עם המרצה</span>
+          <span id="live-session-badge" style="display:none;background:#ecfdf3;color:#065f46;border:1px solid #86efac;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:700;align-items:center;gap:5px;">
+            <span style="width:7px;height:7px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 0 0 rgba(34,197,94,0.6);animation:livePulse 1.6s infinite;"></span>
+            שיעור פעיל
+          </span>
+        </div>
+        <div id="waf-stream" class="waf-stream">
+          <div class="waf-empty">טרם נשלחו מסרים או הוגשה עבודה בשיעור זה</div>
+        </div>
+      </div>
+
+      <div style="position:relative;">
         <div id="lock-overlay" class="workspace-lock-overlay" style="display:none;">
           🔒 השלב נעול — המרצה יפתח אותו בקרוב
         </div>
@@ -55,12 +71,10 @@
       </div>
 
       <div class="actions">
-        <div style="position:relative;display:inline-flex;align-items:center;">
-          <button id="msg-lecturer-btn" onclick="openLecturerModal()" class="btn btn-blue">💬 שיחה עם המרצה</button>
-          <span id="lecturer-unread-badge" style="display:none;position:absolute;top:-7px;right:-7px;background:#ef4444;color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;font-weight:700;align-items:center;justify-content:center;z-index:2;">0</span>
-        </div>
         <button onclick="submitWork()" class="btn btn-green">📄 הגש עבודה</button>
+        <button onclick="sendMessageToLecturer()" class="btn btn-blue">💬 שלח מסר למרצה</button>
         <span id="save-indicator" class="save-indicator">—</span>
+        <span id="waf-send-status" class="waf-send-status"></span>
       </div>
     </div>
 
@@ -70,10 +84,6 @@
 
         <div class="chat-panel-header">
           <span id="active-bot-name">בחר בוט</span>
-          <span id="live-session-badge" style="display:none;margin-right:auto;background:#ecfdf3;color:#065f46;border:1px solid #86efac;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;align-items:center;gap:6px;">
-            <span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 0 0 rgba(34,197,94,0.6);animation:livePulse 1.6s infinite;"></span>
-            שיעור פעיל
-          </span>
         </div>
 
         <div id="skill-context-banner" class="skill-context-banner" style="display:none;">
@@ -98,26 +108,6 @@
   </div>
 </div>
 
-<!-- ─── Lecturer Chat Modal ─── -->
-<div id="lecturer-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9100;align-items:flex-end;justify-content:center;" onclick="closeLecturerModal(event)">
-  <div class="lm-modal" dir="rtl">
-    <div class="lm-header">
-      <span class="lm-title">💬 שיחה עם המרצה</span>
-      <button class="lm-close" onclick="document.getElementById('lecturer-modal-overlay').style.display='none';clearUnreadBadge()">✕</button>
-    </div>
-    <div id="lm-thread" class="lm-thread">
-      <div class="lm-empty">טרם נשלחו מסרים בשיעור זה</div>
-    </div>
-    <div class="lm-composer">
-      <textarea id="lm-input" class="lm-input" rows="3" placeholder="כתוב מסר למרצה..."></textarea>
-      <div class="lm-composer-row">
-        <button id="lm-send-btn" class="lm-send-btn" onclick="sendLecturerMessageFromModal()">💬 שלח מסר</button>
-        <span id="lm-send-status" class="lm-send-status"></span>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- ─── Team Setup Overlay (v8.2) ─── -->
 <div id="team-setup-overlay" class="team-setup-overlay" style="display:none;">
   <div class="team-setup-modal">
@@ -136,74 +126,53 @@ livePulseStyle.textContent = `
   70% { box-shadow: 0 0 0 8px rgba(34,197,94,0.00); }
   100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.00); }
 }
-/* ─── Lecturer Chat Modal ─── */
-.lm-modal {
-  background: #fff; border-radius: 20px 20px 0 0;
-  width: 100%; max-width: 600px; max-height: 80vh;
-  display: flex; flex-direction: column;
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.15); overflow: hidden; direction: rtl;
+/* ─── Workspace Activity Feed ─── */
+.waf-feed {
+  border: 1px solid #e2e8f0; border-radius: 12px;
+  margin-bottom: 14px; overflow: hidden; background: #f8fafc;
 }
-.lm-header {
-  padding: 16px 20px 12px; border-bottom: 1px solid #f1f5f9;
-  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+.waf-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px 9px;
+  background: #f1f5f9; border-bottom: 1px solid #e2e8f0;
+  font-size: 13px; font-weight: 700; color: #334155;
 }
-.lm-title { font-size: 16px; font-weight: 700; color: #1e1b4b; }
-.lm-close {
-  background: #f1f5f9; border: none; border-radius: 8px;
-  width: 30px; height: 30px; cursor: pointer; font-size: 15px;
-  display: flex; align-items: center; justify-content: center;
+.waf-title { font-size: 13px; font-weight: 700; color: #1e1b4b; }
+.waf-stream {
+  max-height: 260px; overflow-y: auto;
+  padding: 12px; display: flex; flex-direction: column; gap: 8px;
 }
-.lm-thread {
-  flex: 1; overflow-y: auto; padding: 16px;
-  display: flex; flex-direction: column; gap: 10px; min-height: 120px;
+.waf-empty { color: #94a3b8; font-size: 12px; text-align: center; padding: 10px 0; }
+.waf-msg {
+  padding: 9px 13px; border-radius: 12px; font-size: 13px; line-height: 1.5;
 }
-.lm-empty { color: #94a3b8; font-size: 13px; text-align: center; margin: auto; }
-.lm-msg {
-  max-width: 82%; padding: 10px 14px; border-radius: 14px;
-  font-size: 14px; line-height: 1.5;
-}
-.lm-msg-from-student {
-  align-self: flex-start;
+.waf-msg-student {
   background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af;
+  align-self: flex-start; max-width: 90%;
 }
-.lm-msg-from-lecturer {
-  align-self: flex-end;
+.waf-msg-submission {
+  background: #f0fdf4; border: 1px solid #bbf7d0; color: #14532d;
+  align-self: flex-start; max-width: 90%;
+}
+.waf-msg-lecturer {
   background: #faf5ff; border: 1px solid #e9d5ff; color: #581c87;
+  align-self: flex-end; max-width: 90%;
 }
-.lm-msg-label {
-  font-size: 10px; font-weight: 800; margin-bottom: 5px;
-  color: inherit; opacity: .75;
+.waf-msg-label {
+  font-size: 10px; font-weight: 800; margin-bottom: 4px;
+  color: inherit; opacity: .75; display: block;
 }
-.lm-msg-body { white-space: pre-wrap; }
-.lm-msg-time { font-size: 10px; color: #94a3b8; margin-top: 4px; display: block; }
-.lm-composer {
-  border-top: 1px solid #f1f5f9; padding: 12px 16px; flex-shrink: 0;
-}
-.lm-input {
-  width: 100%; border: 1px solid #e2e8f0; border-radius: 10px;
-  padding: 10px 12px; font-family: inherit; font-size: 14px;
-  resize: none; outline: none; box-sizing: border-box; direction: rtl;
-}
-.lm-input:focus { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
-.lm-composer-row {
-  display: flex; align-items: center; justify-content: space-between; margin-top: 8px;
-}
-.lm-send-btn {
-  background: #2563eb; color: #fff; border: none; border-radius: 8px;
-  padding: 8px 16px; font-size: 13px; font-weight: 700; cursor: pointer;
-}
-.lm-send-btn:hover { background: #1d4ed8; }
-.lm-send-btn:disabled { background: #93c5fd; cursor: not-allowed; }
-.lm-send-status { font-size: 12px; color: #64748b; }
-/* ─── Tag chips in lecturer thread ─── */
-.lm-tag-chip {
+.waf-msg-body { white-space: pre-wrap; }
+.waf-msg-time { font-size: 10px; color: #94a3b8; margin-top: 4px; display: block; }
+.waf-tag-chip {
   display: inline-block; font-size: 10px; font-weight: 700;
-  border-radius: 999px; padding: 2px 8px; margin-bottom: 6px;
+  border-radius: 999px; padding: 1px 7px; margin-bottom: 5px;
   letter-spacing: .3px;
 }
-.lm-tag-research { background: #fef9c3; color: #713f12; border: 1px solid #fde68a; }
-.lm-tag-task     { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
-.lm-tag-general  { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.waf-tag-research { background: #fef9c3; color: #713f12; border: 1px solid #fde68a; }
+.waf-tag-task     { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+.waf-tag-general  { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+.waf-send-status  { font-size: 12px; color: #64748b; }
 `;
 document.head.appendChild(livePulseStyle);
 
@@ -250,7 +219,6 @@ let currentBotType = null;
 let chatHistory    = [];
 const seenLecturerReplyIds  = new Set();
 const seenStudentStepIds    = new Set();
-let lecturerUnreadCount     = 0;
 let lecturerThreadHydrated  = false;
 let saveTimer      = null;
 let isLocked       = false;
@@ -784,7 +752,7 @@ function escapeHtml(text) {
 }
 
 // ─────────────────────────────────────────────────
-// LECTURER CHAT THREAD HELPERS
+// ACTIVITY FEED HELPERS
 // ─────────────────────────────────────────────────
 
 // Derive a context tag from the currently active bot and lesson step.
@@ -800,22 +768,32 @@ function detectMessageTag() {
 const TAG_ICONS = { research: "🔎", task: "📝", general: "💬" };
 function tagIcon(tag) { return TAG_ICONS[tag] || TAG_ICONS.general; }
 
-function addToLecturerThread(item) {
-  // item: { type: "sent"|"reply", text, kind?, tag?, ts }
-  const thread = document.getElementById("lm-thread");
-  if (!thread) return;
-  const empty = thread.querySelector(".lm-empty");
+function showFeed() {
+  const feed = document.getElementById("workspace-activity-feed");
+  if (feed) feed.style.display = "";
+}
+
+function addToActivityFeed(item) {
+  // item: { type: "sent"|"reply", text, kind?, tag?, step?, ts }
+  showFeed();
+  const stream = document.getElementById("waf-stream");
+  if (!stream) return;
+  const empty = stream.querySelector(".waf-empty");
   if (empty) empty.remove();
 
-  const isReply = item.type === "reply";
+  const isReply      = item.type === "reply";
+  const isSubmission = item.kind === "submission";
+
   const div = document.createElement("div");
-  div.className = isReply ? "lm-msg lm-msg-from-lecturer" : "lm-msg lm-msg-from-student";
+  div.className = isReply ? "waf-msg waf-msg-lecturer"
+    : isSubmission ? "waf-msg waf-msg-submission"
+    : "waf-msg waf-msg-student";
 
   let label;
   if (isReply) {
     label = "👨‍🏫 המרצה:";
-  } else if (item.kind === "submission") {
-    label = `📄 שלחת עבודה:`;
+  } else if (isSubmission) {
+    label = `📄 הגשת עבודה (שלב ${item.step || currentStep || "?"}):`;
   } else {
     const icon = tagIcon(item.tag || "general");
     const tagLabel = item.tag === "research" ? "מחקר"
@@ -828,33 +806,31 @@ function addToLecturerThread(item) {
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
 
-  div.innerHTML =
-    `<div class="lm-msg-label">${label}</div>` +
-    (item.tag && !isReply ? `<span class="lm-tag-chip lm-tag-${item.tag}">${tagIcon(item.tag)} ${item.tag}</span>` : "") +
-    `<div class="lm-msg-body">${escapeHtml(item.text)}</div>` +
-    (timeStr ? `<span class="lm-msg-time">${timeStr}</span>` : "");
+  const tagChip = (!isReply && !isSubmission && item.tag)
+    ? `<span class="waf-tag-chip waf-tag-${item.tag}">${tagIcon(item.tag)} ${item.tag}</span>`
+    : "";
 
-  thread.appendChild(div);
-  thread.scrollTop = thread.scrollHeight;
+  div.innerHTML =
+    `<span class="waf-msg-label">${label}</span>` +
+    tagChip +
+    `<div class="waf-msg-body">${escapeHtml(item.text)}</div>` +
+    (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "");
+
+  stream.appendChild(div);
+  stream.scrollTop = stream.scrollHeight;
 }
+
+// Keep legacy alias so cockpit-facing code that calls addToLecturerThread still works
+const addToLecturerThread = addToActivityFeed;
 
 function syncLecturerReplies(replies = []) {
   if (!Array.isArray(replies) || !replies.length) return;
-  let newCount = 0;
   replies.forEach(item => {
     if (!item?.id || !item?.text) return;
     if (seenLecturerReplyIds.has(item.id)) return;
     seenLecturerReplyIds.add(item.id);
-    addToLecturerThread({ type: "reply", text: item.text, ts: item.ts });
-    newCount++;
+    addToActivityFeed({ type: "reply", text: item.text, ts: item.ts });
   });
-  if (newCount > 0) {
-    const overlay = document.getElementById("lecturer-modal-overlay");
-    if (!overlay || overlay.style.display === "none") {
-      lecturerUnreadCount += newCount;
-      updateUnreadBadge();
-    }
-  }
 }
 
 function hydrateLecturerThread(studentSteps = []) {
@@ -863,7 +839,7 @@ function hydrateLecturerThread(studentSteps = []) {
   studentSteps.forEach(step => {
     if (!step?.id || seenStudentStepIds.has(step.id)) return;
     seenStudentStepIds.add(step.id);
-    addToLecturerThread({
+    addToActivityFeed({
       type: "sent",
       text: step.content,
       kind: step.kind || "message",
@@ -872,75 +848,6 @@ function hydrateLecturerThread(studentSteps = []) {
       ts: step.ts
     });
   });
-}
-
-function openLecturerModal() {
-  const overlay = document.getElementById("lecturer-modal-overlay");
-  if (!overlay) return;
-  overlay.style.display = "flex";
-  const wsTxt = (document.getElementById("student-text")?.value || "").trim();
-  const lmInput = document.getElementById("lm-input");
-  if (lmInput && wsTxt && !lmInput.value) lmInput.value = wsTxt;
-  const thread = document.getElementById("lm-thread");
-  if (thread) thread.scrollTop = thread.scrollHeight;
-  clearUnreadBadge();
-  if (lmInput) lmInput.focus();
-}
-
-function closeLecturerModal(evt) {
-  if (evt && evt.target !== document.getElementById("lecturer-modal-overlay")) return;
-  document.getElementById("lecturer-modal-overlay").style.display = "none";
-}
-
-function clearUnreadBadge() {
-  lecturerUnreadCount = 0;
-  updateUnreadBadge();
-}
-
-function updateUnreadBadge() {
-  const badge = document.getElementById("lecturer-unread-badge");
-  if (!badge) return;
-  if (lecturerUnreadCount > 0) {
-    badge.textContent = lecturerUnreadCount > 9 ? "9+" : String(lecturerUnreadCount);
-    badge.style.display = "flex";
-  } else {
-    badge.style.display = "none";
-  }
-}
-
-async function sendLecturerMessageFromModal() {
-  const input  = document.getElementById("lm-input");
-  const btn    = document.getElementById("lm-send-btn");
-  const status = document.getElementById("lm-send-status");
-  const text   = input?.value?.trim() || "";
-  if (!text) { input?.focus(); return; }
-  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
-
-  if (btn) btn.disabled = true;
-  if (status) status.textContent = "שולח...";
-
-  try {
-    const tag = detectMessageTag();
-    const res = await fetch("/.netlify/functions/classroom", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "submit", sessionId, studentId,
-        step: currentStep, content: text, type: "message", tag
-      })
-    });
-    if (res.ok) {
-      addToLecturerThread({ type: "sent", text, kind: "message", tag, step: currentStep, ts: Date.now() });
-      input.value = "";
-      if (status) { status.textContent = "נשלח ✓"; setTimeout(() => { status.textContent = ""; }, 2000); }
-    } else {
-      if (status) status.textContent = "שגיאה בשליחה";
-    }
-  } catch (e) {
-    if (status) status.textContent = "שגיאת רשת";
-  } finally {
-    if (btn) btn.disabled = false;
-  }
 }
 
 async function sendMessage() {
@@ -1022,6 +929,8 @@ function setLiveSessionBadge(isLive) {
   const badge = document.getElementById("live-session-badge");
   if (!badge) return;
   badge.style.display = isLive ? "inline-flex" : "none";
+  // Also show the feed container once a session is active
+  if (isLive) showFeed();
 }
 
 // ─────────────────────────────
@@ -1049,9 +958,33 @@ function restoreDraft() {
 // שליחה למרצה
 // ─────────────────────────────
 
-// Legacy shim — opens the lecture chat modal
 async function sendMessageToLecturer() {
-  openLecturerModal();
+  const text = document.getElementById("student-text").value.trim();
+  if (!text) { alert("כתוב משהו לפני שליחה"); return; }
+  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); return; }
+
+  const statusEl = document.getElementById("waf-send-status");
+  if (statusEl) statusEl.textContent = "שולח...";
+
+  const tag = detectMessageTag();
+  try {
+    const res = await fetch("/.netlify/functions/classroom", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "submit", sessionId, studentId,
+        step: currentStep, content: text, type: "message", tag
+      })
+    });
+    if (res.ok) {
+      addToActivityFeed({ type: "sent", text, kind: "message", tag, step: currentStep, ts: Date.now() });
+      if (statusEl) { statusEl.textContent = "נשלח ✓"; setTimeout(() => { statusEl.textContent = ""; }, 2000); }
+    } else {
+      if (statusEl) statusEl.textContent = "שגיאה — נסה שוב";
+    }
+  } catch (e) {
+    if (statusEl) statusEl.textContent = "שגיאת רשת";
+  }
 }
 
 async function submitWork() {
@@ -1069,9 +1002,9 @@ async function submitWork() {
   });
 
   if (res.ok) {
-    // Mirror the submission into the lecturer thread so student can see it
-    addToLecturerThread({ type: "sent", text, kind: "submission", tag: "task", step: currentStep, ts: Date.now() });
-    alert("העבודה הוגשה בהצלחה");
+    addToActivityFeed({ type: "sent", text, kind: "submission", tag: "task", step: currentStep, ts: Date.now() });
+    const statusEl = document.getElementById("waf-send-status");
+    if (statusEl) { statusEl.textContent = "הוגשה ✓"; setTimeout(() => { statusEl.textContent = ""; }, 3000); }
   } else {
     alert("שגיאה בהגשה — נסה שוב");
   }
