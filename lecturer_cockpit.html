@@ -265,10 +265,11 @@
   color: white !important;
   border-bottom: 4px solid #1e40af;
   box-shadow: 0 8px 24px rgba(15,23,42,0.35);
-  margin-bottom: 0;
+  margin-top: 10px;
+  margin-bottom: 12px;
   position: sticky;
-  top: 0;
-  z-index: 10000 !important;
+  top: var(--cockpit-nav-top, 74px);
+  z-index: 9999 !important;
   align-items: center;
   width: 100%;
   box-sizing: border-box;
@@ -347,14 +348,7 @@
 </head>
 <body class="management-theme">
 
-<div id="cockpit-nav">
-  <button class="cockpit-tab-btn" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>סילבוס</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>הכנת שיעור</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>ניהול שיעור חי</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>יומן</span></button>
-</div>
-
-<div class="top-bar" style="margin-top:0; top:74px; z-index:9999;">
+<div class="top-bar" style="margin-top:0; top:0; z-index:10001;">
   <div>
     <span class="brand">MilEd.One</span>
     <h1>כיתה חכמה — לוח מרצה</h1>
@@ -375,6 +369,13 @@
     </div>
   </div>
   <a href="/cockpit.html#skills" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
+</div>
+
+<div id="cockpit-nav">
+  <button class="cockpit-tab-btn" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>סילבוס</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>הכנת שיעור</span></button>
+  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>ניהול שיעור חי</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>יומן</span></button>
 </div>
 <script>(function(){
   try {
@@ -415,10 +416,16 @@
       </div>
     </div>
 
+    <div class="field" style="margin-top:12px;">
+      <label>⚡ הודעה מהירה לכיתה (ללא שלבים)</label>
+      <textarea id="quickBroadcastText" placeholder="כתוב הודעה מיידית לכל הסטודנטים..."></textarea>
+    </div>
+    <button class="btn btn-blue" id="quickBroadcastBtn" onclick="quickBroadcast()" disabled>⚡ שלח מיידית לכל הכיתה</button>
+
     <hr class="workspace-divider">
 
     <h2>🏛 במת המרצה</h2>
-    <p class="panel-sub" id="dj-booth-status">פתח שיעור והגדר שלבים כדי לדחוף משימות לסטודנטים</p>
+    <p class="panel-sub" id="dj-booth-status">DJ Booth הוא כלי אופציונלי לדחיפת שלבים מתוך תבנית שיעור</p>
     <div id="dj-booth-steps" class="dj-booth-steps">
       <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
     </div>
@@ -552,6 +559,16 @@
         <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 ייצא יומן הוראה</button>
         <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:13px;padding:8px 14px;">📊 פרופיל מיומנויות</button>
       </div>
+
+      <div class="profiler-btn-bar" style="margin-top:16px;">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#1e293b;">📈 ניתוח מיומנויות כיתתי</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px;">הפק דוח מצב מיומנויות לכלל הכיתה</div>
+        </div>
+        <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:14px;padding:10px 22px;white-space:nowrap;">
+          📊 הפקת פרופיל מיומנויות כיתתי
+        </button>
+      </div>
   </div>
 
   <!-- RIGHT: Live view -->
@@ -569,17 +586,6 @@
     </div>
   </div>
 
-</div>
-
-<!-- ─── Analytics Bar (v8.6) ─── -->
-<div class="profiler-btn-bar" data-tab-panel="journal">
-  <div>
-    <div style="font-size:13px;font-weight:600;color:#1e293b;">📈 ניתוח מיומנויות כיתתי</div>
-    <div style="font-size:12px;color:#64748b;margin-top:2px;">הפק דוח מצב מיומנויות לכלל הכיתה</div>
-  </div>
-  <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:14px;padding:10px 22px;white-space:nowrap;">
-    📊 הפקת פרופיל מיומנויות כיתתי
-  </button>
 </div>
 
 <!-- ─── Class Skills Profiler Modal (v8.6) ─── -->
@@ -677,11 +683,21 @@ function setSessionControls(isActive) {
   const openBtn = document.getElementById('openBtn');
   const activeControls = document.getElementById('activeSessionControls');
   const broadcastBtn = document.getElementById('broadcastBtn');
+  const quickBroadcastBtn = document.getElementById('quickBroadcastBtn');
   if (!openBtn || !activeControls || !broadcastBtn) return;
 
   openBtn.style.display = isActive ? 'none' : '';
   activeControls.style.display = isActive ? 'flex' : 'none';
   broadcastBtn.disabled = !isActive;
+  if (quickBroadcastBtn) quickBroadcastBtn.disabled = !isActive;
+}
+
+function syncCockpitNavOffset() {
+  const topBar = document.querySelector('.top-bar');
+  const nav = document.getElementById('cockpit-nav');
+  if (!topBar || !nav) return;
+  const offset = Math.max(56, Math.ceil(topBar.getBoundingClientRect().height));
+  nav.style.setProperty('--cockpit-nav-top', `${offset}px`);
 }
 
 // ─────────────────────────────────────────
@@ -774,12 +790,35 @@ async function openSession() {
 // BROADCAST
 // ─────────────────────────────────────────
 async function broadcast() {
+  if (!sessionId) { alert("פתח שיעור תחילה"); return; }
   const text = document.getElementById('broadcastText').value.trim();
   const step = parseInt(document.getElementById('stepNum').value) || 1;
   if (!text) { alert("הכנס טקסט לשידור"); return; }
 
-  await callClassroom({ action: "broadcast", sessionId, facultyId, text, step });
+  const res = await callClassroom({ action: "broadcast", sessionId, facultyId, text, step });
+  if (!res?.ok) {
+    alert("שגיאה בשידור לכיתה");
+    return;
+  }
 
+  const preview = document.getElementById('broadcastPreview');
+  document.getElementById('broadcastPreviewText').textContent = text.slice(0, 120) + (text.length > 120 ? "..." : "");
+  preview.style.display = "block";
+}
+
+async function quickBroadcast() {
+  if (!sessionId) { alert("פתח שיעור תחילה"); return; }
+  const input = document.getElementById('quickBroadcastText');
+  const text = input?.value?.trim() || "";
+  if (!text) { alert("כתוב הודעה לפני שידור"); return; }
+
+  const res = await callClassroom({ action: "broadcast", sessionId, facultyId, text });
+  if (!res?.ok) {
+    alert("שגיאה בשידור המהיר");
+    return;
+  }
+
+  input.value = "";
   const preview = document.getElementById('broadcastPreview');
   document.getElementById('broadcastPreviewText').textContent = text.slice(0, 120) + (text.length > 120 ? "..." : "");
   preview.style.display = "block";
@@ -1498,8 +1537,8 @@ function renderDJBooth() {
   if (!container) return;
   const statusEl = document.getElementById("dj-booth-status");
   if (!lessonSteps.length) {
-    container.innerHTML = '<div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>';
-    if (statusEl) statusEl.textContent = "פתח שיעור והגדר שלבים כדי לדחוף משימות";
+    container.innerHTML = '<div class="dj-empty">לא הוגדרו שלבים — אפשר להמשיך לעבוד עם הודעה מהירה ושידור טקסט רגיל</div>';
+    if (statusEl) statusEl.textContent = "DJ Booth אופציונלי: הוסף שלבים רק אם השיעור דורש רצף משימות";
     return;
   }
   if (statusEl) statusEl.textContent = sessionId
@@ -1575,6 +1614,8 @@ async function exportSession() {
 }
 
 switchCockpitTab('live');
+syncCockpitNavOffset();
+window.addEventListener('resize', syncCockpitNavOffset);
 </script>
 
 <script src="/balance.js"></script>

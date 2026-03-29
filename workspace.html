@@ -1412,6 +1412,7 @@ function setLiveSessionBadge(isLive) {
 
 // ── Active Task injection ──
 let lastActiveTaskTs = 0;
+let lastBroadcastSignature = null;
 
 function showActiveTask(task) {
   if (!task || !task.title) return;
@@ -1426,6 +1427,31 @@ function showActiveTask(task) {
   instEl.style.display = task.instructions ? "" : "none";
   banner.style.display = "";
   banner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function applyLecturerBroadcast(data) {
+  const text = (data?.broadcast || "").trim();
+  if (!text) return;
+  const ts = Number(data?.broadcastedAt) || 0;
+  const sig = `${text}::${ts}`;
+  if (sig === lastBroadcastSignature) return;
+  lastBroadcastSignature = sig;
+
+  addToActivityFeed({
+    type: "assistant",
+    text,
+    kind: "message",
+    tag: "general",
+    step: data?.currentStep || currentStep || 1,
+    ts: ts || Date.now()
+  });
+
+  showActiveTask({
+    title: "הודעת מרצה",
+    instructions: text,
+    step: data?.currentStep || currentStep || 1,
+    pushedAt: ts || Date.now()
+  });
 }
 
 // ─────────────────────────────
@@ -1608,6 +1634,7 @@ async function pollClassroomState() {
     setLiveSessionBadge(!!data.sessionActive);
     syncLecturerReplies(data.lecturerReplies || []);
     hydrateLecturerThread(data.studentSteps || []);
+    applyLecturerBroadcast(data);
     if (data.active_task) showActiveTask(data.active_task);
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
