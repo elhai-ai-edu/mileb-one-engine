@@ -122,6 +122,7 @@ export async function handler(event){
             steps: data.steps || {},
             state: data.state || "idle",
             status: session.students?.[sid]?.status || data.status || data.state || "idle",
+            is_unread: !!(session.students?.[sid]?.is_unread || data.is_unread),
             lastUpdated: data.lastUpdated || null,
             lastSeen: data.lastSeen || null,
             lecturerReplies: lecturerRepliesForStudent
@@ -522,6 +523,10 @@ export async function handler(event){
       `sessions/${sessionId}/students/${studentId}/lastUpdated`
     ).set(now);
 
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/is_unread`
+    ).set(true);
+
     // Public posts also fan-out to the shared wall so all students can read them
     if (kind === "public") {
       await db.ref(`sessions/${sessionId}/publicWall`).push({
@@ -577,6 +582,10 @@ export async function handler(event){
 
     });
 
+    await db.ref(
+      `sessions/${sessionId}/students/${studentId}/is_unread`
+    ).set(false);
+
     return ok({ok:true});
 
   }
@@ -631,6 +640,7 @@ export async function handler(event){
       name: normalizedName || null,
       status: normalizedStatus,
       presence: "online",
+      is_unread: false,
       lastSeen: now,
       lastUpdated: now
     });

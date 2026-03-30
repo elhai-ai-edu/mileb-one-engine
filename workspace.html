@@ -1404,6 +1404,7 @@ function addToBroadcastFeed(item) {
 function buildBroadcastEntry(item) {
   const div = document.createElement("div");
   div.className = "waf-msg waf-msg-broadcast";
+  const isAudio = item.kind === "audio" && typeof item.text === "string" && item.text.startsWith("data:audio/");
   const timeStr = item.ts
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
@@ -1413,7 +1414,9 @@ function buildBroadcastEntry(item) {
     `<span class="waf-msg-sender">📢 המרצה לכיתה</span>` +
     (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
     `</div>` +
-    `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`;
+    (isAudio
+      ? `<audio controls class="cockpit-audio-player" src="${item.text}"></audio>`
+      : `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`);
 
   return div;
 }
@@ -1668,7 +1671,7 @@ function applyLecturerBroadcast(data) {
   addToBroadcastFeed({
     type: "broadcast",
     text,
-    kind: "message",
+    kind: text.startsWith("data:audio/") ? "audio" : "message",
     tag: "general",
     step: data?.currentStep || currentStep || 1,
     ts: ts || Date.now()

@@ -198,6 +198,59 @@
   margin: 0 0 10px;
   line-height: 1.45;
 }
+.broadcast-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.broadcast-mic-btn {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+.broadcast-mic-btn:hover {
+  background: #eef2ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.broadcast-mic-btn.is-recording {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+.unread-bar {
+  position: sticky;
+  top: calc(var(--cockpit-nav-top, 74px) + 10px);
+  z-index: 4;
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.student-card.unread {
+  border: 2px solid #ef4444;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.12);
+}
+.student-unread-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  display: inline-block;
+  box-shadow: 0 0 0 4px rgba(239,68,68,0.16);
+  margin-inline-start: 8px;
+}
 @media print {
   body > *:not(.class-profiler-overlay) { display: none !important; }
   .class-profiler-overlay {
@@ -431,6 +484,7 @@
 <div class="classroom-grid">
 
   <div class="panel" data-tab-panel="live">
+    <div id="unread-bar" class="unread-bar" style="display:none;">🔔 יש לך 0 הודעות שלא נקראו</div>
     <h2>🎛️ שליטת מרצה</h2>
 
     <div class="field">
@@ -461,7 +515,10 @@
         <label>הודעת שידור כללית לכיתה</label>
         <textarea id="broadcastText" placeholder="כתוב הודעה מיידית לכל הסטודנטים..."></textarea>
       </div>
-      <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+      <div class="broadcast-controls">
+        <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+        <button class="broadcast-mic-btn" id="broadcastMicBtn" onclick="toggleBroadcastAudio()" title="הקלט שידור קולי לכל הכיתה">🎙️</button>
+      </div>
       <div id="broadcastPreview" style="display:none" class="broadcast-preview">
         <strong>⚡ שודר לתלמידים:</strong>
         <span id="broadcastPreviewText"></span>
@@ -703,6 +760,9 @@ let lecturerAudioRecorder = null;
 let lecturerAudioChunks = [];
 let lecturerAudioStream = null;
 let recordingStudentId = null;
+let broadcastAudioRecorder = null;
+let broadcastAudioChunks = [];
+let broadcastAudioStream = null;
 
 function switchCockpitTab(tabKey) {
   document.querySelectorAll('[data-tab-panel]').forEach(panel => {
@@ -718,11 +778,34 @@ function setSessionControls(isActive) {
   const openBtn = document.getElementById('openBtn');
   const activeControls = document.getElementById('activeSessionControls');
   const broadcastBtn = document.getElementById('broadcastBtn');
+  const broadcastMicBtn = document.getElementById('broadcastMicBtn');
   if (!openBtn || !activeControls || !broadcastBtn) return;
 
   openBtn.style.display = isActive ? 'none' : '';
   activeControls.style.display = isActive ? 'flex' : 'none';
   broadcastBtn.disabled = !isActive;
+  if (broadcastMicBtn) broadcastMicBtn.disabled = !isActive;
+}
+
+function updateUnreadBar(count) {
+  const bar = document.getElementById('unread-bar');
+  if (!bar) return;
+  if (count > 0) {
+    bar.style.display = '';
+    bar.textContent = `🔔 יש לך ${count} הודעות שלא נקראו`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function markThreadRead(studentId) {
+  const card = document.getElementById(`card-${studentId}`);
+  if (!card) return;
+  card.classList.remove('unread');
+  const dot = card.querySelector('.student-unread-dot');
+  if (dot) dot.remove();
+  const unreadCount = document.querySelectorAll('.student-card.unread').length;
+  updateUnreadBar(unreadCount);
 }
 
 function syncCockpitNavOffset() {
@@ -924,9 +1007,15 @@ async function fetchDashboard() {
 
 function renderDashboard(data) {
   const grid = document.getElementById('studentGrid');
-  const students = data.students || [];
+  const studentsRaw = data.students || [];
+  const students = [...studentsRaw].sort((a, b) => {
+    const unreadDiff = Number(!!b.is_unread) - Number(!!a.is_unread);
+    if (unreadDiff !== 0) return unreadDiff;
+    return (Number(b.lastUpdated) || 0) - (Number(a.lastUpdated) || 0);
+  });
 
   document.getElementById('studentCount').textContent = students.length;
+  updateUnreadBar(students.filter(s => !!s.is_unread).length);
 
   if (students.length === 0) {
     grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⏳</div>
@@ -984,6 +1073,8 @@ function renderDashboard(data) {
           : "📄 הוגשה עבודה")
         : "⏳ ממתין";
 
+    const isUnread = !!s.is_unread;
+
     const threadHtml = recentThread.map(item => {
       const isLecturerItem = item.role === "lecturer";
       const isAudio = typeof item.content === "string" && item.content.startsWith("data:audio/");
@@ -1007,9 +1098,9 @@ function renderDashboard(data) {
       : s.studentId.slice(0,10);
 
     return `
-      <div class="student-card ${cardClass}" id="card-${s.studentId}">
+      <div class="student-card ${cardClass}${isUnread ? ' unread' : ''}" id="card-${s.studentId}">
         <div class="student-top">
-          <span class="student-id">👤 ${studentLabel}</span>
+          <span class="student-id">👤 ${studentLabel}${isUnread ? '<span class="student-unread-dot" title="הודעה חדשה"></span>' : ''}</span>
           <span class="student-status ${statusClass}">${statusText}</span>
         </div>
         <div class="steps-list" id="thread-${s.studentId}">${threadHtml ||
@@ -1070,6 +1161,7 @@ async function sendLecturerReply(studentId) {
   input.value = "";
 
   appendLecturerReplyToThread(studentId, text);
+  markThreadRead(studentId);
 }
 
 function appendLecturerReplyToThread(studentId, content) {
@@ -1152,6 +1244,7 @@ async function toggleLecturerAudioReply(studentId) {
       }
 
       appendLecturerReplyToThread(activeStudentId, dataUrl);
+      markThreadRead(activeStudentId);
     };
 
     lecturerAudioRecorder.start();
@@ -1162,6 +1255,70 @@ async function toggleLecturerAudioReply(studentId) {
     }
   } catch (e) {
     alert("לא ניתן להפעיל מיקרופון");
+  }
+}
+
+async function toggleBroadcastAudio() {
+  if (!sessionId) { alert("פתח שיעור תחילה"); return; }
+  const btn = document.getElementById('broadcastMicBtn');
+
+  if (broadcastAudioRecorder) {
+    broadcastAudioRecorder.stop();
+    return;
+  }
+
+  try {
+    broadcastAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    broadcastAudioChunks = [];
+    broadcastAudioRecorder = new MediaRecorder(broadcastAudioStream);
+    broadcastAudioRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) broadcastAudioChunks.push(event.data);
+    };
+    broadcastAudioRecorder.onstop = async () => {
+      if (btn) {
+        btn.classList.remove('is-recording');
+        btn.textContent = '🎙️';
+        btn.title = 'הקלט שידור קולי לכל הכיתה';
+      }
+
+      if (broadcastAudioStream) {
+        broadcastAudioStream.getTracks().forEach(track => track.stop());
+        broadcastAudioStream = null;
+      }
+
+      const localRecorder = broadcastAudioRecorder;
+      broadcastAudioRecorder = null;
+      if (!localRecorder || !broadcastAudioChunks.length) return;
+
+      const blob = new Blob(broadcastAudioChunks, { type: 'audio/webm' });
+      const dataUrl = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result || ''));
+        reader.readAsDataURL(blob);
+      });
+
+      if (!dataUrl) return;
+
+      const res = await callClassroom({ action: 'broadcast', sessionId, facultyId, text: dataUrl });
+      if (!res?.ok) {
+        alert('שגיאה בשידור קולי לכיתה');
+        return;
+      }
+
+      const preview = document.getElementById('broadcastPreview');
+      document.getElementById('broadcastPreviewText').textContent = '🎙️ שידור קולי נשלח';
+      if (preview) preview.style.display = 'block';
+    };
+
+    broadcastAudioRecorder.start();
+    if (btn) {
+      btn.classList.add('is-recording');
+      btn.textContent = '⏹️';
+      btn.title = 'עצור ושלח שידור קולי';
+    }
+  } catch (e) {
+    alert('לא ניתן להפעיל מיקרופון לשידור');
+    broadcastAudioRecorder = null;
   }
 }
 
