@@ -50,6 +50,12 @@ function err(msg){
 
 }
 
+function normalizeAvatar(value){
+  const avatar = String(value || "").trim();
+  if(!avatar.startsWith("data:image/")) return null;
+  return avatar;
+}
+
 export async function handler(event){
 
   if(event.httpMethod === "OPTIONS")
@@ -112,16 +118,23 @@ export async function handler(event){
           const lecturerRepliesForStudent = Object.entries(
             session.students?.[sid]?.lecturer_replies || {}
           )
-            .map(([id, item]) => ({ id, text: item?.text || "", ts: item?.ts || 0 }))
+            .map(([id, item]) => ({
+              id,
+              text: item?.text || "",
+              ts: item?.ts || 0,
+              avatar: item?.avatar || session?.facultyAvatar || null
+            }))
             .filter(item => item.text)
             .sort((a, b) => a.ts - b.ts);
 
           const base = {
             studentId: sid,
             name: session.students?.[sid]?.name || data.name || null,
+            avatar: session.students?.[sid]?.avatar || data.avatar || null,
             steps: data.steps || {},
             state: data.state || "idle",
             status: session.students?.[sid]?.status || data.status || data.state || "idle",
+            presence: session.students?.[sid]?.presence || data.presence || "offline",
             is_unread: !!(session.students?.[sid]?.is_unread || data.is_unread),
             lastUpdated: data.lastUpdated || null,
             lastSeen: data.lastSeen || null,
@@ -215,6 +228,7 @@ export async function handler(event){
 
         sessionId,
         broadcast:session.broadcast || null,
+        facultyAvatar: session.facultyAvatar || null,
         currentStep:session.currentStep || 1,
         stepVersion:session.stepVersion || 0,
         lockedSteps:session.lockedSteps || [],
@@ -247,7 +261,8 @@ export async function handler(event){
         id,
         text: item?.text || "",
         ts: item?.ts || 0,
-        facultyId: item?.facultyId || null
+        facultyId: item?.facultyId || null,
+        avatar: item?.avatar || session?.facultyAvatar || null
       }))
       .filter(item => item.text)
       .sort((a, b) => (a.ts || 0) - (b.ts || 0))
@@ -262,7 +277,8 @@ export async function handler(event){
         kind: item?.kind || "message",
         tag: item?.tag || "general",
         step: item?.step || null,
-        ts: item?.submittedAt || 0
+        ts: item?.submittedAt || 0,
+        avatar: item?.avatar || session?.students?.[studentId]?.avatar || null
       }))
       .filter(item => item.content)
       .sort((a, b) => a.ts - b.ts);
@@ -292,6 +308,8 @@ export async function handler(event){
       broadcast:session.broadcast || null,
       broadcastedAt:session.broadcastedAt || null,
       broadcastHistory:broadcastHistory,
+      studentAvatar: session?.students?.[studentId]?.avatar || null,
+      lecturerAvatar: session?.facultyAvatar || null,
       currentStep:session.currentStep || 1,
       stepVersion:session.stepVersion || 0,
       stepLocked:studentLocked,
@@ -349,6 +367,7 @@ export async function handler(event){
       facultyId,
       botType:botType || null,
       classId:classId || null,
+      facultyAvatar: normalizeAvatar(body.facultyAvatar),
       broadcast:broadcast || null,
       broadcastedAt:broadcast ? Date.now() : null,
       currentStep:1,
@@ -434,9 +453,15 @@ export async function handler(event){
 
     // Track broadcast in history (max 50 items)
     const currentHistory = (session?.broadcastHistory || []);
-    const newHistory = [...currentHistory, { text, ts: now, kind: text.startsWith('data:') ? (text.startsWith('data:audio/') ? 'audio' : 'file') : 'text' }];
+    const newHistory = [...currentHistory, {
+      text,
+      ts: now,
+      kind: text.startsWith('data:') ? (text.startsWith('data:audio/') ? 'audio' : 'file') : 'text',
+      avatar: normalizeAvatar(body.facultyAvatar) || session?.facultyAvatar || null
+    }];
     if(newHistory.length > 50) newHistory.shift();
     update.broadcastHistory = newHistory;
+    update.facultyAvatar = normalizeAvatar(body.facultyAvatar) || session?.facultyAvatar || null;
 
     await sessionRef.update(update);
 
@@ -501,6 +526,7 @@ export async function handler(event){
       content,
       kind,
       tag,
+      avatar: normalizeAvatar(body.avatar),
       submittedAt:now
 
     };
@@ -533,6 +559,11 @@ export async function handler(event){
     await db.ref(
       `sessions/${sessionId}/students/${studentId}/lastUpdated`
     ).set(now);
+
+    if (normalizeAvatar(body.avatar)) {
+      await db.ref(`sessions/${sessionId}/students/${studentId}/avatar`).set(normalizeAvatar(body.avatar));
+      await db.ref(`sessions/${sessionId}/answers/${studentId}/avatar`).set(normalizeAvatar(body.avatar));
+    }
 
     await db.ref(
       `sessions/${sessionId}/students/${studentId}/is_unread`
@@ -589,7 +620,8 @@ export async function handler(event){
 
       text:String(text).trim(),
       ts:Date.now(),
-      facultyId
+      facultyId,
+      avatar: normalizeAvatar(body.facultyAvatar) || session?.facultyAvatar || null
 
     });
 
@@ -649,6 +681,7 @@ export async function handler(event){
 
     await db.ref(`sessions/${sessionId}/students/${studentId}`).update({
       name: normalizedName || null,
+      avatar: normalizeAvatar(body.avatar) || session?.students?.[studentId]?.avatar || null,
       status: normalizedStatus,
       presence: "online",
       is_unread: false,

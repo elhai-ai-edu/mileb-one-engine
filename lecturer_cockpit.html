@@ -338,6 +338,33 @@
   margin: 0 0 10px;
   font-size: 13px;
   font-weight: 800;
+  cursor: pointer;
+}
+.unread-bar:hover {
+  filter: brightness(0.98);
+}
+.lecturer-avatar-btn {
+  appearance: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0;
+}
+.lecturer-avatar-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.lecturer-avatar-btn span {
+  font-size: 22px;
 }
 .student-card.unread {
   border: 2px solid #ef4444;
@@ -367,6 +394,60 @@
   padding: 16px;
   border-radius: 14px;
 }
+.student-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.student-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.student-avatar-mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  object-fit: cover;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
+.presence-pill {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+}
+.presence-pill.active {
+  color: #065f46;
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+.presence-pill.connected {
+  color: #475569;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+.presence-pill.offline {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+.presence-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.presence-pill.active .presence-dot { background: #22c55e; }
+.presence-pill.connected .presence-dot { background: #94a3b8; }
+.presence-pill.offline .presence-dot { background: #ef4444; }
 .student-status {
   font-size: 12px;
   font-weight: 700;
@@ -384,9 +465,25 @@
 }
 .thread-msg {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 7px;
   max-width: 92%;
   padding: 1px 0;
+}
+.thread-msg-avatar {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  object-fit: cover;
+  background: #e2e8f0;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+.thread-msg-main {
+  display: flex;
+  flex-direction: column;
 }
 .thread-msg.from-student {
   align-self: flex-end;
@@ -397,6 +494,12 @@
   align-self: flex-start;
   text-align: left;
   color: #6d28d9;
+}
+.thread-msg.from-student .thread-msg-avatar {
+  order: 2;
+}
+.thread-msg.from-student .thread-msg-main {
+  align-items: flex-end;
 }
 .thread-msg-body {
   font-size: 13px;
@@ -424,6 +527,74 @@
   height: 30px;
   margin-top: 3px;
   display: block;
+}
+.presence-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.presence-modal {
+  width: min(680px, 96vw);
+  max-height: min(80vh, 760px);
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-direction: column;
+}
+.presence-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.presence-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+}
+.presence-modal-subtitle {
+  font-size: 12px;
+  color: #64748b;
+}
+.presence-modal-close {
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+  color: #64748b;
+}
+.presence-modal-list {
+  overflow: auto;
+  padding: 10px 12px 14px;
+}
+.presence-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+.presence-row-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.presence-row-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #cbd5e1;
+  background: #e2e8f0;
 }
 /* Cockpit Tabs */
 #cockpit-nav {
@@ -585,8 +756,20 @@
 <div class="classroom-grid">
 
   <div class="panel" data-tab-panel="live">
-    <div id="unread-bar" class="unread-bar" style="display:none;">🔔 יש לך 0 הודעות שלא נקראו</div>
+    <div id="unread-bar" class="unread-bar" role="button" tabindex="0" onclick="openPresenceModal()" onkeypress="if(event.key==='Enter'){openPresenceModal();}">🔔 יש לך 0 הודעות שלא נקראו · 0/30 Students Present</div>
     <h2>🎛️ שליטת מרצה</h2>
+
+    <div class="field" style="margin-bottom:8px;">
+      <label>תמונת מרצה</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="lecturer-avatar-btn" class="lecturer-avatar-btn" onclick="triggerLecturerAvatarUpload()" title="עדכן תמונת מרצה">
+          <img id="lecturer-avatar-preview" alt="avatar" style="display:none;" />
+          <span id="lecturer-avatar-fallback">🧑‍🏫</span>
+        </button>
+        <input id="lecturer-avatar-input" type="file" accept="image/*" style="display:none;" onchange="handleLecturerAvatarUpload(event)">
+        <span style="font-size:12px;color:#64748b;">לחץ לעדכון או החלפת תמונת פרופיל</span>
+      </div>
+    </div>
 
     <div class="field">
       <label>בחר בוט / קורס</label>
@@ -825,6 +1008,19 @@
   </div>
 </div>
 
+<div id="presence-modal-overlay" class="presence-modal-overlay" style="display:none;" onclick="handlePresenceOverlayClick(event)">
+  <div class="presence-modal">
+    <div class="presence-modal-header">
+      <div>
+        <div class="presence-modal-title">👥 רשימת תלמידים מלאה</div>
+        <div id="presence-modal-subtitle" class="presence-modal-subtitle">0/30 Students Present</div>
+      </div>
+      <button class="presence-modal-close" onclick="closePresenceModal()">✕</button>
+    </div>
+    <div id="presence-modal-list" class="presence-modal-list"></div>
+  </div>
+</div>
+
 <!-- ─── Insights Box ─── -->
 <div id="insights-box" class="insights-box" style="display:none;">
   <div class="insights-header">
@@ -849,6 +1045,7 @@
 // ─────────────────────────────────────────
 const facultyId = sessionStorage.getItem("facultyId") || "f_" + Math.random().toString(36).slice(2,8);
 sessionStorage.setItem("facultyId", facultyId);
+const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
 
 let sessionId   = null;
 let pollTimer   = null;
@@ -865,6 +1062,45 @@ let recordingStudentId = null;
 let broadcastAudioRecorder = null;
 let broadcastAudioChunks = [];
 let broadcastAudioStream = null;
+let facultyAvatar = localStorage.getItem(LECTURER_AVATAR_KEY) || "";
+let latestStudentsSnapshot = [];
+
+function safeAvatar(avatar) {
+  const value = String(avatar || "").trim();
+  return value.startsWith("data:image/") ? value : "";
+}
+
+function getPresenceInfo(student) {
+  const now = Date.now();
+  const seenAgo = now - (Number(student?.lastSeen) || 0);
+  if (seenAgo < 2 * 60 * 1000) {
+    return { key: "active", label: "פעיל" };
+  }
+  if (seenAgo < 10 * 60 * 1000 || String(student?.presence || "").toLowerCase() === "online") {
+    return { key: "connected", label: "מחובר" };
+  }
+  return { key: "offline", label: "מנותק" };
+}
+
+function countPresentStudents(students = []) {
+  return students.filter(s => getPresenceInfo(s).key !== "offline").length;
+}
+
+function renderLecturerAvatarButton() {
+  const img = document.getElementById("lecturer-avatar-preview");
+  const fallback = document.getElementById("lecturer-avatar-fallback");
+  const avatar = safeAvatar(facultyAvatar);
+  if (!img || !fallback) return;
+  if (avatar) {
+    img.src = avatar;
+    img.style.display = "";
+    fallback.style.display = "none";
+  } else {
+    img.removeAttribute("src");
+    img.style.display = "none";
+    fallback.style.display = "";
+  }
+}
 
 function switchCockpitTab(tabKey) {
   document.querySelectorAll('[data-tab-panel]').forEach(panel => {
@@ -889,15 +1125,11 @@ function setSessionControls(isActive) {
   if (broadcastMicBtn) broadcastMicBtn.disabled = !isActive;
 }
 
-function updateUnreadBar(count) {
+function updateUnreadBar(count, presentCount = 0, cap = 30) {
   const bar = document.getElementById('unread-bar');
   if (!bar) return;
-  if (count > 0) {
-    bar.style.display = '';
-    bar.textContent = `🔔 יש לך ${count} הודעות שלא נקראו`;
-  } else {
-    bar.style.display = 'none';
-  }
+  bar.style.display = '';
+  bar.textContent = `🔔 ${count} הודעות שלא נקראו · ${presentCount}/${cap} Students Present`;
 }
 
 function markThreadRead(studentId) {
@@ -907,7 +1139,76 @@ function markThreadRead(studentId) {
   const dot = card.querySelector('.student-unread-dot');
   if (dot) dot.remove();
   const unreadCount = document.querySelectorAll('.student-card.unread').length;
-  updateUnreadBar(unreadCount);
+  updateUnreadBar(unreadCount, countPresentStudents(latestStudentsSnapshot), 30);
+}
+
+function triggerLecturerAvatarUpload() {
+  const input = document.getElementById("lecturer-avatar-input");
+  if (input) input.click();
+}
+
+async function handleLecturerAvatarUpload(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  const dataUrl = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  });
+  const avatar = safeAvatar(dataUrl);
+  if (!avatar) {
+    alert("שגיאה בעדכון תמונה");
+    event.target.value = "";
+    return;
+  }
+  facultyAvatar = avatar;
+  localStorage.setItem(LECTURER_AVATAR_KEY, avatar);
+  renderLecturerAvatarButton();
+  event.target.value = "";
+}
+
+function renderPresenceModal() {
+  const list = document.getElementById("presence-modal-list");
+  const subtitle = document.getElementById("presence-modal-subtitle");
+  if (!list || !subtitle) return;
+
+  const present = countPresentStudents(latestStudentsSnapshot);
+  subtitle.textContent = `${present}/30 Students Present`;
+
+  if (!latestStudentsSnapshot.length) {
+    list.innerHTML = '<div class="thread-empty">אין תלמידים פעילים כרגע</div>';
+    return;
+  }
+
+  list.innerHTML = latestStudentsSnapshot.map(s => {
+    const presence = getPresenceInfo(s);
+    const avatar = safeAvatar(s.avatar);
+    const label = s.name ? `${escapeHtml(s.name)} · ${s.studentId.slice(0,8)}` : s.studentId.slice(0,10);
+    return `
+      <div class="presence-row">
+        <div class="presence-row-main">
+          ${avatar ? `<img class="presence-row-avatar" src="${avatar}" alt="avatar" />` : `<img class="presence-row-avatar" alt="avatar" />`}
+          <span>${label}</span>
+        </div>
+        <span class="presence-pill ${presence.key}"><span class="presence-dot"></span>${presence.label}</span>
+      </div>`;
+  }).join("");
+}
+
+function openPresenceModal() {
+  const overlay = document.getElementById("presence-modal-overlay");
+  if (!overlay) return;
+  renderPresenceModal();
+  overlay.style.display = "";
+}
+
+function closePresenceModal() {
+  const overlay = document.getElementById("presence-modal-overlay");
+  if (overlay) overlay.style.display = "none";
+}
+
+function handlePresenceOverlayClick(event) {
+  if (event.target?.id === "presence-modal-overlay") closePresenceModal();
 }
 
 function syncCockpitNavOffset() {
@@ -1034,7 +1335,7 @@ async function openSession() {
   sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
   studentURL = studentURL.replace('SESSION_ID', sessionId);
 
-  const res = await callClassroom({ action: "open", sessionId, facultyId, botType, classId });
+  const res = await callClassroom({ action: "open", sessionId, facultyId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
   if (!res.ok) { alert("שגיאה בפתיחת שיעור"); return; }
 
   document.getElementById('sessionInfo').style.display = "block";
@@ -1075,7 +1376,7 @@ async function broadcast() {
   const text = document.getElementById('broadcastText').value.trim();
   if (!text) { alert("הכנס טקסט לשידור"); return; }
 
-  const res = await callClassroom({ action: "broadcast", sessionId, facultyId, text });
+  const res = await callClassroom({ action: "broadcast", sessionId, facultyId, text, facultyAvatar: safeAvatar(facultyAvatar) });
   if (!res?.ok) {
     alert("שגיאה בשידור לכיתה");
     return;
@@ -1118,6 +1419,8 @@ async function fetchDashboard() {
       console.error("dashboard fetch failed:", data?.error || res.status, { sessionId, facultyId });
       return;
     }
+    facultyAvatar = safeAvatar(data.facultyAvatar) || facultyAvatar;
+    renderLecturerAvatarButton();
     renderDashboard(data);
   } catch(e) { console.error("poll error:", e); }
 }
@@ -1130,9 +1433,10 @@ function renderDashboard(data) {
     if (unreadDiff !== 0) return unreadDiff;
     return (Number(b.lastUpdated) || 0) - (Number(a.lastUpdated) || 0);
   });
+  latestStudentsSnapshot = students;
 
   document.getElementById('studentCount').textContent = students.length;
-  updateUnreadBar(students.filter(s => !!s.is_unread).length);
+  updateUnreadBar(students.filter(s => !!s.is_unread).length, countPresentStudents(students), 30);
 
   if (students.length === 0) {
     grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⏳</div>
@@ -1154,13 +1458,15 @@ function renderDashboard(data) {
       tag: st.tag || "general",
       content: st.content || "",
       ts: Number(st.submittedAt) || 0,
-      step: st.step
+      step: st.step,
+      avatar: st.avatar || s.avatar || null
     }));
     const repliesFlat = (s.lecturerReplies || []).map(r => ({
       role: "lecturer",
       kind: "reply",
       content: r.text || "",
-      ts: Number(r.ts) || 0
+      ts: Number(r.ts) || 0,
+      avatar: r.avatar || null
     }));
     const thread = [...stepsFlat, ...repliesFlat].sort((a, b) => a.ts - b.ts);
   const recentThread = thread.slice(-5); // keep a compact flat thread
@@ -1191,11 +1497,14 @@ function renderDashboard(data) {
         : "⏳ ממתין";
 
     const isUnread = !!s.is_unread;
+    const studentAvatar = safeAvatar(s.avatar);
+    const presence = getPresenceInfo(s);
 
     const threadHtml = recentThread.map(item => {
       const isLecturerItem = item.role === "lecturer";
       const isAudio = typeof item.content === "string" && item.content.startsWith("data:audio/");
       const sideClass = isLecturerItem ? "from-lecturer" : "from-student";
+      const avatar = safeAvatar(item.avatar) || (isLecturerItem ? safeAvatar(facultyAvatar) : studentAvatar);
       const time = item.ts
         ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
         : "--:--";
@@ -1205,8 +1514,11 @@ function renderDashboard(data) {
 
       return `
       <div class="thread-msg ${sideClass}">
-        ${contentHtml}
-        <div class="thread-msg-time">${time}</div>
+        ${avatar ? `<img class="thread-msg-avatar" src="${avatar}" alt="avatar" />` : `<img class="thread-msg-avatar" alt="avatar" />`}
+        <div class="thread-msg-main">
+          ${contentHtml}
+          <div class="thread-msg-time">${time}</div>
+        </div>
       </div>`;
     }).join('');
 
@@ -1217,7 +1529,8 @@ function renderDashboard(data) {
     return `
       <div class="student-card ${cardClass}${isUnread ? ' unread' : ''}" id="card-${s.studentId}">
         <div class="student-top">
-          <span class="student-id">👤 ${studentLabel}${isUnread ? '<span class="student-unread-dot" title="הודעה חדשה"></span>' : ''}</span>
+          <span class="student-id">${studentAvatar ? `<img class="student-avatar-mini" src="${studentAvatar}" alt="avatar" />` : `<img class="student-avatar-mini" alt="avatar" />`} ${studentLabel}${isUnread ? '<span class="student-unread-dot" title="הודעה חדשה"></span>' : ''}</span>
+          <span class="presence-pill ${presence.key}"><span class="presence-dot"></span>${presence.label}</span>
           <span class="student-status ${statusClass}">${statusText}</span>
         </div>
         <div class="steps-list" id="thread-${s.studentId}">${threadHtml ||
@@ -1266,7 +1579,8 @@ async function sendLecturerReply(studentId) {
     sessionId,
     facultyId,
     studentId,
-    text
+    text,
+    facultyAvatar: safeAvatar(facultyAvatar)
   });
 
   if (!res?.ok) {
@@ -1293,11 +1607,15 @@ function appendLecturerReplyToThread(studentId, content) {
     const isAudio = typeof content === "string" && content.startsWith("data:audio/");
     const div = document.createElement("div");
     div.className = "thread-msg from-lecturer";
+    const avatar = safeAvatar(facultyAvatar);
     div.innerHTML =
+      (avatar ? `<img class="thread-msg-avatar" src="${avatar}" alt="avatar" />` : `<img class="thread-msg-avatar" alt="avatar" />`) +
+      `<div class="thread-msg-main">` +
       (isAudio
         ? `<audio controls class="cockpit-audio-player" src="${content}"></audio>`
         : `<div class="thread-msg-body">${escapeHtml(content)}</div>`) +
-      `<div class="thread-msg-time">${timeStr}</div>`;
+      `<div class="thread-msg-time">${timeStr}</div>` +
+      `</div>`;
     threadDiv.appendChild(div);
   }
 }
@@ -1352,7 +1670,8 @@ async function toggleLecturerAudioReply(studentId) {
         sessionId,
         facultyId,
         studentId: activeStudentId,
-        text: dataUrl
+        text: dataUrl,
+        facultyAvatar: safeAvatar(facultyAvatar)
       });
 
       if (!res?.ok) {
@@ -1416,7 +1735,7 @@ async function toggleBroadcastAudio() {
 
       if (!dataUrl) return;
 
-      const res = await callClassroom({ action: 'broadcast', sessionId, facultyId, text: dataUrl });
+      const res = await callClassroom({ action: 'broadcast', sessionId, facultyId, text: dataUrl, facultyAvatar: safeAvatar(facultyAvatar) });
       if (!res?.ok) {
         alert('שגיאה בשידור קולי לכיתה');
         return;
@@ -1447,6 +1766,7 @@ function addBroadcastToHistory(type, content, fileName = null) {
     type: type, // 'text', 'audio', 'file'
     content: content,
     fileName: fileName,
+    avatar: safeAvatar(facultyAvatar),
     timestamp: Date.now()
   };
   broadcastHistory.unshift(item); // Add to beginning
@@ -1463,6 +1783,8 @@ function renderBroadcastHistory() {
   
   container.innerHTML = broadcastHistory.map(item => {
     let itemHtml = '<div class="broadcast-item">';
+    const avatar = safeAvatar(item.avatar) || safeAvatar(facultyAvatar);
+    itemHtml += avatar ? `<img class="thread-msg-avatar" src="${avatar}" alt="avatar" />` : '<img class="thread-msg-avatar" alt="avatar" />';
     
     if (item.type === 'text') {
       itemHtml += '<div class="broadcast-item-icon">📝</div>';
@@ -1504,7 +1826,8 @@ function handleBroadcastFileUpload(event) {
       action: 'broadcast',
       sessionId,
       facultyId,
-      text: payload
+      text: payload,
+      facultyAvatar: safeAvatar(facultyAvatar)
     });
     
     if (!res?.ok) {
@@ -1567,7 +1890,7 @@ async function callClassroom(body) {
 }
 
 function escapeHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
 // ─── Insights Panel ───
@@ -1962,6 +2285,7 @@ function printClassProfile() {
 window.addEventListener("load", () => {
   initBalanceEditor();
   renderBroadcastHistory(); // Initialize empty broadcast history
+  renderLecturerAvatarButton();
   if (!window.MiledAuth) return;
   const user = MiledAuth.getUser();
   if (user) {

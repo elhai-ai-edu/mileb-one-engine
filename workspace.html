@@ -115,6 +115,11 @@
               </div>
               <div class="actions workspace-actions">
                 <div class="workspace-send-row">
+                  <button id="student-avatar-btn" onclick="triggerStudentAvatarUpload()" class="workspace-avatar-btn" title="עדכן תמונת פרופיל">
+                    <img id="student-avatar-preview" alt="avatar" style="display:none;" />
+                    <span id="student-avatar-fallback">🙂</span>
+                  </button>
+                  <input id="student-avatar-input" type="file" accept="image/*" style="display:none;" onchange="handleStudentAvatarUpload(event)">
                   <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
                   <button id="student-file-btn" onclick="triggerStudentFileUpload()" class="workspace-file-btn" title="צרף קובץ">
                     <i class="fas fa-paperclip" aria-hidden="true"></i>
@@ -468,6 +473,20 @@ livePulseStyle.textContent = `
 .waf-msg-meta {
   display: flex; align-items: baseline; gap: 6px; margin-bottom: 1px;
 }
+.waf-msg-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.waf-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  object-fit: cover;
+  background: #e2e8f0;
+  flex-shrink: 0;
+}
 .waf-msg-sender { font-size: 11px; font-weight: 700; opacity: 0.75; }
 .waf-msg-body { white-space: pre-wrap; }
 .waf-msg-time { font-size: 10px; color: #94a3b8; }
@@ -551,6 +570,30 @@ livePulseStyle.textContent = `
   background: #ef4444;
   box-shadow: 0 0 0 0 rgba(239,68,68,0.6);
   animation: recBlink 1s infinite;
+}
+.workspace-avatar-btn {
+  appearance: none;
+  border: 1px solid #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  min-width: 52px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.workspace-avatar-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.workspace-avatar-btn span {
+  font-size: 22px;
 }
 .waf-file-link {
   color: #1d4ed8;
@@ -653,12 +696,16 @@ if (skillId) {
 }
 
 const STUDENT_ID_KEY = "miled_student_id";
+const STUDENT_AVATAR_KEY = "miled_student_avatar";
 let studentId = localStorage.getItem(STUDENT_ID_KEY) || sessionStorage.getItem("studentId");
 if (!studentId) {
   studentId = "s_" + Math.random().toString(36).slice(2, 10);
 }
 localStorage.setItem(STUDENT_ID_KEY, studentId);
 sessionStorage.setItem("studentId", studentId);
+
+let studentAvatar = localStorage.getItem(STUDENT_AVATAR_KEY) || "";
+let lecturerAvatar = "";
 
 let CONFIG         = null;
 let currentCourse  = null;
@@ -1362,6 +1409,34 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
+function safeAvatar(avatar) {
+  const value = String(avatar || "").trim();
+  return value.startsWith("data:image/") ? value : "";
+}
+
+function renderStudentAvatarButton() {
+  const img = document.getElementById("student-avatar-preview");
+  const fallback = document.getElementById("student-avatar-fallback");
+  const avatar = safeAvatar(studentAvatar);
+  if (!img || !fallback) return;
+  if (avatar) {
+    img.src = avatar;
+    img.style.display = "";
+    fallback.style.display = "none";
+  } else {
+    img.removeAttribute("src");
+    img.style.display = "none";
+    fallback.style.display = "";
+  }
+}
+
+function getAvatarForFeedItem(item) {
+  const explicit = safeAvatar(item?.avatar);
+  if (explicit) return explicit;
+  if (item?.type === "reply" || item?.type === "broadcast") return safeAvatar(lecturerAvatar);
+  return safeAvatar(studentAvatar);
+}
+
 function parseFilePayload(text) {
   if (typeof text !== "string" || !text.startsWith("__FILE__::")) return null;
   const parts = text.split("::");
@@ -1435,10 +1510,15 @@ function buildFeedEntry(item) {
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
 
+  const avatar = getAvatarForFeedItem(item);
+
   div.innerHTML =
+    `<div class="waf-msg-head">` +
+    (avatar ? `<img class="waf-avatar" src="${avatar}" alt="avatar" />` : `<img class="waf-avatar" alt="avatar" />`) +
     `<div class="waf-msg-meta">` +
     `<span class="waf-msg-sender">${senderLabel}</span>` +
     (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
+    `</div>` +
     `</div>` +
     (filePayload
       ? `<a class="waf-file-link" href="${filePayload.dataUrl}" target="_blank" rel="noopener">📎 ${escapeHtml(filePayload.fileName)}</a>`
@@ -1483,10 +1563,15 @@ function buildBroadcastEntry(item) {
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
 
+  const avatar = getAvatarForFeedItem({ ...item, type: "broadcast" });
+
   div.innerHTML =
+    `<div class="waf-msg-head">` +
+    (avatar ? `<img class="waf-avatar" src="${avatar}" alt="avatar" />` : `<img class="waf-avatar" alt="avatar" />`) +
     `<div class="waf-msg-meta">` +
     `<span class="waf-msg-sender">📢 המרצה לכיתה</span>` +
     (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
+    `</div>` +
     `</div>` +
     (filePayload
       ? `<a class="waf-file-link" href="${filePayload.dataUrl}" target="_blank" rel="noopener">📎 ${escapeHtml(filePayload.fileName)}</a>`
@@ -1519,7 +1604,7 @@ function syncLecturerReplies(replies = []) {
     if (seenLecturerReplyIds.has(item.id)) return;
     seenLecturerReplyIds.add(item.id);
     const isAudioReply = typeof item.text === "string" && item.text.startsWith("data:audio/");
-    addToActivityFeed({ type: "reply", text: item.text, kind: isAudioReply ? "audio" : "message", ts: item.ts });
+    addToActivityFeed({ type: "reply", text: item.text, kind: isAudioReply ? "audio" : "message", ts: item.ts, avatar: item.avatar || "" });
   });
 }
 
@@ -1535,9 +1620,35 @@ function hydrateLecturerThread(studentSteps = []) {
       kind: step.kind || "message",
       tag: step.tag || "general",
       step: step.step,
-      ts: step.ts
+      ts: step.ts,
+      avatar: step.avatar || ""
     });
   });
+}
+
+function triggerStudentAvatarUpload() {
+  const input = document.getElementById("student-avatar-input");
+  if (input) input.click();
+}
+
+async function handleStudentAvatarUpload(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  const dataUrl = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  });
+  const avatar = safeAvatar(dataUrl);
+  if (!avatar) {
+    alert("נכשל לעדכן תמונה");
+    event.target.value = "";
+    return;
+  }
+  studentAvatar = avatar;
+  localStorage.setItem(STUDENT_AVATAR_KEY, avatar);
+  renderStudentAvatarButton();
+  event.target.value = "";
 }
 
 async function toggleAudioRecording() {
@@ -1604,12 +1715,12 @@ async function handleStudentFileUpload(event) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "submit", sessionId, studentId,
-        step: currentStep, content: payload, type: "message", tag
+        step: currentStep, content: payload, type: "message", tag, avatar: safeAvatar(studentAvatar)
       })
     });
 
     if (res.ok) {
-      addToActivityFeed({ type: "sent", text: payload, kind: "message", tag, step: currentStep, ts: Date.now() });
+      addToActivityFeed({ type: "sent", text: payload, kind: "message", tag, step: currentStep, ts: Date.now(), avatar: safeAvatar(studentAvatar) });
       if (statusEl) {
         statusEl.textContent = "קובץ נשלח ✓";
         setTimeout(() => { statusEl.textContent = ""; }, 2200);
@@ -1670,12 +1781,12 @@ async function handleAudioRecordingStop() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "submit", sessionId, studentId,
-        step: currentStep, content: dataUrl, type: "audio", tag
+        step: currentStep, content: dataUrl, type: "audio", tag, avatar: safeAvatar(studentAvatar)
       })
     });
 
     if (res.ok) {
-      addToActivityFeed({ type: "sent", text: dataUrl, kind: "audio", tag, step: currentStep, ts: Date.now() });
+      addToActivityFeed({ type: "sent", text: dataUrl, kind: "audio", tag, step: currentStep, ts: Date.now(), avatar: safeAvatar(studentAvatar) });
       if (statusEl) {
         statusEl.textContent = "הקלטה נשלחה ✓";
         setTimeout(() => { statusEl.textContent = ""; }, 2200);
@@ -1804,7 +1915,8 @@ function applyLecturerBroadcast(data) {
     kind: text.startsWith("data:audio/") ? "audio" : "message",
     tag: "general",
     step: data?.currentStep || currentStep || 1,
-    ts: ts || Date.now()
+    ts: ts || Date.now(),
+    avatar: data?.lecturerAvatar || ""
   });
 }
 
@@ -1819,7 +1931,8 @@ function hydrateBroadcastHistory(broadcastHistory = []) {
       kind: item.kind || (item.text.startsWith("data:audio/") ? "audio" : item.text.startsWith("data:") ? "file" : "text"),
       tag: "general",
       step: currentStep || 1,
-      ts: item.ts || Date.now()
+      ts: item.ts || Date.now(),
+      avatar: item.avatar || ""
     });
   });
 }
@@ -1868,11 +1981,11 @@ async function sendMessageToLecturer() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "submit", sessionId, studentId,
-        step: currentStep, content: text, type: "message", tag
+        step: currentStep, content: text, type: "message", tag, avatar: safeAvatar(studentAvatar)
       })
     });
     if (res.ok) {
-      addToActivityFeed({ type: "sent", text, kind: "message", tag, step: currentStep, ts: Date.now() });
+      addToActivityFeed({ type: "sent", text, kind: "message", tag, step: currentStep, ts: Date.now(), avatar: safeAvatar(studentAvatar) });
       if (statusEl) { statusEl.textContent = "נשלח ✓"; setTimeout(() => { statusEl.textContent = ""; }, 2000); }
     } else {
       if (statusEl) statusEl.textContent = "שגיאה — נסה שוב";
@@ -1892,12 +2005,12 @@ async function submitWork() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       action: "submit", sessionId, studentId,
-      step: currentStep, content: text, type: "submission", tag: "task"
+        step: currentStep, content: text, type: "submission", tag: "task", avatar: safeAvatar(studentAvatar)
     })
   });
 
   if (res.ok) {
-    addToActivityFeed({ type: "sent", text, kind: "submission", tag: "task", step: currentStep, ts: Date.now() });
+    addToActivityFeed({ type: "sent", text, kind: "submission", tag: "task", step: currentStep, ts: Date.now(), avatar: safeAvatar(studentAvatar) });
     const statusEl = document.getElementById("waf-send-status");
     if (statusEl) { statusEl.textContent = "הוגשה ✓"; setTimeout(() => { statusEl.textContent = ""; }, 3000); }
   } else {
@@ -1954,7 +2067,7 @@ async function classroomJoin() {
   await fetch("/.netlify/functions/classroom", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "join", sessionId, studentId, studentName, status: "online" })
+    body: JSON.stringify({ action: "join", sessionId, studentId, studentName, status: "online", avatar: safeAvatar(studentAvatar) })
   });
   setLiveSessionBadge(true);
   startClassroomPolling();
@@ -2006,6 +2119,13 @@ async function pollClassroomState() {
 
     const data = await res.json();
     const isLocked = !!data.stepLocked;
+    lecturerAvatar = safeAvatar(data.lecturerAvatar) || lecturerAvatar;
+    const persistedStudentAvatar = safeAvatar(data.studentAvatar);
+    if (persistedStudentAvatar && persistedStudentAvatar !== studentAvatar) {
+      studentAvatar = persistedStudentAvatar;
+      localStorage.setItem(STUDENT_AVATAR_KEY, persistedStudentAvatar);
+      renderStudentAvatarButton();
+    }
     setLiveSessionBadge(!!data.sessionActive);
     syncLecturerReplies(data.lecturerReplies || []);
     hydrateLecturerThread(data.studentSteps || []);
@@ -2054,6 +2174,7 @@ function triggerUnlockAnimation() {
 }
 
 init();
+renderStudentAvatarButton();
 
 </script>
 
