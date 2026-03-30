@@ -15,23 +15,49 @@
 <body class="user-student">
 
 <div id="waiting-room-overlay" class="waiting-room-overlay" style="display:none;">
-  <div class="waiting-room-card" role="status" aria-live="polite">
-    <div class="waiting-room-icon" aria-hidden="true">⏳</div>
-    <div class="waiting-room-spinner" aria-hidden="true"></div>
-    <div class="waiting-room-text">השיעור טרם התחיל, המרצה יפתח אותו בקרוב...</div>
-    <div style="margin:14px 0 6px;padding:10px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;text-align:right;">
-      <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">🎯 Pre-Session Mission</div>
-      <div id="waiting-mission-content" style="font-size:13px;line-height:1.65;color:#334155;display:grid;gap:8px;">
-        <div>אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>
+  <div class="waiting-room-card waiting-room-card-wide" role="status" aria-live="polite">
+    <div class="waiting-room-head">
+      <div class="waiting-room-icon" aria-hidden="true">⏳</div>
+      <div>
+        <div class="waiting-room-text">השיעור טרם התחיל, המרצה יפתח אותו בקרוב...</div>
+        <div class="waiting-room-subtext">בינתיים ננצל את הזמן לחימום קצר ומשימת כניסה.</div>
       </div>
     </div>
-    <div style="margin-top:8px;text-align:right;">
-      <label for="entrance-ticket-input" style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">🧩 Entrance Ticket</label>
-      <textarea id="entrance-ticket-input" rows="3" placeholder="כתוב תשובת כניסה קצרה לפני פתיחת השיעור..." style="width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:13px;resize:vertical;font-family:inherit;"></textarea>
-      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <button onclick="submitEntranceTicket()" class="btn btn-blue" style="font-size:12px;padding:7px 14px;">שלח Entrance Ticket</button>
-        <span id="entrance-ticket-status" style="font-size:12px;color:#64748b;"></span>
-      </div>
+
+    <div class="waiting-lobby-grid">
+      <aside class="waiting-col waiting-col-left">
+        <div class="waiting-col-title">🧠 חימום מוחי</div>
+        <div class="waiting-brain-card">
+          <div class="waiting-brain-item">🎯 משחק קצר יופיע כאן</div>
+          <div class="waiting-brain-item">❓ חידון פתיחה יופיע כאן</div>
+          <div class="waiting-brain-hint">המרצה יוכל להוסיף פעילויות חימום בהמשך.</div>
+        </div>
+      </aside>
+
+      <section class="waiting-col waiting-col-center">
+        <div class="waiting-col-title">🎓 משימת למידה</div>
+        <div class="waiting-mission-panel">
+          <div id="waiting-mission-content" class="waiting-mission-content">
+            <div>אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>
+          </div>
+        </div>
+        <div class="waiting-ticket-panel">
+          <label for="entrance-ticket-input" class="waiting-ticket-label">🧩 כרטיס כניסה</label>
+          <textarea id="entrance-ticket-input" rows="6" class="waiting-ticket-input" placeholder="כתוב כאן את תגובתך למשימה לפני פתיחת השיעור..."></textarea>
+          <div class="waiting-ticket-actions">
+            <button onclick="submitEntranceTicket()" class="btn btn-blue waiting-ticket-btn">שלח תגובה וקבל כרטיס כניסה</button>
+            <span id="entrance-ticket-status" class="waiting-ticket-status"></span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="waiting-col waiting-col-right">
+        <div class="waiting-col-title">👥 מי כאן?</div>
+        <div class="waiting-peers-meta"><span id="waiting-peers-count">0</span> ממתינים כרגע</div>
+        <div id="waiting-peers-list" class="waiting-peers-list">
+          <div class="waiting-peer-empty">ממתינים לחברים נוספים...</div>
+        </div>
+      </aside>
     </div>
   </div>
 </div>
@@ -766,10 +792,21 @@ livePulseStyle.textContent = `
   padding: 28px 24px;
   text-align: center;
 }
+.waiting-room-card-wide {
+  width: min(1320px, 96vw);
+  text-align: right;
+  padding: 20px;
+}
+.waiting-room-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
 .waiting-room-icon {
   font-size: 44px;
   line-height: 1;
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 .waiting-room-spinner {
   width: 34px;
@@ -782,10 +819,159 @@ livePulseStyle.textContent = `
 }
 .waiting-room-text {
   font-size: 22px;
-  line-height: 1.7;
+  line-height: 1.4;
   color: #0f172a;
   font-weight: 700;
+  margin-bottom: 2px;
+}
+.waiting-room-subtext {
+  font-size: 13px;
+  color: #475569;
+}
+
+.waiting-lobby-grid {
+  display: grid;
+  grid-template-columns: 1fr 3fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.waiting-col {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 420px;
+}
+.waiting-col-center {
+  background: #ffffff;
+  border-color: #bfdbfe;
+}
+.waiting-col-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e3a8a;
+  margin-bottom: 10px;
+}
+.waiting-brain-card {
+  display: grid;
+  gap: 8px;
+}
+.waiting-brain-item {
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 12px;
+  color: #1e293b;
+  background: #ffffff;
+}
+.waiting-brain-hint {
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.waiting-mission-panel {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fbff, #f1f5ff);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+.waiting-mission-content {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #1e293b;
+  display: grid;
+  gap: 9px;
+}
+.waiting-ticket-panel {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+}
+.waiting-ticket-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+.waiting-ticket-input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+  resize: vertical;
+  min-height: 150px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.waiting-ticket-actions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.waiting-ticket-btn {
+  font-size: 14px;
+  padding: 10px 16px;
+}
+.waiting-ticket-status {
+  font-size: 12px;
+  color: #475569;
+}
+
+.waiting-peers-meta {
+  font-size: 12px;
+  color: #475569;
   margin-bottom: 8px;
+}
+.waiting-peers-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow: auto;
+}
+.waiting-peer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  border-radius: 10px;
+}
+.waiting-peer-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid #cbd5e1;
+  object-fit: cover;
+  background: #f1f5f9;
+}
+.waiting-peer-name {
+  font-size: 12px;
+  color: #1e293b;
+  font-weight: 700;
+}
+.waiting-peer-empty {
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+  padding: 12px 8px;
+}
+
+@media (max-width: 980px) {
+  .waiting-lobby-grid {
+    grid-template-columns: 1fr;
+  }
+  .waiting-col {
+    min-height: 0;
+  }
 }
 @keyframes waitingSpin {
   to { transform: rotate(360deg); }
@@ -951,6 +1137,7 @@ let pendingAvatarDataUrl = "";
 let isLockedOut = true;
 let hardGatePollTimer = null;
 let hasBootedWorkspace = false;
+let waitingClassId = courseId || "";
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -1099,8 +1286,37 @@ function renderWaitingMissionContent(mission = {}) {
   target.innerHTML = parts.join("");
 }
 
+function renderWaitingPeers(waitingStudents = []) {
+  const peersList = document.getElementById("waiting-peers-list");
+  const peersCount = document.getElementById("waiting-peers-count");
+  if (!peersList || !peersCount) return;
+
+  const peers = (Array.isArray(waitingStudents) ? waitingStudents : [])
+    .filter(item => item && item.studentId && item.studentId !== studentId);
+
+  peersCount.textContent = String(Array.isArray(waitingStudents) ? waitingStudents.length : peers.length);
+
+  if (!peers.length) {
+    peersList.innerHTML = '<div class="waiting-peer-empty">ממתינים לחברים נוספים...</div>';
+    return;
+  }
+
+  peersList.innerHTML = peers.slice(0, 28).map(item => {
+    const avatar = safeAvatar(item.avatar);
+    const label = item.name ? escapeHtml(item.name) : `סטודנט ${escapeHtml(String(item.studentId).slice(0, 6))}`;
+    return (
+      `<div class="waiting-peer-row">` +
+        (avatar
+          ? `<img class="waiting-peer-avatar" src="${avatar}" alt="avatar" />`
+          : `<div class="waiting-peer-avatar" style="display:flex;align-items:center;justify-content:center;">🙂</div>`) +
+        `<div class="waiting-peer-name">${label}</div>` +
+      `</div>`
+    );
+  }).join("");
+}
+
 async function refreshPreSessionLobby() {
-  const missionClassId = courseId || "";
+  const missionClassId = waitingClassId || courseId || "";
   const missionSessionId = urlSessionId || sessionId || "";
   if (!missionClassId && !missionSessionId) return;
   try {
@@ -1110,9 +1326,11 @@ async function refreshPreSessionLobby() {
     const res = await fetch(`/.netlify/functions/classroom?action=pre_session&${query}&studentId=${encodeURIComponent(studentId)}`);
     if (!res.ok) return;
     const data = await res.json();
+    waitingClassId = data?.classId || waitingClassId || courseId || "";
     waitingMission = data?.mission || null;
     entranceTicketSubmitted = !!data?.hasEntranceTicket;
     renderWaitingMissionContent(waitingMission || {});
+    renderWaitingPeers(data?.waitingStudents || []);
 
     const input = document.getElementById("entrance-ticket-input");
     const status = document.getElementById("entrance-ticket-status");
@@ -1134,7 +1352,8 @@ async function fetchPreSessionMission() {
 }
 
 async function submitEntranceTicket() {
-  if (!courseId) return;
+  const classId = waitingClassId || courseId || "";
+  if (!classId) return;
   const input = document.getElementById("entrance-ticket-input");
   const status = document.getElementById("entrance-ticket-status");
   const answer = input?.value?.trim() || "";
@@ -1156,7 +1375,7 @@ async function submitEntranceTicket() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "entrance_ticket_submit",
-        classId: courseId,
+        classId,
         studentId,
         studentName,
         answer
@@ -1204,12 +1423,14 @@ async function resolveActiveSessionForLockout() {
 async function hardGateCheckSessionActive() {
   if (!isLockedOut) return;
   await fetchPreSessionMission();
+  await sendWaitingPing(true);
   const activeSessionId = await resolveActiveSessionForLockout();
   if (!activeSessionId) return;
 
   urlSessionId = activeSessionId;
   sessionId = activeSessionId;
   isLockedOut = false;
+  sendWaitingPing(false);
   stopHardGatePolling();
   await bootWorkspace();
 }
@@ -1222,6 +1443,7 @@ function startHardGatePolling() {
   stopWaitingPolling();
   if (hardGatePollTimer) return;
   fetchPreSessionMission();
+  sendWaitingPing(true);
   hardGateCheckSessionActive();
   hardGatePollTimer = setInterval(hardGateCheckSessionActive, LOCKOUT_POLL_MS);
 }
@@ -1251,7 +1473,8 @@ async function enterClassroomWithWelcomeIfNeeded() {
 }
 
 async function sendWaitingPing(isWaiting) {
-  if (!courseId || !studentId) return;
+  const classId = waitingClassId || courseId || "";
+  if (!classId || !studentId) return;
   let studentName = "";
   try {
     const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
@@ -1264,10 +1487,11 @@ async function sendWaitingPing(isWaiting) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "waiting_ping",
-        classId: courseId,
+        classId,
         sessionId: urlSessionId || null,
         studentId,
         studentName,
+        avatar: safeAvatar(studentAvatar),
         waiting: !!isWaiting
       })
     });

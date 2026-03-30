@@ -71,21 +71,30 @@ function normalizePreSessionMission(input = {}) {
 
 const WAITING_ROOM_STALE_MS = 60000;
 
-async function getFreshWaitingCount(db, classId){
-  if(!classId) return 0;
+async function getFreshWaitingSnapshot(db, classId){
+  if(!classId) return { count: 0, students: [] };
 
   const waitingRef = db.ref(`waiting_room/${classId}`);
   const waitingSnap = await waitingRef.once("value");
   const waitingMap = waitingSnap.val() || {};
   const now = Date.now();
   const staleKeys = [];
-  let waitingCount = 0;
+  const students = [];
 
   Object.entries(waitingMap).forEach(([sid, item]) => {
     const lastSeen = Number(item?.lastSeen) || 0;
     const fresh = now - lastSeen <= WAITING_ROOM_STALE_MS;
-    if(fresh) waitingCount += 1;
-    else staleKeys.push(sid);
+    if(!fresh) {
+      staleKeys.push(sid);
+      return;
+    }
+    students.push({
+      studentId: sid,
+      name: item?.name || null,
+      avatar: normalizeAvatar(item?.avatar) || null,
+      lastSeen,
+      status: item?.status || "waiting"
+    });
   });
 
   if(staleKeys.length){
@@ -96,7 +105,17 @@ async function getFreshWaitingCount(db, classId){
     await db.ref().update(updates);
   }
 
-  return waitingCount;
+  students.sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0));
+
+  return {
+    count: students.length,
+    students: students.slice(0, 80)
+  };
+}
+
+async function getFreshWaitingCount(db, classId){
+  const snapshot = await getFreshWaitingSnapshot(db, classId);
+  return snapshot.count;
 }
 
 export async function handler(event){
@@ -133,8 +152,12 @@ export async function handler(event){
     if(action === "waiting_count"){
       const classId = event.queryStringParameters?.classId;
       if(!classId) return err("classId required");
-      const waitingStudentsCount = await getFreshWaitingCount(db, classId);
-      return ok({ classId, waitingStudentsCount });
+      const waitingSnapshot = await getFreshWaitingSnapshot(db, classId);
+      return ok({
+        classId,
+        waitingStudentsCount: waitingSnapshot.count,
+        waitingStudents: waitingSnapshot.students
+      });
     }
 
     if(action === "pre_session"){
@@ -148,9 +171,10 @@ export async function handler(event){
       }
       if(!classId) return err("classId required");
 
-      const [missionSnap, ticketsSnap] = await Promise.all([
+      const [missionSnap, ticketsSnap, waitingSnapshot] = await Promise.all([
         db.ref(`pre_session_content/${classId}`).once("value"),
-        db.ref(`pre_session_tickets/${classId}`).once("value")
+        db.ref(`pre_session_tickets/${classId}`).once("value"),
+        getFreshWaitingSnapshot(db, classId)
       ]);
 
       const missionRaw = missionSnap.val() || {};
@@ -169,7 +193,9 @@ export async function handler(event){
         classId,
         mission,
         entranceTicket,
-        hasEntranceTicket: !!(entranceTicket?.answer)
+        hasEntranceTicket: !!(entranceTicket?.answer),
+        waitingStudentsCount: waitingSnapshot.count,
+        waitingStudents: waitingSnapshot.students
       });
     }
 
@@ -468,6 +494,7 @@ export async function handler(event){
     await waitingRef.update({
       studentId,
       name: String(studentName || "").trim() || null,
+      avatar: normalizeAvatar(body.avatar) || null,
       sessionId: String(body.sessionId || "").trim() || null,
       status: "waiting",
       lastSeen: Date.now()
