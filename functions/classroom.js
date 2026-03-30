@@ -172,9 +172,10 @@ export async function handler(event){
       }
       if(!classId) return err("classId required");
 
-      const [missionSnap, ticketsSnap, waitingSnapshot] = await Promise.all([
+      const [missionSnap, ticketsSnap, warmupSnap, waitingSnapshot] = await Promise.all([
         db.ref(`pre_session_content/${classId}`).once("value"),
         db.ref(`pre_session_tickets/${classId}`).once("value"),
+        db.ref(`pre_session_warmup/${classId}`).once("value"),
         getFreshWaitingSnapshot(db, classId)
       ]);
 
@@ -187,12 +188,16 @@ export async function handler(event){
         facultyId: missionRaw.facultyId || null
       };
 
+      const warmupRaw = warmupSnap.val() || null;
+      const warmup = warmupRaw && warmupRaw.question ? warmupRaw : null;
+
       const ticketsMap = ticketsSnap.val() || {};
       const entranceTicket = requestedStudentId ? (ticketsMap[requestedStudentId] || null) : null;
 
       return ok({
         classId,
         mission,
+        warmup,
         entranceTicket,
         hasEntranceTicket: !!(entranceTicket?.answer),
         waitingStudentsCount: waitingSnapshot.count,
@@ -548,10 +553,85 @@ export async function handler(event){
 
     await Promise.all([
       db.ref(`pre_session_content/${classId}`).remove(),
-      db.ref(`pre_session_tickets/${classId}`).remove()
+      db.ref(`pre_session_tickets/${classId}`).remove(),
+      db.ref(`pre_session_warmup/${classId}`).remove()
     ]);
 
     return ok({ ok:true, classId, cleared:true });
+  }
+
+  if(action === "generate_warmup"){
+    const { classId, facultyId: fid } = body;
+    if(!classId) return err("classId required");
+    if(!fid) return err("facultyId required");
+
+    const SUBJECT_MAP = {
+      gerontology_mechina:         "גרונטולוגיה — הזדקנות, גיל שלישי, מדיניות סיעוד וטיפול",
+      social_science_mechina_ar:   "מדעי החברה — סוציולוגיה, פסיכולוגיה חברתית, מחקר",
+      academic_writing_ar:         "כתיבה אקדמית — מבנה מאמר, ציטוט, בניית טיעון",
+      academic_writing_he:         "כתיבה אקדמית — מבנה מאמר, ציטוט, בניית טיעון",
+      hebrew_advanced_optics:      "עברית אקדמית מתקדמת — הבנת הנקרא, כתיבה מדויקת",
+      hebrew_advanced_management:  "עברית אקדמית מתקדמת — הבנת הנקרא, כתיבה מדויקת"
+    };
+    const subject = SUBJECT_MAP[classId] || "לימודים אקדמיים כלליים — מיומנויות למידה";
+
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if(!apiKey) return err("AI service unavailable");
+
+    const promptText = `אתה עוזר פדגוגי. צור שאלת חימום קצרה וממוקדת בנושא: '${subject}'.
+ענה אך ורק ב-JSON תקין, ללא טקסט נוסף, בפורמט הבא:
+{"question":"...","answers":["...","...","..."],"correct":0,"feedback":"..."}
+
+כללים:
+- question: שאלה קצרה בעברית, עד 20 מילה
+- answers: בדיוק 3 תשובות קצרות בעברית (לא יותר מ-8 מילה כל אחת)
+- correct: האינדקס של התשובה הנכונה (0, 1 או 2)
+- feedback: משפט הסבר קצר על התשובה הנכונה (עד 20 מילה)`;
+
+    try {
+      const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://cozy-seahorse-7c5204.netlify.app",
+          "X-Title": "MilEd.One"
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.0-flash-001",
+          messages: [{ role: "user", content: promptText }],
+          temperature: 0.8,
+          max_tokens: 400
+        })
+      });
+
+      if(!aiRes.ok) return err("AI generation failed");
+
+      const aiData = await aiRes.json();
+      const rawContent = String(aiData?.choices?.[0]?.message?.content || "");
+      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+      if(!jsonMatch) return err("AI returned invalid format");
+
+      let warmup;
+      try { warmup = JSON.parse(jsonMatch[0]); }
+      catch { return err("AI JSON parse error"); }
+
+      if(!warmup.question || !Array.isArray(warmup.answers) || warmup.answers.length < 3)
+        return err("AI returned incomplete data");
+
+      warmup.answers = warmup.answers.slice(0, 3).map(a => String(a || "").trim());
+      warmup.correct = Math.max(0, Math.min(2, Number(warmup.correct) || 0));
+      warmup.feedback = String(warmup.feedback || "").trim();
+      warmup.question = String(warmup.question || "").trim();
+      warmup.generatedAt = Date.now();
+
+      await db.ref(`pre_session_warmup/${classId}`).set(warmup);
+      return ok({ ok:true, warmup });
+
+    } catch(e) {
+      console.error("generate_warmup error:", e.message);
+      return err("AI generation error");
+    }
   }
 
   if(action === "entrance_ticket_submit"){

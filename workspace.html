@@ -27,10 +27,16 @@
     <div class="waiting-lobby-grid">
       <aside id="waiting-col-left" class="waiting-col waiting-col-left">
         <div class="waiting-col-title">🧠 חימום מוחי</div>
-        <div class="waiting-brain-card">
-          <div class="waiting-brain-item">🎯 משחק קצר יופיע כאן</div>
-          <div class="waiting-brain-item">❓ חידון פתיחה יופיע כאן</div>
-          <div class="waiting-brain-hint">המרצה יוכל להוסיף פעילויות חימום בהמשך.</div>
+        <div id="waiting-quiz-widget">
+          <div id="waiting-quiz-empty" class="waiting-quiz-empty">
+            <div class="waiting-quiz-empty-icon">🎯</div>
+            <div class="waiting-quiz-empty-text">שאלת חימום<br>תופיע כאן</div>
+          </div>
+          <div id="waiting-quiz-active" style="display:none;">
+            <div id="waiting-quiz-question" class="waiting-quiz-question"></div>
+            <div id="waiting-quiz-answers" class="waiting-quiz-answers"></div>
+            <div id="waiting-quiz-feedback" class="waiting-quiz-feedback" style="display:none;"></div>
+          </div>
         </div>
       </aside>
 
@@ -1015,6 +1021,80 @@ livePulseStyle.textContent = `
   color: #64748b;
   line-height: 1.5;
 }
+.waiting-quiz-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 12px;
+  gap: 10px;
+}
+.waiting-quiz-empty-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+.waiting-quiz-empty-text {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.55;
+}
+.waiting-quiz-question {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.5;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: #f8f9ff;
+  border-radius: 12px;
+  border: 1px solid #dbeafe;
+}
+.waiting-quiz-answers {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.waiting-quiz-btn {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: 12px;
+  border: 2px solid #dbeafe;
+  background: #fff;
+  color: #1e293b;
+  cursor: pointer;
+  text-align: right;
+  line-height: 1.45;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.waiting-quiz-btn:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+}
+.waiting-quiz-btn.correct {
+  background: #f0fdf4;
+  border-color: #34d399;
+  color: #065f46;
+}
+.waiting-quiz-btn.wrong {
+  background: #fff1f2;
+  border-color: #fca5a5;
+  color: #9f1239;
+}
+.waiting-quiz-feedback {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 12px 14px;
+  line-height: 1.55;
+}
 
 .waiting-mission-panel {
   border: 1px solid #dbeafe;
@@ -1648,6 +1728,7 @@ async function refreshPreSessionLobby() {
     waitingMission = data?.mission || null;
     waitingGameActive = !!data?.gameActive;
     entranceTicketSubmitted = !!data?.hasEntranceTicket;
+    renderWarmupQuiz(data?.warmup || null);
     renderWaitingHeader(waitingMission || {});
     renderWaitingMissionMode(waitingMission || {});
     renderWaitingMissionContent(waitingMission || {});
@@ -1670,6 +1751,65 @@ async function refreshPreSessionLobby() {
 
 async function fetchPreSessionMission() {
   await refreshPreSessionLobby();
+}
+
+function renderWarmupQuiz(warmup) {
+  const emptyEl = document.getElementById('waiting-quiz-empty');
+  const activeEl = document.getElementById('waiting-quiz-active');
+  const questionEl = document.getElementById('waiting-quiz-question');
+  const answersEl = document.getElementById('waiting-quiz-answers');
+  const feedbackEl = document.getElementById('waiting-quiz-feedback');
+  if (!emptyEl || !activeEl) return;
+
+  if (!warmup || !warmup.question) {
+    emptyEl.style.display = 'flex';
+    activeEl.style.display = 'none';
+    return;
+  }
+
+  // If already answered this quiz (same generatedAt timestamp), don't reset
+  const quizKey = 'miled_warmup_answered_' + String(warmup.generatedAt || '');
+  const alreadyAnswered = sessionStorage.getItem(quizKey);
+
+  emptyEl.style.display = 'none';
+  activeEl.style.display = 'block';
+  questionEl.textContent = warmup.question || '';
+
+  const correct = Number(warmup.correct) || 0;
+  answersEl.innerHTML = (warmup.answers || []).map((ans, i) => {
+    const cls = alreadyAnswered ? (i === correct ? 'correct' : 'wrong') : '';
+    return `<button class="waiting-quiz-btn ${cls}" ${alreadyAnswered ? 'disabled' : ''} onclick="handleWarmupAnswer(${i},${correct},${warmup.generatedAt || 0},'${encodeURIComponent(String(warmup.feedback || ''))}')">${escapeHtmlBasic(ans)}</button>`;
+  }).join('');
+
+  if (alreadyAnswered && warmup.feedback) {
+    const chosen = Number(alreadyAnswered);
+    const icon = chosen === correct ? '✅' : '❌';
+    feedbackEl.textContent = icon + ' ' + decodeURIComponent(warmup.feedback || '');
+    feedbackEl.style.display = 'block';
+  } else {
+    feedbackEl.style.display = 'none';
+  }
+}
+
+function handleWarmupAnswer(chosen, correct, generatedAt, encodedFeedback) {
+  const quizKey = 'miled_warmup_answered_' + String(generatedAt);
+  sessionStorage.setItem(quizKey, String(chosen));
+  const btns = document.querySelectorAll('#waiting-quiz-answers .waiting-quiz-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === correct) btn.classList.add('correct');
+    else btn.classList.add('wrong');
+  });
+  const feedbackEl = document.getElementById('waiting-quiz-feedback');
+  if (feedbackEl) {
+    const icon = chosen === correct ? '✅' : '❌';
+    feedbackEl.textContent = icon + ' ' + decodeURIComponent(encodedFeedback);
+    feedbackEl.style.display = 'block';
+  }
+}
+
+function escapeHtmlBasic(text) {
+  return String(text || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 async function submitEntranceTicket() {
