@@ -1676,8 +1676,26 @@ const waitingMissionRenderState = {
 };
 const waitingTicketUiState = {
   pinned: false,
-  animated: false
+  animated: false,
+  animating: false
 };
+const WAITING_TICKET_UI_KEY = `miled_ticket_ui_${courseId || "none"}_${unitIdFromUrl || "unit_01"}_${studentId}`;
+try {
+  const storedTicketUi = JSON.parse(sessionStorage.getItem(WAITING_TICKET_UI_KEY) || "null");
+  if (storedTicketUi && typeof storedTicketUi === "object") {
+    waitingTicketUiState.pinned = !!storedTicketUi.pinned;
+    waitingTicketUiState.animated = !!storedTicketUi.animated;
+  }
+} catch {}
+
+function persistWaitingTicketUiState() {
+  try {
+    sessionStorage.setItem(WAITING_TICKET_UI_KEY, JSON.stringify({
+      pinned: !!waitingTicketUiState.pinned,
+      animated: !!waitingTicketUiState.animated
+    }));
+  } catch {}
+}
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -2091,11 +2109,16 @@ function showEntranceTicketCelebration(animate = false) {
   if (waitingTicketUiState.pinned) {
     shell.classList.remove('is-animating');
     shell.classList.add('is-pinned');
+    persistWaitingTicketUiState();
     return;
   }
 
+  if (waitingTicketUiState.animating && !animate) return;
+
   if (animate && !waitingTicketUiState.animated) {
     waitingTicketUiState.animated = true;
+    waitingTicketUiState.animating = true;
+    persistWaitingTicketUiState();
     shell.classList.remove('is-pinned');
     shell.classList.remove('is-animating');
     void shell.offsetWidth;
@@ -2106,14 +2129,18 @@ function showEntranceTicketCelebration(animate = false) {
     setTimeout(() => {
       shell.classList.remove('is-animating');
       shell.classList.add('is-pinned');
+      waitingTicketUiState.animating = false;
       waitingTicketUiState.pinned = true;
+      persistWaitingTicketUiState();
     }, 1180);
     return;
   }
 
   shell.classList.remove('is-animating');
   shell.classList.add('is-pinned');
+  waitingTicketUiState.animating = false;
   waitingTicketUiState.pinned = true;
+  persistWaitingTicketUiState();
 }
 
 async function refreshPreSessionLobby() {

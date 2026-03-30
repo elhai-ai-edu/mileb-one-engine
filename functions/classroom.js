@@ -470,18 +470,39 @@ export async function handler(event){
         : 0;
       let entranceTickets = [];
 
-      const sessionTicketsSnap = await db.ref(`sessions/${sessionId}/entranceTickets`).once("value");
-      const sessionTicketsMap = sessionTicketsSnap.val() || {};
-      entranceTickets = Object.values(sessionTicketsMap)
-        .map(item => ({
-          studentId: item?.studentId || null,
-          name: item?.name || item?.studentName || null,
-          answer: item?.answer || item?.text || "",
-          submittedAt: item?.submittedAt || 0
-        }))
-        .filter(item => item.answer)
-        .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
-        .slice(0, 120);
+      let unitData = null;
+      if(resolvedUserId && resolvedClassId && resolvedUnitId){
+        const unitSnap = await db.ref(getUnitPath(resolvedUserId, resolvedClassId, resolvedUnitId)).once("value");
+        unitData = unitSnap.val() || null;
+
+        if(unitData?.entranceTickets){
+          entranceTickets = Object.values(unitData.entranceTickets || {})
+            .map(item => ({
+              studentId: item?.studentId || null,
+              name: item?.name || item?.studentName || null,
+              answer: item?.answer || item?.text || "",
+              submittedAt: item?.submittedAt || 0
+            }))
+            .filter(item => item.answer)
+            .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
+            .slice(0, 120);
+        }
+      }
+
+      if(!entranceTickets.length){
+        const sessionTicketsSnap = await db.ref(`sessions/${sessionId}/entranceTickets`).once("value");
+        const sessionTicketsMap = sessionTicketsSnap.val() || {};
+        entranceTickets = Object.values(sessionTicketsMap)
+          .map(item => ({
+            studentId: item?.studentId || null,
+            name: item?.name || item?.studentName || null,
+            answer: item?.answer || item?.text || "",
+            submittedAt: item?.submittedAt || 0
+          }))
+          .filter(item => item.answer)
+          .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
+          .slice(0, 120);
+      }
 
       // Legacy fallback for older records written only by classId.
       if (!entranceTickets.length && resolvedClassId) {
@@ -497,25 +518,6 @@ export async function handler(event){
           .filter(item => item.answer)
           .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
           .slice(0, 120);
-      }
-
-      let unitData = null;
-      if(resolvedUserId && resolvedClassId && resolvedUnitId){
-        const unitSnap = await db.ref(getUnitPath(resolvedUserId, resolvedClassId, resolvedUnitId)).once("value");
-        unitData = unitSnap.val() || null;
-
-        if(!entranceTickets.length && unitData?.entranceTickets){
-          entranceTickets = Object.values(unitData.entranceTickets || {})
-            .map(item => ({
-              studentId: item?.studentId || null,
-              name: item?.name || item?.studentName || null,
-              answer: item?.answer || item?.text || "",
-              submittedAt: item?.submittedAt || 0
-            }))
-            .filter(item => item.answer)
-            .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
-            .slice(0, 120);
-        }
       }
 
       return ok({
