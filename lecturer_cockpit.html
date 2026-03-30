@@ -859,6 +859,37 @@
       <select id="botSelectPrep"><option value="">טוען...</option></select>
     </div>
 
+    <div style="margin:12px 0 16px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;">
+      <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:6px;">🎬 Pre-Session Content</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:10px;">הכן משימת פתיחה לפני תחילת השיעור: וידאו, אודיו או טקסט.</div>
+
+      <div class="field" style="margin-bottom:8px;">
+        <label>Video URL</label>
+        <input id="preSessionVideoUrl" type="url" placeholder="https://..." class="lp-input" style="margin:0;">
+      </div>
+
+      <div class="field" style="margin-bottom:8px;">
+        <label>Text Mission</label>
+        <textarea id="preSessionText" class="lp-textarea" rows="3" placeholder="כתוב כאן את משימת הכניסה..." style="margin:0;"></textarea>
+      </div>
+
+      <div class="field" style="margin-bottom:8px;">
+        <label>Audio Blob</label>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-outline" onclick="document.getElementById('preSessionAudioInput').click()" style="font-size:12px;padding:7px 12px;">🎧 העלה אודיו</button>
+          <input type="file" id="preSessionAudioInput" accept="audio/*" style="display:none;" onchange="handlePreSessionAudioUpload(event)">
+          <span id="preSessionAudioHint" style="font-size:11px;color:#64748b;">לא נבחר קובץ</span>
+        </div>
+        <div id="preSessionAudioPreview" style="margin-top:8px;"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-blue" onclick="savePreSessionMission()" style="font-size:12px;padding:7px 14px;">💾 שמור משימת פתיחה</button>
+        <button class="btn btn-outline" onclick="clearPreSessionMission()" style="font-size:12px;padding:7px 14px;">🗑️ נקה</button>
+        <span id="preSessionStatus" style="font-size:12px;color:#475569;align-self:center;"></span>
+      </div>
+    </div>
+
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <select id="template-select" class="lp-input" style="margin:0;flex:1;">
         <option value="">— טען תבנית שמורה —</option>
@@ -984,6 +1015,13 @@
       </div>
     </div>
 
+    <div style="margin:0 0 12px;padding:10px 12px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;">
+      <div style="font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:6px;">🧩 Entrance Tickets</div>
+      <div id="entrance-ticket-list" style="max-height:180px;overflow:auto;display:grid;gap:6px;">
+        <div class="thread-empty">תשובות יופיעו כאן לאחר שליחת משימת הכניסה</div>
+      </div>
+    </div>
+
     <div id="studentGrid" class="student-grid">
       <div class="empty-state">
         <div class="empty-state-icon">📭</div>
@@ -1100,6 +1138,7 @@ let facultyAvatar = localStorage.getItem(LECTURER_AVATAR_KEY) || "";
 let latestStudentsSnapshot = [];
 let waitingStudentsSnapshot = 0;
 let waitingPressureTimer = null;
+let preSessionAudioDataUrl = "";
 
 function safeAvatar(avatar) {
   const value = String(avatar || "").trim();
@@ -1197,6 +1236,142 @@ function startWaitingPressurePolling() {
   if (waitingPressureTimer) clearInterval(waitingPressureTimer);
   fetchWaitingPressureForSelectedCourse();
   waitingPressureTimer = setInterval(fetchWaitingPressureForSelectedCourse, 5000);
+}
+
+function renderPreSessionAudioPreview() {
+  const holder = document.getElementById('preSessionAudioPreview');
+  const hint = document.getElementById('preSessionAudioHint');
+  if (!holder || !hint) return;
+  if (!preSessionAudioDataUrl) {
+    holder.innerHTML = '';
+    hint.textContent = 'לא נבחר קובץ';
+    return;
+  }
+  hint.textContent = 'אודיו מוכן לשמירה';
+  holder.innerHTML = `<audio controls style="width:100%;max-width:360px;"><source src="${preSessionAudioDataUrl}" type="audio/webm"></audio>`;
+}
+
+async function handlePreSessionAudioUpload(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  const dataUrl = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ''));
+    reader.readAsDataURL(file);
+  });
+  preSessionAudioDataUrl = String(dataUrl || '').startsWith('data:audio/') ? dataUrl : '';
+  renderPreSessionAudioPreview();
+  event.target.value = '';
+}
+
+async function loadPreSessionMission() {
+  const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const statusEl = document.getElementById('preSessionStatus');
+  if (!classId) {
+    const videoEl = document.getElementById('preSessionVideoUrl');
+    const textEl = document.getElementById('preSessionText');
+    if (videoEl) videoEl.value = '';
+    if (textEl) textEl.value = '';
+    preSessionAudioDataUrl = '';
+    renderPreSessionAudioPreview();
+    if (statusEl) statusEl.textContent = 'בחר קורס כדי להגדיר משימת פתיחה';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(classId)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const mission = data?.mission || {};
+    const videoEl = document.getElementById('preSessionVideoUrl');
+    const textEl = document.getElementById('preSessionText');
+    if (videoEl) videoEl.value = mission.videoUrl || '';
+    if (textEl) textEl.value = mission.text || '';
+    preSessionAudioDataUrl = mission.audioDataUrl || '';
+    renderPreSessionAudioPreview();
+    if (statusEl) statusEl.textContent = mission.updatedAt ? `עודכן: ${new Date(mission.updatedAt).toLocaleString('he-IL')}` : 'אין משימת פתיחה שמורה';
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'שגיאה בטעינת משימת פתיחה';
+  }
+}
+
+async function savePreSessionMission() {
+  const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const statusEl = document.getElementById('preSessionStatus');
+  if (!classId) {
+    if (statusEl) statusEl.textContent = 'בחר קורס לפני שמירה';
+    return;
+  }
+
+  const videoUrl = document.getElementById('preSessionVideoUrl')?.value?.trim() || '';
+  const text = document.getElementById('preSessionText')?.value?.trim() || '';
+  if (!videoUrl && !text && !preSessionAudioDataUrl) {
+    if (statusEl) statusEl.textContent = 'הוסף לפחות סוג תוכן אחד (וידאו/אודיו/טקסט)';
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'שומר...';
+  const res = await callClassroom({
+    action: 'pre_session_save',
+    classId,
+    facultyId,
+    videoUrl,
+    text,
+    audioDataUrl: preSessionAudioDataUrl || ''
+  });
+
+  if (!res?.ok) {
+    if (statusEl) statusEl.textContent = 'שגיאה בשמירה';
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'נשמר ✓';
+}
+
+async function clearPreSessionMission() {
+  const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const statusEl = document.getElementById('preSessionStatus');
+  if (!classId) {
+    if (statusEl) statusEl.textContent = 'בחר קורס לפני ניקוי';
+    return;
+  }
+
+  const res = await callClassroom({ action: 'pre_session_clear', classId, facultyId });
+  if (!res?.ok) {
+    if (statusEl) statusEl.textContent = 'שגיאה בניקוי';
+    return;
+  }
+
+  const videoEl = document.getElementById('preSessionVideoUrl');
+  const textEl = document.getElementById('preSessionText');
+  if (videoEl) videoEl.value = '';
+  if (textEl) textEl.value = '';
+  preSessionAudioDataUrl = '';
+  renderPreSessionAudioPreview();
+  if (statusEl) statusEl.textContent = 'נוקה ✓';
+}
+
+function renderEntranceTicketsList(tickets = []) {
+  const list = document.getElementById('entrance-ticket-list');
+  if (!list) return;
+  if (!tickets.length) {
+    list.innerHTML = '<div class="thread-empty">טרם התקבלו Entrance Tickets</div>';
+    return;
+  }
+
+  list.innerHTML = tickets.slice(0, 40).map(item => {
+    const sid = String(item?.studentId || '');
+    const label = item?.name ? `${escapeHtml(item.name)} · ${sid.slice(0,8)}` : sid.slice(0,10);
+    const time = item?.submittedAt ? new Date(item.submittedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    return `
+      <div style="padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
+          <span style="font-size:12px;font-weight:700;color:#0f172a;">${label}</span>
+          <span style="font-size:11px;color:#64748b;">${time}</span>
+        </div>
+        <div style="font-size:12px;color:#1e293b;line-height:1.6;white-space:pre-wrap;">${escapeHtml(item?.answer || '')}</div>
+      </div>`;
+  }).join('');
 }
 
 function markThreadRead(studentId) {
@@ -1362,6 +1537,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     }
 
     fetchWaitingPressureForSelectedCourse();
+    loadPreSessionMission();
   };
 
   if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
@@ -1531,6 +1707,7 @@ async function fetchDashboard() {
 function renderDashboard(data) {
   const grid = document.getElementById('studentGrid');
   updateWaitingPressure(data?.waitingStudentsCount || 0);
+  renderEntranceTicketsList(data?.entranceTickets || []);
   const studentsRaw = data.students || [];
   const students = [...studentsRaw].sort((a, b) => {
     const unreadDiff = Number(!!b.is_unread) - Number(!!a.is_unread);
@@ -2569,6 +2746,8 @@ switchCockpitTab('live');
 syncCockpitNavOffset();
 window.addEventListener('resize', syncCockpitNavOffset);
 startWaitingPressurePolling();
+renderPreSessionAudioPreview();
+loadPreSessionMission();
 </script>
 
 <script src="/balance.js"></script>

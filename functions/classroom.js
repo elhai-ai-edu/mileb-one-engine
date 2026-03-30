@@ -56,6 +56,19 @@ function normalizeAvatar(value){
   return avatar;
 }
 
+function normalizePreSessionMission(input = {}) {
+  const text = String(input.text || "").trim();
+  const videoUrl = String(input.videoUrl || "").trim();
+  const audioDataUrlRaw = String(input.audioDataUrl || "").trim();
+  const audioDataUrl = audioDataUrlRaw.startsWith("data:audio/") ? audioDataUrlRaw : "";
+
+  return {
+    text: text || null,
+    videoUrl: videoUrl || null,
+    audioDataUrl: audioDataUrl || null
+  };
+}
+
 const WAITING_ROOM_STALE_MS = 60000;
 
 async function getFreshWaitingCount(db, classId){
@@ -122,6 +135,36 @@ export async function handler(event){
       if(!classId) return err("classId required");
       const waitingStudentsCount = await getFreshWaitingCount(db, classId);
       return ok({ classId, waitingStudentsCount });
+    }
+
+    if(action === "pre_session"){
+      const classId = event.queryStringParameters?.classId;
+      const requestedStudentId = event.queryStringParameters?.studentId || null;
+      if(!classId) return err("classId required");
+
+      const [missionSnap, ticketsSnap] = await Promise.all([
+        db.ref(`pre_session_content/${classId}`).once("value"),
+        db.ref(`pre_session_tickets/${classId}`).once("value")
+      ]);
+
+      const missionRaw = missionSnap.val() || {};
+      const mission = {
+        text: missionRaw.text || null,
+        videoUrl: missionRaw.videoUrl || null,
+        audioDataUrl: missionRaw.audioDataUrl || null,
+        updatedAt: missionRaw.updatedAt || null,
+        facultyId: missionRaw.facultyId || null
+      };
+
+      const ticketsMap = ticketsSnap.val() || {};
+      const entranceTicket = requestedStudentId ? (ticketsMap[requestedStudentId] || null) : null;
+
+      return ok({
+        classId,
+        mission,
+        entranceTicket,
+        hasEntranceTicket: !!(entranceTicket?.answer)
+      });
     }
 
     if(!sessionId) return err("sessionId required");
@@ -263,6 +306,22 @@ export async function handler(event){
       const waitingStudentsCount = session.classId
         ? await getFreshWaitingCount(db, session.classId)
         : 0;
+      let entranceTickets = [];
+
+      if (session.classId) {
+        const ticketsSnap = await db.ref(`pre_session_tickets/${session.classId}`).once("value");
+        const ticketsMap = ticketsSnap.val() || {};
+        entranceTickets = Object.values(ticketsMap)
+          .map(item => ({
+            studentId: item?.studentId || null,
+            name: item?.name || null,
+            answer: item?.answer || "",
+            submittedAt: item?.submittedAt || 0
+          }))
+          .filter(item => item.answer)
+          .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
+          .slice(0, 120);
+      }
 
       return ok({
 
@@ -275,7 +334,8 @@ export async function handler(event){
         students,
         onlineStudents:online,
         stateStats:stats,
-        waitingStudentsCount
+        waitingStudentsCount,
+        entranceTickets
 
       });
 
@@ -408,6 +468,58 @@ export async function handler(event){
     });
 
     return ok({ ok:true, waiting:true });
+  }
+
+  if(action === "pre_session_save"){
+    const { classId, facultyId: fid } = body;
+    if(!classId) return err("classId required");
+    if(!fid) return err("facultyId required");
+
+    const mission = normalizePreSessionMission(body);
+    if(!mission.text && !mission.videoUrl && !mission.audioDataUrl)
+      return err("mission content required");
+
+    await db.ref(`pre_session_content/${classId}`).set({
+      ...mission,
+      updatedAt: Date.now(),
+      facultyId: fid
+    });
+
+    // New mission resets entrance tickets so lecturer sees fresh intent.
+    await db.ref(`pre_session_tickets/${classId}`).remove();
+
+    return ok({ ok:true, classId, mission });
+  }
+
+  if(action === "pre_session_clear"){
+    const { classId, facultyId: fid } = body;
+    if(!classId) return err("classId required");
+    if(!fid) return err("facultyId required");
+
+    await Promise.all([
+      db.ref(`pre_session_content/${classId}`).remove(),
+      db.ref(`pre_session_tickets/${classId}`).remove()
+    ]);
+
+    return ok({ ok:true, classId, cleared:true });
+  }
+
+  if(action === "entrance_ticket_submit"){
+    const { classId, studentId, studentName, answer } = body;
+    if(!classId) return err("classId required");
+    if(!studentId) return err("studentId required");
+
+    const normalizedAnswer = String(answer || "").trim();
+    if(!normalizedAnswer) return err("answer required");
+
+    await db.ref(`pre_session_tickets/${classId}/${studentId}`).set({
+      studentId,
+      name: String(studentName || "").trim() || null,
+      answer: normalizedAnswer,
+      submittedAt: Date.now()
+    });
+
+    return ok({ ok:true, classId, studentId });
   }
 
   if(!sessionId) return err("sessionId required");

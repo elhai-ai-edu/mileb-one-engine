@@ -17,6 +17,28 @@
     <div class="waiting-room-icon" aria-hidden="true">⏳</div>
     <div class="waiting-room-spinner" aria-hidden="true"></div>
     <div class="waiting-room-text">השיעור טרם התחיל, המרצה יפתח אותו בקרוב...</div>
+    <div style="margin:14px 0 6px;padding:10px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;text-align:right;">
+      <div style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:6px;">🎯 Pre-Session Mission</div>
+      <div id="waiting-mission-content" style="font-size:13px;line-height:1.65;color:#334155;display:grid;gap:8px;">
+        <div>אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>
+      </div>
+    </div>
+    <div style="margin-top:8px;text-align:right;">
+      <label for="entrance-ticket-input" style="display:block;font-size:12px;font-weight:700;color:#334155;margin-bottom:6px;">🧩 Entrance Ticket</label>
+      <textarea id="entrance-ticket-input" rows="3" placeholder="כתוב תשובת כניסה קצרה לפני פתיחת השיעור..." style="width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px;font-size:13px;resize:vertical;font-family:inherit;"></textarea>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <button onclick="submitEntranceTicket()" class="btn btn-blue" style="font-size:12px;padding:7px 14px;">שלח Entrance Ticket</button>
+        <span id="entrance-ticket-status" style="font-size:12px;color:#64748b;"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="welcome-transition-overlay" style="display:none;position:fixed;inset:0;z-index:100000;background:linear-gradient(140deg,#e0f2fe,#f0fdf4);align-items:center;justify-content:center;">
+  <div id="welcome-transition-card" style="text-align:center;padding:26px 22px;background:#fff;border:1px solid #bae6fd;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,0.14);opacity:0;transform:translateY(12px) scale(.98);transition:all .55s ease;">
+    <div style="font-size:40px;line-height:1;margin-bottom:8px;">🎉</div>
+    <div style="font-size:26px;font-weight:800;color:#0f172a;">ברוכים הבאים לשיעור</div>
+    <div style="font-size:14px;color:#334155;margin-top:8px;">המשימה הושלמה. עוברים למרחב הלמידה...</div>
   </div>
 </div>
 
@@ -742,6 +764,7 @@ livePulseStyle.textContent = `
   line-height: 1.7;
   color: #0f172a;
   font-weight: 700;
+  margin-bottom: 8px;
 }
 @keyframes waitingSpin {
   to { transform: rotate(360deg); }
@@ -809,6 +832,8 @@ let workspaceMode  = "lobby";
 let classroomJoined = false;
 let waitingPollTimer = null;
 let waitingHeartbeatTimer = null;
+let waitingMission = null;
+let entranceTicketSubmitted = false;
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -925,6 +950,130 @@ function isWaitingOverlayVisible() {
   return overlay.style.display !== "none" && overlay.style.display !== "";
 }
 
+function renderWaitingMissionContent(mission = {}) {
+  const target = document.getElementById("waiting-mission-content");
+  if (!target) return;
+  const parts = [];
+
+  if (mission?.text) {
+    parts.push(`<div style="white-space:pre-wrap;">${escapeHtml(mission.text)}</div>`);
+  }
+
+  if (mission?.videoUrl) {
+    const url = String(mission.videoUrl).trim();
+    parts.push(`<a href="${url}" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#1d4ed8;">▶ פתח סרטון הכנה</a>`);
+    const isYouTube = /youtu\.be|youtube\.com/.test(url);
+    if (isYouTube) {
+      const embedUrl = url.includes("embed/") ? url : url
+        .replace("watch?v=", "embed/")
+        .replace("youtu.be/", "youtube.com/embed/");
+      parts.push(`<iframe src="${embedUrl}" style="width:100%;min-height:180px;border:0;border-radius:10px;" allowfullscreen></iframe>`);
+    }
+  }
+
+  if (mission?.audioDataUrl) {
+    parts.push(`<audio controls style="width:100%;"><source src="${mission.audioDataUrl}" type="audio/webm"></audio>`);
+  }
+
+  if (!parts.length) {
+    parts.push("<div>אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>");
+  }
+
+  target.innerHTML = parts.join("");
+}
+
+async function refreshPreSessionLobby() {
+  if (!courseId) return;
+  try {
+    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    waitingMission = data?.mission || null;
+    entranceTicketSubmitted = !!data?.hasEntranceTicket;
+    renderWaitingMissionContent(waitingMission || {});
+
+    const input = document.getElementById("entrance-ticket-input");
+    const status = document.getElementById("entrance-ticket-status");
+    if (entranceTicketSubmitted) {
+      if (input) {
+        input.value = data?.entranceTicket?.answer || input.value || "";
+        input.disabled = true;
+      }
+      if (status) status.textContent = "נשלח ✓";
+    } else {
+      if (input) input.disabled = false;
+      if (status && status.textContent === "נשלח ✓") status.textContent = "";
+    }
+  } catch {}
+}
+
+async function submitEntranceTicket() {
+  if (!courseId) return;
+  const input = document.getElementById("entrance-ticket-input");
+  const status = document.getElementById("entrance-ticket-status");
+  const answer = input?.value?.trim() || "";
+  if (!answer) {
+    if (status) status.textContent = "כתוב תשובה לפני שליחה";
+    return;
+  }
+
+  let studentName = "";
+  try {
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    studentName = auth?.name || auth?.email || "";
+  } catch {}
+
+  if (status) status.textContent = "שולח...";
+  try {
+    const res = await fetch("/.netlify/functions/classroom", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "entrance_ticket_submit",
+        classId: courseId,
+        studentId,
+        studentName,
+        answer
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      if (status) status.textContent = "שגיאה בשליחה";
+      return;
+    }
+
+    entranceTicketSubmitted = true;
+    if (input) input.disabled = true;
+    if (status) status.textContent = "נשלח ✓";
+  } catch {
+    if (status) status.textContent = "שגיאת רשת";
+  }
+}
+
+async function showWelcomeTransition() {
+  const overlay = document.getElementById("welcome-transition-overlay");
+  const card = document.getElementById("welcome-transition-card");
+  if (!overlay || !card) return;
+  overlay.style.display = "flex";
+  requestAnimationFrame(() => {
+    card.style.opacity = "1";
+    card.style.transform = "translateY(0) scale(1)";
+  });
+  await new Promise(resolve => setTimeout(resolve, 1300));
+  card.style.opacity = "0";
+  card.style.transform = "translateY(-8px) scale(.98)";
+  await new Promise(resolve => setTimeout(resolve, 380));
+  overlay.style.display = "none";
+}
+
+async function enterClassroomWithWelcomeIfNeeded() {
+  if (entranceTicketSubmitted) {
+    await showWelcomeTransition();
+  }
+  setWaitingOverlayVisible(false);
+  enterLiveClassroom();
+}
+
 async function sendWaitingPing(isWaiting) {
   if (!courseId || !studentId) return;
   let studentName = "";
@@ -1017,25 +1166,25 @@ function startWaitingRoomFlow() {
   setLiveSessionBadge(false);
   stopClassroomPolling();
   scheduleWaitingHeartbeat();
+  refreshPreSessionLobby();
 
   if (!waitingPollTimer) {
     waitingPollTimer = setInterval(async () => {
+      await refreshPreSessionLobby();
       const entered = await tryAutoEnterLiveSession();
       if (!entered) return;
       stopWaitingPolling();
       stopWaitingHeartbeat(true);
-      setWaitingOverlayVisible(false);
-      enterLiveClassroom();
+      await enterClassroomWithWelcomeIfNeeded();
     }, WAITING_POLL_MS);
   }
 
   // Try immediately so students enter as soon as possible.
-  tryAutoEnterLiveSession().then(entered => {
+  Promise.resolve(refreshPreSessionLobby()).then(() => tryAutoEnterLiveSession()).then(async entered => {
     if (!entered) return;
     stopWaitingPolling();
     stopWaitingHeartbeat(true);
-    setWaitingOverlayVisible(false);
-    enterLiveClassroom();
+    await enterClassroomWithWelcomeIfNeeded();
   });
 }
 
