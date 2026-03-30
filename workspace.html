@@ -56,7 +56,15 @@
           <textarea id="entrance-ticket-input" rows="6" class="waiting-ticket-input" placeholder="כתוב כאן את תגובתך למשימה לפני פתיחת השיעור..."></textarea>
           <div class="waiting-ticket-actions">
             <button onclick="submitEntranceTicket()" class="btn btn-blue waiting-ticket-btn">שלח תגובה וקבל כרטיס כניסה</button>
-            <span id="entrance-ticket-status" class="waiting-ticket-status"></span>
+            <span id="entrance-ticket-status" class="waiting-ticket-status" style="display:none;"></span>
+          </div>
+          <div id="waiting-ticket-celebration" class="waiting-ticket-celebration" style="display:none;">
+            <div id="waiting-ticket-card" class="waiting-ticket-card" role="status" aria-live="polite">
+              <span class="waiting-ticket-notch waiting-ticket-notch-left" aria-hidden="true"></span>
+              <span class="waiting-ticket-notch waiting-ticket-notch-right" aria-hidden="true"></span>
+              <div class="waiting-ticket-text">איזה יופי! קיבלת כרטיס כניסה 🎫</div>
+            </div>
+            <div id="waiting-ticket-confetti" class="waiting-ticket-confetti" aria-hidden="true"></div>
           </div>
         </div>
         <div id="waiting-empty-state" class="waiting-empty-state" style="display:none;">
@@ -1296,6 +1304,98 @@ livePulseStyle.textContent = `
   font-size: 12px;
   color: #475569;
 }
+.waiting-ticket-celebration {
+  position: fixed;
+  inset: 0;
+  z-index: 100090;
+  pointer-events: none;
+}
+.waiting-ticket-card {
+  position: fixed;
+  top: -180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(460px, 88vw);
+  min-height: 96px;
+  border-radius: 16px;
+  border: 2px solid #1e40af;
+  background: linear-gradient(140deg, #dbeafe 0%, #eff6ff 52%, #fef9c3 100%);
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.26);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 18px 20px;
+}
+.waiting-ticket-text {
+  font-size: 22px;
+  font-weight: 900;
+  color: #1e40af;
+  line-height: 1.35;
+}
+.waiting-ticket-notch {
+  position: absolute;
+  top: 50%;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 2px solid #1e40af;
+}
+.waiting-ticket-notch-left {
+  left: -12px;
+}
+.waiting-ticket-notch-right {
+  right: -12px;
+}
+.waiting-ticket-celebration.is-animating .waiting-ticket-card {
+  animation: waitingTicketDrop 0.92s cubic-bezier(0.22, 0.96, 0.22, 1.02) forwards;
+}
+.waiting-ticket-celebration.is-pinned {
+  inset: auto;
+  top: 14px;
+  left: auto;
+  right: 16px;
+  width: 280px;
+  height: auto;
+}
+.waiting-ticket-celebration.is-pinned .waiting-ticket-card {
+  position: relative;
+  top: 0;
+  left: 0;
+  transform: none;
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 12px;
+  border-width: 1.5px;
+  box-shadow: 0 10px 24px rgba(30, 64, 175, 0.24);
+}
+.waiting-ticket-celebration.is-pinned .waiting-ticket-text {
+  font-size: 14px;
+  font-weight: 800;
+}
+.waiting-ticket-celebration.is-pinned .waiting-ticket-notch {
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+}
+.waiting-ticket-confetti {
+  position: fixed;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+}
+.waiting-ticket-confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: waitingTicketConfetti 1.05s ease-out forwards;
+}
 .waiting-peers-meta {
   font-size: 12px;
   color: #475569;
@@ -1315,6 +1415,13 @@ livePulseStyle.textContent = `
   border: 1px solid #e2e8f0;
   background: #ffffff;
   border-radius: 10px;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  cursor: pointer;
+}
+.waiting-peer-row.is-clicked {
+  transform: scale(1.1);
+  background: #eff6ff;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.32), 0 10px 24px rgba(37, 99, 235, 0.18);
 }
 .waiting-peer-avatar {
   width: 30px;
@@ -1360,6 +1467,17 @@ livePulseStyle.textContent = `
   0% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
   100% { transform: translateY(0); }
+}
+@keyframes waitingTicketDrop {
+  0% { top: -180px; opacity: 0.2; }
+  65% { top: 35%; opacity: 1; }
+  82% { top: 31%; }
+  100% { top: 33%; opacity: 1; }
+}
+@keyframes waitingTicketConfetti {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
 }
 @keyframes recallPulse {
   0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.34); }
@@ -1555,6 +1673,10 @@ const waitingMemoryGameState = {
 const waitingMissionRenderState = {
   videoEmbedUrl: "",
   audioDataUrl: ""
+};
+const waitingTicketUiState = {
+  pinned: false,
+  animated: false
 };
 
 const WORKSPACE_MODE_COPY = {
@@ -1917,7 +2039,7 @@ async function renderWaitingPeers(waitingStudents = []) {
     const label = item.name ? escapeHtml(item.name) : `סטודנט ${escapeHtml(String(item.studentId).slice(0, 6))}`;
     const reaction = String(item.reaction || "").trim();
     return (
-      `<div class="waiting-peer-row">` +
+      `<div class="waiting-peer-row" onclick="handleWaitingPeerClick(this)">` +
         (avatar
           ? `<img class="waiting-peer-avatar" src="${avatar}" alt="avatar" />`
           : `<div class="waiting-peer-avatar" style="display:flex;align-items:center;justify-content:center;">🙂</div>`) +
@@ -1926,6 +2048,72 @@ async function renderWaitingPeers(waitingStudents = []) {
       `</div>`
     );
   }).join("");
+}
+
+function handleWaitingPeerClick(el) {
+  if (!el) return;
+  el.classList.remove('is-clicked');
+  void el.offsetWidth;
+  el.classList.add('is-clicked');
+  setTimeout(() => el.classList.remove('is-clicked'), 220);
+}
+
+function triggerTicketConfettiBurst() {
+  const host = document.getElementById('waiting-ticket-confetti');
+  if (!host) return;
+  host.innerHTML = '';
+  const colors = ['#1e40af', '#f59e0b', '#f97316', '#60a5fa', '#facc15'];
+  for (let i = 0; i < 28; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'waiting-ticket-confetti-piece';
+    piece.style.background = colors[i % colors.length];
+    piece.style.setProperty('--dx', `${Math.round((Math.random() * 240) - 120)}px`);
+    piece.style.setProperty('--dy', `${Math.round((Math.random() * 180) + 80)}px`);
+    piece.style.setProperty('--rot', `${Math.round((Math.random() * 300) - 150)}deg`);
+    piece.style.animationDelay = `${Math.random() * 0.12}s`;
+    host.appendChild(piece);
+  }
+  setTimeout(() => { host.innerHTML = ''; }, 1300);
+}
+
+function showEntranceTicketCelebration(animate = false) {
+  const shell = document.getElementById('waiting-ticket-celebration');
+  const button = document.querySelector('.waiting-ticket-btn');
+  const status = document.getElementById('entrance-ticket-status');
+  const input = document.getElementById('entrance-ticket-input');
+  if (!shell) return;
+
+  shell.style.display = '';
+  if (button) button.style.display = 'none';
+  if (status) status.style.display = 'none';
+  if (input) input.disabled = true;
+
+  if (waitingTicketUiState.pinned) {
+    shell.classList.remove('is-animating');
+    shell.classList.add('is-pinned');
+    return;
+  }
+
+  if (animate && !waitingTicketUiState.animated) {
+    waitingTicketUiState.animated = true;
+    shell.classList.remove('is-pinned');
+    shell.classList.remove('is-animating');
+    void shell.offsetWidth;
+    shell.classList.add('is-animating');
+    setTimeout(() => {
+      triggerTicketConfettiBurst();
+    }, 620);
+    setTimeout(() => {
+      shell.classList.remove('is-animating');
+      shell.classList.add('is-pinned');
+      waitingTicketUiState.pinned = true;
+    }, 1180);
+    return;
+  }
+
+  shell.classList.remove('is-animating');
+  shell.classList.add('is-pinned');
+  waitingTicketUiState.pinned = true;
 }
 
 async function refreshPreSessionLobby() {
@@ -1960,7 +2148,7 @@ async function refreshPreSessionLobby() {
         input.value = data?.entranceTicket?.answer || input.value || "";
         input.disabled = true;
       }
-      if (status) status.textContent = "נשלח ✓";
+      showEntranceTicketCelebration(false);
     } else {
       if (input) input.disabled = false;
       if (status && status.textContent === "נשלח ✓") status.textContent = "";
@@ -2324,7 +2512,7 @@ async function submitEntranceTicket() {
 
     entranceTicketSubmitted = true;
     if (input) input.disabled = true;
-    if (status) status.textContent = "נשלח ✓";
+    showEntranceTicketCelebration(true);
   } catch {
     if (status) status.textContent = "שגיאת רשת";
   }
