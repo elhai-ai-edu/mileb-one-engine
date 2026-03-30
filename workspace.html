@@ -25,7 +25,7 @@
     </div>
 
     <div class="waiting-lobby-grid">
-      <aside class="waiting-col waiting-col-left">
+      <aside id="waiting-col-left" class="waiting-col waiting-col-left">
         <div class="waiting-col-title">🧠 חימום מוחי</div>
         <div class="waiting-brain-card">
           <div class="waiting-brain-item">🎯 משחק קצר יופיע כאן</div>
@@ -34,14 +34,14 @@
         </div>
       </aside>
 
-      <section class="waiting-col waiting-col-center">
+      <section id="waiting-col-center" class="waiting-col waiting-col-center">
         <div class="waiting-col-title">🎓 משימת למידה</div>
-        <div class="waiting-mission-panel">
+        <div id="waiting-mission-shell" class="waiting-mission-panel">
           <div id="waiting-mission-content" class="waiting-mission-content">
             <div>אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>
           </div>
         </div>
-        <div class="waiting-ticket-panel">
+        <div id="waiting-ticket-shell" class="waiting-ticket-panel">
           <label for="entrance-ticket-input" class="waiting-ticket-label">🧩 כרטיס כניסה</label>
           <textarea id="entrance-ticket-input" rows="6" class="waiting-ticket-input" placeholder="כתוב כאן את תגובתך למשימה לפני פתיחת השיעור..."></textarea>
           <div class="waiting-ticket-actions">
@@ -60,9 +60,13 @@
             <span id="entrance-ticket-status" class="waiting-ticket-status"></span>
           </div>
         </div>
+        <div id="waiting-empty-state" class="waiting-empty-state" style="display:none;">
+          <div class="waiting-empty-title">בשיעור הקרוב נתמקד בנושאים הבאים:</div>
+          <div id="waiting-topic-label" class="waiting-topic-label">טוען נושא שיעור...</div>
+        </div>
       </section>
 
-      <aside class="waiting-col waiting-col-right">
+      <aside id="waiting-col-right" class="waiting-col waiting-col-right">
         <div class="waiting-col-title">👥 מי כאן?</div>
         <div class="waiting-peers-meta"><span id="waiting-peers-count">0</span> ממתינים כרגע</div>
         <div id="waiting-peers-list" class="waiting-peers-list">
@@ -941,6 +945,46 @@ livePulseStyle.textContent = `
   background: #ffffff;
   border-color: #bfdbfe;
 }
+.waiting-lobby-grid.waiting-layout-minimal {
+  grid-template-columns: 1fr;
+}
+.waiting-lobby-grid.waiting-layout-minimal .waiting-col-left,
+.waiting-lobby-grid.waiting-layout-minimal .waiting-col-right,
+.waiting-lobby-grid.waiting-layout-minimal .waiting-col-title {
+  display: none;
+}
+.waiting-lobby-grid.waiting-layout-minimal .waiting-col-center {
+  min-height: 0;
+  border: 1px solid #dbeafe;
+  background: linear-gradient(180deg, #f8fbff, #eef4ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 26px;
+}
+.waiting-empty-state {
+  width: min(820px, 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+.waiting-empty-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+.waiting-topic-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1d4ed8;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
 .waiting-col-title {
   font-size: 14px;
   font-weight: 800;
@@ -1489,6 +1533,54 @@ function renderWaitingHeader(mission = {}) {
   }
 }
 
+function getCurrentLessonTopicLabel() {
+  const courseName = String(currentCourse?.name || "").trim();
+  if (courseName) return courseName;
+
+  const titleFromDom = String(document.getElementById("course-title")?.textContent || "").trim();
+  if (titleFromDom && titleFromDom !== "טוען...") return titleFromDom;
+
+  if (courseId) return `קורס: ${courseId}`;
+  return "נושא השיעור יתעדכן כאן";
+}
+
+function renderWaitingMissionMode(mission = {}) {
+  const hasMission = hasPreSessionMissionContent(mission);
+  const grid = document.querySelector(".waiting-lobby-grid");
+  const leftCol = document.getElementById("waiting-col-left");
+  const rightCol = document.getElementById("waiting-col-right");
+  const missionShell = document.getElementById("waiting-mission-shell");
+  const ticketShell = document.getElementById("waiting-ticket-shell");
+  const emptyState = document.getElementById("waiting-empty-state");
+  const topicLabel = document.getElementById("waiting-topic-label");
+  const input = document.getElementById("entrance-ticket-input");
+  const sendBtn = document.querySelector(".waiting-ticket-btn");
+
+  if (!grid || !missionShell || !ticketShell || !emptyState) return;
+
+  if (hasMission) {
+    grid.classList.remove("waiting-layout-minimal");
+    if (leftCol) leftCol.style.display = "";
+    if (rightCol) rightCol.style.display = "";
+    missionShell.style.display = "";
+    ticketShell.style.display = "";
+    emptyState.style.display = "none";
+    if (input) input.style.display = "";
+    if (sendBtn) sendBtn.style.display = "";
+    return;
+  }
+
+  grid.classList.add("waiting-layout-minimal");
+  if (leftCol) leftCol.style.display = "none";
+  if (rightCol) rightCol.style.display = "none";
+  missionShell.style.display = "none";
+  ticketShell.style.display = "none";
+  if (input) input.style.display = "none";
+  if (sendBtn) sendBtn.style.display = "none";
+  if (topicLabel) topicLabel.textContent = getCurrentLessonTopicLabel();
+  emptyState.style.display = "block";
+}
+
 function renderWaitingPeers(waitingStudents = []) {
   const peersList = document.getElementById("waiting-peers-list");
   const peersCount = document.getElementById("waiting-peers-count");
@@ -1550,6 +1642,7 @@ async function refreshPreSessionLobby() {
     waitingGameActive = !!data?.gameActive;
     entranceTicketSubmitted = !!data?.hasEntranceTicket;
     renderWaitingHeader(waitingMission || {});
+    renderWaitingMissionMode(waitingMission || {});
     renderWaitingMissionContent(waitingMission || {});
     renderWaitingPeers(data?.waitingStudents || []);
 
