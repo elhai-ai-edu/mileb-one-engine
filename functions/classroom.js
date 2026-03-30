@@ -56,6 +56,36 @@ function normalizeAvatar(value){
   return avatar;
 }
 
+const WAITING_ROOM_STALE_MS = 60000;
+
+async function getFreshWaitingCount(db, classId){
+  if(!classId) return 0;
+
+  const waitingRef = db.ref(`waiting_room/${classId}`);
+  const waitingSnap = await waitingRef.once("value");
+  const waitingMap = waitingSnap.val() || {};
+  const now = Date.now();
+  const staleKeys = [];
+  let waitingCount = 0;
+
+  Object.entries(waitingMap).forEach(([sid, item]) => {
+    const lastSeen = Number(item?.lastSeen) || 0;
+    const fresh = now - lastSeen <= WAITING_ROOM_STALE_MS;
+    if(fresh) waitingCount += 1;
+    else staleKeys.push(sid);
+  });
+
+  if(staleKeys.length){
+    const updates = {};
+    staleKeys.forEach(sid => {
+      updates[`waiting_room/${classId}/${sid}`] = null;
+    });
+    await db.ref().update(updates);
+  }
+
+  return waitingCount;
+}
+
 export async function handler(event){
 
   if(event.httpMethod === "OPTIONS")
@@ -85,6 +115,13 @@ export async function handler(event){
       if(!classId) return err("classId required");
       const snap = await db.ref(`lesson_templates/${classId}`).once("value");
       return ok({ templates: snap.val() || {} });
+    }
+
+    if(action === "waiting_count"){
+      const classId = event.queryStringParameters?.classId;
+      if(!classId) return err("classId required");
+      const waitingStudentsCount = await getFreshWaitingCount(db, classId);
+      return ok({ classId, waitingStudentsCount });
     }
 
     if(!sessionId) return err("sessionId required");
@@ -223,6 +260,9 @@ export async function handler(event){
       });
 
       const online = students.filter(s => Date.now() - (s.lastSeen || 0) < 15000).length;
+      const waitingStudentsCount = session.classId
+        ? await getFreshWaitingCount(db, session.classId)
+        : 0;
 
       return ok({
 
@@ -234,7 +274,8 @@ export async function handler(event){
         lockedSteps:session.lockedSteps || [],
         students,
         onlineStudents:online,
-        stateStats:stats
+        stateStats:stats,
+        waitingStudentsCount
 
       });
 
@@ -343,6 +384,30 @@ export async function handler(event){
       facultyId: fid
     });
     return ok({ ok:true, templateId });
+  }
+
+  if(action === "waiting_ping"){
+    const { classId, studentId, studentName, waiting } = body;
+
+    if(!classId) return err("classId required");
+    if(!studentId) return err("studentId required");
+
+    const waitingRef = db.ref(`waiting_room/${classId}/${studentId}`);
+
+    if(waiting === false){
+      await waitingRef.remove();
+      return ok({ ok:true, waiting:false });
+    }
+
+    await waitingRef.update({
+      studentId,
+      name: String(studentName || "").trim() || null,
+      sessionId: String(body.sessionId || "").trim() || null,
+      status: "waiting",
+      lastSeen: Date.now()
+    });
+
+    return ok({ ok:true, waiting:true });
   }
 
   if(!sessionId) return err("sessionId required");

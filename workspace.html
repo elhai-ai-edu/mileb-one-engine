@@ -12,6 +12,14 @@
 
 <body class="user-student">
 
+<div id="waiting-room-overlay" class="waiting-room-overlay" style="display:none;">
+  <div class="waiting-room-card" role="status" aria-live="polite">
+    <div class="waiting-room-icon" aria-hidden="true">⏳</div>
+    <div class="waiting-room-spinner" aria-hidden="true"></div>
+    <div class="waiting-room-text">השיעור טרם התחיל, המרצה יפתח אותו בקרוב...</div>
+  </div>
+</div>
+
 <div class="sidebar">
   <h2>MilEd.One</h2>
   <a href="/students.html">← חזרה לקורסים</a>
@@ -693,6 +701,51 @@ livePulseStyle.textContent = `
 .atb-label { font-size: 10px; font-weight: 800; color: #6366f1; letter-spacing: .4px; text-transform: uppercase; }
 .atb-title { font-size: 15px; font-weight: 800; color: #3730a3; }
 .atb-instructions { font-size: 13px; color: #4338ca; line-height: 1.6; white-space: pre-wrap; }
+
+/* ── Waiting Room Overlay ── */
+.waiting-room-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.95), rgba(241,245,249,0.96));
+  backdrop-filter: blur(3px);
+  z-index: 99999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.waiting-room-card {
+  width: min(620px, 92vw);
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 20px;
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.14);
+  padding: 28px 24px;
+  text-align: center;
+}
+.waiting-room-icon {
+  font-size: 44px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.waiting-room-spinner {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid #dbeafe;
+  border-top-color: #2563eb;
+  margin: 0 auto 12px;
+  animation: waitingSpin 1s linear infinite;
+}
+.waiting-room-text {
+  font-size: 22px;
+  line-height: 1.7;
+  color: #0f172a;
+  font-weight: 700;
+}
+@keyframes waitingSpin {
+  to { transform: rotate(360deg); }
+}
 `;
 document.head.appendChild(livePulseStyle);
 
@@ -700,6 +753,8 @@ const params   = new URLSearchParams(location.search);
 const courseId = params.get("courseId") || "";
 const skillId  = params.get("skillId")  || "";
 const ACTIVE_SESSIONS_NODE = "active_sessions";
+const WAITING_POLL_MS = 3500;
+const WAITING_HEARTBEAT_MS = 10000;
 
 // sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי לכל קורס בנפרד
 let urlSessionId = params.get("sessionId") || "";
@@ -751,6 +806,9 @@ let isLocked       = false;
 let currentStep    = 1;
 let assignedTeamRole = sessionStorage.getItem("teamRole_" + (params.get("courseId") || "")) || null;
 let workspaceMode  = "lobby";
+let classroomJoined = false;
+let waitingPollTimer = null;
+let waitingHeartbeatTimer = null;
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -836,6 +894,11 @@ function setWorkspaceContext(mode) {
 }
 
 function enterLiveClassroom() {
+  if (!skillId && !classroomJoined) {
+    startWaitingRoomFlow();
+    return;
+  }
+
   clearResearchContext();
 
   if (!skillId) {
@@ -848,6 +911,132 @@ function enterLiveClassroom() {
 
   setWorkspaceContext("classroom");
   document.getElementById("student-text")?.focus();
+}
+
+function setWaitingOverlayVisible(visible) {
+  const overlay = document.getElementById("waiting-room-overlay");
+  if (!overlay) return;
+  overlay.style.display = visible ? "flex" : "none";
+}
+
+function isWaitingOverlayVisible() {
+  const overlay = document.getElementById("waiting-room-overlay");
+  if (!overlay) return false;
+  return overlay.style.display !== "none" && overlay.style.display !== "";
+}
+
+async function sendWaitingPing(isWaiting) {
+  if (!courseId || !studentId) return;
+  let studentName = "";
+  try {
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    studentName = auth?.name || auth?.email || "";
+  } catch {}
+
+  try {
+    await fetch("/.netlify/functions/classroom", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "waiting_ping",
+        classId: courseId,
+        sessionId: urlSessionId || null,
+        studentId,
+        studentName,
+        waiting: !!isWaiting
+      })
+    });
+  } catch {}
+}
+
+function stopWaitingHeartbeat(removeFromQueue = false) {
+  if (waitingHeartbeatTimer) {
+    clearInterval(waitingHeartbeatTimer);
+    waitingHeartbeatTimer = null;
+  }
+  if (removeFromQueue) sendWaitingPing(false);
+}
+
+function stopWaitingPolling() {
+  if (waitingPollTimer) {
+    clearInterval(waitingPollTimer);
+    waitingPollTimer = null;
+  }
+}
+
+async function resolveSessionActive(checkSessionId) {
+  if (!checkSessionId) return false;
+  try {
+    const res = await fetch(`/.netlify/functions/classroom?sessionId=${encodeURIComponent(checkSessionId)}`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    return !!data?.sessionActive;
+  } catch {
+    return false;
+  }
+}
+
+function scheduleWaitingHeartbeat() {
+  if (waitingHeartbeatTimer) return;
+  sendWaitingPing(true);
+  waitingHeartbeatTimer = setInterval(() => {
+    sendWaitingPing(true);
+  }, WAITING_HEARTBEAT_MS);
+}
+
+async function tryAutoEnterLiveSession() {
+  if (urlSessionId) {
+    const active = await resolveSessionActive(urlSessionId);
+    if (active) {
+      await classroomJoin();
+      return true;
+    }
+
+    // Session link can become stale after close; fallback to course discovery.
+    if (courseId) {
+      urlSessionId = "";
+      sessionId = "";
+    } else {
+      return false;
+    }
+  }
+
+  const discoveredSessionId = await discoverActiveSession();
+  if (!discoveredSessionId) return false;
+
+  const active = await resolveSessionActive(discoveredSessionId);
+  if (!active) return false;
+
+  await classroomJoin();
+  return true;
+}
+
+function startWaitingRoomFlow() {
+  if (skillId) return;
+  setWaitingOverlayVisible(true);
+  setLiveSessionBadge(false);
+  stopClassroomPolling();
+  scheduleWaitingHeartbeat();
+
+  if (!waitingPollTimer) {
+    waitingPollTimer = setInterval(async () => {
+      const entered = await tryAutoEnterLiveSession();
+      if (!entered) return;
+      stopWaitingPolling();
+      stopWaitingHeartbeat(true);
+      setWaitingOverlayVisible(false);
+      enterLiveClassroom();
+    }, WAITING_POLL_MS);
+  }
+
+  // Try immediately so students enter as soon as possible.
+  tryAutoEnterLiveSession().then(entered => {
+    if (!entered) return;
+    stopWaitingPolling();
+    stopWaitingHeartbeat(true);
+    setWaitingOverlayVisible(false);
+    enterLiveClassroom();
+  });
 }
 
 function enterProjectWorkspace() {
@@ -1081,7 +1270,13 @@ async function init() {
     restoreDraft();
     // session-only links (without courseId) must still join so lecturer sees the student
     if (urlSessionId) {
-      classroomJoin();
+      const isActive = await resolveSessionActive(urlSessionId);
+      if (isActive) {
+        await classroomJoin();
+        enterLiveClassroom();
+      } else {
+        startWaitingRoomFlow();
+      }
     }
     return;
   }
@@ -1097,10 +1292,17 @@ async function init() {
 
   // כניסה לכיתה רק אם יש sessionId מה-URL (שיעור פעיל)
   if (urlSessionId) {
-    classroomJoin();
+    const isActive = await resolveSessionActive(urlSessionId);
+    if (isActive) {
+      await classroomJoin();
+      enterLiveClassroom();
+    } else {
+      startWaitingRoomFlow();
+    }
   } else if (courseId) {
-    // No sessionId in URL — try to discover an active session for this course
-    discoverActiveSession();
+    const entered = await tryAutoEnterLiveSession();
+    if (!entered) startWaitingRoomFlow();
+    else enterLiveClassroom();
   }
 }
 
@@ -2096,22 +2298,23 @@ async function discoverActiveSession() {
       return;
     }
     const data = await res.json();
-    if (!data?.sessionId) return;          // no active session for this course
+    if (!data?.sessionId) return null;          // no active session for this course
 
     // Found one — inject it as if it came from the URL
     urlSessionId = data.sessionId;
     sessionId    = data.sessionId;
-    setLiveSessionBadge(true);
-    classroomJoin();
+    return data.sessionId;
   } catch (e) {
     const dbUrlRaw = window.MILED_FIREBASE_CONFIG?.databaseURL || "";
     const dbUrl = String(dbUrlRaw).replace(/\/+$/, "");
     const activeSessionUrl = `${dbUrl}/${ACTIVE_SESSIONS_NODE}/${courseId}.json`;
     console.error(`[discoverActiveSession] Fetch failed at ${activeSessionUrl}:`, e?.message || e);
+    return null;
   }
 }
 
 async function classroomJoin() {
+  if (classroomJoined) return;
   let studentName = "";
   try {
     const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
@@ -2123,6 +2326,8 @@ async function classroomJoin() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "join", sessionId, studentId, studentName, status: "online", avatar: safeAvatar(studentAvatar) })
   });
+  classroomJoined = true;
+  sendWaitingPing(false);
   setLiveSessionBadge(true);
   startClassroomPolling();
 }
@@ -2172,6 +2377,11 @@ async function pollClassroomState() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const data = await res.json();
+    if (!data?.sessionActive) {
+      classroomJoined = false;
+      startWaitingRoomFlow();
+      return;
+    }
     const isLocked = !!data.stepLocked;
     lecturerAvatar = safeAvatar(data.lecturerAvatar) || lecturerAvatar;
     const persistedStudentAvatar = safeAvatar(data.studentAvatar);
@@ -2206,11 +2416,28 @@ async function pollClassroomState() {
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (!urlSessionId) return;
+  if (!urlSessionId && !isWaitingOverlayVisible()) return;
   if (!document.hidden) {
+    if (!classroomJoined) {
+      startWaitingRoomFlow();
+      return;
+    }
     classroomPollDelay = POLL_MIN;
     scheduleNextPoll(0);
   }
+});
+
+window.addEventListener("beforeunload", () => {
+  if (!courseId || !studentId) return;
+  try {
+    const payload = JSON.stringify({
+      action: "waiting_ping",
+      classId: courseId,
+      studentId,
+      waiting: false
+    });
+    navigator.sendBeacon("/.netlify/functions/classroom", new Blob([payload], { type: "application/json" }));
+  } catch {}
 });
 
 function triggerUnlockAnimation() {

@@ -978,7 +978,10 @@
   <div class="panel" data-tab-panel="live">
     <div class="live-header">
       <h2>👥 מצב הכיתה בזמן אמת</h2>
-      <span class="live-count"><span id="studentCount">0</span> תלמידים</span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span class="live-count"><span id="studentCount">0</span> תלמידים</span>
+        <span id="waiting-pressure" style="display:inline-flex;align-items:center;gap:6px;background:#fff7ed;color:#9a3412;border:1px solid #fdba74;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;">⏳ ממתינים: <span id="waitingCount">0</span></span>
+      </div>
     </div>
 
     <div id="studentGrid" class="student-grid">
@@ -1095,6 +1098,8 @@ let broadcastAudioChunks = [];
 let broadcastAudioStream = null;
 let facultyAvatar = localStorage.getItem(LECTURER_AVATAR_KEY) || "";
 let latestStudentsSnapshot = [];
+let waitingStudentsSnapshot = 0;
+let waitingPressureTimer = null;
 
 function safeAvatar(avatar) {
   const value = String(avatar || "").trim();
@@ -1161,6 +1166,37 @@ function updateUnreadBar(count, presentCount = 0, cap = 30) {
   if (!bar) return;
   bar.style.display = '';
   bar.textContent = `🔔 ${count} הודעות שלא נקראו · ${presentCount}/${cap} Students Present`;
+}
+
+function updateWaitingPressure(count) {
+  waitingStudentsSnapshot = Number(count) || 0;
+  const countEl = document.getElementById('waitingCount');
+  const badge = document.getElementById('waiting-pressure');
+  if (countEl) countEl.textContent = String(waitingStudentsSnapshot);
+  if (badge) {
+    badge.style.opacity = waitingStudentsSnapshot > 0 ? '1' : '0.72';
+  }
+}
+
+async function fetchWaitingPressureForSelectedCourse() {
+  const classId = currentLessonId || getSelectedTeachingContext().classId;
+  if (!classId) {
+    updateWaitingPressure(0);
+    return;
+  }
+
+  try {
+    const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    updateWaitingPressure(data?.waitingStudentsCount || 0);
+  } catch {}
+}
+
+function startWaitingPressurePolling() {
+  if (waitingPressureTimer) clearInterval(waitingPressureTimer);
+  fetchWaitingPressureForSelectedCourse();
+  waitingPressureTimer = setInterval(fetchWaitingPressureForSelectedCourse, 5000);
 }
 
 function markThreadRead(studentId) {
@@ -1324,6 +1360,8 @@ fetch('/config.json').then(r => r.json()).then(config => {
       const tplSel = document.getElementById("template-select");
       if (tplSel) tplSel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
     }
+
+    fetchWaitingPressureForSelectedCourse();
   };
 
   if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
@@ -1492,6 +1530,7 @@ async function fetchDashboard() {
 
 function renderDashboard(data) {
   const grid = document.getElementById('studentGrid');
+  updateWaitingPressure(data?.waitingStudentsCount || 0);
   const studentsRaw = data.students || [];
   const students = [...studentsRaw].sort((a, b) => {
     const unreadDiff = Number(!!b.is_unread) - Number(!!a.is_unread);
@@ -2529,6 +2568,7 @@ async function exportSession() {
 switchCockpitTab('live');
 syncCockpitNavOffset();
 window.addEventListener('resize', syncCockpitNavOffset);
+startWaitingPressurePolling();
 </script>
 
 <script src="/balance.js"></script>
