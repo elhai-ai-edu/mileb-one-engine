@@ -1840,7 +1840,9 @@ async function submitEntranceTicket() {
         sessionId: urlSessionId || sessionId || null,
         studentId,
         studentName,
-        answer
+        name: studentName,
+        answer,
+        text: answer
       })
     });
     const data = await res.json();

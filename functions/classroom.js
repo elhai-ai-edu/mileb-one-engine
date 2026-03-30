@@ -359,14 +359,28 @@ export async function handler(event){
         : 0;
       let entranceTickets = [];
 
-      if (resolvedClassId) {
+      const sessionTicketsSnap = await db.ref(`sessions/${sessionId}/entranceTickets`).once("value");
+      const sessionTicketsMap = sessionTicketsSnap.val() || {};
+      entranceTickets = Object.values(sessionTicketsMap)
+        .map(item => ({
+          studentId: item?.studentId || null,
+          name: item?.name || item?.studentName || null,
+          answer: item?.answer || item?.text || "",
+          submittedAt: item?.submittedAt || 0
+        }))
+        .filter(item => item.answer)
+        .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
+        .slice(0, 120);
+
+      // Legacy fallback for older records written only by classId.
+      if (!entranceTickets.length && resolvedClassId) {
         const ticketsSnap = await db.ref(`pre_session_tickets/${resolvedClassId}`).once("value");
         const ticketsMap = ticketsSnap.val() || {};
         entranceTickets = Object.values(ticketsMap)
           .map(item => ({
             studentId: item?.studentId || null,
-            name: item?.name || null,
-            answer: item?.answer || "",
+            name: item?.name || item?.studentName || null,
+            answer: item?.answer || item?.text || "",
             submittedAt: item?.submittedAt || 0
           }))
           .filter(item => item.answer)
@@ -637,26 +651,51 @@ export async function handler(event){
   if(action === "entrance_ticket_submit"){
     let classId = body.classId;
     const requestedSessionId = body.sessionId || null;
+    let resolvedSessionId = requestedSessionId || null;
     const { studentId, studentName, answer } = body;
+
+    if(!resolvedSessionId && classId){
+      const activeSnap = await db.ref(`active_sessions/${classId}`).once("value");
+      resolvedSessionId = activeSnap.val()?.sessionId || null;
+    }
+
+    if(!classId && resolvedSessionId){
+      const sessionSnap = await db.ref(`sessions/${resolvedSessionId}`).once("value");
+      const sessionData = sessionSnap.val() || {};
+      classId = sessionData.classId || null;
+    }
+
     if(!classId && requestedSessionId){
       const sessionSnap = await db.ref(`sessions/${requestedSessionId}`).once("value");
       const sessionData = sessionSnap.val() || {};
       classId = sessionData.classId || null;
     }
-    if(!classId) return err("classId required");
+
+    if(!resolvedSessionId) return err("sessionId required");
     if(!studentId) return err("studentId required");
 
-    const normalizedAnswer = String(answer || "").trim();
+    const normalizedAnswer = String(answer || body.text || "").trim();
     if(!normalizedAnswer) return err("answer required");
+    const normalizedName = String(studentName || body.name || "").trim() || null;
 
-    await db.ref(`pre_session_tickets/${classId}/${studentId}`).set({
+    const ticketPayload = {
       studentId,
-      name: String(studentName || "").trim() || null,
+      name: normalizedName,
+      studentName: normalizedName,
       answer: normalizedAnswer,
-      submittedAt: Date.now()
-    });
+      text: normalizedAnswer,
+      submittedAt: Date.now(),
+      sessionId: resolvedSessionId,
+      classId: classId || null
+    };
 
-    return ok({ ok:true, classId, studentId });
+    await db.ref(`sessions/${resolvedSessionId}/entranceTickets/${studentId}`).set(ticketPayload);
+
+    // Keep legacy mirror for pre-session student checks keyed by classId.
+    if(classId)
+      await db.ref(`pre_session_tickets/${classId}/${studentId}`).set(ticketPayload);
+
+    return ok({ ok:true, classId: classId || null, sessionId: resolvedSessionId, studentId });
   }
 
   if(!sessionId) return err("sessionId required");

@@ -1514,15 +1514,17 @@ function renderEntranceTicketsList(tickets = []) {
 
   list.innerHTML = tickets.slice(0, 40).map(item => {
     const sid = String(item?.studentId || '');
-    const label = item?.name ? `${escapeHtml(item.name)} · ${sid.slice(0,8)}` : sid.slice(0,10);
+    const displayName = item?.name || item?.studentName || '';
+    const label = displayName ? `${escapeHtml(displayName)} · ${sid.slice(0,8)}` : sid.slice(0,10);
     const time = item?.submittedAt ? new Date(item.submittedAt).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '--:--';
+    const answerText = item?.answer || item?.text || '';
     return `
       <div style="padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;">
           <span style="font-size:12px;font-weight:700;color:#0f172a;">${label}</span>
           <span style="font-size:11px;color:#64748b;">${time}</span>
         </div>
-        <div style="font-size:12px;color:#1e293b;line-height:1.6;white-space:pre-wrap;">${escapeHtml(item?.answer || '')}</div>
+        <div style="font-size:12px;color:#1e293b;line-height:1.6;white-space:pre-wrap;">${escapeHtml(answerText)}</div>
       </div>`;
   }).join('');
 }
