@@ -35,7 +35,7 @@
       </aside>
 
       <section id="waiting-col-center" class="waiting-col waiting-col-center">
-        <div class="waiting-col-title">🎓 משימת למידה</div>
+        <div id="waiting-center-title" class="waiting-col-title">🎓 משימת למידה</div>
         <div id="waiting-mission-shell" class="waiting-mission-panel">
           <div id="waiting-mission-content" class="waiting-mission-content">
             <div>אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>
@@ -892,20 +892,36 @@ livePulseStyle.textContent = `
   text-align: center;
 }
 .waiting-room-card-wide {
-  width: min(1320px, 96vw);
+  width: min(1480px, 98vw);
   text-align: right;
-  padding: 20px;
+  padding: 28px;
 }
 .waiting-room-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 .waiting-room-icon {
+  position: relative;
   font-size: 44px;
   line-height: 1;
   margin-bottom: 0;
+  width: 64px;
+  height: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.waiting-room-icon::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(37, 99, 235, 0.22);
+  border-top-color: #2563eb;
+  border-right-color: #60a5fa;
+  animation: waitingSpin 1.15s linear infinite;
 }
 .waiting-room-spinner {
   width: 34px;
@@ -931,15 +947,15 @@ livePulseStyle.textContent = `
 .waiting-lobby-grid {
   display: grid;
   grid-template-columns: 1fr 3fr 1fr;
-  gap: 14px;
+  gap: 18px;
   align-items: start;
 }
 .waiting-col {
   border: 1px solid #dbeafe;
   background: #f8fbff;
   border-radius: 14px;
-  padding: 12px;
-  min-height: 420px;
+  padding: 16px;
+  min-height: 450px;
 }
 .waiting-col-center {
   background: #ffffff;
@@ -949,13 +965,13 @@ livePulseStyle.textContent = `
   grid-template-columns: 1fr 3fr 1fr;
 }
 .waiting-lobby-grid.waiting-layout-minimal .waiting-col-center {
-  min-height: 420px;
+  min-height: 450px;
   border: 1px solid #dbeafe;
   background: linear-gradient(180deg, #f8fbff, #eef4ff);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 26px;
+  padding: 34px;
 }
 .waiting-empty-state {
   width: min(820px, 100%);
@@ -1542,6 +1558,8 @@ function getCurrentLessonTopicLabel() {
 function renderWaitingMissionMode(mission = {}) {
   const hasMission = hasPreSessionMissionContent(mission);
   const grid = document.querySelector(".waiting-lobby-grid");
+  const centerTitle = document.getElementById("waiting-center-title");
+  const gameHint = document.querySelector(".waiting-brain-hint");
   const missionShell = document.getElementById("waiting-mission-shell");
   const ticketShell = document.getElementById("waiting-ticket-shell");
   const emptyState = document.getElementById("waiting-empty-state");
@@ -1553,6 +1571,8 @@ function renderWaitingMissionMode(mission = {}) {
 
   if (hasMission) {
     grid.classList.remove("waiting-layout-minimal");
+    if (centerTitle) centerTitle.style.display = "";
+    if (gameHint) gameHint.style.display = "";
     missionShell.style.display = "";
     ticketShell.style.display = "";
     emptyState.style.display = "none";
@@ -1562,6 +1582,8 @@ function renderWaitingMissionMode(mission = {}) {
   }
 
   grid.classList.add("waiting-layout-minimal");
+  if (centerTitle) centerTitle.style.display = "none";
+  if (gameHint) gameHint.style.display = "none";
   missionShell.style.display = "none";
   ticketShell.style.display = "none";
   if (input) input.style.display = "none";
@@ -1570,7 +1592,46 @@ function renderWaitingMissionMode(mission = {}) {
   emptyState.style.display = "block";
 }
 
-function renderWaitingPeers(waitingStudents = []) {
+const waitingAvatarPngCache = new Map();
+async function toCircularPeerAvatarPng(avatarDataUrl) {
+  const source = safeAvatar(avatarDataUrl);
+  if (!source) return "";
+  if (waitingAvatarPngCache.has(source)) {
+    return waitingAvatarPngCache.get(source);
+  }
+
+  return new Promise((resolve) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 96;
+    canvas.height = 96;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      resolve(source);
+      return;
+    }
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.clearRect(0, 0, 96, 96);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(48, 48, 48, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+      ctx.drawImage(img, 0, 0, 96, 96);
+      ctx.restore();
+      const out = canvas.toDataURL("image/png");
+      waitingAvatarPngCache.set(source, out);
+      resolve(out);
+    };
+    img.onerror = () => {
+      resolve(source);
+    };
+    img.src = source;
+  });
+}
+
+async function renderWaitingPeers(waitingStudents = []) {
   const peersList = document.getElementById("waiting-peers-list");
   const peersCount = document.getElementById("waiting-peers-count");
   if (!peersList || !peersCount) return;
@@ -1585,8 +1646,15 @@ function renderWaitingPeers(waitingStudents = []) {
     return;
   }
 
-  peersList.innerHTML = peers.slice(0, 28).map(item => {
-    const avatar = safeAvatar(item.avatar);
+  const peersWithAvatar = await Promise.all(
+    peers.slice(0, 28).map(async (item) => ({
+      ...item,
+      circularAvatar: await toCircularPeerAvatarPng(item.avatar)
+    }))
+  );
+
+  peersList.innerHTML = peersWithAvatar.map(item => {
+    const avatar = item.circularAvatar;
     const label = item.name ? escapeHtml(item.name) : `סטודנט ${escapeHtml(String(item.studentId).slice(0, 6))}`;
     const reaction = String(item.reaction || "").trim();
     return (
@@ -1633,7 +1701,7 @@ async function refreshPreSessionLobby() {
     renderWaitingHeader(waitingMission || {});
     renderWaitingMissionMode(waitingMission || {});
     renderWaitingMissionContent(waitingMission || {});
-    renderWaitingPeers(data?.waitingStudents || []);
+    await renderWaitingPeers(data?.waitingStudents || []);
 
     const input = document.getElementById("entrance-ticket-input");
     const status = document.getElementById("entrance-ticket-status");
