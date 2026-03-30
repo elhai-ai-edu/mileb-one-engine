@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
 <style>
 /* v8.5 — Skill-Academic Balance */
@@ -206,11 +207,20 @@
   line-height: 1;
   transition: all 0.3s ease;
 }
-.broadcast-mic-btn:hover,
-.broadcast-upload-btn:hover {
+.broadcast-upload-btn {
+  background: #3b82f6;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+.broadcast-mic-btn:hover {
   background: #eef2ff;
   border-color: #93c5fd;
   color: #1d4ed8;
+}
+.broadcast-upload-btn:hover {
+  background: #2563eb;
+  border-color: #1d4ed8;
+  color: #ffffff;
 }
 .broadcast-mic-btn.is-recording {
   background: #fee2e2;
@@ -1041,6 +1051,23 @@ async function openSession() {
 }
 
 // ─────────────────────────────────────────
+// FILE PAYLOAD HELPERS
+// ─────────────────────────────────────────
+function parseFilePayload(text) {
+  if (typeof text !== "string" || !text.startsWith("__FILE__::")) return null;
+  const parts = text.split("::");
+  if (parts.length < 3) return null;
+  const fileName = decodeURIComponent(parts[1] || "file");
+  const dataUrl = parts.slice(2).join("::");
+  if (!dataUrl.startsWith("data:")) return null;
+  return { fileName, dataUrl };
+}
+
+function packFilePayload(fileName, dataUrl) {
+  return `__FILE__::${encodeURIComponent(fileName || "file")}::${dataUrl}`;
+}
+
+// ─────────────────────────────────────────
 // BROADCAST
 // ─────────────────────────────────────────
 async function broadcast() {
@@ -1448,9 +1475,12 @@ function renderBroadcastHistory() {
       itemHtml += '<div class="broadcast-item-audio"><audio controls style="max-width:100%; height:24px;"><source src="' + item.content + '" type="audio/webm">Your browser does not support audio.</audio></div>';
       itemHtml += '</div>';
     } else if (item.type === 'file') {
+      const filePayload = parseFilePayload(item.content);
+      const fileName = item.fileName || (filePayload?.fileName || 'file');
+      const dataUrl = filePayload?.dataUrl || item.content;
       itemHtml += '<div class="broadcast-item-icon">📎</div>';
       itemHtml += '<div class="broadcast-item-content">';
-      itemHtml += '<div class="broadcast-item-file"><a href="' + item.content + '" download="' + escapeHtml(item.fileName) + '">📥 ' + escapeHtml(item.fileName) + '</a></div>';
+      itemHtml += '<div class="broadcast-item-file"><a href="' + dataUrl + '" download="' + escapeHtml(fileName) + '">📥 ' + escapeHtml(fileName) + '</a></div>';
       itemHtml += '</div>';
     }
     
@@ -1468,11 +1498,13 @@ function handleBroadcastFileUpload(event) {
     const dataUrl = e.target?.result;
     if (!dataUrl) return;
     
+    const payload = packFilePayload(file.name, dataUrl);
+    
     const res = await callClassroom({
       action: 'broadcast',
       sessionId,
       facultyId,
-      text: dataUrl
+      text: payload
     });
     
     if (!res?.ok) {
@@ -1480,7 +1512,7 @@ function handleBroadcastFileUpload(event) {
       return;
     }
     
-    addBroadcastToHistory('file', dataUrl, file.name);
+    addBroadcastToHistory('file', payload, file.name);
     event.target.value = ''; // Reset input
   };
   reader.readAsDataURL(file);

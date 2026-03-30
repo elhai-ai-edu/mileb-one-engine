@@ -282,10 +282,16 @@ export async function handler(event){
       .sort((a, b) => a.ts - b.ts)
       .slice(-50);
 
+    // Prepare clean broadcast history (remove nulls/empty, max 50 items)
+    const broadcastHistory = (session?.broadcastHistory || [])
+      .filter(item => item && item.text)
+      .slice(-50);
+
     return ok({
 
       broadcast:session.broadcast || null,
       broadcastedAt:session.broadcastedAt || null,
+      broadcastHistory:broadcastHistory,
       currentStep:session.currentStep || 1,
       stepVersion:session.stepVersion || 0,
       stepLocked:studentLocked,
@@ -417,15 +423,20 @@ export async function handler(event){
 
     if(!text) return err("text required");
 
+    const now = Date.now();
     const update = {
-
       broadcast:text,
-      broadcastedAt:Date.now()
-
+      broadcastedAt:now
     };
 
     if(step !== undefined)
       update.currentStep = step;
+
+    // Track broadcast in history (max 50 items)
+    const currentHistory = (session?.broadcastHistory || []);
+    const newHistory = [...currentHistory, { text, ts: now, kind: text.startsWith('data:') ? (text.startsWith('data:audio/') ? 'audio' : 'file') : 'text' }];
+    if(newHistory.length > 50) newHistory.shift();
+    update.broadcastHistory = newHistory;
 
     await sessionRef.update(update);
 
