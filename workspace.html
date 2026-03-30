@@ -46,6 +46,17 @@
           <textarea id="entrance-ticket-input" rows="6" class="waiting-ticket-input" placeholder="כתוב כאן את תגובתך למשימה לפני פתיחת השיעור..."></textarea>
           <div class="waiting-ticket-actions">
             <button onclick="submitEntranceTicket()" class="btn btn-blue waiting-ticket-btn">שלח תגובה וקבל כרטיס כניסה</button>
+            <div class="waiting-emoji-wrap">
+              <button type="button" class="waiting-emoji-btn" onclick="toggleWaitingEmojiMenu(event)">😀 תגובה מהירה</button>
+              <div id="waiting-emoji-menu" class="waiting-emoji-menu" style="display:none;">
+                <button type="button" onclick="setWaitingReaction('👍')">👍</button>
+                <button type="button" onclick="setWaitingReaction('🔥')">🔥</button>
+                <button type="button" onclick="setWaitingReaction('💡')">💡</button>
+                <button type="button" onclick="setWaitingReaction('🎯')">🎯</button>
+                <button type="button" onclick="setWaitingReaction('📚')">📚</button>
+                <button type="button" onclick="setWaitingReaction('✨')">✨</button>
+              </div>
+            </div>
             <span id="entrance-ticket-status" class="waiting-ticket-status"></span>
           </div>
         </div>
@@ -196,6 +207,7 @@
                     <img id="student-avatar-preview" alt="avatar" style="display:none;" />
                     <span id="student-avatar-fallback">🙂</span>
                   </button>
+                  <span class="workspace-avatar-label">העלה תמונת פרופיל</span>
                   <input id="student-avatar-input" type="file" accept="image/*" style="display:none;" onchange="handleStudentAvatarUpload(event)">
                   <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
                   <button id="student-file-btn" onclick="triggerStudentFileUpload()" class="workspace-file-btn" title="צרף קובץ">
@@ -579,6 +591,13 @@ livePulseStyle.textContent = `
   align-items: stretch;
   gap: 8px;
 }
+.workspace-avatar-label {
+  align-self: center;
+  font-size: 12px;
+  color: #1e3a8a;
+  font-weight: 700;
+  white-space: nowrap;
+}
 .workspace-writing-col .workspace-primary-action,
 .workspace-writing-col .workspace-secondary-action {
   width: 100%;
@@ -924,6 +943,47 @@ livePulseStyle.textContent = `
   font-size: 12px;
   color: #475569;
 }
+.waiting-emoji-wrap {
+  position: relative;
+}
+.waiting-emoji-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.waiting-emoji-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(15,23,42,0.14);
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  min-width: 132px;
+  z-index: 10;
+}
+.waiting-emoji-menu button {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 18px;
+  line-height: 1;
+  padding: 8px;
+  cursor: pointer;
+}
+.waiting-emoji-menu button:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
 
 .waiting-peers-meta {
   font-size: 12px;
@@ -952,11 +1012,20 @@ livePulseStyle.textContent = `
   border: 1px solid #cbd5e1;
   object-fit: cover;
   background: #f1f5f9;
+  animation: waitingFloat 4.4s ease-in-out infinite;
 }
+.waiting-peer-row:nth-child(2n) .waiting-peer-avatar { animation-delay: .8s; }
+.waiting-peer-row:nth-child(3n) .waiting-peer-avatar { animation-delay: 1.5s; }
+.waiting-peer-row:nth-child(4n) .waiting-peer-avatar { animation-delay: 2.2s; }
 .waiting-peer-name {
   font-size: 12px;
   color: #1e293b;
   font-weight: 700;
+}
+.waiting-peer-reaction {
+  margin-inline-start: auto;
+  font-size: 16px;
+  line-height: 1;
 }
 .waiting-peer-empty {
   font-size: 12px;
@@ -972,6 +1041,14 @@ livePulseStyle.textContent = `
   .waiting-col {
     min-height: 0;
   }
+  .workspace-avatar-label {
+    display: none;
+  }
+}
+@keyframes waitingFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
 }
 @keyframes waitingSpin {
   to { transform: rotate(360deg); }
@@ -1138,6 +1215,7 @@ let isLockedOut = true;
 let hardGatePollTimer = null;
 let hasBootedWorkspace = false;
 let waitingClassId = courseId || "";
+let myWaitingReaction = "";
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -1304,15 +1382,31 @@ function renderWaitingPeers(waitingStudents = []) {
   peersList.innerHTML = peers.slice(0, 28).map(item => {
     const avatar = safeAvatar(item.avatar);
     const label = item.name ? escapeHtml(item.name) : `סטודנט ${escapeHtml(String(item.studentId).slice(0, 6))}`;
+    const reaction = String(item.reaction || "").trim();
     return (
       `<div class="waiting-peer-row">` +
         (avatar
           ? `<img class="waiting-peer-avatar" src="${avatar}" alt="avatar" />`
           : `<div class="waiting-peer-avatar" style="display:flex;align-items:center;justify-content:center;">🙂</div>`) +
         `<div class="waiting-peer-name">${label}</div>` +
+        (reaction ? `<div class="waiting-peer-reaction">${escapeHtml(reaction)}</div>` : ``) +
       `</div>`
     );
   }).join("");
+}
+
+function toggleWaitingEmojiMenu(event) {
+  if (event) event.stopPropagation();
+  const menu = document.getElementById("waiting-emoji-menu");
+  if (!menu) return;
+  menu.style.display = menu.style.display === "grid" ? "none" : "grid";
+}
+
+async function setWaitingReaction(emoji) {
+  myWaitingReaction = String(emoji || "").trim();
+  const menu = document.getElementById("waiting-emoji-menu");
+  if (menu) menu.style.display = "none";
+  await sendWaitingPing(true, myWaitingReaction);
 }
 
 async function refreshPreSessionLobby() {
@@ -1376,6 +1470,7 @@ async function submitEntranceTicket() {
       body: JSON.stringify({
         action: "entrance_ticket_submit",
         classId,
+        sessionId: urlSessionId || sessionId || null,
         studentId,
         studentName,
         answer
@@ -1472,7 +1567,7 @@ async function enterClassroomWithWelcomeIfNeeded() {
   enterLiveClassroom();
 }
 
-async function sendWaitingPing(isWaiting) {
+async function sendWaitingPing(isWaiting, reaction = "") {
   const classId = waitingClassId || courseId || "";
   if (!classId || !studentId) return;
   let studentName = "";
@@ -1492,6 +1587,7 @@ async function sendWaitingPing(isWaiting) {
         studentId,
         studentName,
         avatar: safeAvatar(studentAvatar),
+        reaction: String(reaction || myWaitingReaction || "").trim() || null,
         waiting: !!isWaiting
       })
     });
@@ -2481,6 +2577,24 @@ function cancelAvatarCrop() {
   }
 }
 
+function canvasToCircularPngDataUrl(sourceCanvas, size = 320) {
+  if (!sourceCanvas) return "";
+  const out = document.createElement("canvas");
+  out.width = size;
+  out.height = size;
+  const ctx = out.getContext("2d");
+  if (!ctx) return "";
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(sourceCanvas, 0, 0, size, size);
+  ctx.restore();
+  return out.toDataURL("image/png");
+}
+
 function applyAvatarCrop() {
   if (!avatarCropper) {
     cancelAvatarCrop();
@@ -2493,7 +2607,7 @@ function applyAvatarCrop() {
     imageSmoothingEnabled: true,
     imageSmoothingQuality: "high"
   });
-  const cropped = safeAvatar(canvas?.toDataURL("image/jpeg", 0.92) || "");
+  const cropped = safeAvatar(canvasToCircularPngDataUrl(canvas, 320));
   if (!cropped) {
     alert("נכשל לעדכן תמונה");
     cancelAvatarCrop();
@@ -3081,6 +3195,12 @@ window.addEventListener("beforeunload", () => {
 });
 
 document.addEventListener("click", (event) => {
+  const emojiWrap = event.target?.closest?.(".waiting-emoji-wrap");
+  if (!emojiWrap) {
+    const menu = document.getElementById("waiting-emoji-menu");
+    if (menu) menu.style.display = "none";
+  }
+
   const avatarEl = event.target?.closest?.(".waf-avatar");
   if (avatarEl && avatarEl.getAttribute("src")) {
     openAvatarLightbox(avatarEl.getAttribute("src"));

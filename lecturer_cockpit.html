@@ -1555,7 +1555,7 @@ function applyLecturerAvatarCrop() {
     imageSmoothingEnabled: true,
     imageSmoothingQuality: "high"
   });
-  const cropped = safeAvatar(canvas?.toDataURL("image/jpeg", 0.92) || "");
+  const cropped = safeAvatar(canvasToCircularPngDataUrl(canvas, 320, 320) || "");
   if (!cropped) {
     alert("שגיאה בעדכון תמונה");
     cancelLecturerAvatarCrop();
@@ -1566,6 +1566,26 @@ function applyLecturerAvatarCrop() {
   localStorage.setItem(LECTURER_AVATAR_KEY, cropped);
   renderLecturerAvatarButton();
   cancelLecturerAvatarCrop();
+}
+
+function canvasToCircularPngDataUrl(sourceCanvas, size = 320) {
+  if (!sourceCanvas) return "";
+  const out = document.createElement("canvas");
+  out.width = size;
+  out.height = size;
+  const ctx = out.getContext("2d");
+  if (!ctx) return "";
+
+  ctx.clearRect(0, 0, size, size);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+  ctx.closePath();
+  ctx.clip();
+  ctx.drawImage(sourceCanvas, 0, 0, size, size);
+  ctx.restore();
+
+  return out.toDataURL("image/png");
 }
 
 async function handleLecturerAvatarUpload(event) {
@@ -1879,10 +1899,10 @@ async function closeSession() {
 }
 
 // ─────────────────────────────────────────
-// LIVE POLLING (every 4 seconds)
+// LIVE POLLING (every 3 seconds)
 // ─────────────────────────────────────────
 function startPolling() {
-  pollTimer = setInterval(fetchDashboard, 4000);
+  pollTimer = setInterval(fetchDashboard, 3000);
   fetchDashboard();
 }
 

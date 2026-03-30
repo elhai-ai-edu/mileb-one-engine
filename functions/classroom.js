@@ -92,6 +92,7 @@ async function getFreshWaitingSnapshot(db, classId){
       studentId: sid,
       name: item?.name || null,
       avatar: normalizeAvatar(item?.avatar) || null,
+      reaction: String(item?.reaction || "").trim() || null,
       lastSeen,
       status: item?.status || "waiting"
     });
@@ -495,6 +496,7 @@ export async function handler(event){
       studentId,
       name: String(studentName || "").trim() || null,
       avatar: normalizeAvatar(body.avatar) || null,
+      reaction: String(body.reaction || "").trim() || null,
       sessionId: String(body.sessionId || "").trim() || null,
       status: "waiting",
       lastSeen: Date.now()
@@ -538,7 +540,14 @@ export async function handler(event){
   }
 
   if(action === "entrance_ticket_submit"){
-    const { classId, studentId, studentName, answer } = body;
+    let classId = body.classId;
+    const requestedSessionId = body.sessionId || null;
+    const { studentId, studentName, answer } = body;
+    if(!classId && requestedSessionId){
+      const sessionSnap = await db.ref(`sessions/${requestedSessionId}`).once("value");
+      const sessionData = sessionSnap.val() || {};
+      classId = sessionData.classId || null;
+    }
     if(!classId) return err("classId required");
     if(!studentId) return err("studentId required");
 
