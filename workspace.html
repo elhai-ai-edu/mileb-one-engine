@@ -62,7 +62,7 @@
             <div id="waiting-ticket-card" class="waiting-ticket-card" role="status" aria-live="polite">
               <span class="waiting-ticket-notch waiting-ticket-notch-left" aria-hidden="true"></span>
               <span class="waiting-ticket-notch waiting-ticket-notch-right" aria-hidden="true"></span>
-              <div class="waiting-ticket-text">איזה יופי! קיבלת כרטיס כניסה 🎫</div>
+              <div class="waiting-ticket-text">הכרטיס בידך! 🎫 ברגע שהמרצה יפתח את השיעור, הדלת תיפתח עבורך אוטומטית.</div>
             </div>
             <div id="waiting-ticket-confetti" class="waiting-ticket-confetti" aria-hidden="true"></div>
           </div>
@@ -1328,7 +1328,7 @@ livePulseStyle.textContent = `
   padding: 18px 20px;
 }
 .waiting-ticket-text {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 900;
   color: #1e40af;
   line-height: 1.35;
@@ -2096,10 +2096,15 @@ function triggerTicketConfettiBurst() {
 
 function showEntranceTicketCelebration(animate = false) {
   const shell = document.getElementById('waiting-ticket-celebration');
+  const textEl = shell?.querySelector('.waiting-ticket-text');
   const button = document.querySelector('.waiting-ticket-btn');
   const status = document.getElementById('entrance-ticket-status');
   const input = document.getElementById('entrance-ticket-input');
   if (!shell) return;
+
+  if (textEl) {
+    textEl.textContent = 'הכרטיס בידך! 🎫 ברגע שהמרצה יפתח את השיעור, הדלת תיפתח עבורך אוטומטית.';
+  }
 
   shell.style.display = '';
   if (button) button.style.display = 'none';
@@ -2576,6 +2581,9 @@ async function hardGateCheckSessionActive() {
   await sendWaitingPing(true);
   const activeSessionId = await resolveActiveSessionForLockout();
   if (!activeSessionId) return;
+
+  // Automatic door policy: only students with an entrance ticket can auto-enter.
+  if (!entranceTicketSubmitted) return;
 
   urlSessionId = activeSessionId;
   sessionId = activeSessionId;
