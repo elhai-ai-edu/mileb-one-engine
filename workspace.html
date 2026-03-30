@@ -1208,13 +1208,53 @@ livePulseStyle.textContent = `
   background: linear-gradient(180deg, #f8fbff, #f1f5ff);
   padding: 12px;
   margin-bottom: 12px;
+  min-height: 380px;
+  max-height: 62vh;
+  overflow: hidden;
 }
 .waiting-mission-content {
-  font-size: 14px;
-  line-height: 1.7;
-  color: #1e293b;
+  font-size: 17px;
+  line-height: 1.75;
+  color: #1e40af;
+  font-weight: 700;
   display: grid;
-  gap: 9px;
+  align-content: start;
+  gap: 10px;
+  height: 100%;
+  overflow: auto;
+  padding-right: 2px;
+  contain: layout paint;
+}
+.waiting-mission-title {
+  color: #1e40af;
+  font-size: 1.2em;
+  font-weight: 800;
+  line-height: 1.55;
+}
+.waiting-mission-instruction {
+  color: #f97316;
+  font-size: 1.08em;
+  font-weight: 800;
+  line-height: 1.65;
+}
+.waiting-mission-body {
+  color: #1e40af;
+  font-size: 1.04em;
+  font-weight: 700;
+  line-height: 1.68;
+}
+.waiting-mission-video-link {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f97316;
+  text-decoration: none;
+}
+.waiting-mission-video-link:hover {
+  text-decoration: underline;
+}
+.waiting-col-center {
+  display: flex;
+  flex-direction: column;
 }
 .waiting-ticket-panel {
   border: 1px solid #dbeafe;
@@ -1512,6 +1552,10 @@ const waitingMemoryGameState = {
   completed: false,
   title: ""
 };
+const waitingMissionRenderState = {
+  videoEmbedUrl: "",
+  audioDataUrl: ""
+};
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -1631,33 +1675,83 @@ function isWaitingOverlayVisible() {
 function renderWaitingMissionContent(mission = {}) {
   const target = document.getElementById("waiting-mission-content");
   if (!target) return;
-  const parts = [];
 
-  if (mission?.text) {
-    parts.push(`<div style="white-space:pre-wrap;">${escapeHtml(mission.text)}</div>`);
+  if (!target.dataset.missionStableUi) {
+    target.innerHTML = [
+      '<div id="waiting-mission-text-block"></div>',
+      '<a id="waiting-mission-video-link" class="waiting-mission-video-link" target="_blank" rel="noopener" style="display:none;"></a>',
+      '<div id="waiting-mission-video-wrap" style="display:none;"></div>',
+      '<div id="waiting-mission-audio-wrap" style="display:none;"></div>'
+    ].join("");
+    target.dataset.missionStableUi = "1";
   }
 
-  if (mission?.videoUrl) {
-    const url = String(mission.videoUrl).trim();
-    parts.push(`<a href="${url}" target="_blank" rel="noopener" style="font-size:12px;font-weight:700;color:#1d4ed8;">▶ פתח סרטון הכנה</a>`);
-    const isYouTube = /youtu\.be|youtube\.com/.test(url);
+  const textBlock = document.getElementById("waiting-mission-text-block");
+  const videoLink = document.getElementById("waiting-mission-video-link");
+  const videoWrap = document.getElementById("waiting-mission-video-wrap");
+  const audioWrap = document.getElementById("waiting-mission-audio-wrap");
+  if (!textBlock || !videoLink || !videoWrap || !audioWrap) return;
+
+  const missionText = String(mission?.text || "").trim();
+  if (missionText) {
+    const lines = missionText.split(/\r?\n/).map(line => String(line || "").trim()).filter(Boolean);
+    if (lines.length) {
+      const [firstLine, ...restLines] = lines;
+      const styledLines = restLines.map((line) => {
+        const isAction = /^[-*•\d]/.test(line) || /(עליכם|בצעו|כתבו|הגישו|בחרו|ענו|שלחו|משימה)/.test(line);
+        const cls = isAction ? "waiting-mission-instruction" : "waiting-mission-body";
+        return `<div class="${cls}" style="white-space:pre-wrap;">${escapeHtml(line)}</div>`;
+      });
+      textBlock.innerHTML = [`<div class="waiting-mission-title" style="white-space:pre-wrap;">${escapeHtml(firstLine)}</div>`, ...styledLines].join("");
+    } else {
+      textBlock.innerHTML = '<div class="waiting-mission-body">אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>';
+    }
+  } else {
+    textBlock.innerHTML = '<div class="waiting-mission-body">אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>';
+  }
+
+  const videoUrl = String(mission?.videoUrl || "").trim();
+  if (videoUrl) {
+    videoLink.href = videoUrl;
+    videoLink.textContent = "▶ פתח סרטון הכנה";
+    videoLink.style.display = "inline-block";
+
+    const isYouTube = /youtu\.be|youtube\.com/.test(videoUrl);
     if (isYouTube) {
-      const embedUrl = url.includes("embed/") ? url : url
+      const embedUrl = videoUrl.includes("embed/") ? videoUrl : videoUrl
         .replace("watch?v=", "embed/")
         .replace("youtu.be/", "youtube.com/embed/");
-      parts.push(`<iframe src="${embedUrl}" style="width:100%;min-height:180px;border:0;border-radius:10px;" allowfullscreen></iframe>`);
+
+      videoWrap.style.display = "block";
+      // Keep the current player alive if URL didn't change to prevent flicker/reset.
+      if (waitingMissionRenderState.videoEmbedUrl !== embedUrl) {
+        videoWrap.innerHTML = `<iframe src="${embedUrl}" style="width:100%;min-height:220px;border:0;border-radius:10px;" allowfullscreen></iframe>`;
+        waitingMissionRenderState.videoEmbedUrl = embedUrl;
+      }
+    } else {
+      videoWrap.style.display = "none";
+      videoWrap.innerHTML = "";
+      waitingMissionRenderState.videoEmbedUrl = "";
     }
+  } else {
+    videoLink.style.display = "none";
+    videoWrap.style.display = "none";
+    videoWrap.innerHTML = "";
+    waitingMissionRenderState.videoEmbedUrl = "";
   }
 
-  if (mission?.audioDataUrl) {
-    parts.push(`<audio controls style="width:100%;"><source src="${mission.audioDataUrl}" type="audio/webm"></audio>`);
+  const audioDataUrl = String(mission?.audioDataUrl || "").trim();
+  if (audioDataUrl) {
+    audioWrap.style.display = "block";
+    if (waitingMissionRenderState.audioDataUrl !== audioDataUrl) {
+      audioWrap.innerHTML = `<audio controls style="width:100%;"><source src="${audioDataUrl}" type="audio/webm"></audio>`;
+      waitingMissionRenderState.audioDataUrl = audioDataUrl;
+    }
+  } else {
+    audioWrap.style.display = "none";
+    audioWrap.innerHTML = "";
+    waitingMissionRenderState.audioDataUrl = "";
   }
-
-  if (!parts.length) {
-    parts.push("<div>אין עדיין משימת פתיחה. אפשר להתכונן מנטלית לנושא השיעור.</div>");
-  }
-
-  target.innerHTML = parts.join("");
 }
 
 function hasPreSessionMissionContent(mission = {}) {
