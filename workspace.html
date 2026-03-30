@@ -889,6 +889,7 @@ const skillId  = params.get("skillId")  || "";
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 const WAITING_POLL_MS = 3500;
 const WAITING_HEARTBEAT_MS = 10000;
+const LOCKOUT_POLL_MS = 1500;
 
 // sessionId — מה-URL אם יש שיעור פעיל, אחרת מייצר אחד גנרי לכל קורס בנפרד
 let urlSessionId = params.get("sessionId") || "";
@@ -947,6 +948,9 @@ let waitingMission = null;
 let entranceTicketSubmitted = false;
 let avatarCropper = null;
 let pendingAvatarDataUrl = "";
+let isLockedOut = true;
+let hardGatePollTimer = null;
+let hasBootedWorkspace = false;
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -1032,8 +1036,8 @@ function setWorkspaceContext(mode) {
 }
 
 function enterLiveClassroom() {
-  if (!skillId && !classroomJoined) {
-    startWaitingRoomFlow();
+  if (!skillId && isLockedOut) {
+    setWaitingOverlayVisible(true);
     return;
   }
 
@@ -1160,22 +1164,55 @@ async function submitEntranceTicket() {
     if (status) status.textContent = "נשלח ✓";
   } catch {
     if (status) status.textContent = "שגיאת רשת";
+  }
+}
 
-document.addEventListener("click", (event) => {
-  const avatarEl = event.target?.closest?.(".waf-avatar");
-  if (avatarEl && avatarEl.getAttribute("src")) {
-    openAvatarLightbox(avatarEl.getAttribute("src"));
+function stopHardGatePolling() {
+  if (hardGatePollTimer) {
+    clearInterval(hardGatePollTimer);
+    hardGatePollTimer = null;
   }
-});
+}
 
-document.addEventListener("keydown", (event) => {
-  if (event.key !== "Escape") return;
-  closeAvatarLightbox({ target: { id: "avatar-lightbox-overlay" } });
-  if (document.getElementById("avatar-crop-overlay")?.style.display !== "none") {
-    cancelAvatarCrop();
+async function resolveActiveSessionForLockout() {
+  if (urlSessionId) {
+    const active = await resolveSessionActive(urlSessionId);
+    if (active) return urlSessionId;
+    if (courseId) {
+      urlSessionId = "";
+      sessionId = "";
+    }
   }
-});
-  }
+
+  if (!courseId) return null;
+
+  const discoveredSessionId = await discoverActiveSession();
+  if (!discoveredSessionId) return null;
+  const active = await resolveSessionActive(discoveredSessionId);
+  return active ? discoveredSessionId : null;
+}
+
+async function hardGateCheckSessionActive() {
+  if (!isLockedOut) return;
+  const activeSessionId = await resolveActiveSessionForLockout();
+  if (!activeSessionId) return;
+
+  urlSessionId = activeSessionId;
+  sessionId = activeSessionId;
+  isLockedOut = false;
+  stopHardGatePolling();
+  await bootWorkspace();
+}
+
+function startHardGatePolling() {
+  if (skillId || !isLockedOut) return;
+  setWaitingOverlayVisible(true);
+  stopClassroomPolling();
+  stopWaitingHeartbeat();
+  stopWaitingPolling();
+  if (hardGatePollTimer) return;
+  hardGateCheckSessionActive();
+  hardGatePollTimer = setInterval(hardGateCheckSessionActive, LOCKOUT_POLL_MS);
 }
 
 async function showWelcomeTransition() {
@@ -1286,34 +1323,6 @@ async function tryAutoEnterLiveSession() {
 
   await classroomJoin();
   return true;
-}
-
-function startWaitingRoomFlow() {
-  if (skillId) return;
-  setWaitingOverlayVisible(true);
-  setLiveSessionBadge(false);
-  stopClassroomPolling();
-  scheduleWaitingHeartbeat();
-  refreshPreSessionLobby();
-
-  if (!waitingPollTimer) {
-    waitingPollTimer = setInterval(async () => {
-      await refreshPreSessionLobby();
-      const entered = await tryAutoEnterLiveSession();
-      if (!entered) return;
-      stopWaitingPolling();
-      stopWaitingHeartbeat(true);
-      await enterClassroomWithWelcomeIfNeeded();
-    }, WAITING_POLL_MS);
-  }
-
-  // Try immediately so students enter as soon as possible.
-  Promise.resolve(refreshPreSessionLobby()).then(() => tryAutoEnterLiveSession()).then(async entered => {
-    if (!entered) return;
-    stopWaitingPolling();
-    stopWaitingHeartbeat(true);
-    await enterClassroomWithWelcomeIfNeeded();
-  });
 }
 
 function enterProjectWorkspace() {
@@ -1531,7 +1540,10 @@ function showRoleBadge(role) {
 // טעינת config
 // ─────────────────────────────
 
-async function init() {
+async function bootWorkspace() {
+  if (hasBootedWorkspace) return;
+  hasBootedWorkspace = true;
+
   const res = await fetch('/config.json?ts=' + Date.now());
   CONFIG = await res.json();
 
@@ -1552,7 +1564,9 @@ async function init() {
         await classroomJoin();
         enterLiveClassroom();
       } else {
-        startWaitingRoomFlow();
+        hasBootedWorkspace = false;
+        isLockedOut = true;
+        startHardGatePolling();
       }
     }
     return;
@@ -1574,13 +1588,32 @@ async function init() {
       await classroomJoin();
       enterLiveClassroom();
     } else {
-      startWaitingRoomFlow();
+      hasBootedWorkspace = false;
+      isLockedOut = true;
+      startHardGatePolling();
     }
   } else if (courseId) {
     const entered = await tryAutoEnterLiveSession();
-    if (!entered) startWaitingRoomFlow();
-    else enterLiveClassroom();
+    if (!entered) {
+      hasBootedWorkspace = false;
+      isLockedOut = true;
+      startHardGatePolling();
+    } else {
+      enterLiveClassroom();
+    }
   }
+}
+
+async function init() {
+  if (skillId) {
+    isLockedOut = false;
+    setWaitingOverlayVisible(false);
+    await bootWorkspace();
+    return;
+  }
+
+  isLockedOut = true;
+  startHardGatePolling();
 }
 
 // ─────────────────────────────
@@ -2749,7 +2782,9 @@ async function pollClassroomState() {
     const data = await res.json();
     if (!data?.sessionActive) {
       classroomJoined = false;
-      startWaitingRoomFlow();
+      hasBootedWorkspace = false;
+      isLockedOut = true;
+      startHardGatePolling();
       return;
     }
     const isLocked = !!data.stepLocked;
@@ -2788,8 +2823,8 @@ async function pollClassroomState() {
 document.addEventListener("visibilitychange", () => {
   if (!urlSessionId && !isWaitingOverlayVisible()) return;
   if (!document.hidden) {
-    if (!classroomJoined) {
-      startWaitingRoomFlow();
+    if (isLockedOut || !classroomJoined) {
+      startHardGatePolling();
       return;
     }
     classroomPollDelay = POLL_MIN;
@@ -2808,6 +2843,21 @@ window.addEventListener("beforeunload", () => {
     });
     navigator.sendBeacon("/.netlify/functions/classroom", new Blob([payload], { type: "application/json" }));
   } catch {}
+});
+
+document.addEventListener("click", (event) => {
+  const avatarEl = event.target?.closest?.(".waf-avatar");
+  if (avatarEl && avatarEl.getAttribute("src")) {
+    openAvatarLightbox(avatarEl.getAttribute("src"));
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  closeAvatarLightbox({ target: { id: "avatar-lightbox-overlay" } });
+  if (document.getElementById("avatar-crop-overlay")?.style.display !== "none") {
+    cancelAvatarCrop();
+  }
 });
 
 function triggerUnlockAnimation() {
