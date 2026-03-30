@@ -69,6 +69,12 @@ function normalizePreSessionMission(input = {}) {
   };
 }
 
+function clipCardText(text, maxLen = 40) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if(clean.length <= maxLen) return clean;
+  return clean.slice(0, maxLen).trim();
+}
+
 function computeVotePercentages(votesMap = {}, optionsCount = 3) {
   const counts = Array.from({ length: Math.max(1, optionsCount) }, () => 0);
   Object.values(votesMap || {}).forEach(item => {
@@ -729,6 +735,7 @@ export async function handler(event){
     const resolvedCourseId = classId || courseId || null;
     const unitId = normalizeUnitId(body.unitId);
     const userId = String(body.userId || fid || "").trim() || null;
+    const requestedWarmupType = String(body.warmupType || "").trim().toLowerCase();
     if(!resolvedCourseId) return err("classId required");
     if(!fid) return err("facultyId required");
 
@@ -744,6 +751,92 @@ export async function handler(event){
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if(!apiKey) return err("AI service unavailable");
+
+    if(requestedWarmupType === "memory_match") {
+      let topicName = String(body.topicName || "").trim();
+      if(!topicName && userId){
+        const unitSnap = await db.ref(getUnitPath(userId, resolvedCourseId, unitId)).once("value");
+        topicName = String(unitSnap.val()?.topicName || "").trim();
+      }
+      const promptTopic = topicName || subject;
+
+      const memoryPrompt = `צור משחק Memory Match לשיעור בנושא: '${promptTopic}'.
+החזר אך ורק JSON תקין, ללא טקסט נוסף, במבנה:
+{"type":"memory_match","title":"...","pairs":[{"term":"...","match":"..."}]}
+
+כללים קשיחים:
+- בדיוק 8 זוגות (8 items במערך pairs)
+- כל זוג: term מקצועי + match (הגדרה קצרה או תרגום עברית-אנגלית)
+- כל שדה term/match חייב להיות עד 40 תווים
+- טקסט קצר, ברור, מתאים לכרטיס משחק
+- אין כפילויות בין terms
+- אין משפטים ארוכים`;
+
+      try {
+        const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://cozy-seahorse-7c5204.netlify.app",
+            "X-Title": "MilEd.One"
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.0-flash-001",
+            messages: [{ role: "user", content: memoryPrompt }],
+            temperature: 0.9,
+            max_tokens: 900
+          })
+        });
+
+        if(!aiRes.ok) return err("AI generation failed");
+
+        const aiData = await aiRes.json();
+        const rawContent = String(aiData?.choices?.[0]?.message?.content || "");
+        const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+        if(!jsonMatch) return err("AI returned invalid format");
+
+        let parsed;
+        try { parsed = JSON.parse(jsonMatch[0]); }
+        catch { return err("AI JSON parse error"); }
+
+        const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
+        if(rawPairs.length < 8) return err("AI returned insufficient pairs");
+
+        const pairs = rawPairs.slice(0, 8).map((item, idx) => {
+          const term = clipCardText(item?.term, 40);
+          const match = clipCardText(item?.match, 40);
+          return {
+            pairId: `p${idx + 1}`,
+            term,
+            match
+          };
+        }).filter(item => item.term && item.match);
+
+        if(pairs.length < 8) return err("AI returned invalid pair texts");
+
+        const warmup = {
+          type: "memory_match",
+          responseType: "memory_match",
+          categoryKey: "memory_match",
+          categoryLabel: "Memory Match",
+          question: clipCardText(parsed?.title || `התאמות מושגים: ${promptTopic}`, 80),
+          topicName: promptTopic,
+          pairs,
+          generatedAt: Date.now(),
+          votes: {}
+        };
+
+        await db.ref(`pre_session_warmup/${resolvedCourseId}`).set(warmup);
+        if(userId)
+          await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/warmupData`).set(warmup);
+
+        return ok({ ok:true, warmup });
+      } catch (e) {
+        console.error("generate_warmup memory_match error:", e.message);
+        return err("AI generation error");
+      }
+    }
 
     const categoryLibrary = [
       {

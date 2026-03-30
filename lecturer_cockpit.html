@@ -1500,7 +1500,7 @@ async function generateWarmup() {
   if (btn) btn.disabled = true;
   if (statusEl) statusEl.textContent = '⏳ מייצר שאלת חימום...';
   try {
-    const res = await callClassroom({ action: 'generate_warmup', classId, courseId: classId, unitId, userId: facultyId, facultyId });
+    const res = await callClassroom({ action: 'generate_warmup', classId, courseId: classId, unitId, userId: facultyId, facultyId, warmupType: 'memory_match' });
     if (!res?.ok) {
       if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביצירת חימום';
     } else {

@@ -34,6 +34,10 @@
           </div>
           <div id="waiting-quiz-active" style="display:none;">
             <div id="waiting-quiz-question" class="waiting-quiz-question"></div>
+            <div id="waiting-memory-stats" class="waiting-memory-stats" style="display:none;"></div>
+            <div id="waiting-memory-board" class="waiting-memory-board" style="display:none;"></div>
+            <div id="waiting-memory-win" class="waiting-memory-win" style="display:none;">כל הכבוד! שלטת במושגי השיעור</div>
+            <div id="waiting-memory-confetti" class="waiting-memory-confetti" aria-hidden="true"></div>
             <div id="waiting-quiz-answers" class="waiting-quiz-answers"></div>
             <div id="waiting-quiz-feedback" class="waiting-quiz-feedback" style="display:none;"></div>
           </div>
@@ -1095,6 +1099,108 @@ livePulseStyle.textContent = `
   padding: 12px 14px;
   line-height: 1.55;
 }
+.waiting-memory-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e3a8a;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.waiting-memory-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+  perspective: 1200px;
+}
+.waiting-memory-card {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  cursor: pointer;
+  perspective: 1200px;
+}
+.waiting-memory-card:disabled {
+  cursor: default;
+}
+.waiting-memory-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.45s ease;
+}
+.waiting-memory-card.is-flipped .waiting-memory-card-inner {
+  transform: rotateY(180deg);
+}
+.waiting-memory-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  line-height: 1.28;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #c7d2fe;
+}
+.waiting-memory-front {
+  background: linear-gradient(160deg, #e0e7ff, #dbeafe);
+  color: #1e3a8a;
+}
+.waiting-memory-back {
+  transform: rotateY(180deg);
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #bfdbfe;
+}
+.waiting-memory-card.is-matched .waiting-memory-back {
+  border-color: #6ee7b7;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.22), 0 0 16px rgba(16, 185, 129, 0.24);
+}
+.waiting-memory-win {
+  font-size: 14px;
+  font-weight: 800;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  background: #ecfdf5;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.waiting-memory-confetti {
+  position: relative;
+  height: 0;
+}
+.waiting-memory-confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 10px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: waitingConfettiFall 1.35s ease-out forwards;
+}
+@keyframes waitingConfettiFall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(120px) rotate(280deg); opacity: 0; }
+}
 
 .waiting-mission-panel {
   border: 1px solid #dbeafe;
@@ -1396,6 +1502,16 @@ let recallAudioContext = null;
 const baseDocumentTitle = document.title;
 const RECALL_DISMISSED_KEY = "miled_recall_dismissed_ids";
 const dismissedRecallIds = new Set(JSON.parse(sessionStorage.getItem(RECALL_DISMISSED_KEY) || "[]"));
+const waitingMemoryGameState = {
+  gameKey: "",
+  cards: [],
+  openIndices: [],
+  matchedPairIds: new Set(),
+  moves: 0,
+  busy: false,
+  completed: false,
+  title: ""
+};
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -1766,6 +1882,9 @@ function renderWarmupQuiz(warmup) {
   const emptyEl = document.getElementById('waiting-quiz-empty');
   const activeEl = document.getElementById('waiting-quiz-active');
   const questionEl = document.getElementById('waiting-quiz-question');
+  const memoryStatsEl = document.getElementById('waiting-memory-stats');
+  const memoryBoardEl = document.getElementById('waiting-memory-board');
+  const memoryWinEl = document.getElementById('waiting-memory-win');
   const answersEl = document.getElementById('waiting-quiz-answers');
   const feedbackEl = document.getElementById('waiting-quiz-feedback');
   if (!emptyEl || !activeEl) return;
@@ -1776,6 +1895,12 @@ function renderWarmupQuiz(warmup) {
     return;
   }
 
+  const warmupType = String(warmup.type || warmup.responseType || '').toLowerCase();
+  if (warmupType === 'memory_match') {
+    renderMemoryMatchWarmup(warmup);
+    return;
+  }
+
   // If already answered this quiz (same generatedAt timestamp), don't reset
   const quizKey = 'miled_warmup_answered_' + String(warmup.generatedAt || '');
   const alreadyAnswered = sessionStorage.getItem(quizKey);
@@ -1783,7 +1908,15 @@ function renderWarmupQuiz(warmup) {
 
   emptyEl.style.display = 'none';
   activeEl.style.display = 'block';
+  if (memoryStatsEl) memoryStatsEl.style.display = 'none';
+  if (memoryBoardEl) {
+    memoryBoardEl.style.display = 'none';
+    memoryBoardEl.innerHTML = '';
+  }
+  if (memoryWinEl) memoryWinEl.style.display = 'none';
   questionEl.textContent = warmup.question || '';
+  if (answersEl) answersEl.style.display = '';
+  if (feedbackEl) feedbackEl.style.display = 'none';
 
   const correct = Number(warmup.correct) || 0;
   const voteStats = warmup?.voteStats || {};
@@ -1879,6 +2012,174 @@ async function submitWarmupVote(choice) {
   } catch {
     return null;
   }
+}
+
+function shuffleArray(items = []) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function buildMemoryCardsFromPairs(pairs = []) {
+  const normalizedPairs = pairs.slice(0, 8).map((pair, idx) => ({
+    pairId: String(pair?.pairId || `p${idx + 1}`),
+    term: String(pair?.term || '').trim(),
+    match: String(pair?.match || '').trim()
+  })).filter(pair => pair.term && pair.match);
+
+  const cards = [];
+  normalizedPairs.forEach((pair, idx) => {
+    cards.push({
+      cardId: `${pair.pairId}_term`,
+      pairId: pair.pairId,
+      text: pair.term
+    });
+    cards.push({
+      cardId: `${pair.pairId}_match`,
+      pairId: pair.pairId,
+      text: pair.match
+    });
+  });
+  return shuffleArray(cards).slice(0, 16);
+}
+
+function isMemoryCardFlipped(index) {
+  const card = waitingMemoryGameState.cards[index];
+  if (!card) return false;
+  return waitingMemoryGameState.matchedPairIds.has(card.pairId) || waitingMemoryGameState.openIndices.includes(index);
+}
+
+function renderMemoryBoard() {
+  const statsEl = document.getElementById('waiting-memory-stats');
+  const boardEl = document.getElementById('waiting-memory-board');
+  const winEl = document.getElementById('waiting-memory-win');
+  if (!statsEl || !boardEl || !winEl) return;
+
+  const matchedCount = waitingMemoryGameState.matchedPairIds.size;
+  statsEl.innerHTML = `<span>התאמות: ${matchedCount}/8</span><span>מהלכים: ${waitingMemoryGameState.moves}</span>`;
+
+  boardEl.innerHTML = waitingMemoryGameState.cards.map((card, index) => {
+    const flipped = isMemoryCardFlipped(index);
+    const matched = waitingMemoryGameState.matchedPairIds.has(card.pairId);
+    const classes = [
+      'waiting-memory-card',
+      flipped ? 'is-flipped' : '',
+      matched ? 'is-matched' : ''
+    ].filter(Boolean).join(' ');
+
+    return `
+      <button class="${classes}" onclick="handleMemoryCardClick(${index})" ${flipped || waitingMemoryGameState.busy ? 'disabled' : ''}>
+        <span class="waiting-memory-card-inner">
+          <span class="waiting-memory-face waiting-memory-front">🧠</span>
+          <span class="waiting-memory-face waiting-memory-back">${escapeHtmlBasic(card.text)}</span>
+        </span>
+      </button>`;
+  }).join('');
+
+  winEl.style.display = waitingMemoryGameState.completed ? 'block' : 'none';
+}
+
+function triggerMemoryConfetti() {
+  const host = document.getElementById('waiting-memory-confetti');
+  if (!host) return;
+  host.innerHTML = '';
+  const colors = ['#60a5fa', '#34d399', '#f59e0b', '#a78bfa', '#22c55e'];
+  for (let i = 0; i < 26; i++) {
+    const piece = document.createElement('span');
+    piece.className = 'waiting-memory-confetti-piece';
+    piece.style.left = `${Math.random() * 95}%`;
+    piece.style.background = colors[i % colors.length];
+    piece.style.animationDelay = `${Math.random() * 0.25}s`;
+    host.appendChild(piece);
+  }
+  setTimeout(() => { host.innerHTML = ''; }, 1800);
+}
+
+function renderMemoryMatchWarmup(warmup = {}) {
+  const emptyEl = document.getElementById('waiting-quiz-empty');
+  const activeEl = document.getElementById('waiting-quiz-active');
+  const questionEl = document.getElementById('waiting-quiz-question');
+  const statsEl = document.getElementById('waiting-memory-stats');
+  const boardEl = document.getElementById('waiting-memory-board');
+  const answersEl = document.getElementById('waiting-quiz-answers');
+  const feedbackEl = document.getElementById('waiting-quiz-feedback');
+  if (!emptyEl || !activeEl || !questionEl || !statsEl || !boardEl) return;
+
+  const pairs = Array.isArray(warmup.pairs) ? warmup.pairs : [];
+  if (pairs.length < 8) {
+    emptyEl.style.display = 'flex';
+    activeEl.style.display = 'none';
+    return;
+  }
+
+  const gameKey = String(warmup.generatedAt || warmup.question || 'memory_match');
+  if (waitingMemoryGameState.gameKey !== gameKey) {
+    waitingMemoryGameState.gameKey = gameKey;
+    waitingMemoryGameState.cards = buildMemoryCardsFromPairs(pairs);
+    waitingMemoryGameState.openIndices = [];
+    waitingMemoryGameState.matchedPairIds = new Set();
+    waitingMemoryGameState.moves = 0;
+    waitingMemoryGameState.busy = false;
+    waitingMemoryGameState.completed = false;
+    waitingMemoryGameState.title = String(warmup.question || 'משחק התאמות מושגים');
+  }
+
+  emptyEl.style.display = 'none';
+  activeEl.style.display = 'block';
+  questionEl.textContent = waitingMemoryGameState.title || 'משחק התאמות מושגים';
+  statsEl.style.display = 'flex';
+  boardEl.style.display = 'grid';
+  if (answersEl) {
+    answersEl.style.display = 'none';
+    answersEl.innerHTML = '';
+  }
+  if (feedbackEl) {
+    feedbackEl.style.display = 'none';
+    feedbackEl.textContent = '';
+  }
+
+  renderMemoryBoard();
+}
+
+function handleMemoryCardClick(index) {
+  const state = waitingMemoryGameState;
+  const card = state.cards[index];
+  if (!card) return;
+  if (state.busy || state.completed) return;
+  if (state.openIndices.includes(index)) return;
+  if (state.matchedPairIds.has(card.pairId)) return;
+
+  state.openIndices.push(index);
+  renderMemoryBoard();
+
+  if (state.openIndices.length < 2) return;
+
+  state.moves += 1;
+  const [first, second] = state.openIndices;
+  const cardA = state.cards[first];
+  const cardB = state.cards[second];
+
+  if (cardA && cardB && cardA.pairId === cardB.pairId) {
+    state.matchedPairIds.add(cardA.pairId);
+    state.openIndices = [];
+    if (state.matchedPairIds.size >= 8) {
+      state.completed = true;
+      triggerMemoryConfetti();
+    }
+    renderMemoryBoard();
+    return;
+  }
+
+  state.busy = true;
+  renderMemoryBoard();
+  setTimeout(() => {
+    state.openIndices = [];
+    state.busy = false;
+    renderMemoryBoard();
+  }, 1000);
 }
 
 function escapeHtmlBasic(text) {
