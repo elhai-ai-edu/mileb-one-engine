@@ -946,15 +946,10 @@ livePulseStyle.textContent = `
   border-color: #bfdbfe;
 }
 .waiting-lobby-grid.waiting-layout-minimal {
-  grid-template-columns: 1fr;
-}
-.waiting-lobby-grid.waiting-layout-minimal .waiting-col-left,
-.waiting-lobby-grid.waiting-layout-minimal .waiting-col-right,
-.waiting-lobby-grid.waiting-layout-minimal .waiting-col-title {
-  display: none;
+  grid-template-columns: 1fr 3fr 1fr;
 }
 .waiting-lobby-grid.waiting-layout-minimal .waiting-col-center {
-  min-height: 0;
+  min-height: 420px;
   border: 1px solid #dbeafe;
   background: linear-gradient(180deg, #f8fbff, #eef4ff);
   display: flex;
@@ -1547,8 +1542,6 @@ function getCurrentLessonTopicLabel() {
 function renderWaitingMissionMode(mission = {}) {
   const hasMission = hasPreSessionMissionContent(mission);
   const grid = document.querySelector(".waiting-lobby-grid");
-  const leftCol = document.getElementById("waiting-col-left");
-  const rightCol = document.getElementById("waiting-col-right");
   const missionShell = document.getElementById("waiting-mission-shell");
   const ticketShell = document.getElementById("waiting-ticket-shell");
   const emptyState = document.getElementById("waiting-empty-state");
@@ -1560,8 +1553,6 @@ function renderWaitingMissionMode(mission = {}) {
 
   if (hasMission) {
     grid.classList.remove("waiting-layout-minimal");
-    if (leftCol) leftCol.style.display = "";
-    if (rightCol) rightCol.style.display = "";
     missionShell.style.display = "";
     ticketShell.style.display = "";
     emptyState.style.display = "none";
@@ -1571,8 +1562,6 @@ function renderWaitingMissionMode(mission = {}) {
   }
 
   grid.classList.add("waiting-layout-minimal");
-  if (leftCol) leftCol.style.display = "none";
-  if (rightCol) rightCol.style.display = "none";
   missionShell.style.display = "none";
   ticketShell.style.display = "none";
   if (input) input.style.display = "none";
