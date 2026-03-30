@@ -1779,41 +1779,105 @@ function renderWarmupQuiz(warmup) {
   // If already answered this quiz (same generatedAt timestamp), don't reset
   const quizKey = 'miled_warmup_answered_' + String(warmup.generatedAt || '');
   const alreadyAnswered = sessionStorage.getItem(quizKey);
+  const responseType = String(warmup.responseType || 'quiz').toLowerCase() === 'opinion' ? 'opinion' : 'quiz';
 
   emptyEl.style.display = 'none';
   activeEl.style.display = 'block';
   questionEl.textContent = warmup.question || '';
 
   const correct = Number(warmup.correct) || 0;
+  const voteStats = warmup?.voteStats || {};
+  const percentages = Array.isArray(voteStats.percentages) ? voteStats.percentages : [];
   answersEl.innerHTML = (warmup.answers || []).map((ans, i) => {
-    const cls = alreadyAnswered ? (i === correct ? 'correct' : 'wrong') : '';
-    return `<button class="waiting-quiz-btn ${cls}" ${alreadyAnswered ? 'disabled' : ''} onclick="handleWarmupAnswer(${i},${correct},${warmup.generatedAt || 0},'${encodeURIComponent(String(warmup.feedback || ''))}')">${escapeHtmlBasic(ans)}</button>`;
+    const cls = alreadyAnswered && responseType === 'quiz' ? (i === correct ? 'correct' : 'wrong') : '';
+    const percentLabel = responseType === 'opinion' && alreadyAnswered ? ` <span style="opacity:.8;font-weight:700;">(${Number(percentages[i] || 0)}%)</span>` : '';
+    return `<button class="waiting-quiz-btn ${cls}" ${alreadyAnswered ? 'disabled' : ''} onclick="handleWarmupAnswer(${i}, ${correct}, ${warmup.generatedAt || 0}, '${encodeURIComponent(String(warmup.feedback || ''))}', '${responseType}')">${escapeHtmlBasic(ans)}${percentLabel}</button>`;
   }).join('');
 
-  if (alreadyAnswered && warmup.feedback) {
-    const chosen = Number(alreadyAnswered);
-    const icon = chosen === correct ? '✅' : '❌';
-    feedbackEl.textContent = icon + ' ' + decodeURIComponent(warmup.feedback || '');
-    feedbackEl.style.display = 'block';
+  if (alreadyAnswered) {
+    if (responseType === 'opinion') {
+      const totalVotes = Number(voteStats.totalVotes || 0);
+      feedbackEl.textContent = `📊 תוצאות הצבעה עדכניות (${totalVotes} מצביעים)`;
+      feedbackEl.style.display = 'block';
+    } else if (warmup.feedback) {
+      const chosen = Number(alreadyAnswered);
+      const icon = chosen === correct ? '✅' : '❌';
+      feedbackEl.textContent = icon + ' ' + decodeURIComponent(warmup.feedback || '');
+      feedbackEl.style.display = 'block';
+    } else {
+      feedbackEl.style.display = 'none';
+    }
   } else {
     feedbackEl.style.display = 'none';
   }
 }
 
-function handleWarmupAnswer(chosen, correct, generatedAt, encodedFeedback) {
+async function handleWarmupAnswer(chosen, correct, generatedAt, encodedFeedback, responseType = 'quiz') {
   const quizKey = 'miled_warmup_answered_' + String(generatedAt);
   sessionStorage.setItem(quizKey, String(chosen));
   const btns = document.querySelectorAll('#waiting-quiz-answers .waiting-quiz-btn');
+  const isOpinion = String(responseType || '').toLowerCase() === 'opinion';
   btns.forEach((btn, i) => {
     btn.disabled = true;
-    if (i === correct) btn.classList.add('correct');
-    else btn.classList.add('wrong');
+    if (!isOpinion) {
+      if (i === correct) btn.classList.add('correct');
+      else btn.classList.add('wrong');
+    }
   });
+
   const feedbackEl = document.getElementById('waiting-quiz-feedback');
+  if (isOpinion) {
+    const voteStats = await submitWarmupVote(chosen);
+    if (voteStats) {
+      btns.forEach((btn, i) => {
+        const rawText = String(btn.textContent || '').replace(/\s*\(\d+%\)\s*$/, '');
+        btn.innerHTML = `${escapeHtmlBasic(rawText)} <span style="opacity:.8;font-weight:700;">(${Number(voteStats.percentages?.[i] || 0)}%)</span>`;
+      });
+      if (feedbackEl) {
+        feedbackEl.textContent = `📊 תוצאות הצבעה עדכניות (${Number(voteStats.totalVotes || 0)} מצביעים)`;
+        feedbackEl.style.display = 'block';
+      }
+      return;
+    }
+    if (feedbackEl) {
+      feedbackEl.textContent = '📊 ההצבעה נשמרה';
+      feedbackEl.style.display = 'block';
+    }
+    return;
+  }
+
   if (feedbackEl) {
     const icon = chosen === correct ? '✅' : '❌';
     feedbackEl.textContent = icon + ' ' + decodeURIComponent(encodedFeedback);
     feedbackEl.style.display = 'block';
+  }
+}
+
+async function submitWarmupVote(choice) {
+  const classId = waitingClassId || courseId || '';
+  const unitId = waitingUnitId || unitIdFromUrl || 'unit_01';
+  const liveSessionId = urlSessionId || sessionId || null;
+  if (!classId || !liveSessionId) return null;
+
+  try {
+    const res = await fetch('/.netlify/functions/classroom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'warmup_vote',
+        classId,
+        courseId: classId,
+        unitId,
+        sessionId: liveSessionId,
+        studentId,
+        choice
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data?.ok) return null;
+    return data.voteStats || null;
+  } catch {
+    return null;
   }
 }
 

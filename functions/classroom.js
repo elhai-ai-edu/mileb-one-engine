@@ -69,6 +69,17 @@ function normalizePreSessionMission(input = {}) {
   };
 }
 
+function computeVotePercentages(votesMap = {}, optionsCount = 3) {
+  const counts = Array.from({ length: Math.max(1, optionsCount) }, () => 0);
+  Object.values(votesMap || {}).forEach(item => {
+    const idx = Number(item?.choice);
+    if(Number.isInteger(idx) && idx >= 0 && idx < counts.length) counts[idx]++;
+  });
+  const totalVotes = counts.reduce((sum, n) => sum + n, 0);
+  const percentages = counts.map(count => totalVotes ? Math.round((count / totalVotes) * 100) : 0);
+  return { counts, totalVotes, percentages };
+}
+
 function normalizeUnitId(value, fallback = "unit_01") {
   const unit = String(value || "").trim();
   return unit || fallback;
@@ -266,6 +277,10 @@ export async function handler(event){
 
       const warmupRaw = unitData?.warmupData || warmupSnapLegacy.val() || null;
       const warmup = warmupRaw && warmupRaw.question ? warmupRaw : null;
+      if(warmup && Array.isArray(warmup.answers)) {
+        const voteStats = computeVotePercentages(warmup.votes || {}, warmup.answers.length);
+        warmup.voteStats = voteStats;
+      }
 
       let ticketsMap = unitData?.entranceTickets || {};
       if(requestedSessionId){
@@ -730,15 +745,67 @@ export async function handler(event){
     const apiKey = process.env.OPENROUTER_API_KEY;
     if(!apiKey) return err("AI service unavailable");
 
-    const promptText = `אתה עוזר פדגוגי. צור שאלת חימום קצרה וממוקדת בנושא: '${subject}'.
-ענה אך ורק ב-JSON תקין, ללא טקסט נוסף, בפורמט הבא:
-{"question":"...","answers":["...","...","..."],"correct":0,"feedback":"..."}
+    const categoryLibrary = [
+      {
+        key: "dilemma",
+        label: "Dilemmas",
+        responseType: "opinion",
+        instruction: "צור דילמה רגשית/אתית אמיתית מהתחום."
+      },
+      {
+        key: "career_focus",
+        label: "Career Focus",
+        responseType: "opinion",
+        instruction: "צור שאלה על קידום, הכנסה או החלטת קריירה בתחום."
+      },
+      {
+        key: "linguistic_puzzle",
+        label: "Linguistic Puzzles",
+        responseType: "quiz",
+        instruction: "צור חידת תרגום עברית-אנגלית למונח מקצועי."
+      },
+      {
+        key: "pure_logic",
+        label: "Pure Logic",
+        responseType: "quiz",
+        instruction: "צור חידת היגיון/תבנית קצרה, ללא תלות ישירה בתחום."
+      }
+    ];
+
+    let lastCategory = null;
+    if(userId){
+      const unitMetaSnap = await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/warmupMeta`).once("value");
+      lastCategory = String(unitMetaSnap.val()?.lastCategory || "").trim() || null;
+    }
+    if(!lastCategory){
+      const legacyMetaSnap = await db.ref(`pre_session_warmup_meta/${resolvedCourseId}`).once("value");
+      lastCategory = String(legacyMetaSnap.val()?.lastCategory || "").trim() || null;
+    }
+
+    const candidateCategories = categoryLibrary.filter(item => item.key !== lastCategory);
+    const chosenCategory = (candidateCategories.length ? candidateCategories : categoryLibrary)[
+      Math.floor(Math.random() * (candidateCategories.length || categoryLibrary.length))
+    ];
+
+    const promptText = `אתה יוצר חימום לכיתה אקדמית. נושא מקצועי: '${subject}'.
+
+איסור מוחלט:
+- לעולם אל תשאל שאלות הגדרה (כמו: "מה ההגדרה של...").
+- לעולם אל תייצר שאלה טריוויאלית של זיכרון עובדות.
+
+קטגוריה חובה לסבב זה (אסור לשנות): ${chosenCategory.key}
+תיאור הקטגוריה: ${chosenCategory.instruction}
+סוג תשובה חובה: ${chosenCategory.responseType}
+
+החזר אך ורק JSON תקין וללא טקסט נוסף, במבנה:
+{"categoryKey":"${chosenCategory.key}","responseType":"${chosenCategory.responseType}","question":"...","answers":["...","...","..."],"correct":0,"feedback":"..."}
 
 כללים:
-- question: שאלה קצרה בעברית, עד 20 מילה
-- answers: בדיוק 3 תשובות קצרות בעברית (לא יותר מ-8 מילה כל אחת)
-- correct: האינדקס של התשובה הנכונה (0, 1 או 2)
-- feedback: משפט הסבר קצר על התשובה הנכונה (עד 20 מילה)`;
+- question: שאלה חדה ומגרה עד 24 מילים
+- answers: בדיוק 3 אפשרויות קצרות (עד 10 מילים)
+- אם responseType הוא opinion: correct חייב להיות null
+- אם responseType הוא quiz: correct חייב להיות 0/1/2
+- feedback: משפט הסבר קצר שמנמק חשיבה`;
 
     try {
       const aiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -772,20 +839,96 @@ export async function handler(event){
         return err("AI returned incomplete data");
 
       warmup.answers = warmup.answers.slice(0, 3).map(a => String(a || "").trim());
-      warmup.correct = Math.max(0, Math.min(2, Number(warmup.correct) || 0));
+      const responseType = String(warmup.responseType || chosenCategory.responseType || "quiz").trim().toLowerCase();
+      warmup.responseType = responseType === "opinion" ? "opinion" : "quiz";
+      warmup.categoryKey = chosenCategory.key;
+      warmup.categoryLabel = chosenCategory.label;
+      if(warmup.responseType === "opinion") warmup.correct = null;
+      else warmup.correct = Math.max(0, Math.min(2, Number(warmup.correct) || 0));
       warmup.feedback = String(warmup.feedback || "").trim();
       warmup.question = String(warmup.question || "").trim();
       warmup.generatedAt = Date.now();
+      warmup.votes = {};
 
       await db.ref(`pre_session_warmup/${resolvedCourseId}`).set(warmup);
       if(userId)
         await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/warmupData`).set(warmup);
+      await db.ref(`pre_session_warmup_meta/${resolvedCourseId}`).set({
+        lastCategory: chosenCategory.key,
+        updatedAt: Date.now()
+      });
+      if(userId)
+        await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/warmupMeta`).set({
+          lastCategory: chosenCategory.key,
+          updatedAt: Date.now()
+        });
       return ok({ ok:true, warmup });
 
     } catch(e) {
       console.error("generate_warmup error:", e.message);
       return err("AI generation error");
     }
+  }
+
+  if(action === "warmup_vote"){
+    let classId = body.classId || body.courseId || null;
+    let unitId = normalizeUnitId(body.unitId);
+    let userId = String(body.userId || "").trim() || null;
+    let resolvedSessionId = String(body.sessionId || "").trim() || null;
+    const studentId = String(body.studentId || "").trim();
+    const choice = Number(body.choice);
+
+    if(!studentId) return err("studentId required");
+    if(!Number.isInteger(choice) || choice < 0 || choice > 2) return err("invalid choice");
+
+    if(!resolvedSessionId && classId){
+      const activeSnap = await db.ref(`active_sessions/${classId}`).once("value");
+      const activeData = activeSnap.val() || {};
+      resolvedSessionId = activeData?.units?.[unitId]?.sessionId || activeData?.sessionId || null;
+    }
+
+    if(resolvedSessionId && (!classId || !userId)){
+      const sessionSnap = await db.ref(`sessions/${resolvedSessionId}`).once("value");
+      const sessionData = sessionSnap.val() || {};
+      classId = classId || sessionData.classId || sessionData.courseId || null;
+      userId = userId || sessionData.userId || sessionData.facultyId || null;
+      unitId = normalizeUnitId(sessionData.unitId || unitId);
+    }
+
+    if(!classId) return err("classId required");
+
+    let warmupPath = `pre_session_warmup/${classId}`;
+    if(userId) warmupPath = `${getUnitPath(userId, classId, unitId)}/warmupData`;
+
+    const warmupSnap = await db.ref(warmupPath).once("value");
+    let warmup = warmupSnap.val() || null;
+    if(!warmup && userId){
+      const legacyWarmupSnap = await db.ref(`pre_session_warmup/${classId}`).once("value");
+      warmup = legacyWarmupSnap.val() || null;
+      warmupPath = `pre_session_warmup/${classId}`;
+    }
+    if(!warmup || !Array.isArray(warmup.answers)) return err("warmup not found");
+
+    const nextVotes = {
+      ...(warmup.votes || {}),
+      [studentId]: {
+        studentId,
+        choice,
+        votedAt: Date.now()
+      }
+    };
+
+    await db.ref(`${warmupPath}/votes`).set(nextVotes);
+    if(userId)
+      await db.ref(`pre_session_warmup/${classId}/votes`).set(nextVotes);
+
+    const voteStats = computeVotePercentages(nextVotes, warmup.answers.length || 3);
+    return ok({
+      ok:true,
+      choice,
+      voteStats,
+      responseType: String(warmup.responseType || "quiz")
+    });
   }
 
   if(action === "entrance_ticket_submit"){
