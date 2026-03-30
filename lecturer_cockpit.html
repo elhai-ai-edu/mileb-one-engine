@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <style>
 /* v8.5 — Skill-Academic Balance */
 .balance-preview {
@@ -480,6 +482,7 @@
   background: #e2e8f0;
   margin-top: 1px;
   flex-shrink: 0;
+  cursor: zoom-in;
 }
 .thread-msg-main {
   display: flex;
@@ -736,11 +739,116 @@
   border-color: #fca5a5;
   color: #b91c1c;
 }
+
+.avatar-crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100100;
+  background: rgba(15,23,42,0.66);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.avatar-crop-modal {
+  width: min(560px, 94vw);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 30px 70px rgba(2, 6, 23, 0.32);
+}
+.avatar-crop-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+.avatar-crop-shell {
+  position: relative;
+  width: 100%;
+  height: min(62vh, 420px);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+.avatar-crop-shell img {
+  max-width: 100%;
+  display: block;
+}
+.avatar-crop-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(68vw, 280px);
+  height: min(68vw, 280px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.44);
+  border: 2px solid rgba(255,255,255,0.95);
+  pointer-events: none;
+}
+.avatar-crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.avatar-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100110;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.82);
+  padding: 20px;
+}
+.avatar-lightbox-image {
+  width: min(440px, 86vw);
+  height: min(440px, 86vw);
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 22px 55px rgba(0,0,0,0.45);
+}
+.avatar-lightbox-close {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.2);
+  color: #ffffff;
+  font-size: 20px;
+  cursor: pointer;
+}
 </style>
 <title>MilEd.One – כיתה חכמה</title>
 
 </head>
 <body class="management-theme">
+
+<div id="avatar-crop-overlay" class="avatar-crop-overlay" style="display:none;">
+  <div class="avatar-crop-modal" role="dialog" aria-modal="true" aria-label="Avatar Cropper">
+    <div class="avatar-crop-title">התאם תמונת מרצה</div>
+    <div class="avatar-crop-shell">
+      <img id="avatar-crop-image" alt="avatar-crop" />
+      <div class="avatar-crop-ring" aria-hidden="true"></div>
+    </div>
+    <div class="avatar-crop-actions">
+      <button class="btn btn-outline" onclick="cancelLecturerAvatarCrop()">ביטול</button>
+      <button class="btn btn-blue" onclick="applyLecturerAvatarCrop()">שמור תמונה</button>
+    </div>
+  </div>
+</div>
+
+<div id="avatar-lightbox-overlay" class="avatar-lightbox-overlay" style="display:none;" onclick="closeAvatarLightbox(event)">
+  <button class="avatar-lightbox-close" onclick="closeAvatarLightbox(event)" aria-label="Close">✕</button>
+  <img id="avatar-lightbox-image" class="avatar-lightbox-image" alt="avatar-preview" />
+</div>
 
 <div class="top-bar" style="margin-top:0; top:0; z-index:10001;">
   <div>
@@ -1139,6 +1247,7 @@ let latestStudentsSnapshot = [];
 let waitingStudentsSnapshot = 0;
 let waitingPressureTimer = null;
 let preSessionAudioDataUrl = "";
+let lecturerAvatarCropper = null;
 
 function safeAvatar(avatar) {
   const value = String(avatar || "").trim();
@@ -1389,6 +1498,76 @@ function triggerLecturerAvatarUpload() {
   if (input) input.click();
 }
 
+function openLecturerAvatarCropModal(dataUrl) {
+  const overlay = document.getElementById("avatar-crop-overlay");
+  const img = document.getElementById("avatar-crop-image");
+  if (!overlay || !img || !dataUrl || typeof Cropper === "undefined") {
+    const fallback = safeAvatar(dataUrl);
+    if (fallback) {
+      facultyAvatar = fallback;
+      localStorage.setItem(LECTURER_AVATAR_KEY, fallback);
+      renderLecturerAvatarButton();
+    }
+    return;
+  }
+
+  overlay.style.display = "flex";
+  if (lecturerAvatarCropper) {
+    lecturerAvatarCropper.destroy();
+    lecturerAvatarCropper = null;
+  }
+  img.src = dataUrl;
+  img.onload = () => {
+    if (lecturerAvatarCropper) lecturerAvatarCropper.destroy();
+    lecturerAvatarCropper = new Cropper(img, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: "move",
+      guides: false,
+      center: false,
+      background: false,
+      cropBoxResizable: true,
+      cropBoxMovable: true,
+      responsive: true,
+      autoCropArea: 0.9
+    });
+  };
+}
+
+function cancelLecturerAvatarCrop() {
+  const overlay = document.getElementById("avatar-crop-overlay");
+  if (overlay) overlay.style.display = "none";
+  if (lecturerAvatarCropper) {
+    lecturerAvatarCropper.destroy();
+    lecturerAvatarCropper = null;
+  }
+}
+
+function applyLecturerAvatarCrop() {
+  if (!lecturerAvatarCropper) {
+    cancelLecturerAvatarCrop();
+    return;
+  }
+
+  const canvas = lecturerAvatarCropper.getCroppedCanvas({
+    width: 320,
+    height: 320,
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: "high"
+  });
+  const cropped = safeAvatar(canvas?.toDataURL("image/jpeg", 0.92) || "");
+  if (!cropped) {
+    alert("שגיאה בעדכון תמונה");
+    cancelLecturerAvatarCrop();
+    return;
+  }
+
+  facultyAvatar = cropped;
+  localStorage.setItem(LECTURER_AVATAR_KEY, cropped);
+  renderLecturerAvatarButton();
+  cancelLecturerAvatarCrop();
+}
+
 async function handleLecturerAvatarUpload(event) {
   const file = event?.target?.files?.[0];
   if (!file) return;
@@ -1403,10 +1582,29 @@ async function handleLecturerAvatarUpload(event) {
     event.target.value = "";
     return;
   }
-  facultyAvatar = avatar;
-  localStorage.setItem(LECTURER_AVATAR_KEY, avatar);
-  renderLecturerAvatarButton();
+  openLecturerAvatarCropModal(avatar);
   event.target.value = "";
+}
+
+function openAvatarLightbox(src) {
+  const safe = safeAvatar(src);
+  if (!safe) return;
+  const overlay = document.getElementById("avatar-lightbox-overlay");
+  const img = document.getElementById("avatar-lightbox-image");
+  if (!overlay || !img) return;
+  img.src = safe;
+  overlay.style.display = "flex";
+}
+
+function closeAvatarLightbox(event) {
+  const target = event?.target;
+  const isOverlay = target?.id === "avatar-lightbox-overlay";
+  const isClose = !!target?.classList?.contains("avatar-lightbox-close");
+  if (event && !isOverlay && !isClose) return;
+  const overlay = document.getElementById("avatar-lightbox-overlay");
+  const img = document.getElementById("avatar-lightbox-image");
+  if (overlay) overlay.style.display = "none";
+  if (img) img.removeAttribute("src");
 }
 
 function renderPresenceModal() {
@@ -2748,6 +2946,21 @@ window.addEventListener('resize', syncCockpitNavOffset);
 startWaitingPressurePolling();
 renderPreSessionAudioPreview();
 loadPreSessionMission();
+
+document.addEventListener("click", (event) => {
+  const avatarEl = event.target?.closest?.(".thread-msg-avatar");
+  if (avatarEl && avatarEl.getAttribute("src")) {
+    openAvatarLightbox(avatarEl.getAttribute("src"));
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  closeAvatarLightbox({ target: { id: "avatar-lightbox-overlay" } });
+  if (document.getElementById("avatar-crop-overlay")?.style.display !== "none") {
+    cancelLecturerAvatarCrop();
+  }
+});
 </script>
 
 <script src="/balance.js"></script>

@@ -6,7 +6,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
 <title>MilEd — מרחב עבודה</title>
 </head>
 
@@ -40,6 +42,25 @@
     <div style="font-size:26px;font-weight:800;color:#0f172a;">ברוכים הבאים לשיעור</div>
     <div style="font-size:14px;color:#334155;margin-top:8px;">המשימה הושלמה. עוברים למרחב הלמידה...</div>
   </div>
+</div>
+
+<div id="avatar-crop-overlay" class="avatar-crop-overlay" style="display:none;">
+  <div class="avatar-crop-modal" role="dialog" aria-modal="true" aria-label="Avatar Cropper">
+    <div class="avatar-crop-title">התאם תמונת פרופיל</div>
+    <div class="avatar-crop-shell">
+      <img id="avatar-crop-image" alt="avatar-crop" />
+      <div class="avatar-crop-ring" aria-hidden="true"></div>
+    </div>
+    <div class="avatar-crop-actions">
+      <button class="btn btn-outline" onclick="cancelAvatarCrop()">ביטול</button>
+      <button class="btn btn-blue" onclick="applyAvatarCrop()">שמור תמונה</button>
+    </div>
+  </div>
+</div>
+
+<div id="avatar-lightbox-overlay" class="avatar-lightbox-overlay" style="display:none;" onclick="closeAvatarLightbox(event)">
+  <button class="avatar-lightbox-close" onclick="closeAvatarLightbox(event)" aria-label="Close">✕</button>
+  <img id="avatar-lightbox-image" class="avatar-lightbox-image" alt="avatar-preview" />
 </div>
 
 <div class="sidebar">
@@ -769,6 +790,96 @@ livePulseStyle.textContent = `
 @keyframes waitingSpin {
   to { transform: rotate(360deg); }
 }
+
+.waf-avatar {
+  cursor: zoom-in;
+}
+
+.avatar-crop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100100;
+  background: rgba(15,23,42,0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+.avatar-crop-modal {
+  width: min(560px, 94vw);
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 30px 70px rgba(2, 6, 23, 0.32);
+}
+.avatar-crop-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 10px;
+}
+.avatar-crop-shell {
+  position: relative;
+  width: 100%;
+  height: min(62vh, 420px);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+.avatar-crop-shell img {
+  max-width: 100%;
+  display: block;
+}
+.avatar-crop-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(68vw, 280px);
+  height: min(68vw, 280px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.44);
+  border: 2px solid rgba(255,255,255,0.95);
+  pointer-events: none;
+}
+.avatar-crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.avatar-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100110;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 6, 23, 0.82);
+  padding: 20px;
+}
+.avatar-lightbox-image {
+  width: min(440px, 86vw);
+  height: min(440px, 86vw);
+  object-fit: cover;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.35);
+  box-shadow: 0 22px 55px rgba(0,0,0,0.45);
+}
+.avatar-lightbox-close {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.2);
+  color: #ffffff;
+  font-size: 20px;
+  cursor: pointer;
+}
 `;
 document.head.appendChild(livePulseStyle);
 
@@ -834,6 +945,8 @@ let waitingPollTimer = null;
 let waitingHeartbeatTimer = null;
 let waitingMission = null;
 let entranceTicketSubmitted = false;
+let avatarCropper = null;
+let pendingAvatarDataUrl = "";
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -1047,6 +1160,21 @@ async function submitEntranceTicket() {
     if (status) status.textContent = "נשלח ✓";
   } catch {
     if (status) status.textContent = "שגיאת רשת";
+
+document.addEventListener("click", (event) => {
+  const avatarEl = event.target?.closest?.(".waf-avatar");
+  if (avatarEl && avatarEl.getAttribute("src")) {
+    openAvatarLightbox(avatarEl.getAttribute("src"));
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  closeAvatarLightbox({ target: { id: "avatar-lightbox-overlay" } });
+  if (document.getElementById("avatar-crop-overlay")?.style.display !== "none") {
+    cancelAvatarCrop();
+  }
+});
   }
 }
 
@@ -2036,6 +2164,80 @@ function triggerStudentAvatarUpload() {
   if (input) input.click();
 }
 
+function openAvatarCropModal(dataUrl) {
+  const overlay = document.getElementById("avatar-crop-overlay");
+  const img = document.getElementById("avatar-crop-image");
+  if (!overlay || !img || !dataUrl || typeof Cropper === "undefined") {
+    const fallback = safeAvatar(dataUrl);
+    if (fallback) {
+      studentAvatar = fallback;
+      localStorage.setItem(STUDENT_AVATAR_KEY, fallback);
+      renderStudentAvatarButton();
+    }
+    return;
+  }
+
+  pendingAvatarDataUrl = dataUrl;
+  overlay.style.display = "flex";
+
+  if (avatarCropper) {
+    avatarCropper.destroy();
+    avatarCropper = null;
+  }
+
+  img.src = dataUrl;
+  img.onload = () => {
+    if (avatarCropper) avatarCropper.destroy();
+    avatarCropper = new Cropper(img, {
+      aspectRatio: 1,
+      viewMode: 1,
+      dragMode: "move",
+      guides: false,
+      center: false,
+      background: false,
+      cropBoxResizable: true,
+      cropBoxMovable: true,
+      responsive: true,
+      autoCropArea: 0.9
+    });
+  };
+}
+
+function cancelAvatarCrop() {
+  const overlay = document.getElementById("avatar-crop-overlay");
+  if (overlay) overlay.style.display = "none";
+  pendingAvatarDataUrl = "";
+  if (avatarCropper) {
+    avatarCropper.destroy();
+    avatarCropper = null;
+  }
+}
+
+function applyAvatarCrop() {
+  if (!avatarCropper) {
+    cancelAvatarCrop();
+    return;
+  }
+
+  const canvas = avatarCropper.getCroppedCanvas({
+    width: 320,
+    height: 320,
+    imageSmoothingEnabled: true,
+    imageSmoothingQuality: "high"
+  });
+  const cropped = safeAvatar(canvas?.toDataURL("image/jpeg", 0.92) || "");
+  if (!cropped) {
+    alert("נכשל לעדכן תמונה");
+    cancelAvatarCrop();
+    return;
+  }
+
+  studentAvatar = cropped;
+  localStorage.setItem(STUDENT_AVATAR_KEY, cropped);
+  renderStudentAvatarButton();
+  cancelAvatarCrop();
+}
+
 async function handleStudentAvatarUpload(event) {
   const file = event?.target?.files?.[0];
   if (!file) return;
@@ -2050,10 +2252,29 @@ async function handleStudentAvatarUpload(event) {
     event.target.value = "";
     return;
   }
-  studentAvatar = avatar;
-  localStorage.setItem(STUDENT_AVATAR_KEY, avatar);
-  renderStudentAvatarButton();
+  openAvatarCropModal(avatar);
   event.target.value = "";
+}
+
+function openAvatarLightbox(src) {
+  const safe = safeAvatar(src);
+  if (!safe) return;
+  const overlay = document.getElementById("avatar-lightbox-overlay");
+  const img = document.getElementById("avatar-lightbox-image");
+  if (!overlay || !img) return;
+  img.src = safe;
+  overlay.style.display = "flex";
+}
+
+function closeAvatarLightbox(event) {
+  const target = event?.target;
+  const isOverlay = target?.id === "avatar-lightbox-overlay";
+  const isClose = !!target?.classList?.contains("avatar-lightbox-close");
+  if (event && !isOverlay && !isClose) return;
+  const overlay = document.getElementById("avatar-lightbox-overlay");
+  const img = document.getElementById("avatar-lightbox-image");
+  if (overlay) overlay.style.display = "none";
+  if (img) img.removeAttribute("src");
 }
 
 async function toggleAudioRecording() {
