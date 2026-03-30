@@ -19,8 +19,8 @@
     <div class="waiting-room-head">
       <div class="waiting-room-icon" aria-hidden="true">⏳</div>
       <div>
-        <div class="waiting-room-text">השיעור טרם התחיל, המרצה יפתח אותו בקרוב...</div>
-        <div class="waiting-room-subtext">בינתיים ננצל את הזמן לחימום קצר ומשימת כניסה.</div>
+        <h1 id="waiting-room-title" class="waiting-room-text">השיעור טרם התחיל, המרצה יפתח אותו בקרוב...</h1>
+        <div id="waiting-room-subtitle" class="waiting-room-subtext">בינתיים ננצל את הזמן לחימום קצר ומשימת כניסה.</div>
       </div>
     </div>
 
@@ -917,7 +917,7 @@ livePulseStyle.textContent = `
   line-height: 1.4;
   color: #0f172a;
   font-weight: 700;
-  margin-bottom: 2px;
+  margin: 0 0 2px;
 }
 .waiting-room-subtext {
   font-size: 13px;
@@ -1231,7 +1231,7 @@ const params   = new URLSearchParams(location.search);
 const courseId = params.get("courseId") || "";
 const skillId  = params.get("skillId")  || "";
 const ACTIVE_SESSIONS_NODE = "active_sessions";
-const WAITING_POLL_MS = 3500;
+const WAITING_POLL_MS = 3000;
 const WAITING_HEARTBEAT_MS = 10000;
 const LOCKOUT_POLL_MS = 1500;
 
@@ -1297,6 +1297,7 @@ let hardGatePollTimer = null;
 let hasBootedWorkspace = false;
 let waitingClassId = courseId || "";
 let myWaitingReaction = "";
+let waitingGameActive = false;
 let activeRecallAlertId = "";
 let recallAlarmTimer = null;
 let recallTitleTimer = null;
@@ -1452,6 +1453,42 @@ function renderWaitingMissionContent(mission = {}) {
   target.innerHTML = parts.join("");
 }
 
+function hasPreSessionMissionContent(mission = {}) {
+  if (!mission || typeof mission !== "object") return false;
+  const text = String(mission.text || "").trim();
+  const videoUrl = String(mission.videoUrl || "").trim();
+  const audioDataUrl = String(mission.audioDataUrl || "").trim();
+  return !!(text || videoUrl || audioDataUrl);
+}
+
+function resolveWaitingGameActive() {
+  if (waitingGameActive) return true;
+  const overlay = document.getElementById("waiting-room-overlay");
+  return overlay?.dataset?.gameActive === "true";
+}
+
+function renderWaitingHeader(mission = {}) {
+  const titleEl = document.getElementById("waiting-room-title");
+  const subtitleEl = document.getElementById("waiting-room-subtitle");
+  if (!titleEl || !subtitleEl) return;
+
+  if (hasPreSessionMissionContent(mission)) {
+    titleEl.textContent = "ברוכים הבאים לשלב ראשון של השיעור: משימת לימוד עצמית לפני העבודה הקבוצתית";
+    subtitleEl.textContent = "נצלו את זמן ההמתנה למשימת חימום וכניסה";
+    subtitleEl.style.display = "";
+    return;
+  }
+
+  titleEl.textContent = "השיעור טרם התחיל, המרצה יפתח אותו בקרוב...";
+  if (resolveWaitingGameActive()) {
+    subtitleEl.textContent = "בינתיים ננצל את הזמן לחימום קצר ומשימת כניסה";
+    subtitleEl.style.display = "";
+  } else {
+    subtitleEl.textContent = "";
+    subtitleEl.style.display = "none";
+  }
+}
+
 function renderWaitingPeers(waitingStudents = []) {
   const peersList = document.getElementById("waiting-peers-list");
   const peersCount = document.getElementById("waiting-peers-count");
@@ -1510,7 +1547,9 @@ async function refreshPreSessionLobby() {
     const data = await res.json();
     waitingClassId = data?.classId || waitingClassId || courseId || "";
     waitingMission = data?.mission || null;
+    waitingGameActive = !!data?.gameActive;
     entranceTicketSubmitted = !!data?.hasEntranceTicket;
+    renderWaitingHeader(waitingMission || {});
     renderWaitingMissionContent(waitingMission || {});
     renderWaitingPeers(data?.waitingStudents || []);
 
@@ -1614,6 +1653,7 @@ async function hardGateCheckSessionActive() {
   sessionId = activeSessionId;
   isLockedOut = false;
   sendWaitingPing(false);
+  stopWaitingPolling();
   stopHardGatePolling();
   await bootWorkspace();
 }
@@ -1625,6 +1665,8 @@ function startHardGatePolling() {
   stopWaitingHeartbeat();
   stopWaitingPolling();
   if (hardGatePollTimer) return;
+  renderWaitingHeader(waitingMission || {});
+  startWaitingPolling();
   fetchPreSessionMission();
   sendWaitingPing(true);
   hardGateCheckSessionActive();
@@ -1695,6 +1737,14 @@ function stopWaitingPolling() {
     clearInterval(waitingPollTimer);
     waitingPollTimer = null;
   }
+}
+
+function startWaitingPolling() {
+  if (waitingPollTimer) return;
+  refreshPreSessionLobby();
+  waitingPollTimer = setInterval(() => {
+    refreshPreSessionLobby();
+  }, WAITING_POLL_MS);
 }
 
 async function resolveSessionActive(checkSessionId) {
