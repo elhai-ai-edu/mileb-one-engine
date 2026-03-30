@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MilEd.One Portal</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --ink: #0f172a;
+      --muted: #475569;
+      --card: #ffffff;
+      --border: #dbe3ef;
+      --accent: #1d4ed8;
+      --accent-soft: #e0e7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Heebo", "Rubik", sans-serif;
+      background: radial-gradient(circle at 15% 5%, #ffffff 0%, var(--bg) 55%, #e9effa 100%);
+      color: var(--ink);
+      font-size: 113%;
+    }
+    .app-shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr;
+    }
+    .sidebar {
+      border-left: 1px solid var(--border);
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      padding: 26px 18px;
+    }
+    .brand {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 26px;
+      letter-spacing: 0.02em;
+    }
+    .nav-link {
+      display: block;
+      color: #cbd5e1;
+      text-decoration: none;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .nav-link:hover,
+    .nav-link.active {
+      background: rgba(59, 130, 246, 0.2);
+      color: #ffffff;
+      border-color: rgba(96, 165, 250, 0.65);
+    }
+    .main {
+      padding: 24px;
+    }
+    .layout-131 {
+      display: grid;
+      grid-template-columns: 1fr 3fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+    .hero {
+      margin-bottom: 14px;
+      border: 1px solid #bfdbfe;
+      background: linear-gradient(130deg, #eff6ff 0%, #ffffff 42%, #ecfeff 100%);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      text-decoration: none;
+      color: inherit;
+      display: block;
+      min-height: 160px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      box-shadow: 0 8px 26px rgba(15, 23, 42, 0.05);
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: #93c5fd;
+      box-shadow: 0 14px 32px rgba(37, 99, 235, 0.16);
+    }
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+    .card p {
+      margin: 0;
+      color: #334155;
+      line-height: 1.55;
+    }
+    .chip {
+      display: inline-block;
+      margin-bottom: 10px;
+      background: var(--accent-soft);
+      color: #1e3a8a;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    @media (max-width: 1100px) {
+      .app-shell { grid-template-columns: 1fr; }
+      .layout-131 { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">MilEd.One</div>
+      <a href="portal.html" class="nav-link active">🏠 פורטל</a>
+      <a href="course_units.html" class="nav-link">📚 קורסים ויחידות</a>
+      <a href="lecturer_cockpit.html" class="nav-link">🧑‍🏫 קוקפיט מרצה</a>
+      <a href="students.html" class="nav-link">👥 סטודנטים</a>
+      <a href="institution_dashboard.html" class="nav-link">📊 דשבורד מוסדי</a>
+    </aside>
+
+    <main class="main">
+      <div class="layout-131">
+        <section class="panel">
+          <strong>ניווט מהיר</strong>
+          <p style="color:#475569;line-height:1.6;">הפורטל מרכז גישה מהירה לכל זרועות העבודה.</p>
+        </section>
+
+        <section>
+          <div class="hero">
+            <h1>פורטל ניהול אקדמי</h1>
+            <p>סביבת כניסה אחת לניהול הוראה, חדשנות פדגוגית, מחקר וקשרי קהילה.</p>
+          </div>
+
+          <div class="cards">
+            <a class="card" href="course_units.html">
+              <span class="chip">Core</span>
+              <h3>Teaching</h3>
+              <p>ניהול קורסים, יחידות הוראה, נושאי שיעור וקפיצה ישירה לקוקפיט לכל יחידה.</p>
+            </a>
+            <a class="card" href="lecturer_cockpit.html">
+              <span class="chip">Innovation</span>
+              <h3>EdTech (MILED)</h3>
+              <p>ניהול שיעור חי, משימות פתיחה, חימום AI ודיאלוג עם הכיתה בזמן אמת.</p>
+            </a>
+            <a class="card" href="institution_dashboard.html">
+              <span class="chip">Evidence</span>
+              <h3>Research</h3>
+              <p>מעקב מדדים, תיעוד תהליכים ובניית תובנות להערכת השפעת ההוראה.</p>
+            </a>
+            <a class="card" href="socials.html" onclick="event.preventDefault();alert('Social Networks module coming soon');">
+              <span class="chip">Community</span>
+              <h3>Social Networks</h3>
+              <p>חיבור בין פעילות קורסית לנוכחות דיגיטלית ומעורבות סטודנטים מחוץ לכיתה.</p>
+            </a>
+          </div>
+        </section>
+
+        <section class="panel">
+          <strong>מצב מערכת</strong>
+          <p style="color:#475569;line-height:1.6;">המערכת פעילה. ניתן לנהל יחידות ולפתוח שיעור חי לפי unitId.</p>
+        </section>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

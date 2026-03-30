@@ -1244,6 +1244,9 @@
 const facultyId = sessionStorage.getItem("facultyId") || "f_" + Math.random().toString(36).slice(2,8);
 sessionStorage.setItem("facultyId", facultyId);
 const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
+const cockpitParams = new URLSearchParams(location.search);
+const presetCourseId = cockpitParams.get("courseId") || "";
+const presetUnitId = cockpitParams.get("unitId") || "unit_01";
 
 let sessionId   = null;
 let pollTimer   = null;
@@ -1251,6 +1254,7 @@ let currentBot  = null;
 let pushedSteps = []; // session-local memory of pushed lesson step numbers
 let CONFIG      = null;  // stored for openSession() lookup
 let currentLessonId = null; // selected courseId shared between Live/Prepare tabs
+let currentUnitId = presetUnitId;
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 const replyDrafts = {};
 let lecturerAudioRecorder = null;
@@ -1393,6 +1397,7 @@ async function handlePreSessionAudioUpload(event) {
 
 async function loadPreSessionMission() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const unitId = currentUnitId || "unit_01";
   const statusEl = document.getElementById('preSessionStatus');
   if (!classId) {
     const videoEl = document.getElementById('preSessionVideoUrl');
@@ -1406,7 +1411,7 @@ async function loadPreSessionMission() {
   }
 
   try {
-    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(classId)}`);
+    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(unitId)}&userId=${encodeURIComponent(facultyId)}`);
     if (!res.ok) return;
     const data = await res.json();
     const mission = data?.mission || {};
@@ -1424,6 +1429,7 @@ async function loadPreSessionMission() {
 
 async function savePreSessionMission() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const unitId = currentUnitId || "unit_01";
   const statusEl = document.getElementById('preSessionStatus');
   if (!classId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני שמירה';
@@ -1441,6 +1447,9 @@ async function savePreSessionMission() {
   const res = await callClassroom({
     action: 'pre_session_save',
     classId,
+    courseId: classId,
+    unitId,
+    userId: facultyId,
     facultyId,
     videoUrl,
     text,
@@ -1457,13 +1466,14 @@ async function savePreSessionMission() {
 
 async function clearPreSessionMission() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const unitId = currentUnitId || "unit_01";
   const statusEl = document.getElementById('preSessionStatus');
   if (!classId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני ניקוי';
     return;
   }
 
-  const res = await callClassroom({ action: 'pre_session_clear', classId, facultyId });
+  const res = await callClassroom({ action: 'pre_session_clear', classId, courseId: classId, unitId, userId: facultyId, facultyId });
   if (!res?.ok) {
     if (statusEl) statusEl.textContent = 'שגיאה בניקוי';
     return;
@@ -1480,6 +1490,7 @@ async function clearPreSessionMission() {
 
 async function generateWarmup() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const unitId = currentUnitId || "unit_01";
   const btn = document.getElementById('generateWarmupBtn');
   const statusEl = document.getElementById('preSessionStatus');
   if (!classId) {
@@ -1489,7 +1500,7 @@ async function generateWarmup() {
   if (btn) btn.disabled = true;
   if (statusEl) statusEl.textContent = '⏳ מייצר שאלת חימום...';
   try {
-    const res = await callClassroom({ action: 'generate_warmup', classId, facultyId });
+    const res = await callClassroom({ action: 'generate_warmup', classId, courseId: classId, unitId, userId: facultyId, facultyId });
     if (!res?.ok) {
       if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביצירת חימום';
     } else {
@@ -1806,6 +1817,12 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
   if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
   if (prepSel) prepSel.addEventListener('change', () => syncFromSelector('botSelectPrep'));
+
+  if (presetCourseId) {
+    if (liveSel) liveSel.value = presetCourseId;
+    if (prepSel) prepSel.value = presetCourseId;
+    syncFromSelector('botSelect');
+  }
 }).catch(e => console.error("Config load error:", e));
 
 function getSelectedTeachingContext() {
@@ -1826,11 +1843,12 @@ async function openSession() {
   if (!selectedValue) { alert("בחר קורס תחילה"); return; }
 
   // Resolve botType + classId depending on selection type
+  const unitId = currentUnitId || "unit_01";
   let botType, classId, studentURL;
   if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
     classId  = selectedClassId;
     botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
-    studentURL = `${location.origin}/workspace.html?courseId=${classId}&sessionId=SESSION_ID`;
+    studentURL = `${location.origin}/workspace.html?courseId=${classId}&unitId=${encodeURIComponent(unitId)}&sessionId=SESSION_ID`;
     console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}`);
   } else {
     // Faculty tool — no classId, botType is the value directly
@@ -1844,7 +1862,7 @@ async function openSession() {
   sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
   studentURL = studentURL.replace('SESSION_ID', sessionId);
 
-  const res = await callClassroom({ action: "open", sessionId, facultyId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
+  const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
   if (!res.ok) { alert("שגיאה בפתיחת שיעור"); return; }
 
   document.getElementById('sessionInfo').style.display = "block";
@@ -1955,8 +1973,10 @@ function startPolling() {
 async function fetchDashboard() {
   try {
     const classIdParam = currentLessonId ? `&classId=${encodeURIComponent(currentLessonId)}` : '';
+    const unitIdParam = currentUnitId ? `&unitId=${encodeURIComponent(currentUnitId)}` : '';
+    const userIdParam = `&userId=${encodeURIComponent(facultyId)}`;
     const res = await fetch(
-      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}${classIdParam}`
+      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}${classIdParam}${unitIdParam}${userIdParam}`
     );
     const data = await res.json();
     if (!res.ok) {

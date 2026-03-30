@@ -1318,6 +1318,7 @@ document.head.appendChild(livePulseStyle);
 
 const params   = new URLSearchParams(location.search);
 const courseId = params.get("courseId") || "";
+const unitIdFromUrl = params.get("unitId") || "unit_01";
 const skillId  = params.get("skillId")  || "";
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 const WAITING_POLL_MS = 3000;
@@ -1385,6 +1386,8 @@ let isLockedOut = true;
 let hardGatePollTimer = null;
 let hasBootedWorkspace = false;
 let waitingClassId = courseId || "";
+let waitingUnitId = unitIdFromUrl || "unit_01";
+let waitingTopicName = "";
 let waitingGameActive = false;
 let activeRecallAlertId = "";
 let recallAlarmTimer = null;
@@ -1589,6 +1592,8 @@ function renderWaitingHeader(mission = {}) {
 }
 
 function getCurrentLessonTopicLabel() {
+  if (waitingTopicName) return waitingTopicName;
+
   const courseName = String(currentCourse?.name || "").trim();
   if (courseName) return courseName;
 
@@ -1716,15 +1721,19 @@ async function renderWaitingPeers(waitingStudents = []) {
 async function refreshPreSessionLobby() {
   const missionClassId = waitingClassId || courseId || "";
   const missionSessionId = urlSessionId || sessionId || "";
+  const missionUnitId = waitingUnitId || unitIdFromUrl || "unit_01";
   if (!missionClassId && !missionSessionId) return;
   try {
-    const query = missionClassId
+    const queryBase = missionClassId
       ? `classId=${encodeURIComponent(missionClassId)}`
       : `sessionId=${encodeURIComponent(missionSessionId)}`;
+    const query = `${queryBase}&unitId=${encodeURIComponent(missionUnitId)}`;
     const res = await fetch(`/.netlify/functions/classroom?action=pre_session&${query}&studentId=${encodeURIComponent(studentId)}`);
     if (!res.ok) return;
     const data = await res.json();
     waitingClassId = data?.classId || waitingClassId || courseId || "";
+    waitingUnitId = data?.unitId || waitingUnitId || unitIdFromUrl || "unit_01";
+    waitingTopicName = String(data?.topicName || "").trim();
     waitingMission = data?.mission || null;
     waitingGameActive = !!data?.gameActive;
     entranceTicketSubmitted = !!data?.hasEntranceTicket;
@@ -1814,6 +1823,7 @@ function escapeHtmlBasic(text) {
 
 async function submitEntranceTicket() {
   const classId = waitingClassId || courseId || "";
+  const unitId = waitingUnitId || unitIdFromUrl || "unit_01";
   if (!classId) return;
   const input = document.getElementById("entrance-ticket-input");
   const status = document.getElementById("entrance-ticket-status");
@@ -1837,6 +1847,8 @@ async function submitEntranceTicket() {
       body: JSON.stringify({
         action: "entrance_ticket_submit",
         classId,
+        courseId: classId,
+        unitId,
         sessionId: urlSessionId || sessionId || null,
         studentId,
         studentName,
@@ -3574,12 +3586,13 @@ async function discoverActiveSession() {
       return;
     }
     const data = await res.json();
-    if (!data?.sessionId) return null;          // no active session for this course
+    const resolvedSessionId = data?.units?.[unitIdFromUrl]?.sessionId || data?.sessionId || null;
+    if (!resolvedSessionId) return null;          // no active session for this course
 
     // Found one — inject it as if it came from the URL
-    urlSessionId = data.sessionId;
-    sessionId    = data.sessionId;
-    return data.sessionId;
+    urlSessionId = resolvedSessionId;
+    sessionId    = resolvedSessionId;
+    return resolvedSessionId;
   } catch (e) {
     const dbUrlRaw = window.MILED_FIREBASE_CONFIG?.databaseURL || "";
     const dbUrl = String(dbUrlRaw).replace(/\/+$/, "");

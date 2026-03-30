@@ -69,6 +69,29 @@ function normalizePreSessionMission(input = {}) {
   };
 }
 
+function normalizeUnitId(value, fallback = "unit_01") {
+  const unit = String(value || "").trim();
+  return unit || fallback;
+}
+
+function getUnitPath(userId, courseId, unitId) {
+  return `users/${userId}/courses/${courseId}/units/${unitId}`;
+}
+
+async function ensureUnitNode(db, { userId, courseId, unitId, structureType = "Session", topicName = "" }) {
+  if(!userId || !courseId || !unitId) return;
+  const nodeRef = db.ref(getUnitPath(userId, courseId, unitId));
+  const snap = await nodeRef.once("value");
+  if(snap.exists()) return;
+  await nodeRef.set({
+    topicName: String(topicName || "").trim() || null,
+    structureType: String(structureType || "Session"),
+    missionData: null,
+    entranceTickets: null,
+    updatedAt: Date.now()
+  });
+}
+
 const WAITING_ROOM_STALE_MS = 60000;
 
 async function getFreshWaitingSnapshot(db, classId){
@@ -161,25 +184,78 @@ export async function handler(event){
       });
     }
 
+    if(action === "units_list"){
+      const userId = String(event.queryStringParameters?.userId || "").trim();
+      const courseId = String(event.queryStringParameters?.courseId || event.queryStringParameters?.classId || "").trim();
+      if(!userId) return err("userId required");
+      if(!courseId) return err("courseId required");
+
+      const snap = await db.ref(`users/${userId}/courses/${courseId}/units`).once("value");
+      const unitsMap = snap.val() || {};
+      return ok({
+        userId,
+        courseId,
+        units: unitsMap
+      });
+    }
+
+    if(action === "unit_get"){
+      const userId = String(event.queryStringParameters?.userId || "").trim();
+      const courseId = String(event.queryStringParameters?.courseId || event.queryStringParameters?.classId || "").trim();
+      const unitId = normalizeUnitId(event.queryStringParameters?.unitId);
+      if(!userId) return err("userId required");
+      if(!courseId) return err("courseId required");
+
+      const snap = await db.ref(getUnitPath(userId, courseId, unitId)).once("value");
+      return ok({
+        userId,
+        courseId,
+        unitId,
+        unit: snap.val() || null
+      });
+    }
+
     if(action === "pre_session"){
-      let classId = event.queryStringParameters?.classId;
+      let classId = event.queryStringParameters?.classId || event.queryStringParameters?.courseId;
+      let userId = String(event.queryStringParameters?.userId || event.queryStringParameters?.facultyId || "").trim() || null;
+      let unitId = normalizeUnitId(event.queryStringParameters?.unitId);
       const requestedSessionId = event.queryStringParameters?.sessionId || null;
       const requestedStudentId = event.queryStringParameters?.studentId || null;
-      if(!classId && requestedSessionId){
+      if((!classId || !userId) && requestedSessionId){
         const sessionSnap = await db.ref(`sessions/${requestedSessionId}`).once("value");
         const sessionData = sessionSnap.val() || {};
-        classId = sessionData.classId || null;
+        classId = classId || sessionData.classId || sessionData.courseId || null;
+        userId = userId || sessionData.userId || sessionData.facultyId || null;
+        unitId = normalizeUnitId(sessionData.unitId || unitId);
       }
       if(!classId) return err("classId required");
 
-      const [missionSnap, ticketsSnap, warmupSnap, waitingSnapshot] = await Promise.all([
+      if(!userId && classId){
+        const activeSnap = await db.ref(`active_sessions/${classId}`).once("value");
+        const activeData = activeSnap.val() || {};
+        const activeSessionId = activeData?.units?.[unitId]?.sessionId || activeData?.sessionId || null;
+        if(activeSessionId){
+          const activeSessionSnap = await db.ref(`sessions/${activeSessionId}`).once("value");
+          const activeSession = activeSessionSnap.val() || {};
+          userId = activeSession.userId || activeSession.facultyId || null;
+          unitId = normalizeUnitId(activeSession.unitId || unitId);
+        }
+      }
+
+      if(!userId) userId = "shared";
+
+      const unitPath = getUnitPath(userId, classId, unitId);
+
+      const [unitSnap, missionSnapLegacy, ticketsSnapLegacy, warmupSnapLegacy, waitingSnapshot] = await Promise.all([
+        db.ref(unitPath).once("value"),
         db.ref(`pre_session_content/${classId}`).once("value"),
         db.ref(`pre_session_tickets/${classId}`).once("value"),
         db.ref(`pre_session_warmup/${classId}`).once("value"),
         getFreshWaitingSnapshot(db, classId)
       ]);
 
-      const missionRaw = missionSnap.val() || {};
+      const unitData = unitSnap.val() || {};
+      const missionRaw = unitData?.missionData || missionSnapLegacy.val() || {};
       const mission = {
         text: missionRaw.text || null,
         videoUrl: missionRaw.videoUrl || null,
@@ -188,14 +264,26 @@ export async function handler(event){
         facultyId: missionRaw.facultyId || null
       };
 
-      const warmupRaw = warmupSnap.val() || null;
+      const warmupRaw = unitData?.warmupData || warmupSnapLegacy.val() || null;
       const warmup = warmupRaw && warmupRaw.question ? warmupRaw : null;
 
-      const ticketsMap = ticketsSnap.val() || {};
+      let ticketsMap = unitData?.entranceTickets || {};
+      if(requestedSessionId){
+        const sessionTicketSnap = await db.ref(`sessions/${requestedSessionId}/entranceTickets`).once("value");
+        ticketsMap = sessionTicketSnap.val() || ticketsMap;
+      }
+      if(!Object.keys(ticketsMap || {}).length)
+        ticketsMap = ticketsSnapLegacy.val() || {};
+
       const entranceTicket = requestedStudentId ? (ticketsMap[requestedStudentId] || null) : null;
 
       return ok({
         classId,
+        courseId: classId,
+        userId,
+        unitId,
+        topicName: unitData?.topicName || null,
+        structureType: unitData?.structureType || null,
         mission,
         warmup,
         entranceTicket,
@@ -222,6 +310,8 @@ export async function handler(event){
 
       // Resolve classId: prefer stored value, fall back to query param (handles legacy sessions)
       const resolvedClassId = session.classId || event.queryStringParameters?.classId || null;
+      const resolvedUnitId = normalizeUnitId(session.unitId || event.queryStringParameters?.unitId);
+      const resolvedUserId = session.userId || event.queryStringParameters?.userId || session.facultyId || facultyId;
 
       // Canonical source for cockpit student grid: merge both trees to avoid drift.
       const studentsNode = session.students || {};
@@ -388,6 +478,25 @@ export async function handler(event){
           .slice(0, 120);
       }
 
+      let unitData = null;
+      if(resolvedUserId && resolvedClassId && resolvedUnitId){
+        const unitSnap = await db.ref(getUnitPath(resolvedUserId, resolvedClassId, resolvedUnitId)).once("value");
+        unitData = unitSnap.val() || null;
+
+        if(!entranceTickets.length && unitData?.entranceTickets){
+          entranceTickets = Object.values(unitData.entranceTickets || {})
+            .map(item => ({
+              studentId: item?.studentId || null,
+              name: item?.name || item?.studentName || null,
+              answer: item?.answer || item?.text || "",
+              submittedAt: item?.submittedAt || 0
+            }))
+            .filter(item => item.answer)
+            .sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0))
+            .slice(0, 120);
+        }
+      }
+
       return ok({
 
         sessionId,
@@ -400,6 +509,9 @@ export async function handler(event){
         students,
         onlineStudents:online,
         stateStats:stats,
+        unitId: resolvedUnitId,
+        topicName: unitData?.topicName || null,
+        structureType: unitData?.structureType || null,
         waitingStudentsCount,
         entranceTickets
 
@@ -540,43 +652,69 @@ export async function handler(event){
   }
 
   if(action === "pre_session_save"){
-    const { classId, facultyId: fid } = body;
-    if(!classId) return err("classId required");
+    const { classId, courseId, facultyId: fid } = body;
+    const resolvedCourseId = classId || courseId || null;
+    const unitId = normalizeUnitId(body.unitId);
+    const userId = String(body.userId || fid || "").trim() || null;
+    if(!resolvedCourseId) return err("classId required");
     if(!fid) return err("facultyId required");
 
     const mission = normalizePreSessionMission(body);
     if(!mission.text && !mission.videoUrl && !mission.audioDataUrl)
       return err("mission content required");
 
-    await db.ref(`pre_session_content/${classId}`).set({
+    const missionPayload = {
       ...mission,
       updatedAt: Date.now(),
       facultyId: fid
-    });
+    };
+
+    if(userId)
+      await ensureUnitNode(db, { userId, courseId: resolvedCourseId, unitId, structureType: String(body.structureType || "Session"), topicName: body.topicName || "" });
+
+    if(userId)
+      await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/missionData`).set(missionPayload);
+
+    await db.ref(`pre_session_content/${resolvedCourseId}`).set(missionPayload);
 
     // New mission resets entrance tickets so lecturer sees fresh intent.
-    await db.ref(`pre_session_tickets/${classId}`).remove();
+    await db.ref(`pre_session_tickets/${resolvedCourseId}`).remove();
+    if(userId)
+      await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/entranceTickets`).remove();
 
-    return ok({ ok:true, classId, mission });
+    return ok({ ok:true, classId: resolvedCourseId, unitId, userId, mission: missionPayload });
   }
 
   if(action === "pre_session_clear"){
-    const { classId, facultyId: fid } = body;
-    if(!classId) return err("classId required");
+    const { classId, courseId, facultyId: fid } = body;
+    const resolvedCourseId = classId || courseId || null;
+    const unitId = normalizeUnitId(body.unitId);
+    const userId = String(body.userId || fid || "").trim() || null;
+    if(!resolvedCourseId) return err("classId required");
     if(!fid) return err("facultyId required");
 
-    await Promise.all([
-      db.ref(`pre_session_content/${classId}`).remove(),
-      db.ref(`pre_session_tickets/${classId}`).remove(),
-      db.ref(`pre_session_warmup/${classId}`).remove()
-    ]);
+    const clearOps = [
+      db.ref(`pre_session_content/${resolvedCourseId}`).remove(),
+      db.ref(`pre_session_tickets/${resolvedCourseId}`).remove(),
+      db.ref(`pre_session_warmup/${resolvedCourseId}`).remove()
+    ];
+    if(userId){
+      clearOps.push(db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/missionData`).remove());
+      clearOps.push(db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/entranceTickets`).remove());
+      clearOps.push(db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/warmupData`).remove());
+    }
 
-    return ok({ ok:true, classId, cleared:true });
+    await Promise.all(clearOps);
+
+    return ok({ ok:true, classId: resolvedCourseId, unitId, userId, cleared:true });
   }
 
   if(action === "generate_warmup"){
-    const { classId, facultyId: fid } = body;
-    if(!classId) return err("classId required");
+    const { classId, courseId, facultyId: fid } = body;
+    const resolvedCourseId = classId || courseId || null;
+    const unitId = normalizeUnitId(body.unitId);
+    const userId = String(body.userId || fid || "").trim() || null;
+    if(!resolvedCourseId) return err("classId required");
     if(!fid) return err("facultyId required");
 
     const SUBJECT_MAP = {
@@ -587,7 +725,7 @@ export async function handler(event){
       hebrew_advanced_optics:      "עברית אקדמית מתקדמת — הבנת הנקרא, כתיבה מדויקת",
       hebrew_advanced_management:  "עברית אקדמית מתקדמת — הבנת הנקרא, כתיבה מדויקת"
     };
-    const subject = SUBJECT_MAP[classId] || "לימודים אקדמיים כלליים — מיומנויות למידה";
+    const subject = SUBJECT_MAP[resolvedCourseId] || "לימודים אקדמיים כלליים — מיומנויות למידה";
 
     const apiKey = process.env.OPENROUTER_API_KEY;
     if(!apiKey) return err("AI service unavailable");
@@ -639,7 +777,9 @@ export async function handler(event){
       warmup.question = String(warmup.question || "").trim();
       warmup.generatedAt = Date.now();
 
-      await db.ref(`pre_session_warmup/${classId}`).set(warmup);
+      await db.ref(`pre_session_warmup/${resolvedCourseId}`).set(warmup);
+      if(userId)
+        await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/warmupData`).set(warmup);
       return ok({ ok:true, warmup });
 
     } catch(e) {
@@ -649,26 +789,33 @@ export async function handler(event){
   }
 
   if(action === "entrance_ticket_submit"){
-    let classId = body.classId;
+    let classId = body.classId || body.courseId || null;
+    let unitId = normalizeUnitId(body.unitId);
+    let userId = String(body.userId || "").trim() || null;
     const requestedSessionId = body.sessionId || null;
     let resolvedSessionId = requestedSessionId || null;
     const { studentId, studentName, answer } = body;
 
     if(!resolvedSessionId && classId){
       const activeSnap = await db.ref(`active_sessions/${classId}`).once("value");
-      resolvedSessionId = activeSnap.val()?.sessionId || null;
+      const activeData = activeSnap.val() || {};
+      resolvedSessionId = activeData?.units?.[unitId]?.sessionId || activeData?.sessionId || null;
     }
 
     if(!classId && resolvedSessionId){
       const sessionSnap = await db.ref(`sessions/${resolvedSessionId}`).once("value");
       const sessionData = sessionSnap.val() || {};
       classId = sessionData.classId || null;
+      unitId = normalizeUnitId(sessionData.unitId || unitId);
+      userId = userId || sessionData.userId || sessionData.facultyId || null;
     }
 
     if(!classId && requestedSessionId){
       const sessionSnap = await db.ref(`sessions/${requestedSessionId}`).once("value");
       const sessionData = sessionSnap.val() || {};
       classId = sessionData.classId || null;
+      unitId = normalizeUnitId(sessionData.unitId || unitId);
+      userId = userId || sessionData.userId || sessionData.facultyId || null;
     }
 
     if(!resolvedSessionId) return err("sessionId required");
@@ -691,11 +838,33 @@ export async function handler(event){
 
     await db.ref(`sessions/${resolvedSessionId}/entranceTickets/${studentId}`).set(ticketPayload);
 
+    if(userId && classId)
+      await db.ref(`${getUnitPath(userId, classId, unitId)}/entranceTickets/${studentId}`).set(ticketPayload);
+
     // Keep legacy mirror for pre-session student checks keyed by classId.
     if(classId)
       await db.ref(`pre_session_tickets/${classId}/${studentId}`).set(ticketPayload);
 
-    return ok({ ok:true, classId: classId || null, sessionId: resolvedSessionId, studentId });
+    return ok({ ok:true, classId: classId || null, unitId, userId, sessionId: resolvedSessionId, studentId });
+  }
+
+  if(action === "unit_upsert"){
+    const userId = String(body.userId || body.facultyId || "").trim();
+    const courseId = String(body.courseId || body.classId || "").trim();
+    const unitId = normalizeUnitId(body.unitId);
+    if(!userId) return err("userId required");
+    if(!courseId) return err("courseId required");
+
+    const payload = {
+      topicName: String(body.topicName || "").trim() || null,
+      structureType: String(body.structureType || "Session"),
+      missionData: body.missionData || null,
+      entranceTickets: body.entranceTickets || null,
+      updatedAt: Date.now()
+    };
+
+    await db.ref(getUnitPath(userId, courseId, unitId)).update(payload);
+    return ok({ ok:true, userId, courseId, unitId });
   }
 
   if(!sessionId) return err("sessionId required");
@@ -705,7 +874,12 @@ export async function handler(event){
 
   if(action === "open"){
 
-    const { facultyId, botType, classId, broadcast } = body;
+    const { facultyId, botType, classId, courseId, broadcast } = body;
+    const resolvedCourseId = classId || courseId || null;
+    const unitId = normalizeUnitId(body.unitId);
+    const userId = String(body.userId || facultyId || "").trim() || null;
+    const topicName = String(body.topicName || "").trim() || null;
+    const structureType = String(body.structureType || "Session");
 
     if(!facultyId) return err("facultyId required");
 
@@ -718,8 +892,11 @@ export async function handler(event){
     await sessionRef.set({
 
       facultyId,
+      userId: userId || null,
       botType:botType || null,
-      classId:classId || null,
+      classId:resolvedCourseId || null,
+      courseId:resolvedCourseId || null,
+      unitId,
       facultyAvatar: normalizeAvatar(body.facultyAvatar),
       broadcast:broadcast || null,
       broadcastedAt:broadcast ? Date.now() : null,
@@ -733,11 +910,17 @@ export async function handler(event){
     });
 
     // Write index so students can auto-discover the session by courseId
-    if (classId) {
-      await db.ref(`active_sessions/${classId}`).set({
+    if (resolvedCourseId) {
+      await db.ref(`active_sessions/${resolvedCourseId}`).update({
         sessionId,
-        openedAt: Date.now()
+        openedAt: Date.now(),
+        [`units/${unitId}/sessionId`]: sessionId,
+        [`units/${unitId}/openedAt`]: Date.now()
       });
+
+      if(userId){
+        await ensureUnitNode(db, { userId, courseId: resolvedCourseId, unitId, structureType, topicName: topicName || "" });
+      }
     }
 
     return ok({ok:true,action:"open",sessionId});
@@ -1059,7 +1242,27 @@ export async function handler(event){
 
     // Remove the active-session index so students no longer auto-join
     if (session.classId) {
-      await db.ref(`active_sessions/${session.classId}`).remove();
+      const activeRef = db.ref(`active_sessions/${session.classId}`);
+      const activeSnap = await activeRef.once("value");
+      const activeData = activeSnap.val() || {};
+      const sessionUnitId = normalizeUnitId(session.unitId || "");
+
+      if(sessionUnitId && activeData?.units?.[sessionUnitId]?.sessionId === sessionId){
+        await activeRef.child(`units/${sessionUnitId}`).remove();
+      }
+
+      if(activeData?.sessionId === sessionId){
+        await activeRef.child("sessionId").remove();
+        await activeRef.child("openedAt").remove();
+      }
+
+      const activeAfterSnap = await activeRef.once("value");
+      const activeAfter = activeAfterSnap.val() || {};
+      const hasUnits = activeAfter.units && Object.keys(activeAfter.units).length;
+      const hasRootSession = !!activeAfter.sessionId;
+      if(!hasUnits && !hasRootSession){
+        await activeRef.remove();
+      }
     }
 
     return ok({ok:true});
