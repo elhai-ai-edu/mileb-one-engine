@@ -115,6 +115,10 @@
               <div class="actions workspace-actions">
                 <div class="workspace-send-row">
                   <button onclick="sendMessageToLecturer()" class="btn btn-blue workspace-primary-action">💬 שלח מסר למרצה</button>
+                  <button id="student-file-btn" onclick="triggerStudentFileUpload()" class="workspace-file-btn" title="צרף קובץ">
+                    <i class="fas fa-paperclip" aria-hidden="true"></i>
+                  </button>
+                  <input id="student-file-input" type="file" style="display:none;" onchange="handleStudentFileUpload(event)">
                   <button id="audio-record-btn" onclick="toggleAudioRecording()" class="workspace-mic-btn" title="הקלט הודעה קולית למרצה">🎙️</button>
                 </div>
                 <button onclick="submitWork()" class="workspace-secondary-action">📄 הגש עבודה</button>
@@ -484,27 +488,76 @@ livePulseStyle.textContent = `
   text-align: center;
   box-sizing: border-box;
 }
-.workspace-mic-btn {
+.workspace-file-btn {
   appearance: none;
   border: 1px solid #cbd5e1;
   background: #f8fafc;
   color: #334155;
-  border-radius: 14px;
+  border-radius: 16px;
   min-width: 52px;
-  padding: 0 12px;
+  width: 52px;
+  height: 52px;
+  padding: 0;
   font-size: 20px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
-.workspace-mic-btn:hover {
-  background: #eef2ff;
+.workspace-file-btn:hover {
+  background: #eff6ff;
   border-color: #93c5fd;
   color: #1d4ed8;
 }
+.workspace-mic-btn {
+  appearance: none;
+  border: 2px solid #1d4ed8;
+  background: #2563eb;
+  color: #ffffff;
+  border-radius: 999px;
+  min-width: 56px;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  font-size: 24px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.workspace-mic-btn:hover {
+  background: #1d4ed8;
+  border-color: #1e40af;
+  color: #ffffff;
+}
 .workspace-mic-btn.is-recording {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #b91c1c;
+  background: #1e40af;
+  border-color: #1e3a8a;
+  color: #ffffff;
+  position: relative;
+}
+.workspace-mic-btn.is-recording::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 0 rgba(239,68,68,0.6);
+  animation: recBlink 1s infinite;
+}
+.waf-file-link {
+  color: #1d4ed8;
+  text-decoration: underline;
+  word-break: break-word;
+}
+@keyframes recBlink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
+  50% { opacity: 0.45; box-shadow: 0 0 0 6px rgba(239,68,68,0); }
 }
 @media (max-width: 1180px) {
   .workspace-layout {
@@ -1307,6 +1360,20 @@ function escapeHtml(text) {
     .replace(/>/g, "&gt;");
 }
 
+function parseFilePayload(text) {
+  if (typeof text !== "string" || !text.startsWith("__FILE__::")) return null;
+  const parts = text.split("::");
+  if (parts.length < 3) return null;
+  const fileName = decodeURIComponent(parts[1] || "file");
+  const dataUrl = parts.slice(2).join("::");
+  if (!dataUrl.startsWith("data:")) return null;
+  return { fileName, dataUrl };
+}
+
+function packFilePayload(fileName, dataUrl) {
+  return `__FILE__::${encodeURIComponent(fileName || "file")}::${dataUrl}`;
+}
+
 // ─────────────────────────────────────────────────
 // ACTIVITY FEED HELPERS
 // ─────────────────────────────────────────────────
@@ -1349,6 +1416,7 @@ function buildFeedEntry(item) {
   const isReply      = item.type === "reply";
   const isSubmission = item.kind === "submission";
   const isAudio      = item.kind === "audio" && typeof item.text === "string" && item.text.startsWith("data:audio/");
+  const filePayload  = parseFilePayload(item.text);
 
   const div = document.createElement("div");
   div.className = "waf-msg " + (isReply ? "waf-msg-lecturer"
@@ -1369,7 +1437,9 @@ function buildFeedEntry(item) {
     `<span class="waf-msg-sender">${senderLabel}</span>` +
     (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
     `</div>` +
-    (isAudio
+    (filePayload
+      ? `<a class="waf-file-link" href="${filePayload.dataUrl}" target="_blank" rel="noopener">📎 ${escapeHtml(filePayload.fileName)}</a>`
+      : isAudio
       ? `<audio controls class="cockpit-audio-player" src="${item.text}"></audio>`
       : `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`);
 
@@ -1405,6 +1475,7 @@ function buildBroadcastEntry(item) {
   const div = document.createElement("div");
   div.className = "waf-msg waf-msg-broadcast";
   const isAudio = item.kind === "audio" && typeof item.text === "string" && item.text.startsWith("data:audio/");
+  const filePayload = parseFilePayload(item.text);
   const timeStr = item.ts
     ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
     : "";
@@ -1414,7 +1485,9 @@ function buildBroadcastEntry(item) {
     `<span class="waf-msg-sender">📢 המרצה לכיתה</span>` +
     (timeStr ? `<span class="waf-msg-time">${timeStr}</span>` : "") +
     `</div>` +
-    (isAudio
+    (filePayload
+      ? `<a class="waf-file-link" href="${filePayload.dataUrl}" target="_blank" rel="noopener">📎 ${escapeHtml(filePayload.fileName)}</a>`
+      : isAudio
       ? `<audio controls class="cockpit-audio-player" src="${item.text}"></audio>`
       : `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`);
 
@@ -1492,6 +1565,60 @@ async function toggleAudioRecording() {
   } catch (e) {
     alert("לא ניתן להפעיל מיקרופון בדפדפן זה");
   }
+}
+
+function triggerStudentFileUpload() {
+  const input = document.getElementById("student-file-input");
+  if (input) input.click();
+}
+
+async function handleStudentFileUpload(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  if (!urlSessionId) { alert("אין שיעור פעיל כרגע"); event.target.value = ""; return; }
+
+  const statusEl = document.getElementById("waf-send-status");
+  if (statusEl) statusEl.textContent = "מעלה קובץ...";
+
+  const dataUrl = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result || ""));
+    reader.readAsDataURL(file);
+  });
+
+  if (!dataUrl) {
+    if (statusEl) statusEl.textContent = "שגיאה בקריאת הקובץ";
+    event.target.value = "";
+    return;
+  }
+
+  const payload = packFilePayload(file.name, dataUrl);
+  const tag = detectMessageTag();
+
+  try {
+    const res = await fetch("/.netlify/functions/classroom", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "submit", sessionId, studentId,
+        step: currentStep, content: payload, type: "message", tag
+      })
+    });
+
+    if (res.ok) {
+      addToActivityFeed({ type: "sent", text: payload, kind: "message", tag, step: currentStep, ts: Date.now() });
+      if (statusEl) {
+        statusEl.textContent = "קובץ נשלח ✓";
+        setTimeout(() => { statusEl.textContent = ""; }, 2200);
+      }
+    } else if (statusEl) {
+      statusEl.textContent = "שגיאה בשליחת קובץ";
+    }
+  } catch (e) {
+    if (statusEl) statusEl.textContent = "שגיאת רשת";
+  }
+
+  event.target.value = "";
 }
 
 function stopAudioRecording() {

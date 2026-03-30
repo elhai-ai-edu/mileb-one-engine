@@ -687,6 +687,56 @@ export async function handler(event){
 
   }
 
+  if(action === "gate_open_all"){
+
+    if(!sessionId) return err("sessionId required");
+    const snap = await sessionRef.once("value");
+    const session = snap.val();
+    if(!session) return err("session not found");
+    if(session.facultyId !== facultyId) return err("not session owner");
+
+    const studentIds = Object.keys(session.students || {});
+    const updates = {};
+    studentIds.forEach(studentId => {
+      updates[`sessions/${sessionId}/students/${studentId}/is_locked`] = false;
+    });
+    updates[`sessions/${sessionId}/active_task`] = {
+      title: "שלב פתוח לכל הכיתה",
+      instructions: "ניתן להמשיך בעבודה",
+      step: 1,
+      gateBroadcastAt: Date.now()
+    };
+    
+    await db.ref().update(updates);
+    return ok({ ok: true });
+
+  }
+
+  if(action === "gate_lock_all"){
+
+    if(!sessionId) return err("sessionId required");
+    const snap = await sessionRef.once("value");
+    const session = snap.val();
+    if(!session) return err("session not found");
+    if(session.facultyId !== facultyId) return err("not session owner");
+
+    const studentIds = Object.keys(session.students || {});
+    const updates = {};
+    studentIds.forEach(studentId => {
+      updates[`sessions/${sessionId}/students/${studentId}/is_locked`] = true;
+    });
+    updates[`sessions/${sessionId}/active_task`] = {
+      title: "שלב נעול",
+      instructions: "המתן להנחיה מהמרצה",
+      step: 1,
+      gateBroadcastAt: Date.now()
+    };
+    
+    await db.ref().update(updates);
+    return ok({ ok: true });
+
+  }
+
   if(action === "export_session"){
 
     const [taskLogSnap, studentsSnap] = await Promise.all([
