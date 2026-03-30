@@ -506,6 +506,37 @@
   line-height: 1.6;
   white-space: pre-wrap;
 }
+.thread-file-card {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 8px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+}
+.thread-file-name {
+  color: #1e3a8a;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.thread-file-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+.thread-file-action {
+  color: #1d4ed8;
+  text-decoration: underline;
+  font-size: 12px;
+}
+.thread-file-preview-img {
+  max-width: 140px;
+  max-height: 100px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  object-fit: cover;
+}
 .thread-msg-time {
   font-size: 10px;
   color: #94a3b8;
@@ -1368,6 +1399,40 @@ function packFilePayload(fileName, dataUrl) {
   return `__FILE__::${encodeURIComponent(fileName || "file")}::${dataUrl}`;
 }
 
+function dataUrlMimeType(dataUrl) {
+  const match = String(dataUrl || "").match(/^data:([^;]+);/);
+  return (match && match[1]) ? match[1].toLowerCase() : "";
+}
+
+function renderThreadContentHtml(content) {
+  const text = String(content || "");
+  const isAudio = text.startsWith("data:audio/");
+  const filePayload = parseFilePayload(text);
+
+  if (filePayload?.dataUrl) {
+    const mime = dataUrlMimeType(filePayload.dataUrl);
+    const isImage = mime.startsWith("image/");
+    const isPdf = mime === "application/pdf";
+    return (
+      `<div class="thread-file-card">` +
+        (isImage ? `<img class="thread-file-preview-img" src="${filePayload.dataUrl}" alt="file-preview" />` : "") +
+        `<div class="thread-file-name">📎 ${escapeHtml(filePayload.fileName || "file")}</div>` +
+        `<div class="thread-file-actions">` +
+          `<a class="thread-file-action" href="${filePayload.dataUrl}" target="_blank" rel="noopener">צפה</a>` +
+          `<a class="thread-file-action" href="${filePayload.dataUrl}" download="${escapeHtml(filePayload.fileName || "file")}">הורד</a>` +
+          (isPdf ? `<a class="thread-file-action" href="${filePayload.dataUrl}" target="_blank" rel="noopener">PDF</a>` : "") +
+        `</div>` +
+      `</div>`
+    );
+  }
+
+  if (isAudio) {
+    return `<audio controls class="cockpit-audio-player" src="${text}"></audio>`;
+  }
+
+  return `<div class="thread-msg-body">${escapeHtml(text)}</div>`;
+}
+
 // ─────────────────────────────────────────
 // BROADCAST
 // ─────────────────────────────────────────
@@ -1502,15 +1567,12 @@ function renderDashboard(data) {
 
     const threadHtml = recentThread.map(item => {
       const isLecturerItem = item.role === "lecturer";
-      const isAudio = typeof item.content === "string" && item.content.startsWith("data:audio/");
       const sideClass = isLecturerItem ? "from-lecturer" : "from-student";
       const avatar = safeAvatar(item.avatar) || (isLecturerItem ? safeAvatar(facultyAvatar) : studentAvatar);
       const time = item.ts
         ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
         : "--:--";
-      const contentHtml = isAudio
-        ? `<audio controls class="cockpit-audio-player" src="${item.content}"></audio>`
-        : `<div class="thread-msg-body">${escapeHtml(item.content)}</div>`;
+      const contentHtml = renderThreadContentHtml(item.content);
 
       return `
       <div class="thread-msg ${sideClass}">
@@ -1604,16 +1666,13 @@ function appendLecturerReplyToThread(studentId, content) {
     const emptyEl = threadDiv.querySelector(".thread-empty");
     if (emptyEl) emptyEl.remove();
     const timeStr = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
-    const isAudio = typeof content === "string" && content.startsWith("data:audio/");
     const div = document.createElement("div");
     div.className = "thread-msg from-lecturer";
     const avatar = safeAvatar(facultyAvatar);
     div.innerHTML =
       (avatar ? `<img class="thread-msg-avatar" src="${avatar}" alt="avatar" />` : `<img class="thread-msg-avatar" alt="avatar" />`) +
       `<div class="thread-msg-main">` +
-      (isAudio
-        ? `<audio controls class="cockpit-audio-player" src="${content}"></audio>`
-        : `<div class="thread-msg-body">${escapeHtml(content)}</div>`) +
+      renderThreadContentHtml(content) +
       `<div class="thread-msg-time">${timeStr}</div>` +
       `</div>`;
     threadDiv.appendChild(div);

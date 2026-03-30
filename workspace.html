@@ -600,6 +600,37 @@ livePulseStyle.textContent = `
   text-decoration: underline;
   word-break: break-word;
 }
+.waf-file-card {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  border-radius: 10px;
+  padding: 8px;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 100%;
+}
+.waf-file-name {
+  color: #1e3a8a;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.waf-file-actions {
+  display: inline-flex;
+  gap: 8px;
+}
+.waf-file-action {
+  color: #1d4ed8;
+  text-decoration: underline;
+  font-size: 12px;
+}
+.waf-file-preview-img {
+  max-width: 140px;
+  max-height: 100px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  object-fit: cover;
+}
 @keyframes recBlink {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
   50% { opacity: 0.45; box-shadow: 0 0 0 6px rgba(239,68,68,0); }
@@ -1447,6 +1478,29 @@ function parseFilePayload(text) {
   return { fileName, dataUrl };
 }
 
+function dataUrlMimeType(dataUrl) {
+  const match = String(dataUrl || "").match(/^data:([^;]+);/);
+  return (match && match[1]) ? match[1].toLowerCase() : "";
+}
+
+function renderFilePayloadHtml(filePayload) {
+  if (!filePayload?.dataUrl) return "";
+  const mime = dataUrlMimeType(filePayload.dataUrl);
+  const isImage = mime.startsWith("image/");
+  const isPdf = mime === "application/pdf";
+  return (
+    `<div class="waf-file-card">` +
+      (isImage ? `<img class="waf-file-preview-img" src="${filePayload.dataUrl}" alt="file-preview" />` : "") +
+      `<div class="waf-file-name">📎 ${escapeHtml(filePayload.fileName || "file")}</div>` +
+      `<div class="waf-file-actions">` +
+        `<a class="waf-file-action" href="${filePayload.dataUrl}" target="_blank" rel="noopener">צפה</a>` +
+        `<a class="waf-file-action" href="${filePayload.dataUrl}" download="${escapeHtml(filePayload.fileName || "file")}">הורד</a>` +
+        (isPdf ? `<a class="waf-file-action" href="${filePayload.dataUrl}" target="_blank" rel="noopener">PDF</a>` : "") +
+      `</div>` +
+    `</div>`
+  );
+}
+
 function packFilePayload(fileName, dataUrl) {
   return `__FILE__::${encodeURIComponent(fileName || "file")}::${dataUrl}`;
 }
@@ -1521,7 +1575,7 @@ function buildFeedEntry(item) {
     `</div>` +
     `</div>` +
     (filePayload
-      ? `<a class="waf-file-link" href="${filePayload.dataUrl}" target="_blank" rel="noopener">📎 ${escapeHtml(filePayload.fileName)}</a>`
+      ? renderFilePayloadHtml(filePayload)
       : isAudio
       ? `<audio controls class="cockpit-audio-player" src="${item.text}"></audio>`
       : `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`);
@@ -1574,7 +1628,7 @@ function buildBroadcastEntry(item) {
     `</div>` +
     `</div>` +
     (filePayload
-      ? `<a class="waf-file-link" href="${filePayload.dataUrl}" target="_blank" rel="noopener">📎 ${escapeHtml(filePayload.fileName)}</a>`
+      ? renderFilePayloadHtml(filePayload)
       : isAudio
       ? `<audio controls class="cockpit-audio-player" src="${item.text}"></audio>`
       : `<div class="waf-msg-body">${escapeHtml(item.text)}</div>`);
