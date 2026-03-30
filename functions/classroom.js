@@ -215,10 +215,20 @@ export async function handler(event){
       if(session.facultyId !== facultyId)
         return err("not session owner");
 
-      // Canonical source for cockpit student grid
+      // Canonical source for cockpit student grid: merge both trees to avoid drift.
       const studentsNode = session.students || {};
       const legacyAnswersNode = session.answers || {};
-      const studentsSource = Object.keys(studentsNode).length ? studentsNode : legacyAnswersNode;
+      const mergedStudentIds = new Set([
+        ...Object.keys(studentsNode),
+        ...Object.keys(legacyAnswersNode)
+      ]);
+      const studentsSource = {};
+      mergedStudentIds.forEach((sid) => {
+        studentsSource[sid] = {
+          ...(legacyAnswersNode[sid] || {}),
+          ...(studentsNode[sid] || {})
+        };
+      });
 
       const botType = session.botType;
       let courseId = null;
@@ -361,6 +371,7 @@ export async function handler(event){
         sessionId,
         broadcast:session.broadcast || null,
         facultyAvatar: session.facultyAvatar || null,
+        recallAll: session.recall_all || null,
         currentStep:session.currentStep || 1,
         stepVersion:session.stepVersion || 0,
         lockedSteps:session.lockedSteps || [],
@@ -451,6 +462,7 @@ export async function handler(event){
       lecturerReplies,
       studentSteps,
       publicPosts,
+      recallAll: session.recall_all || null,
       active_task: session.active_task || null
 
     });
@@ -997,6 +1009,42 @@ export async function handler(event){
     
     await db.ref().update(updates);
     return ok({ ok: true });
+
+  }
+
+  if(action === "recall_all"){
+
+    if(!sessionId) return err("sessionId required");
+    const snap = await sessionRef.once("value");
+    const session = snap.val();
+    if(!session) return err("session not found");
+    if(session.facultyId !== facultyId) return err("not session owner");
+
+    const recallPayload = {
+      id: `rec_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      active: true,
+      message: String(body.message || "חזרו עכשיו לשיעור").trim(),
+      triggeredAt: Date.now(),
+      triggeredBy: facultyId || null,
+      acks: {}
+    };
+    await sessionRef.update({ recall_all: recallPayload });
+    return ok({ ok: true, recallAll: recallPayload });
+
+  }
+
+  if(action === "recall_ack"){
+
+    const recallId = String(body.recallId || "").trim();
+    if(!sessionId) return err("sessionId required");
+    if(!studentId) return err("studentId required");
+    if(!recallId) return err("recallId required");
+
+    await db.ref(`sessions/${sessionId}/recall_all/acks/${studentId}`).set({
+      recallId,
+      at: Date.now()
+    });
+    return ok({ ok: true, recallId, studentId });
 
   }
 

@@ -108,6 +108,12 @@
   <hr style="margin:12px 0;border:none;border-top:1px solid #eee;">
   <p style="font-size:12px;color:#aaa;padding:0 12px;">כלים כלליים</p>
   <div id="universal-menu"></div>
+  <hr style="margin:12px 0;border:none;border-top:1px solid #eee;">
+  <p style="font-size:12px;color:#334155;padding:0 12px;font-weight:700;">Quick Tasks</p>
+  <div class="quick-tasks-menu">
+    <a href="/skills.html" class="quick-task-link" onclick="event.preventDefault(); openSkillsBranch();">🌿 ענף המיומנויות</a>
+    <a href="#" class="quick-task-link" onclick="event.preventDefault(); openMyProjectWorkspace();">🎯 הפרויקט שלי</a>
+  </div>
   <a href="/" onclick="sessionStorage.clear()" style="display:block;margin-top:20px;padding:12px;font-size:13px;color:#999;">← יציאה</a>
 </div>
 
@@ -188,6 +194,13 @@
                   </div>
                 </div>
                 <div id="active-task-instructions" class="atb-instructions"></div>
+              </div>
+              <div id="recall-alert-banner" class="recall-alert-banner" style="display:none;">
+                <div class="recall-alert-copy">
+                  <div class="recall-alert-title">🚨 המרצה קורא לכולם חזרה</div>
+                  <div class="recall-alert-sub">חזרו עכשיו ללשונית השיעור והמשיכו במשימה.</div>
+                </div>
+                <button class="recall-alert-btn" onclick="acknowledgeRecallAlert()">חזרתי לשיעור</button>
               </div>
               <div class="workspace-editor-wrap">
                 <div id="lock-overlay" class="workspace-lock-overlay" style="display:none;">
@@ -598,6 +611,29 @@ livePulseStyle.textContent = `
   font-weight: 700;
   white-space: nowrap;
 }
+.quick-tasks-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 8px;
+}
+.quick-task-link {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #0f172a;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  font-size: 13px;
+  font-weight: 700;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease;
+}
+.quick-task-link:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  transform: translateX(-2px);
+}
 .workspace-writing-col .workspace-primary-action,
 .workspace-writing-col .workspace-secondary-action {
   width: 100%;
@@ -789,6 +825,46 @@ livePulseStyle.textContent = `
 .atb-label { font-size: 10px; font-weight: 800; color: #6366f1; letter-spacing: .4px; text-transform: uppercase; }
 .atb-title { font-size: 15px; font-weight: 800; color: #3730a3; }
 .atb-instructions { font-size: 13px; color: #4338ca; line-height: 1.6; white-space: pre-wrap; }
+.recall-alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #fca5a5;
+  background: linear-gradient(180deg, #fee2e2 0%, #fecaca 100%);
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  animation: recallPulse 1.2s ease-in-out infinite;
+}
+.recall-alert-copy {
+  min-width: 0;
+}
+.recall-alert-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #7f1d1d;
+}
+.recall-alert-sub {
+  font-size: 12px;
+  color: #991b1b;
+}
+.recall-alert-btn {
+  appearance: none;
+  border: 1px solid #ef4444;
+  background: #b91c1c;
+  color: #fff;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.recall-alert-btn:hover {
+  background: #991b1b;
+}
 
 /* ── Waiting Room Overlay ── */
 .waiting-room-overlay {
@@ -1050,6 +1126,11 @@ livePulseStyle.textContent = `
   50% { transform: translateY(-4px); }
   100% { transform: translateY(0); }
 }
+@keyframes recallPulse {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.34); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
 @keyframes waitingSpin {
   to { transform: rotate(360deg); }
 }
@@ -1216,6 +1297,13 @@ let hardGatePollTimer = null;
 let hasBootedWorkspace = false;
 let waitingClassId = courseId || "";
 let myWaitingReaction = "";
+let activeRecallAlertId = "";
+let recallAlarmTimer = null;
+let recallTitleTimer = null;
+let recallAudioContext = null;
+const baseDocumentTitle = document.title;
+const RECALL_DISMISSED_KEY = "miled_recall_dismissed_ids";
+const dismissedRecallIds = new Set(JSON.parse(sessionStorage.getItem(RECALL_DISMISSED_KEY) || "[]"));
 
 const WORKSPACE_MODE_COPY = {
   classroom: {
@@ -1663,6 +1751,17 @@ function enterProjectWorkspace() {
   }
   setResearchStepsVisible(!skillId && hasResearchStages());
   document.getElementById("student-text")?.focus();
+}
+
+function openSkillsBranch() {
+  const target = courseId
+    ? `/skills.html?courseId=${encodeURIComponent(courseId)}`
+    : "/skills.html";
+  location.assign(target);
+}
+
+function openMyProjectWorkspace() {
+  enterProjectWorkspace();
 }
 
 function returnToLobby() {
@@ -2945,6 +3044,139 @@ function hydrateBroadcastHistory(broadcastHistory = []) {
   });
 }
 
+function rememberDismissedRecallIds() {
+  sessionStorage.setItem(RECALL_DISMISSED_KEY, JSON.stringify(Array.from(dismissedRecallIds).slice(-40)));
+}
+
+function ensureRecallAudioContext() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!recallAudioContext) recallAudioContext = new AudioCtx();
+  if (recallAudioContext.state === "suspended") {
+    recallAudioContext.resume().catch(() => {});
+  }
+  return recallAudioContext;
+}
+
+function playRecallTone() {
+  const ctx = ensureRecallAudioContext();
+  if (!ctx) return false;
+
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(740, now);
+  osc.frequency.exponentialRampToValueAtTime(980, now + 0.16);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.08, now + 0.03);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 0.25);
+  return true;
+}
+
+function requestRecallNotificationPermission() {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "default") return;
+  Notification.requestPermission().catch(() => {});
+}
+
+function notifyRecallInBackground(recall) {
+  if (document.visibilityState === "visible") return;
+  if (!("Notification" in window) || Notification.permission !== "granted") return;
+  const message = String(recall?.message || "המרצה מבקש מכל הכיתה לחזור עכשיו לשיעור.").trim();
+  try {
+    const n = new Notification("MilEd.One · קרא לכולם חזרה", { body: message });
+    setTimeout(() => n.close(), 5000);
+  } catch {}
+}
+
+function setRecallTitleFlashing(enabled) {
+  if (!enabled) {
+    if (recallTitleTimer) {
+      clearInterval(recallTitleTimer);
+      recallTitleTimer = null;
+    }
+    document.title = baseDocumentTitle;
+    return;
+  }
+  if (recallTitleTimer) return;
+  let flip = false;
+  recallTitleTimer = setInterval(() => {
+    flip = !flip;
+    document.title = flip ? "🚨 המרצה קורא לכולם חזרה" : baseDocumentTitle;
+  }, 1000);
+}
+
+function activateRecallAlert(recall) {
+  const recallId = String(recall?.id || "").trim();
+  if (!recallId || dismissedRecallIds.has(recallId)) return;
+  activeRecallAlertId = recallId;
+
+  const banner = document.getElementById("recall-alert-banner");
+  if (banner) banner.style.display = "flex";
+
+  playRecallTone();
+  if (!recallAlarmTimer) {
+    recallAlarmTimer = setInterval(() => {
+      if (!activeRecallAlertId) return;
+      playRecallTone();
+    }, 1800);
+  }
+  setRecallTitleFlashing(true);
+  notifyRecallInBackground(recall);
+}
+
+async function clearRecallAlert(acknowledge = false) {
+  const banner = document.getElementById("recall-alert-banner");
+  if (banner) banner.style.display = "none";
+
+  if (recallAlarmTimer) {
+    clearInterval(recallAlarmTimer);
+    recallAlarmTimer = null;
+  }
+  setRecallTitleFlashing(false);
+
+  const recallId = activeRecallAlertId;
+  activeRecallAlertId = "";
+  if (!acknowledge || !recallId || !sessionId || !studentId) return;
+
+  try {
+    await fetch("/.netlify/functions/classroom", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "recall_ack",
+        sessionId,
+        studentId,
+        recallId
+      })
+    });
+  } catch {}
+}
+
+async function acknowledgeRecallAlert() {
+  if (!activeRecallAlertId) return;
+  dismissedRecallIds.add(activeRecallAlertId);
+  rememberDismissedRecallIds();
+  await clearRecallAlert(true);
+}
+
+function handleRecallPayload(recall) {
+  const recallId = String(recall?.id || "").trim();
+  if (!recall?.active || !recallId) {
+    if (activeRecallAlertId) {
+      clearRecallAlert(false);
+    }
+    return;
+  }
+  if (dismissedRecallIds.has(recallId)) return;
+  activateRecallAlert(recall);
+}
+
 // ─────────────────────────────
 // autosave
 // ─────────────────────────────
@@ -3110,12 +3342,9 @@ function scheduleNextPoll(delay = classroomPollDelay) {
 }
 
 async function pollClassroomState() {
-  if (document.hidden) {
-    scheduleNextPoll(POLL_MAX);
-    return;
-  }
+  const isHiddenTab = document.hidden;
 
-  if (isAudioRecording) {
+  if (isAudioRecording && !isHiddenTab) {
     scheduleNextPoll(POLL_MIN);
     return;
   }
@@ -3150,6 +3379,7 @@ async function pollClassroomState() {
     hydrateBroadcastHistory(data.broadcastHistory || []);
     applyLecturerBroadcast(data);
     if (data.active_task) showActiveTask(data.active_task);
+    handleRecallPayload(data.recallAll || null);
 
     document.getElementById("lock-overlay").style.display = isLocked ? "" : "none";
 
@@ -3158,7 +3388,9 @@ async function pollClassroomState() {
     wasStepLocked = isLocked;
 
     // healthy poll lowers delay gradually
-    classroomPollDelay = Math.max(POLL_MIN, Math.floor(classroomPollDelay * 0.85));
+    classroomPollDelay = isHiddenTab
+      ? Math.min(POLL_MAX, Math.max(6000, classroomPollDelay))
+      : Math.max(POLL_MIN, Math.floor(classroomPollDelay * 0.85));
   } catch(e) {
     console.error("Classroom poll error:", e.message);
     // transient backend/network errors back off aggressively
@@ -3231,6 +3463,9 @@ function triggerUnlockAnimation() {
 
 init();
 renderStudentAvatarButton();
+document.addEventListener("click", ensureRecallAudioContext, { passive: true });
+document.addEventListener("keydown", ensureRecallAudioContext, { passive: true });
+requestRecallNotificationPermission();
 
 </script>
 

@@ -324,9 +324,24 @@
   background: #fee2e2;
   border-color: #ef4444;
 }
+.gate-recall {
+  background: #fff7ed;
+  color: #9a3412;
+  border-color: #fdba74;
+}
+.gate-recall:hover {
+  background: #ffedd5;
+  border-color: #fb923c;
+}
 .gate-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+.recall-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9a3412;
+  min-height: 18px;
 }
 .unread-bar {
   position: sticky;
@@ -946,7 +961,9 @@
       <div class="broadcast-gates">
         <button class="gate-btn gate-open" onclick="openStageAll()" title="פתח שלב לכל הסטודנטים">🔓 פתח שלב לכולם</button>
         <button class="gate-btn gate-lock" onclick="lockStageAll()" title="נעל שלב לכל הסטודנטים">🔒 נעל שלב לכולם</button>
+        <button class="gate-btn gate-recall" onclick="recallAllStudents()" title="שלח קריאה מיידית לחזרה לשיעור">🚨 קרא לכולם חזרה</button>
       </div>
+      <div id="recall-status" class="recall-status"></div>
     </div>
 
     <hr class="workspace-divider">
@@ -2369,6 +2386,30 @@ async function lockStageAll() {
   
   alert('✅ שלב נעול לכל הסטודנטים');
 }
+
+  async function recallAllStudents() {
+    if (!sessionId) { alert("פתח שיעור תחילה"); return; }
+    const statusEl = document.getElementById("recall-status");
+    if (statusEl) statusEl.textContent = "שולח קריאה לכל הסטודנטים...";
+
+    const res = await callClassroom({
+      action: "recall_all",
+      sessionId,
+      facultyId,
+      message: "המרצה מבקש מכל הכיתה לחזור עכשיו למסך השיעור"
+    });
+
+    if (!res?.ok) {
+      if (statusEl) statusEl.textContent = "שליחת הקריאה נכשלה";
+      alert("שגיאה בשליחת הקריאה");
+      return;
+    }
+
+    if (statusEl) {
+      const t = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+      statusEl.textContent = `✅ נשלחה קריאת חזרה ב-${t}`;
+    }
+  }
 
 // ─────────────────────────────────────────
 // HELPERS
