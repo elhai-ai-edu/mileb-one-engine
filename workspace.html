@@ -1100,9 +1100,14 @@ function renderWaitingMissionContent(mission = {}) {
 }
 
 async function refreshPreSessionLobby() {
-  if (!courseId) return;
+  const missionClassId = courseId || "";
+  const missionSessionId = urlSessionId || sessionId || "";
+  if (!missionClassId && !missionSessionId) return;
   try {
-    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}`);
+    const query = missionClassId
+      ? `classId=${encodeURIComponent(missionClassId)}`
+      : `sessionId=${encodeURIComponent(missionSessionId)}`;
+    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&${query}&studentId=${encodeURIComponent(studentId)}`);
     if (!res.ok) return;
     const data = await res.json();
     waitingMission = data?.mission || null;
@@ -1122,6 +1127,10 @@ async function refreshPreSessionLobby() {
       if (status && status.textContent === "נשלח ✓") status.textContent = "";
     }
   } catch {}
+}
+
+async function fetchPreSessionMission() {
+  await refreshPreSessionLobby();
 }
 
 async function submitEntranceTicket() {
@@ -1194,6 +1203,7 @@ async function resolveActiveSessionForLockout() {
 
 async function hardGateCheckSessionActive() {
   if (!isLockedOut) return;
+  await fetchPreSessionMission();
   const activeSessionId = await resolveActiveSessionForLockout();
   if (!activeSessionId) return;
 
@@ -1211,6 +1221,7 @@ function startHardGatePolling() {
   stopWaitingHeartbeat();
   stopWaitingPolling();
   if (hardGatePollTimer) return;
+  fetchPreSessionMission();
   hardGateCheckSessionActive();
   hardGatePollTimer = setInterval(hardGateCheckSessionActive, LOCKOUT_POLL_MS);
 }

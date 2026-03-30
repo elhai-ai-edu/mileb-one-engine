@@ -138,8 +138,14 @@ export async function handler(event){
     }
 
     if(action === "pre_session"){
-      const classId = event.queryStringParameters?.classId;
+      let classId = event.queryStringParameters?.classId;
+      const requestedSessionId = event.queryStringParameters?.sessionId || null;
       const requestedStudentId = event.queryStringParameters?.studentId || null;
+      if(!classId && requestedSessionId){
+        const sessionSnap = await db.ref(`sessions/${requestedSessionId}`).once("value");
+        const sessionData = sessionSnap.val() || {};
+        classId = sessionData.classId || null;
+      }
       if(!classId) return err("classId required");
 
       const [missionSnap, ticketsSnap] = await Promise.all([
