@@ -1439,7 +1439,8 @@ function syncLecturerReplies(replies = []) {
     if (!item?.id || !item?.text) return;
     if (seenLecturerReplyIds.has(item.id)) return;
     seenLecturerReplyIds.add(item.id);
-    addToActivityFeed({ type: "reply", text: item.text, ts: item.ts });
+    const isAudioReply = typeof item.text === "string" && item.text.startsWith("data:audio/");
+    addToActivityFeed({ type: "reply", text: item.text, kind: isAudioReply ? "audio" : "message", ts: item.ts });
   });
 }
 
@@ -1477,6 +1478,7 @@ async function toggleAudioRecording() {
       if (event.data && event.data.size > 0) audioChunks.push(event.data);
     };
     audioRecorder.onstop = handleAudioRecordingStop;
+    stopClassroomPolling();
     audioRecorder.start();
     isAudioRecording = true;
     if (btn) {
@@ -1507,6 +1509,11 @@ async function handleAudioRecordingStop() {
   if (audioStream) {
     audioStream.getTracks().forEach(track => track.stop());
     audioStream = null;
+  }
+
+  if (urlSessionId) {
+    classroomPollDelay = POLL_MIN;
+    startClassroomPolling();
   }
 
   if (!audioChunks.length) return;
@@ -1832,6 +1839,11 @@ function scheduleNextPoll(delay = classroomPollDelay) {
 async function pollClassroomState() {
   if (document.hidden) {
     scheduleNextPoll(POLL_MAX);
+    return;
+  }
+
+  if (isAudioRecording) {
+    scheduleNextPoll(POLL_MIN);
     return;
   }
 

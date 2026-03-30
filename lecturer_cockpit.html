@@ -358,6 +358,28 @@
 .lecturer-reply-send:hover {
   background: #1d4ed8;
 }
+.lecturer-reply-mic {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+.lecturer-reply-mic:hover {
+  background: #eef2ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+.lecturer-reply-mic.is-recording {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
 </style>
 <title>MilEd.One – כיתה חכמה</title>
 
@@ -677,6 +699,10 @@ let CONFIG      = null;  // stored for openSession() lookup
 let currentLessonId = null; // selected courseId shared between Live/Prepare tabs
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 const replyDrafts = {};
+let lecturerAudioRecorder = null;
+let lecturerAudioChunks = [];
+let lecturerAudioStream = null;
+let recordingStudentId = null;
 
 function switchCockpitTab(tabKey) {
   document.querySelectorAll('[data-tab-panel]').forEach(panel => {
@@ -960,9 +986,7 @@ function renderDashboard(data) {
 
     const threadHtml = recentThread.map(item => {
       const isLecturerItem = item.role === "lecturer";
-      const isAudio = !isLecturerItem
-        && typeof item.content === "string"
-        && item.content.startsWith("data:audio/");
+      const isAudio = typeof item.content === "string" && item.content.startsWith("data:audio/");
       const sideClass = isLecturerItem ? "from-lecturer" : "from-student";
       const time = item.ts
         ? new Date(item.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
@@ -994,6 +1018,7 @@ function renderDashboard(data) {
           <input id="reply-${s.studentId}" class="lecturer-reply-input"
             placeholder="כתוב תגובה לסטודנט..."
             oninput="setReplyDraft('${s.studentId}', this.value)" />
+          <button class="lecturer-reply-mic" id="reply-mic-${s.studentId}" onclick="toggleLecturerAudioReply('${s.studentId}')" title="הקלט תגובה קולית">🎙️</button>
           <button class="lecturer-reply-send" onclick="sendLecturerReply('${s.studentId}')">שלח</button>
         </div>
         <div class="card-actions">
@@ -1044,18 +1069,99 @@ async function sendLecturerReply(studentId) {
   replyDrafts[studentId] = "";
   input.value = "";
 
+  appendLecturerReplyToThread(studentId, text);
+}
+
+function appendLecturerReplyToThread(studentId, content) {
+  if (!content) return;
+
   // Optimistic UI: inject the reply immediately into the card's thread
   const threadDiv = document.getElementById(`thread-${studentId}`);
   if (threadDiv) {
     const emptyEl = threadDiv.querySelector(".thread-empty");
     if (emptyEl) emptyEl.remove();
     const timeStr = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+    const isAudio = typeof content === "string" && content.startsWith("data:audio/");
     const div = document.createElement("div");
     div.className = "thread-msg from-lecturer";
     div.innerHTML =
-      `<div class="thread-msg-body">${escapeHtml(text)}</div>` +
+      (isAudio
+        ? `<audio controls class="cockpit-audio-player" src="${content}"></audio>`
+        : `<div class="thread-msg-body">${escapeHtml(content)}</div>`) +
       `<div class="thread-msg-time">${timeStr}</div>`;
     threadDiv.appendChild(div);
+  }
+}
+
+async function toggleLecturerAudioReply(studentId) {
+  if (recordingStudentId && recordingStudentId !== studentId) return;
+
+  if (recordingStudentId === studentId && lecturerAudioRecorder) {
+    lecturerAudioRecorder.stop();
+    return;
+  }
+
+  const btn = document.getElementById(`reply-mic-${studentId}`);
+  try {
+    lecturerAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    lecturerAudioChunks = [];
+    lecturerAudioRecorder = new MediaRecorder(lecturerAudioStream);
+    recordingStudentId = studentId;
+
+    lecturerAudioRecorder.ondataavailable = (event) => {
+      if (event.data && event.data.size > 0) lecturerAudioChunks.push(event.data);
+    };
+
+    lecturerAudioRecorder.onstop = async () => {
+      const activeStudentId = recordingStudentId;
+      recordingStudentId = null;
+
+      if (btn) {
+        btn.classList.remove("is-recording");
+        btn.textContent = "🎙️";
+        btn.title = "הקלט תגובה קולית";
+      }
+
+      if (lecturerAudioStream) {
+        lecturerAudioStream.getTracks().forEach(track => track.stop());
+        lecturerAudioStream = null;
+      }
+
+      if (!lecturerAudioChunks.length || !activeStudentId) return;
+
+      const blob = new Blob(lecturerAudioChunks, { type: "audio/webm" });
+      const dataUrl = await new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result || ""));
+        reader.readAsDataURL(blob);
+      });
+
+      if (!dataUrl) return;
+
+      const res = await callClassroom({
+        action: "lecturer_reply",
+        sessionId,
+        facultyId,
+        studentId: activeStudentId,
+        text: dataUrl
+      });
+
+      if (!res?.ok) {
+        alert("שליחת הקלטה נכשלה");
+        return;
+      }
+
+      appendLecturerReplyToThread(activeStudentId, dataUrl);
+    };
+
+    lecturerAudioRecorder.start();
+    if (btn) {
+      btn.classList.add("is-recording");
+      btn.textContent = "⏹️";
+      btn.title = "עצור ושלח הקלטה";
+    }
+  } catch (e) {
+    alert("לא ניתן להפעיל מיקרופון");
   }
 }
 
