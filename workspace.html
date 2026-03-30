@@ -17,7 +17,7 @@
 <div id="waiting-room-overlay" class="waiting-room-overlay" style="display:none;">
   <div class="waiting-room-card waiting-room-card-wide" role="status" aria-live="polite">
     <div class="waiting-room-head">
-      <div class="waiting-room-icon" aria-hidden="true">⏳</div>
+      <div id="waiting-room-icon" class="waiting-room-icon is-empty" aria-hidden="true">⏳</div>
       <div>
         <h1 id="waiting-room-title" class="waiting-room-text">השיעור טרם התחיל, המרצה יפתח אותו בקרוב...</h1>
         <div id="waiting-room-subtitle" class="waiting-room-subtext">בינתיים ננצל את הזמן לחימום קצר ומשימת כניסה.</div>
@@ -46,17 +46,6 @@
           <textarea id="entrance-ticket-input" rows="6" class="waiting-ticket-input" placeholder="כתוב כאן את תגובתך למשימה לפני פתיחת השיעור..."></textarea>
           <div class="waiting-ticket-actions">
             <button onclick="submitEntranceTicket()" class="btn btn-blue waiting-ticket-btn">שלח תגובה וקבל כרטיס כניסה</button>
-            <div class="waiting-emoji-wrap">
-              <button type="button" class="waiting-emoji-btn" onclick="toggleWaitingEmojiMenu(event)">😀 תגובה מהירה</button>
-              <div id="waiting-emoji-menu" class="waiting-emoji-menu" style="display:none;">
-                <button type="button" onclick="setWaitingReaction('👍')">👍</button>
-                <button type="button" onclick="setWaitingReaction('🔥')">🔥</button>
-                <button type="button" onclick="setWaitingReaction('💡')">💡</button>
-                <button type="button" onclick="setWaitingReaction('🎯')">🎯</button>
-                <button type="button" onclick="setWaitingReaction('📚')">📚</button>
-                <button type="button" onclick="setWaitingReaction('✨')">✨</button>
-              </div>
-            </div>
             <span id="entrance-ticket-status" class="waiting-ticket-status"></span>
           </div>
         </div>
@@ -913,7 +902,7 @@ livePulseStyle.textContent = `
   align-items: center;
   justify-content: center;
 }
-.waiting-room-icon::after {
+.waiting-room-icon.is-empty::after {
   content: "";
   position: absolute;
   inset: -6px;
@@ -922,6 +911,9 @@ livePulseStyle.textContent = `
   border-top-color: #2563eb;
   border-right-color: #60a5fa;
   animation: waitingSpin 1.15s linear infinite;
+}
+.waiting-room-icon.is-mission {
+  color: #1d4ed8;
 }
 .waiting-room-spinner {
   width: 34px;
@@ -1074,48 +1066,6 @@ livePulseStyle.textContent = `
   font-size: 12px;
   color: #475569;
 }
-.waiting-emoji-wrap {
-  position: relative;
-}
-.waiting-emoji-btn {
-  border: 1px solid #cbd5e1;
-  background: #f8fafc;
-  color: #0f172a;
-  border-radius: 999px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-}
-.waiting-emoji-menu {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  box-shadow: 0 10px 24px rgba(15,23,42,0.14);
-  padding: 6px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  min-width: 132px;
-  z-index: 10;
-}
-.waiting-emoji-menu button {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  background: #f8fafc;
-  font-size: 18px;
-  line-height: 1;
-  padding: 8px;
-  cursor: pointer;
-}
-.waiting-emoji-menu button:hover {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-}
-
 .waiting-peers-meta {
   font-size: 12px;
   color: #475569;
@@ -1351,7 +1301,6 @@ let isLockedOut = true;
 let hardGatePollTimer = null;
 let hasBootedWorkspace = false;
 let waitingClassId = courseId || "";
-let myWaitingReaction = "";
 let waitingGameActive = false;
 let activeRecallAlertId = "";
 let recallAlarmTimer = null;
@@ -1525,12 +1474,18 @@ function resolveWaitingGameActive() {
 function renderWaitingHeader(mission = {}) {
   const titleEl = document.getElementById("waiting-room-title");
   const subtitleEl = document.getElementById("waiting-room-subtitle");
+  const iconEl = document.getElementById("waiting-room-icon");
   if (!titleEl || !subtitleEl) return;
 
   if (hasPreSessionMissionContent(mission)) {
     titleEl.textContent = "ברוכים הבאים לשלב ראשון של השיעור: משימת לימוד עצמית לפני העבודה הקבוצתית";
-    subtitleEl.textContent = "נצלו את זמן ההמתנה למשימת חימום וכניסה";
+    subtitleEl.textContent = "עליכם לבצע משימה זו על מנת להיכנס לשיעור";
     subtitleEl.style.display = "";
+    if (iconEl) {
+      iconEl.textContent = "📋";
+      iconEl.classList.remove("is-empty");
+      iconEl.classList.add("is-mission");
+    }
     return;
   }
 
@@ -1541,6 +1496,11 @@ function renderWaitingHeader(mission = {}) {
   } else {
     subtitleEl.textContent = "";
     subtitleEl.style.display = "none";
+  }
+  if (iconEl) {
+    iconEl.textContent = "⏳";
+    iconEl.classList.remove("is-mission");
+    iconEl.classList.add("is-empty");
   }
 }
 
@@ -1667,20 +1627,6 @@ async function renderWaitingPeers(waitingStudents = []) {
       `</div>`
     );
   }).join("");
-}
-
-function toggleWaitingEmojiMenu(event) {
-  if (event) event.stopPropagation();
-  const menu = document.getElementById("waiting-emoji-menu");
-  if (!menu) return;
-  menu.style.display = menu.style.display === "grid" ? "none" : "grid";
-}
-
-async function setWaitingReaction(emoji) {
-  myWaitingReaction = String(emoji || "").trim();
-  const menu = document.getElementById("waiting-emoji-menu");
-  if (menu) menu.style.display = "none";
-  await sendWaitingPing(true, myWaitingReaction);
 }
 
 async function refreshPreSessionLobby() {
@@ -1847,7 +1793,7 @@ async function enterClassroomWithWelcomeIfNeeded() {
   enterLiveClassroom();
 }
 
-async function sendWaitingPing(isWaiting, reaction = "") {
+async function sendWaitingPing(isWaiting) {
   const classId = waitingClassId || courseId || "";
   if (!classId || !studentId) return;
   let studentName = "";
@@ -1867,7 +1813,7 @@ async function sendWaitingPing(isWaiting, reaction = "") {
         studentId,
         studentName,
         avatar: safeAvatar(studentAvatar),
-        reaction: String(reaction || myWaitingReaction || "").trim() || null,
+        reaction: null,
         waiting: !!isWaiting
       })
     });
@@ -3627,12 +3573,6 @@ window.addEventListener("beforeunload", () => {
 });
 
 document.addEventListener("click", (event) => {
-  const emojiWrap = event.target?.closest?.(".waiting-emoji-wrap");
-  if (!emojiWrap) {
-    const menu = document.getElementById("waiting-emoji-menu");
-    if (menu) menu.style.display = "none";
-  }
-
   const avatarEl = event.target?.closest?.(".waf-avatar");
   if (avatarEl && avatarEl.getAttribute("src")) {
     openAvatarLightbox(avatarEl.getAttribute("src"));
