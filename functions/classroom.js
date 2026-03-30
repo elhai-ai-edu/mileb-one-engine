@@ -215,6 +215,9 @@ export async function handler(event){
       if(session.facultyId !== facultyId)
         return err("not session owner");
 
+      // Resolve classId: prefer stored value, fall back to query param (handles legacy sessions)
+      const resolvedClassId = session.classId || event.queryStringParameters?.classId || null;
+
       // Canonical source for cockpit student grid: merge both trees to avoid drift.
       const studentsNode = session.students || {};
       const legacyAnswersNode = session.answers || {};
@@ -346,13 +349,13 @@ export async function handler(event){
       });
 
       const online = students.filter(s => Date.now() - (s.lastSeen || 0) < 15000).length;
-      const waitingStudentsCount = session.classId
-        ? await getFreshWaitingCount(db, session.classId)
+      const waitingStudentsCount = resolvedClassId
+        ? await getFreshWaitingCount(db, resolvedClassId)
         : 0;
       let entranceTickets = [];
 
-      if (session.classId) {
-        const ticketsSnap = await db.ref(`pre_session_tickets/${session.classId}`).once("value");
+      if (resolvedClassId) {
+        const ticketsSnap = await db.ref(`pre_session_tickets/${resolvedClassId}`).once("value");
         const ticketsMap = ticketsSnap.val() || {};
         entranceTickets = Object.values(ticketsMap)
           .map(item => ({

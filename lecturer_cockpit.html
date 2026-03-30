@@ -1478,6 +1478,7 @@ async function clearPreSessionMission() {
 }
 
 function renderEntranceTicketsList(tickets = []) {
+  console.log(`New tickets received: ${tickets.length}`);
   const list = document.getElementById('entrance-ticket-list');
   if (!list) return;
   if (!tickets.length) {
@@ -1925,8 +1926,9 @@ function startPolling() {
 
 async function fetchDashboard() {
   try {
+    const classIdParam = currentLessonId ? `&classId=${encodeURIComponent(currentLessonId)}` : '';
     const res = await fetch(
-      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}`
+      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}${classIdParam}`
     );
     const data = await res.json();
     if (!res.ok) {
