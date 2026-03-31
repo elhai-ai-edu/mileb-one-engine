@@ -51,12 +51,12 @@ classroom-inject.js              ← סקריפט לשילוב ב-chat.html
 
 ---
 
-## שלב 5 — הוסף לינק לממשק המרצה ב-faculty.html
+## שלב 5 — הוסף לינק לממשק המרצה ב-lecturer_hub.html
 
-מצא את הרשת הקיימת של הכרטיסים ב-`faculty.html` והוסף:
+מצא את אזור הקישורים ב-`lecturer_hub.html` והוסף:
 
 ```html
-<a class="btn" href="/classroom-teacher.html">🏫 כיתה חכמה</a>
+<a class="btn" href="/lecturer_cockpit.html">🏫 כיתה חכמה</a>
 ```
 
 ---

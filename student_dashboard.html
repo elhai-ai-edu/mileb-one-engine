@@ -149,6 +149,34 @@
 /* ─── v8.9.2 Skill Pioneer — Compact Funnel ─── */
 .pioneer-container { padding: 4px 8px 10px !important; max-width: 100% !important; }
 
+.student-branch-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0 0 12px;
+}
+.student-branch-card {
+  border-radius: 14px;
+  border: 1.5px solid #dbeafe;
+  background: #ffffff;
+  padding: 14px 16px;
+  text-decoration: none;
+  display: grid;
+  gap: 6px;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.student-branch-card:hover {
+  transform: translateY(-1px);
+  border-color: #93c5fd;
+  box-shadow: 0 10px 24px rgba(30, 58, 138, 0.12);
+}
+.student-branch-card strong { font-size: 14px; color: #1e293b; }
+.student-branch-card span { font-size: 12px; color: #64748b; line-height: 1.5; }
+
+@media (max-width: 700px) {
+  .student-branch-grid { grid-template-columns: 1fr; }
+}
+
 .pioneer-funnel {
   display: flex; flex-direction: column;
   border: 1px solid #1e1b4b; border-radius: 14px; overflow: hidden;
@@ -330,6 +358,17 @@
 
     <div id="status-error" style="color:#dc2626;margin-bottom:8px;display:none;"></div>
 
+    <div class="student-branch-grid">
+      <a href="/students.html" class="student-branch-card">
+        <strong>📚 ענף אקדמי (My Courses)</strong>
+        <span>כניסה לקורסים רשמיים, הרשמה והפניה לשער waiting_lobby לכל שיעור.</span>
+      </a>
+      <a href="/skills.html" class="student-branch-card">
+        <strong>🎯 ענף מיומנויות (Skill Center)</strong>
+        <span>תרגול אישי בקצב עצמי עם בוטים ייעודיים לכל מיומנות.</span>
+      </a>
+    </div>
+
     <!-- ─── Pioneer Funnel (v8.9.1) ─── -->
     <div class="pioneer-funnel">
 
@@ -461,7 +500,7 @@ function getSkillStatus(botId) {
 }
 
 function resolveSkillUrl(id) {
-  return `/workspace.html?skillId=${id}`;
+  return `/chat.html?classId=${id}`;
 }
 
 // ─── renderProgressRow — kept for backward compat ───

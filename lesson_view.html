@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson View - MilEd.One</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0f172a;
+      --blue: #1d4ed8;
+      --cyan: #0f766e;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #dbe7ff;
+      --panel: rgba(255,255,255,0.92);
+      --good: #166534;
+      --warn: #92400e;
+    }
+    * { box-sizing: border-box; }
+    html { font-size: 113%; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Assistant", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(29,78,216,0.16), transparent 35%),
+        radial-gradient(circle at 86% 16%, rgba(15,118,110,0.14), transparent 30%),
+        linear-gradient(165deg, #f7fbff 0%, #eef4ff 44%, #f7fbff 100%);
+    }
+    .shell {
+      width: min(1540px, 97vw);
+      margin: 14px auto;
+      display: grid;
+      gap: 14px;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      background: linear-gradient(120deg, #0f172a, #1d4ed8 60%, #0f766e 100%);
+      color: #fff;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
+    }
+    .topbar-title { display: grid; gap: 4px; }
+    .topbar-title strong { font-size: 1.3rem; }
+    .topbar-sub { color: rgba(255,255,255,0.82); font-size: 0.86rem; }
+    .topbar-chips {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .chip {
+      border-radius: 999px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.12);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr) 400px;
+      gap: 14px;
+      align-items: start;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: 0 16px 40px rgba(15,23,42,0.08);
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #f8fbff, #eef4ff);
+      font-weight: 800;
+      color: #1e3a8a;
+    }
+    .panel-body {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+    .resource-list, .admin-links, .sprint-list { display: grid; gap: 10px; }
+    .resource-card, .sprint-card, .state-strip {
+      border: 1px solid #dbeafe;
+      border-radius: 16px;
+      background: #fff;
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .resource-row {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .resource-title { font-weight: 800; line-height: 1.35; }
+    .resource-meta { color: var(--muted); font-size: 0.82rem; }
+    .mini-btn, .action-btn {
+      border-radius: 12px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+      padding: 9px 11px;
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mini-btn.ghost {
+      background: #fff;
+      color: #0f172a;
+      border-color: #cbd5e1;
+    }
+    .mini-btn.push {
+      background: #ecfeff;
+      color: #155e75;
+      border-color: #a5f3fc;
+    }
+    .action-btn.primary {
+      background: linear-gradient(135deg, #1d4ed8, #2563eb);
+      color: #fff;
+      border-color: #1d4ed8;
+    }
+    .action-btn.support {
+      background: #fffbeb;
+      color: var(--warn);
+      border-color: #fcd34d;
+    }
+    .action-btn.good {
+      background: #ecfdf5;
+      color: var(--good);
+      border-color: #86efac;
+    }
+    .stage {
+      display: grid;
+      gap: 14px;
+      min-height: calc(100vh - 160px);
+    }
+    .stage-hero {
+      padding: 18px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, #f8fbff, #edf6ff);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .stage-display {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+    .presentation-frame {
+      width: 100%;
+      min-height: 460px;
+      border: 1px solid #cbd5e1;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #fff, #f8fbff);
+    }
+    .hero-copy { max-width: 62ch; }
+    .hero-copy h1 { margin: 0 0 6px; font-size: 1.45rem; }
+    .hero-copy p { margin: 0; color: var(--muted); line-height: 1.65; }
+    .active-sprint-box {
+      border: 1px solid #dbeafe;
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px;
+      display: grid;
+      gap: 10px;
+    }
+    .station-badge {
+      display: inline-flex;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .station-badge.physical { background: #fef3c7; color: #92400e; }
+    .station-badge.plenary { background: #fee2e2; color: #991b1b; }
+    .station-badge.ai { background: #dcfce7; color: #166534; }
+    .guidance-box {
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+      line-height: 1.6;
+    }
+    .guidance-box.fast {
+      background: #ecfeff;
+      border-color: #67e8f9;
+      color: #155e75;
+    }
+    .evidence-box {
+      display: grid;
+      gap: 10px;
+      border-radius: 14px;
+      background: #f8fafc;
+      border: 1px solid #dbeafe;
+      padding: 12px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 92px;
+      border-radius: 14px;
+      border: 1px solid #cbd5e1;
+      padding: 11px 12px;
+      resize: vertical;
+      font: inherit;
+    }
+    .chat-shell {
+      min-height: calc(100vh - 160px);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .chat-frame {
+      width: 100%;
+      min-height: calc(100vh - 240px);
+      border: 0;
+      background: #fff;
+    }
+    .heat-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.84rem;
+    }
+    .heat-pill {
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-weight: 800;
+      font-size: 0.74rem;
+    }
+    .heat-pill.fast { background: #cffafe; color: #155e75; }
+    .heat-pill.support { background: #fee2e2; color: #991b1b; }
+    .heat-pill.normal { background: #e2e8f0; color: #334155; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.62);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 999;
+    }
+    .modal.visible { display: flex; }
+    .modal-card {
+      width: min(1100px, 94vw);
+      max-height: 88vh;
+      background: #fff;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(15,23,42,0.24);
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+    .modal-head {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      border-bottom: 1px solid #dbeafe;
+    }
+    .modal-body { padding: 16px; }
+    .modal-body iframe {
+      width: 100%;
+      height: 70vh;
+      border: 1px solid #cbd5e1;
+      border-radius: 16px;
+      background: #fff;
+    }
+    @media (max-width: 1240px) {
+      .layout { grid-template-columns: 1fr; }
+      .chat-shell, .stage { min-height: auto; }
+      .chat-frame, .presentation-frame { min-height: 540px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="topbar-title">
+        <strong id="lessonTitle">שיעור חי</strong>
+        <div class="topbar-sub" id="lessonSubtitle">טוען נתוני שיעור...</div>
+      </div>
+      <div class="topbar-chips">
+        <div class="chip" id="roleChip">Student View</div>
+        <div class="chip" id="doorChip">Door: --</div>
+        <div class="chip" id="sessionChip">sessionId: --</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="panel">
+        <div class="panel-head">Bookshelf</div>
+        <div class="panel-body">
+          <div class="state-strip">
+            <strong id="bookshelfLessonId">lessonId: --</strong>
+            <div class="resource-meta" id="selectedUnitsMeta">אין יחידות משויכות</div>
+          </div>
+          <div id="adminLinks" class="admin-links" style="display:none;"></div>
+          <div id="resourceList" class="resource-list"></div>
+        </div>
+      </aside>
+
+      <section class="panel stage">
+        <div class="stage-hero">
+          <div class="hero-copy">
+            <h1 id="stageTitle">מרחב מצגת וספרינט</h1>
+            <p id="stageSubtitle">המשאב הדחוף, הספרינט הפעיל או הוראות המליאה יוצגו כאן.</p>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="mini-btn ghost" id="clearPushBtn" style="display:none;">נקה משאב דחוף</button>
+            <button class="mini-btn" id="refreshBtn">רענן</button>
+          </div>
+        </div>
+        <div class="stage-display">
+          <div id="activeSprintBox" class="active-sprint-box"></div>
+          <iframe id="presentationFrame" class="presentation-frame" title="presentation-stage"></iframe>
+          <div id="sprintList" class="sprint-list"></div>
+        </div>
+      </section>
+
+      <aside class="panel chat-shell">
+        <div class="panel-head">Chat</div>
+        <iframe id="chatFrame" class="chat-frame" title="lesson-chat"></iframe>
+      </aside>
+    </main>
+  </div>
+
+  <div id="pushedModal" class="modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <strong id="modalTitle">משאב דחוף</strong>
+        <button id="closeModalBtn" class="mini-btn ghost" type="button">סגור</button>
+      </div>
+      <div class="modal-body">
+        <iframe id="modalFrame" title="pushed-resource"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const sessionId = String(params.get("sessionId") || "").trim();
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    const role = ["faculty", "institution", "superadmin"].includes(auth?.role) ? "lecturer" : "student";
+    const studentIdKey = `miled_student_id_${sessionId || "global"}`;
+    const studentNameKey = `miled_student_name_${sessionId || "global"}`;
+    const studentId = localStorage.getItem(studentIdKey) || (`stu_${Math.random().toString(36).slice(2, 10)}`);
+    localStorage.setItem(studentIdKey, studentId);
+    const studentName = localStorage.getItem(studentNameKey) || auth?.displayName || auth?.name || studentId.slice(0, 8);
+
+    let lessonData = null;
+    let refreshTimer = null;
+    let heartbeatTimer = null;
+    let lastPushedSignature = null;
+    let currentGuidance = null;
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function iconForResource(kind) {
+      if (kind === "pdf") return "PDF";
+      if (kind === "link") return "LINK";
+      if (kind === "task") return "TASK";
+      if (kind === "file") return "FILE";
+      return "ITEM";
+    }
+
+    async function callClassroom(method, payload = null, query = "") {
+      if (method === "GET") {
+        const res = await fetch(`/.netlify/functions/classroom${query}`);
+        return res.json();
+      }
+      const res = await fetch("/.netlify/functions/classroom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
+      return res.json();
+    }
+
+    function setChatFrame(courseId, botType) {
+      const chatFrame = document.getElementById("chatFrame");
+      const query = new URLSearchParams();
+      if (courseId) query.set("classId", courseId);
+      if (!courseId && botType) query.set("botType", botType);
+      query.set("sessionId", sessionId);
+      chatFrame.src = `/chat.html?${query.toString()}`;
+    }
+
+    function buildResourceCard(resource) {
+      const linkAction = resource.url
+        ? `<a class="mini-btn ghost" href="${resource.url}" target="_blank" rel="noopener">פתח</a>`
+        : `<span class="mini-btn ghost" style="opacity:.55;cursor:default;">ללא קישור</span>`;
+      const pushAction = role === "lecturer"
+        ? `<button class="mini-btn push" type="button" data-push-id="${escapeHtml(resource.id)}">Push to Students</button>`
+        : "";
+      return `
+        <div class="resource-card">
+          <div class="resource-row">
+            <div>
+              <div class="resource-title">${escapeHtml(iconForResource(resource.kind))} · ${escapeHtml(resource.title)}</div>
+              <div class="resource-meta">${escapeHtml(resource.unitName || resource.unitId || "יחידה לא מזוהה")}${resource.lecturerOnly ? ' · Lecturer Only' : ''}</div>
+            </div>
+            <div style="display:grid;gap:6px;justify-items:end;">${linkAction}${pushAction}</div>
+          </div>
+        </div>`;
+    }
+
+    function renderResources() {
+      const resources = Array.isArray(lessonData?.resources) ? lessonData.resources : [];
+      const visible = role === "lecturer" ? resources : resources.filter(resource => !resource.lecturerOnly);
+      const list = document.getElementById("resourceList");
+      const selectedUnitsMeta = document.getElementById("selectedUnitsMeta");
+      const lessonIdLabel = document.getElementById("bookshelfLessonId");
+      const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
+
+      lessonIdLabel.textContent = `lessonId: ${lessonData?.lessonId || "--"}`;
+      selectedUnitsMeta.textContent = selectedUnits.length
+        ? selectedUnits.map(unit => unit.name || unit.unitId).join(" | ")
+        : "אין יחידות משויכות";
+      list.innerHTML = visible.length ? visible.map(buildResourceCard).join("") : '<div class="resource-meta">אין משאבים זמינים ליחידה הפעילה.</div>';
+
+      list.querySelectorAll("[data-push-id]").forEach(button => {
+        button.addEventListener("click", async () => {
+          const resource = resources.find(item => String(item.id) === String(button.dataset.pushId));
+          if (!resource) return;
+          await callClassroom("POST", {
+            action: "resource_push",
+            sessionId,
+            facultyId: auth?.id || auth?.uid || auth?.email || lessonData?.facultyId,
+            resource
+          });
+          await refreshLesson();
+        });
+      });
+    }
+
+    function renderAdminLinks() {
+      const admin = document.getElementById("adminLinks");
+      if (role !== "lecturer") {
+        admin.style.display = "none";
+        admin.innerHTML = "";
+        return;
+      }
+
+      admin.style.display = "grid";
+      admin.innerHTML = `
+        <div class="state-strip">
+          <strong>Lecturer Controls</strong>
+          <div class="resource-meta">משאבי ניהול זמינים רק בתצוגת מרצה.</div>
+        </div>
+        <a class="mini-btn ghost" href="/lecturer_cockpit.html?courseId=${encodeURIComponent(lessonData?.courseId || "")}&unitId=${encodeURIComponent(lessonData?.lessonId || "unit_01")}" target="_blank">פתח קוקפיט</a>
+      `;
+    }
+
+    function sprintTypeClass(stationType) {
+      const normalized = String(stationType || "AI_STATION").toLowerCase();
+      if (normalized.includes("physical")) return "physical";
+      if (normalized.includes("plenary")) return "plenary";
+      return "ai";
+    }
+
+    function findActiveSprint() {
+      const sprints = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
+      const activeSprintId = String(lessonData?.state?.active_sprint || "").trim();
+      if (!sprints.length) return null;
+      return sprints.find(item => String(item.id) === activeSprintId) || sprints[0];
+    }
+
+    function renderActiveSprint() {
+      const box = document.getElementById("activeSprintBox");
+      const frame = document.getElementById("presentationFrame");
+      const pushedResource = lessonData?.state?.pushed_resource || null;
+      const activeSprint = findActiveSprint();
+      const guidance = currentGuidance || null;
+
+      if (pushedResource?.url) {
+        frame.src = pushedResource.url;
+        document.getElementById("stageTitle").textContent = pushedResource.title || "משאב דחוף";
+        document.getElementById("stageSubtitle").textContent = "המרצה דחף משאב לכל הכיתה. הוא מוצג גם במרכז הבמה.";
+        document.getElementById("clearPushBtn").style.display = role === "lecturer" ? "" : "none";
+      } else {
+        frame.removeAttribute("src");
+        frame.srcdoc = '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-family:Assistant,sans-serif;color:#475569;background:linear-gradient(180deg,#ffffff,#f8fbff);padding:24px;text-align:center;">אין כרגע משאב דחוף. התוכן הפעיל יוצג כאן כשהמרצה ידחוף קובץ, קישור או מצגת.</div>';
+        document.getElementById("stageTitle").textContent = activeSprint?.title || "מרחב מצגת וספרינט";
+        document.getElementById("stageSubtitle").textContent = activeSprint?.instructions || "בחר ספרינט פעיל או דחוף משאב מה-Bookshelf.";
+        document.getElementById("clearPushBtn").style.display = "none";
+      }
+
+      if (!activeSprint) {
+        box.innerHTML = '<div class="resource-meta">לא הוגדרו סבבים ליחידה הפעילה.</div>';
+        return;
+      }
+
+      const stationClass = sprintTypeClass(activeSprint.stationType);
+      const guidanceBox = guidance ? `<div class="guidance-box ${guidance.pathDecision === "fast" ? "fast" : ""}">${escapeHtml(guidance.guidance)}</div>` : "";
+      const plenaryNote = String(activeSprint.stationType || "").toUpperCase() === "PLENARY_STATION"
+        ? '<div class="guidance-box">Plenary Station: המסך ממוקד בשיח כיתתי. הסטודנטים אמורים להקשיב, להשוות, ולחזור לשיחה בהמשך.</div>'
+        : "";
+      const evidenceBox = String(activeSprint.stationType || "").toUpperCase() === "PHYSICAL_STATION"
+        ? `
+          <div class="evidence-box">
+            <strong>Proof of Work</strong>
+            <div class="resource-meta">העלה תמונה או סיכום קצר כדי לשחרר את הספרינט הבא.</div>
+            <textarea id="evidenceText" placeholder="סיכום קצר של העבודה הפיזית"></textarea>
+            <input id="evidenceImage" type="file" accept="image/*">
+            <button class="action-btn support" id="submitEvidenceBtn" type="button">שלח הוכחת עבודה</button>
+          </div>`
+        : "";
+
+      const controls = role === "student"
+        ? `
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="action-btn primary" id="startSprintBtn" type="button">התחל ספרינט</button>
+            <button class="action-btn good" id="completeSprintBtn" type="button">סיימתי ספרינט</button>
+          </div>`
+        : "";
+
+      box.innerHTML = `
+        <div class="station-badge ${stationClass}">${escapeHtml(activeSprint.stationType || "AI_STATION")}</div>
+        <strong>${escapeHtml(activeSprint.title || "Sprint")}</strong>
+        <div class="resource-meta">${escapeHtml(activeSprint.instructions || "")}</div>
+        ${guidanceBox}
+        ${plenaryNote}
+        ${controls}
+        ${evidenceBox}
+      `;
+
+      bindSprintActions(activeSprint);
+    }
+
+    function renderSprintList() {
+      const list = document.getElementById("sprintList");
+      const sprints = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
+      if (!sprints.length) {
+        list.innerHTML = "";
+        return;
+      }
+      const activeId = String(lessonData?.state?.active_sprint || "").trim();
+      list.innerHTML = sprints.map(sprint => {
+        const isActive = String(sprint.id) === activeId || (!activeId && sprint === sprints[0]);
+        const lecturerButton = role === "lecturer"
+          ? `<button class="mini-btn" type="button" data-activate-sprint="${escapeHtml(sprint.id)}">הפעל</button>`
+          : "";
+        return `
+          <div class="sprint-card">
+            <div class="resource-row">
+              <div>
+                <div class="resource-title">${escapeHtml(sprint.title || sprint.id)}</div>
+                <div class="resource-meta">${escapeHtml(sprint.stationType || "AI_STATION")}${isActive ? ' · פעיל כעת' : ''}</div>
+              </div>
+              ${lecturerButton}
+            </div>
+            <div class="resource-meta">${escapeHtml(sprint.instructions || "")}</div>
+          </div>`;
+      }).join("");
+
+      list.querySelectorAll("[data-activate-sprint]").forEach(button => {
+        button.addEventListener("click", async () => {
+          await callClassroom("POST", {
+            action: "session_state_update",
+            sessionId,
+            facultyId: auth?.id || auth?.uid || auth?.email || lessonData?.facultyId,
+            activeSprint: button.dataset.activateSprint
+          });
+          await refreshLesson();
+        });
+      });
+    }
+
+    function bindSprintActions(activeSprint) {
+      const startBtn = document.getElementById("startSprintBtn");
+      const completeBtn = document.getElementById("completeSprintBtn");
+      const evidenceBtn = document.getElementById("submitEvidenceBtn");
+
+      if (startBtn) {
+        startBtn.addEventListener("click", async () => {
+          const response = await callClassroom("POST", {
+            action: "pacing_update",
+            sessionId,
+            studentId,
+            studentName,
+            currentSprint: activeSprint.id,
+            eventType: "sprint_started"
+          });
+          currentGuidance = response?.pacing?.guidance ? {
+            pathDecision: response.pacing.pathDecision,
+            guidance: response.pacing.guidance
+          } : null;
+          renderActiveSprint();
+        });
+      }
+
+      if (completeBtn) {
+        completeBtn.addEventListener("click", async () => {
+          const response = await callClassroom("POST", {
+            action: "pacing_update",
+            sessionId,
+            studentId,
+            studentName,
+            currentSprint: activeSprint.id,
+            eventType: "sprint_completed"
+          });
+          currentGuidance = response?.pacing?.guidance ? {
+            pathDecision: response.pacing.pathDecision,
+            guidance: response.pacing.guidance
+          } : null;
+          renderActiveSprint();
+        });
+      }
+
+      if (evidenceBtn) {
+        evidenceBtn.addEventListener("click", async () => {
+          const evidenceText = String(document.getElementById("evidenceText")?.value || "").trim();
+          const file = document.getElementById("evidenceImage")?.files?.[0] || null;
+          let imageDataUrl = "";
+          if (file) {
+            imageDataUrl = await new Promise(resolve => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(String(reader.result || ""));
+              reader.readAsDataURL(file);
+            });
+          }
+          await callClassroom("POST", {
+            action: "evidence_submit",
+            sessionId,
+            studentId,
+            studentName,
+            sprintId: activeSprint.id,
+            text: evidenceText,
+            imageDataUrl
+          });
+          const response = await callClassroom("POST", {
+            action: "pacing_update",
+            sessionId,
+            studentId,
+            studentName,
+            currentSprint: activeSprint.id,
+            eventType: "heartbeat"
+          });
+          currentGuidance = response?.pacing?.guidance ? {
+            pathDecision: response.pacing.pathDecision,
+            guidance: response.pacing.guidance
+          } : currentGuidance;
+          renderActiveSprint();
+        });
+      }
+    }
+
+    function renderPushedModal() {
+      const pushed = lessonData?.state?.pushed_resource || null;
+      const signature = pushed?.id && pushed?.pushedAt ? `${pushed.id}_${pushed.pushedAt}` : null;
+      if (!signature || role === "lecturer") return;
+      if (signature === lastPushedSignature) return;
+      lastPushedSignature = signature;
+      if (!pushed.url) return;
+      document.getElementById("modalTitle").textContent = pushed.title || "משאב דחוף";
+      document.getElementById("modalFrame").src = pushed.url;
+      document.getElementById("pushedModal").classList.add("visible");
+    }
+
+    function renderHeatStrip() {
+      if (role !== "lecturer") return;
+      const admin = document.getElementById("adminLinks");
+      const pacing = lessonData?.pacing?.heatmap || [];
+      const strip = pacing.length
+        ? pacing.slice(0, 8).map(item => `
+            <div class="heat-row">
+              <span>${escapeHtml(item.studentName || item.studentId || "student")}</span>
+              <span>${escapeHtml(item.sprint || "-")}</span>
+              <span class="heat-pill ${escapeHtml(item.pathDecision || "normal")}">${escapeHtml(item.pathDecision || "normal")}</span>
+            </div>`).join("")
+        : '<div class="resource-meta">אין עדיין נתוני pacing פעילים.</div>';
+      admin.innerHTML += `<div class="state-strip"><strong>Live Heatmap</strong>${strip}</div>`;
+    }
+
+    async function refreshLesson() {
+      if (!sessionId) return;
+      lessonData = await callClassroom("GET", null, `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}`);
+      const courseLabel = lessonData?.courseId ? `courseId: ${lessonData.courseId}` : "Faculty Tool";
+      document.getElementById("lessonTitle").textContent = lessonData?.playlist?.lessonId || lessonData?.lessonId || "שיעור חי";
+      document.getElementById("lessonSubtitle").textContent = `${courseLabel} | ${lessonData?.resources?.length || 0} resources | ${lessonData?.selectedUnits?.length || 0} mapped units`;
+      document.getElementById("sessionChip").textContent = `sessionId: ${sessionId}`;
+      document.getElementById("doorChip").textContent = `Door: ${String(lessonData?.state?.door_status || "auto").toUpperCase()}`;
+      document.getElementById("roleChip").textContent = role === "lecturer" ? "Lecturer View" : "Student View";
+
+      renderAdminLinks();
+      renderResources();
+      renderHeatStrip();
+      renderActiveSprint();
+      renderSprintList();
+      renderPushedModal();
+      setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
+    }
+
+    async function sendHeartbeat() {
+      const activeSprint = findActiveSprint();
+      if (role !== "student" || !activeSprint) return;
+      const response = await callClassroom("POST", {
+        action: "pacing_update",
+        sessionId,
+        studentId,
+        studentName,
+        currentSprint: activeSprint.id,
+        eventType: "heartbeat"
+      });
+      currentGuidance = response?.pacing?.guidance ? {
+        pathDecision: response.pacing.pathDecision,
+        guidance: response.pacing.guidance
+      } : currentGuidance;
+      renderActiveSprint();
+    }
+
+    function initControls() {
+      document.getElementById("refreshBtn").addEventListener("click", refreshLesson);
+      document.getElementById("closeModalBtn").addEventListener("click", () => {
+        document.getElementById("pushedModal").classList.remove("visible");
+      });
+      document.getElementById("pushedModal").addEventListener("click", event => {
+        if (event.target?.id === "pushedModal") {
+          document.getElementById("pushedModal").classList.remove("visible");
+        }
+      });
+      document.getElementById("clearPushBtn").addEventListener("click", async () => {
+        await callClassroom("POST", {
+          action: "resource_push",
+          sessionId,
+          facultyId: auth?.id || auth?.uid || auth?.email || lessonData?.facultyId,
+          clear: true
+        });
+        await refreshLesson();
+      });
+    }
+
+    async function init() {
+      if (!sessionId) {
+        document.getElementById("lessonSubtitle").textContent = "לא התקבל sessionId. פתח את הדף דרך waiting_lobby.html.";
+        return;
+      }
+      initControls();
+      await refreshLesson();
+      refreshTimer = setInterval(refreshLesson, 6000);
+      heartbeatTimer = setInterval(sendHeartbeat, 30000);
+    }
+
+    init();
+  </script>
+</body>
+</html>

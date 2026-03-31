@@ -59,13 +59,14 @@
             <span id="entrance-ticket-status" class="waiting-ticket-status" style="display:none;"></span>
           </div>
           <div id="waiting-ticket-celebration" class="waiting-ticket-celebration" style="display:none;">
-            <div id="waiting-ticket-card" class="waiting-ticket-card" role="status" aria-live="polite">
+            <div id="waiting-ticket-card" class="waiting-ticket-card" role="button" tabindex="0" aria-label="כרטיס כניסה לשיעור" onclick="handleGoldenTicketEnterClick(event)" onkeydown="handleGoldenTicketEnterKey(event)">
               <span class="waiting-ticket-notch waiting-ticket-notch-left" aria-hidden="true"></span>
               <span class="waiting-ticket-notch waiting-ticket-notch-right" aria-hidden="true"></span>
               <div class="waiting-ticket-text">הכרטיס בידך! 🎫 ברגע שהמרצה יפתח את השיעור, הדלת תיפתח עבורך אוטומטית.</div>
             </div>
             <div id="waiting-ticket-confetti" class="waiting-ticket-confetti" aria-hidden="true"></div>
           </div>
+          <button id="waiting-enter-lesson-btn" class="btn btn-blue waiting-enter-lesson-btn" style="display:none;" onclick="handleManualLessonEntry(event)">כניסה לשיעור</button>
         </div>
         <div id="waiting-empty-state" class="waiting-empty-state" style="display:none;">
           <div class="waiting-empty-title">בשיעור הקרוב נתמקד בנושאים הבאים:</div>
@@ -1359,6 +1360,7 @@ livePulseStyle.textContent = `
   right: 16px;
   width: 280px;
   height: auto;
+  pointer-events: auto;
 }
 .waiting-ticket-celebration.is-pinned .waiting-ticket-card {
   position: relative;
@@ -1370,6 +1372,24 @@ livePulseStyle.textContent = `
   padding: 10px 12px;
   border-width: 1.5px;
   box-shadow: 0 10px 24px rgba(30, 64, 175, 0.24);
+}
+.waiting-ticket-celebration.is-pinned .waiting-ticket-card.is-clickable {
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(30, 64, 175, 0.24), 0 0 0 0 rgba(30, 64, 175, 0.45);
+  animation: waitingTicketClickableGlow 1.5s ease-in-out infinite;
+}
+.waiting-ticket-celebration.is-pinned .waiting-ticket-card:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+.waiting-enter-lesson-btn {
+  margin-top: 12px;
+  width: 100%;
+  font-size: 18px;
+  font-weight: 900;
+  padding: 12px 16px;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(30, 64, 175, 0.25);
 }
 .waiting-ticket-celebration.is-pinned .waiting-ticket-text {
   font-size: 14px;
@@ -1478,6 +1498,11 @@ livePulseStyle.textContent = `
   0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
   8% { opacity: 1; }
   100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+@keyframes waitingTicketClickableGlow {
+  0% { box-shadow: 0 10px 24px rgba(30, 64, 175, 0.24), 0 0 0 0 rgba(30, 64, 175, 0.42); }
+  70% { box-shadow: 0 10px 24px rgba(30, 64, 175, 0.24), 0 0 0 12px rgba(30, 64, 175, 0); }
+  100% { box-shadow: 0 10px 24px rgba(30, 64, 175, 0.24), 0 0 0 0 rgba(30, 64, 175, 0); }
 }
 @keyframes recallPulse {
   0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.34); }
@@ -1649,6 +1674,12 @@ let pendingAvatarDataUrl = "";
 let isLockedOut = true;
 let hardGatePollTimer = null;
 let hasBootedWorkspace = false;
+let autoDoorRedirecting = false;
+let waitingActiveSessionId = "";
+let waitingDoorStatus = "idle";
+let waitingEntryPolicy = "ticket_only";
+let activeDoorRef = null;
+let activeDoorListener = null;
 let waitingClassId = courseId || "";
 let waitingUnitId = unitIdFromUrl || "unit_01";
 let waitingTopicName = "";
@@ -2096,6 +2127,7 @@ function triggerTicketConfettiBurst() {
 
 function showEntranceTicketCelebration(animate = false) {
   const shell = document.getElementById('waiting-ticket-celebration');
+  const ticketCard = document.getElementById('waiting-ticket-card');
   const textEl = shell?.querySelector('.waiting-ticket-text');
   const button = document.querySelector('.waiting-ticket-btn');
   const status = document.getElementById('entrance-ticket-status');
@@ -2107,6 +2139,7 @@ function showEntranceTicketCelebration(animate = false) {
   }
 
   shell.style.display = '';
+  if (ticketCard) ticketCard.classList.remove('is-clickable');
   if (button) button.style.display = 'none';
   if (status) status.style.display = 'none';
   if (input) input.disabled = true;
@@ -2114,6 +2147,7 @@ function showEntranceTicketCelebration(animate = false) {
   if (waitingTicketUiState.pinned) {
     shell.classList.remove('is-animating');
     shell.classList.add('is-pinned');
+    shell.setAttribute('title', 'לחצו כדי להיכנס לשיעור אם הדלת לא נפתחה אוטומטית');
     persistWaitingTicketUiState();
     return;
   }
@@ -2134,6 +2168,7 @@ function showEntranceTicketCelebration(animate = false) {
     setTimeout(() => {
       shell.classList.remove('is-animating');
       shell.classList.add('is-pinned');
+      shell.setAttribute('title', 'לחצו כדי להיכנס לשיעור אם הדלת לא נפתחה אוטומטית');
       waitingTicketUiState.animating = false;
       waitingTicketUiState.pinned = true;
       persistWaitingTicketUiState();
@@ -2143,9 +2178,123 @@ function showEntranceTicketCelebration(animate = false) {
 
   shell.classList.remove('is-animating');
   shell.classList.add('is-pinned');
+  shell.setAttribute('title', 'לחצו כדי להיכנס לשיעור אם הדלת לא נפתחה אוטומטית');
   waitingTicketUiState.animating = false;
   waitingTicketUiState.pinned = true;
   persistWaitingTicketUiState();
+}
+
+function openLessonViewFromTicket(targetSessionId) {
+  const activeSessionId = String(targetSessionId || waitingActiveSessionId || urlSessionId || sessionId || '').trim();
+  if (!activeSessionId) return false;
+  if (autoDoorRedirecting) return true;
+  autoDoorRedirecting = true;
+  window.location.replace('lesson_view.html?sessionId=' + activeSessionId);
+  return true;
+}
+
+function handleGoldenTicketEnterClick(event) {
+  event?.preventDefault?.();
+  const bypassOpenAll = String(waitingEntryPolicy || '').toLowerCase() === 'open_all';
+  if (!entranceTicketSubmitted && !bypassOpenAll) {
+    alert('נדרש כרטיס כניסה כדי להיכנס לשיעור.');
+    return;
+  }
+  if (!waitingActiveSessionId) return;
+  openLessonViewFromTicket(waitingActiveSessionId);
+}
+
+function handleGoldenTicketEnterKey(event) {
+  if (!event) return;
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  const bypassOpenAll = String(waitingEntryPolicy || '').toLowerCase() === 'open_all';
+  if (!entranceTicketSubmitted && !bypassOpenAll) {
+    alert('נדרש כרטיס כניסה כדי להיכנס לשיעור.');
+    return;
+  }
+  if (!waitingActiveSessionId) return;
+  openLessonViewFromTicket(waitingActiveSessionId);
+}
+
+function handleManualLessonEntry(event) {
+  event?.preventDefault?.();
+  const bypassOpenAll = String(waitingEntryPolicy || '').toLowerCase() === 'open_all';
+  if (!entranceTicketSubmitted && !bypassOpenAll) {
+    alert('נדרש כרטיס כניסה כדי להיכנס לשיעור.');
+    return;
+  }
+  if (!waitingActiveSessionId) return;
+  openLessonViewFromTicket(waitingActiveSessionId);
+}
+
+function updateTicketEntryState(sessionStatus, activeSessionId, entryPolicy) {
+  const ticketCard = document.getElementById('waiting-ticket-card');
+  const enterBtn = document.getElementById('waiting-enter-lesson-btn');
+  const isActive = String(sessionStatus || '').trim().toLowerCase() === 'active';
+  const normalizedPolicy = String(entryPolicy || waitingEntryPolicy || 'ticket_only').trim().toLowerCase();
+  waitingActiveSessionId = isActive ? String(activeSessionId || '').trim() : '';
+  waitingDoorStatus = isActive ? 'active' : 'idle';
+  waitingEntryPolicy = isActive ? normalizedPolicy : 'ticket_only';
+  const canBypassTicket = waitingEntryPolicy === 'open_all';
+  const canEnter = isActive && !!waitingActiveSessionId && (entranceTicketSubmitted || canBypassTicket);
+
+  if (ticketCard) {
+    ticketCard.classList.toggle('is-clickable', canEnter);
+  }
+  if (enterBtn) {
+    enterBtn.style.display = canEnter ? '' : 'none';
+  }
+}
+
+function getRealtimeDatabase() {
+  if (!window.firebase || !window.MILED_FIREBASE_CONFIG) return null;
+  if (!firebase.apps.length) {
+    firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+  }
+  if (typeof firebase.database !== 'function') return null;
+  return firebase.database();
+}
+
+function stopActiveDoorListener() {
+  if (activeDoorRef && activeDoorListener) {
+    activeDoorRef.off('value', activeDoorListener);
+  }
+  activeDoorRef = null;
+  activeDoorListener = null;
+}
+
+function startActiveDoorListener() {
+  stopActiveDoorListener();
+  const currentCourseId = String(waitingClassId || courseId || '').trim();
+  const currentUnitId = String(waitingUnitId || unitIdFromUrl || 'unit_01').trim();
+  if (!currentCourseId || !currentUnitId) return;
+
+  const db = getRealtimeDatabase();
+  if (!db) return;
+
+  const doorKey = `${currentCourseId}_${currentUnitId}`;
+  activeDoorRef = db.ref(`${ACTIVE_SESSIONS_NODE}/${doorKey}`);
+  activeDoorListener = (snapshot) => {
+    const data = snapshot?.val() || {};
+    const nextStatus = String(data.status || '').trim().toLowerCase();
+    const nextSessionId = String(data.sessionId || '').trim();
+    const nextEntryPolicy = String(data.entryPolicy || 'ticket_only').trim().toLowerCase();
+
+    if (nextStatus === 'active' && nextSessionId) {
+      urlSessionId = nextSessionId;
+      sessionId = nextSessionId;
+      updateTicketEntryState('active', nextSessionId, nextEntryPolicy);
+      if (!autoDoorRedirecting) {
+        autoDoorRedirecting = true;
+        window.location.replace('lesson_view.html?sessionId=' + data.sessionId);
+      }
+      return;
+    }
+
+    updateTicketEntryState('idle', '', 'ticket_only');
+  };
+  activeDoorRef.on('value', activeDoorListener);
 }
 
 async function refreshPreSessionLobby() {
@@ -2154,6 +2303,8 @@ async function refreshPreSessionLobby() {
   const missionUnitId = waitingUnitId || unitIdFromUrl || "unit_01";
   if (!missionClassId && !missionSessionId) return;
   try {
+    const prevWaitingClassId = waitingClassId;
+    const prevWaitingUnitId = waitingUnitId;
     const queryBase = missionClassId
       ? `classId=${encodeURIComponent(missionClassId)}`
       : `sessionId=${encodeURIComponent(missionSessionId)}`;
@@ -2163,10 +2314,16 @@ async function refreshPreSessionLobby() {
     const data = await res.json();
     waitingClassId = data?.classId || waitingClassId || courseId || "";
     waitingUnitId = data?.unitId || waitingUnitId || unitIdFromUrl || "unit_01";
+    if (waitingClassId !== prevWaitingClassId || waitingUnitId !== prevWaitingUnitId) {
+      startActiveDoorListener();
+    }
     waitingTopicName = String(data?.topicName || "").trim();
     waitingMission = data?.mission || null;
     waitingGameActive = !!data?.gameActive;
     entranceTicketSubmitted = !!data?.hasEntranceTicket;
+
+    updateTicketEntryState(waitingDoorStatus, waitingActiveSessionId, waitingEntryPolicy);
+
     renderWarmupQuiz(data?.warmup || null);
     renderWaitingHeader(waitingMission || {});
     renderWaitingMissionMode(waitingMission || {});
@@ -2181,9 +2338,11 @@ async function refreshPreSessionLobby() {
         input.disabled = true;
       }
       showEntranceTicketCelebration(false);
+      updateTicketEntryState(waitingDoorStatus, waitingActiveSessionId, waitingEntryPolicy);
     } else {
       if (input) input.disabled = false;
       if (status && status.textContent === "נשלח ✓") status.textContent = "";
+      updateTicketEntryState(waitingDoorStatus, waitingActiveSessionId, waitingEntryPolicy);
     }
   } catch {}
 }
@@ -2545,6 +2704,7 @@ async function submitEntranceTicket() {
     entranceTicketSubmitted = true;
     if (input) input.disabled = true;
     showEntranceTicketCelebration(true);
+    updateTicketEntryState(waitingDoorStatus, waitingActiveSessionId, waitingEntryPolicy);
   } catch {
     if (status) status.textContent = "שגיאת רשת";
   }
@@ -2555,43 +2715,7 @@ function stopHardGatePolling() {
     clearInterval(hardGatePollTimer);
     hardGatePollTimer = null;
   }
-}
-
-async function resolveActiveSessionForLockout() {
-  if (urlSessionId) {
-    const active = await resolveSessionActive(urlSessionId);
-    if (active) return urlSessionId;
-    if (courseId) {
-      urlSessionId = "";
-      sessionId = "";
-    }
-  }
-
-  if (!courseId) return null;
-
-  const discoveredSessionId = await discoverActiveSession();
-  if (!discoveredSessionId) return null;
-  const active = await resolveSessionActive(discoveredSessionId);
-  return active ? discoveredSessionId : null;
-}
-
-async function hardGateCheckSessionActive() {
-  if (!isLockedOut) return;
-  await fetchPreSessionMission();
-  await sendWaitingPing(true);
-  const activeSessionId = await resolveActiveSessionForLockout();
-  if (!activeSessionId) return;
-
-  // Automatic door policy: only students with an entrance ticket can auto-enter.
-  if (!entranceTicketSubmitted) return;
-
-  urlSessionId = activeSessionId;
-  sessionId = activeSessionId;
-  isLockedOut = false;
-  sendWaitingPing(false);
-  stopWaitingPolling();
-  stopHardGatePolling();
-  await bootWorkspace();
+  stopActiveDoorListener();
 }
 
 function startHardGatePolling() {
@@ -2603,10 +2727,9 @@ function startHardGatePolling() {
   if (hardGatePollTimer) return;
   renderWaitingHeader(waitingMission || {});
   startWaitingPolling();
+  startActiveDoorListener();
   fetchPreSessionMission();
   sendWaitingPing(true);
-  hardGateCheckSessionActive();
-  hardGatePollTimer = setInterval(hardGateCheckSessionActive, LOCKOUT_POLL_MS);
 }
 
 async function showWelcomeTransition() {
@@ -2720,14 +2843,7 @@ async function tryAutoEnterLiveSession() {
     }
   }
 
-  const discoveredSessionId = await discoverActiveSession();
-  if (!discoveredSessionId) return false;
-
-  const active = await resolveSessionActive(discoveredSessionId);
-  if (!active) return false;
-
-  await classroomJoin();
-  return true;
+  return false;
 }
 
 function enterProjectWorkspace() {
@@ -3009,14 +3125,9 @@ async function bootWorkspace() {
       startHardGatePolling();
     }
   } else if (courseId) {
-    const entered = await tryAutoEnterLiveSession();
-    if (!entered) {
-      hasBootedWorkspace = false;
-      isLockedOut = true;
-      startHardGatePolling();
-    } else {
-      enterLiveClassroom();
-    }
+    hasBootedWorkspace = false;
+    isLockedOut = true;
+    startHardGatePolling();
   }
 }
 
@@ -4248,42 +4359,6 @@ async function submitWork() {
 // classroom join + live polling
 // ─────────────────────────────
 
-// Auto-discover an active session for this courseId by reading the
-// active_sessions/{courseId} pointer that classroom.js writes on open.
-// Uses the Firebase REST API — same pattern as checkCourseLock().
-async function discoverActiveSession() {
-  if (!courseId || !window.MILED_FIREBASE_CONFIG) return;
-  try {
-    const dbUrlRaw = window.MILED_FIREBASE_CONFIG?.databaseURL || "";
-    const dbUrl = String(dbUrlRaw).replace(/\/+$/, "");
-    if (!dbUrl) {
-      console.error("[discoverActiveSession] Missing databaseURL in MILED_FIREBASE_CONFIG");
-      return;
-    }
-
-    const activeSessionUrl = `${dbUrl}/${ACTIVE_SESSIONS_NODE}/${courseId}.json`;
-    const res = await fetch(activeSessionUrl);
-    if (!res.ok) {
-      console.error(`[discoverActiveSession] HTTP ${res.status} at ${activeSessionUrl}`);
-      return;
-    }
-    const data = await res.json();
-    const resolvedSessionId = data?.units?.[unitIdFromUrl]?.sessionId || data?.sessionId || null;
-    if (!resolvedSessionId) return null;          // no active session for this course
-
-    // Found one — inject it as if it came from the URL
-    urlSessionId = resolvedSessionId;
-    sessionId    = resolvedSessionId;
-    return resolvedSessionId;
-  } catch (e) {
-    const dbUrlRaw = window.MILED_FIREBASE_CONFIG?.databaseURL || "";
-    const dbUrl = String(dbUrlRaw).replace(/\/+$/, "");
-    const activeSessionUrl = `${dbUrl}/${ACTIVE_SESSIONS_NODE}/${courseId}.json`;
-    console.error(`[discoverActiveSession] Fetch failed at ${activeSessionUrl}:`, e?.message || e);
-    return null;
-  }
-}
-
 async function classroomJoin() {
   if (classroomJoined) return;
   let studentName = "";
@@ -4454,6 +4529,7 @@ requestRecallNotificationPermission();
 <script src="/balance.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="/firebase-init.js"></script>
 <script src="/firebase-auth.js"></script>
 <script>
@@ -4504,6 +4580,7 @@ async function checkCourseLock() {
 window.addEventListener("load", () => {
   if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
   if (courseId) checkCourseLock();
+  if (courseId) startActiveDoorListener();
 });
 
 </script>

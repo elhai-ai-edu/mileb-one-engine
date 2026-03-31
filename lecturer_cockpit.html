@@ -5,6 +5,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<script>(function(){
+  var auth = null;
+  try { auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null"); } catch(e) {}
+  var role = String(auth && auth.role || "").toLowerCase();
+  var allowed = {
+    faculty: true,
+    lecturer: true,
+    institution: true,
+    institution_admin: true,
+    superadmin: true,
+    system_admin: true
+  };
+  if (!auth || !allowed[role]) {
+    document.documentElement.style.visibility = "hidden";
+    location.replace("/");
+  }
+}());</script>
+
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="style.css">
@@ -233,6 +251,35 @@
 @keyframes pulse-red {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
   50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.2); }
+}
+.open-btn-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #ffffff;
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-start: 6px;
+  animation: openBtnSpin .8s linear infinite;
+}
+@keyframes openBtnSpin {
+  to { transform: rotate(360deg); }
+}
+.master-open-all-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: 1px solid #059669;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  padding: 10px 16px;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(5, 150, 105, 0.28);
+}
+.master-open-all-btn:disabled {
+  opacity: 0.78;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 .broadcast-history {
   border-top: 1px solid #cbd5e1;
@@ -889,10 +936,10 @@
 </div>
 
 <div id="cockpit-nav">
-  <button class="cockpit-tab-btn" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>סילבוס</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>הכנת שיעור</span></button>
-  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>ניהול שיעור חי</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>יומן</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>Stage 1: Syllabus/Setup</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>Stage 2: Planning/Prep</span></button>
+  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>Stage 3: Live Management</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>Stage 4: Post-Class/Analytics</span></button>
 </div>
 <script>(function(){
   try {
@@ -935,6 +982,7 @@
       <a href="course_units.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ חזרה ליחידות</a>
       <div id="activeSessionControls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
         <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
+        <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל - כולם פנימה! 🔓</button>
         <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
         <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן הוראה</button>
       </div>
@@ -973,6 +1021,19 @@
     <p class="panel-sub" id="dj-booth-status">DJ Booth הוא כלי אופציונלי לדחיפת שלבים מתוך תבנית שיעור</p>
     <div id="dj-booth-steps" class="dj-booth-steps">
       <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
+    </div>
+
+    <div style="margin-top:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;">Heatmap ספרינטים</div>
+          <div style="font-size:12px;color:#64748b;">מבט מהיר על מי תקוע, מי מתקדם מהר, ובאיזה ספרינט הכיתה נמצאת.</div>
+        </div>
+        <button class="btn btn-outline" type="button" onclick="loadPacingHeatmap()" style="font-size:12px;padding:7px 12px;">רענן Heatmap</button>
+      </div>
+      <div id="pacingHeatmap" style="display:grid;gap:8px;">
+        <div class="thread-empty">אין עדיין נתוני pacing פעילים</div>
+      </div>
     </div>
   </div>
 
@@ -1043,6 +1104,79 @@
   <div class="panel" data-tab-panel="syllabus">
       <h2>🎓 למידה משולבת מיומנויות</h2>
     <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:14px;">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</p>
+
+    <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:12px;">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#0f172a;">Moodle Sync</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">הדבק JSON מסקרייפר Moodle. המערכת תנקה כותרות, תמפה יחידות ומשאבים, ותכין Bookshelf לשיעור.</div>
+      </div>
+      <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...] }]} ' style="margin:0;"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-blue" type="button" onclick="importMoodleJson()" style="font-size:12px;padding:7px 14px;">יבא Moodle JSON</button>
+        <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()" style="font-size:12px;padding:7px 14px;">טען מטא-דאטה קיים</button>
+        <span id="moodleImportStatus" style="font-size:12px;color:#475569;"></span>
+      </div>
+
+      <div style="display:grid;gap:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:14px;font-weight:700;color:#0f172a;">Playlist Manager</div>
+          <div id="playlistSelectionCount" style="font-size:12px;color:#64748b;">0 יחידות נבחרו</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+          <div class="field" style="margin:0;flex:1;min-width:180px;">
+            <label>Lesson ID יעד</label>
+            <input id="playlistLessonId" type="text" value="unit_01" class="lp-input" style="margin:0;">
+          </div>
+          <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
+          <span id="playlistStatus" style="font-size:12px;color:#475569;"></span>
+        </div>
+        <div id="moodleUnitsList" style="display:grid;gap:8px;">
+          <div class="thread-empty">טרם יובא JSON</div>
+        </div>
+      </div>
+
+      <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:#0f172a;">Hybrid Sprint Engine</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px;">הגדר סבבים מסוג AI, תחנה פיזית או מליאה. תחנה פיזית יכולה לדרוש Proof of Work לפני מעבר.</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;">
+          <div class="field" style="margin:0;">
+            <label>Station Type</label>
+            <select id="sprintStationType" class="lp-input" style="margin:0;">
+              <option value="AI_STATION">AI_STATION</option>
+              <option value="PHYSICAL_STATION">PHYSICAL_STATION</option>
+              <option value="PLENARY_STATION">PLENARY_STATION</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;">
+            <label>כותרת ספרינט</label>
+            <input id="sprintTitleInput" type="text" class="lp-input" style="margin:0;" placeholder="למשל: ניתוח מקור">
+          </div>
+          <div class="field" style="margin:0;">
+            <label>Deep Dive לפאסט</label>
+            <input id="sprintDeepDiveInput" type="text" class="lp-input" style="margin:0;" placeholder="שאלת העמקה למתקדמים">
+          </div>
+          <div class="field" style="margin:0;">
+            <label>Hint למסלול תמיכה</label>
+            <input id="sprintSupportInput" type="text" class="lp-input" style="margin:0;" placeholder="רמז או פירוק למשימה">
+          </div>
+        </div>
+        <textarea id="sprintInstructionsInput" class="lp-textarea" rows="3" placeholder="הוראות לספרינט" style="margin:0;"></textarea>
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#475569;font-weight:700;">
+          <input id="sprintEvidenceRequired" type="checkbox">
+          Require Proof of Work for this sprint
+        </label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-outline" type="button" onclick="addSprintDraft()" style="font-size:12px;padding:7px 14px;">הוסף ספרינט</button>
+          <button class="btn btn-blue" type="button" onclick="saveSprintDefinitions()" style="font-size:12px;padding:7px 14px;">שמור Sprint Set</button>
+          <span id="sprintStatus" style="font-size:12px;color:#475569;"></span>
+        </div>
+        <div id="sprintDraftList" style="display:grid;gap:8px;">
+          <div class="thread-empty">טרם הוגדרו ספרינטים</div>
+        </div>
+      </div>
+    </div>
 
     <!-- ─── Balance Weight Editor (v8.5) ─── -->
     <div class="balance-preview" id="balance-preview-label">⚖️ איזון ציון: 70% אקדמי + 30% מיומנות</div>
@@ -1257,6 +1391,8 @@ let CONFIG      = null;  // stored for openSession() lookup
 let currentLessonId = null; // selected courseId shared between Live/Prepare tabs
 let currentUnitId = presetUnitId;
 const ACTIVE_SESSIONS_NODE = "active_sessions";
+let openSessionInFlight = false;
+let openAllInFlight = false;
 const replyDrafts = {};
 let lecturerAudioRecorder = null;
 let lecturerAudioChunks = [];
@@ -1271,6 +1407,10 @@ let waitingStudentsSnapshot = 0;
 let waitingPressureTimer = null;
 let preSessionAudioDataUrl = "";
 let lecturerAvatarCropper = null;
+let importedMetadataCache = null;
+let selectedPlaylistUnitIds = new Set();
+let sprintDrafts = [];
+let pacingHeatmapTimer = null;
 
 function safeAvatar(avatar) {
   const value = String(avatar || "").trim();
@@ -1750,7 +1890,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     if (sel) sel.innerHTML = '<option value="">— בחר קורס או כלי —</option>';
   });
 
-  // ── Real courses from my_courses (same source as students.html + workspace.html) ──
+  // ── Real courses from my_courses (same source as students.html + waiting_lobby.html) ──
   const courses = config.my_courses || {};
   if (Object.keys(courses).length) {
     for (const [courseId, course] of Object.entries(courses)) {
@@ -1807,10 +1947,19 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
     if (currentLessonId) {
       loadTemplates(currentLessonId);
+      loadCourseMetadataWorkspace(currentLessonId);
     } else {
       const tplSel = document.getElementById("template-select");
       if (tplSel) tplSel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
+      importedMetadataCache = null;
+      selectedPlaylistUnitIds = new Set();
+      sprintDrafts = [];
+      renderImportedUnits();
+      renderSprintDrafts();
     }
+
+    const playlistLessonInput = document.getElementById("playlistLessonId");
+    if (playlistLessonInput) playlistLessonInput.value = currentUnitId || "unit_01";
 
     fetchWaitingPressureForSelectedCourse();
     loadPreSessionMission();
@@ -1835,48 +1984,149 @@ function getSelectedTeachingContext() {
   return { selectedValue, selectedOpt, selType, classId };
 }
 
+function setOpenSessionBusy(isBusy) {
+  const openBtn = document.getElementById('openBtn');
+  if (!openBtn) return;
+  if (!openBtn.dataset.defaultLabel) {
+    openBtn.dataset.defaultLabel = openBtn.innerHTML;
+  }
+  openBtn.disabled = !!isBusy;
+  openBtn.innerHTML = isBusy
+    ? `<span class="open-btn-spinner" aria-hidden="true"></span> פותח שיעור...`
+    : openBtn.dataset.defaultLabel;
+}
+
+function setOpenAllGateState(isOpen) {
+  const openAllBtn = document.getElementById('openAllBtn');
+  if (!openAllBtn) return;
+  if (!openAllBtn.dataset.defaultLabel) {
+    openAllBtn.dataset.defaultLabel = openAllBtn.textContent;
+  }
+  openAllBtn.textContent = isOpen ? 'השערים פתוחים!' : openAllBtn.dataset.defaultLabel;
+  openAllBtn.disabled = !!isOpen;
+}
+
+function getRealtimeDb() {
+  if (!window.firebase || !window.MILED_FIREBASE_CONFIG) return null;
+  if (!firebase.apps.length) {
+    firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+  }
+  if (typeof firebase.database !== 'function') return null;
+  return firebase.database();
+}
+
+async function writeActiveDoorState({ classId, unitId, sessionId, status, entryPolicy }) {
+  const db = getRealtimeDb();
+  if (!db || !classId || !unitId) return;
+  const doorKey = `${classId}_${unitId}`;
+  const normalizedStatus = String(status || '').trim().toLowerCase() || 'active';
+  const normalizedEntryPolicy = String(entryPolicy || (normalizedStatus === 'active' ? 'ticket_only' : 'closed')).trim().toLowerCase();
+  await db.ref(`${ACTIVE_SESSIONS_NODE}/${doorKey}`).update({
+    status: normalizedStatus,
+    sessionId: sessionId || null,
+    entryPolicy: normalizedEntryPolicy
+  });
+}
+
+async function openAllEntryPolicy() {
+  if (openAllInFlight) return;
+  if (!sessionId) { alert('פתח שיעור תחילה'); return; }
+
+  const classId = currentLessonId || getSelectedTeachingContext().classId || null;
+  const unitId = currentUnitId || 'unit_01';
+  if (!classId) { alert('נדרש קורס פעיל כדי לפתוח שערים'); return; }
+
+  openAllInFlight = true;
+  setOpenAllGateState(true);
+
+  try {
+    await writeActiveDoorState({
+      classId,
+      unitId,
+      sessionId,
+      status: 'active',
+      entryPolicy: 'open_all'
+    });
+    await callClassroom({
+      action: 'session_state_update',
+      sessionId,
+      facultyId,
+      doorStatus: 'open'
+    });
+
+  } catch (e) {
+    setOpenAllGateState(false);
+    alert('שגיאה בפתיחת השערים. נסה שוב');
+  } finally {
+    openAllInFlight = false;
+  }
+}
+
 // ─────────────────────────────────────────
 // OPEN SESSION
 // ─────────────────────────────────────────
 async function openSession() {
+  if (openSessionInFlight) return;
   const { selectedValue, selType, classId: selectedClassId } = getSelectedTeachingContext();
 
   if (!selectedValue) { alert("בחר קורס תחילה"); return; }
+  openSessionInFlight = true;
+  setOpenSessionBusy(true);
 
-  // Resolve botType + classId depending on selection type
-  const unitId = currentUnitId || "unit_01";
-  let botType, classId, studentURL;
-  if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
-    classId  = selectedClassId;
-    botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
-    studentURL = `${location.origin}/workspace.html?courseId=${classId}&unitId=${encodeURIComponent(unitId)}&sessionId=SESSION_ID`;
-    console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}`);
-  } else {
-    // Faculty tool — no classId, botType is the value directly
-    botType    = selectedValue;
-    classId    = null;
-    studentURL = `${location.origin}/workspace.html?sessionId=SESSION_ID`;
+  try {
+    // Resolve botType + classId depending on selection type
+    const unitId = currentUnitId || "unit_01";
+    let botType, classId, studentURL;
+    if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
+      classId  = selectedClassId;
+      botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
+      studentURL = `${location.origin}/waiting_lobby.html?courseId=${classId}&unitId=${encodeURIComponent(unitId)}&sessionId=SESSION_ID`;
+      console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}_${unitId}`);
+    } else {
+      // Faculty tool — no classId, botType is the value directly
+      botType    = selectedValue;
+      classId    = null;
+      studentURL = `${location.origin}/waiting_lobby.html?sessionId=SESSION_ID`;
+    }
+
+    currentBot = botType;
+    pushedSteps = [];
+
+    // Session ID must exist before student redirect signal is emitted.
+    sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    studentURL = studentURL.replace('SESSION_ID', sessionId);
+
+    // Immediate atomic signal for student door listener.
+    if (classId) {
+      // Canonical session signal key: active_sessions/{courseId}_{unitId}
+      await writeActiveDoorState({ classId, unitId, sessionId, status: 'active', entryPolicy: 'ticket_only' });
+    }
+
+    const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
+    if (!res.ok) {
+      if (classId) {
+        await writeActiveDoorState({ classId, unitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
+      }
+      alert("שגיאה בפתיחת שיעור");
+      return;
+    }
+
+    document.getElementById('sessionInfo').style.display = "block";
+    document.getElementById('sessionIdDisplay').textContent = sessionId;
+    setSessionControls(true);
+
+    // Share URL for students — now points to waiting_lobby.html
+    document.getElementById('sessionIdDisplay').innerHTML =
+      `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
+
+    if (classId) loadTemplates(classId);
+    setOpenAllGateState(false);
+    renderDJBooth();
+    startPolling();
+  } finally {
+    openSessionInFlight = false;
+    setOpenSessionBusy(false);
   }
-
-  currentBot = botType;
-  pushedSteps = [];
-  sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
-  studentURL = studentURL.replace('SESSION_ID', sessionId);
-
-  const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
-  if (!res.ok) { alert("שגיאה בפתיחת שיעור"); return; }
-
-  document.getElementById('sessionInfo').style.display = "block";
-  document.getElementById('sessionIdDisplay').textContent = sessionId;
-  setSessionControls(true);
-
-  // Share URL for students — now points to workspace.html with courseId
-  document.getElementById('sessionIdDisplay').innerHTML =
-    `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
-
-  if (classId) loadTemplates(classId);
-  renderDJBooth();
-  startPolling();
 }
 
 // ─────────────────────────────────────────
@@ -1953,14 +2203,29 @@ async function broadcast() {
 // ─────────────────────────────────────────
 async function closeSession() {
   if (!confirm("לסגור את השיעור?")) return;
+  const closingClassId = currentLessonId || getSelectedTeachingContext().classId || null;
+  const closingUnitId = currentUnitId || "unit_01";
   await callClassroom({ action: "close", sessionId, facultyId });
+  if (closingClassId) {
+    await writeActiveDoorState({
+      classId: closingClassId,
+      unitId: closingUnitId,
+      sessionId: null,
+      status: "closed",
+      entryPolicy: "closed"
+    });
+  }
 
   clearInterval(pollTimer);
+  if (pacingHeatmapTimer) clearInterval(pacingHeatmapTimer);
   document.getElementById('sessionInfo').style.display = "none";
   document.getElementById('sessionIdDisplay').textContent = "";
   setSessionControls(false);
+  setOpenAllGateState(false);
+  sessionId = null;
   pushedSteps = [];
   renderDJBooth();
+  loadPacingHeatmap();
 }
 
 // ─────────────────────────────────────────
@@ -1969,6 +2234,9 @@ async function closeSession() {
 function startPolling() {
   pollTimer = setInterval(fetchDashboard, 3000);
   fetchDashboard();
+  if (pacingHeatmapTimer) clearInterval(pacingHeatmapTimer);
+  pacingHeatmapTimer = setInterval(loadPacingHeatmap, 4000);
+  loadPacingHeatmap();
 }
 
 async function fetchDashboard() {
@@ -2476,6 +2744,265 @@ async function callClassroom(body) {
 
 function escapeHtml(str) {
   return String(str || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function currentCourseForSync() {
+  return currentLessonId || getSelectedTeachingContext().classId || null;
+}
+
+function currentLessonTargetId() {
+  const input = document.getElementById("playlistLessonId");
+  return String(input?.value || currentUnitId || "unit_01").trim() || "unit_01";
+}
+
+function renderImportedUnits() {
+  const container = document.getElementById("moodleUnitsList");
+  const countEl = document.getElementById("playlistSelectionCount");
+  if (!container || !countEl) return;
+  const units = importedMetadataCache?.units || [];
+  countEl.textContent = `${selectedPlaylistUnitIds.size} יחידות נבחרו`;
+  if (!units.length) {
+    container.innerHTML = '<div class="thread-empty">טרם יובא JSON</div>';
+    return;
+  }
+
+  container.innerHTML = units.map(unit => {
+    const checked = selectedPlaylistUnitIds.has(unit.unitId) ? 'checked' : '';
+    const resources = Array.isArray(unit.resources) ? unit.resources : [];
+    const lecturerOnlyCount = resources.filter(item => item.lecturerOnly).length;
+    return `
+      <label style="display:grid;gap:6px;padding:10px 12px;border:1px solid #dbeafe;border-radius:12px;background:#fff;cursor:pointer;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" data-playlist-unit="${escapeHtml(unit.unitId)}" ${checked}>
+            <strong>${escapeHtml(unit.name || unit.unitId)}</strong>
+          </div>
+          <span style="font-size:11px;color:#64748b;">${resources.length} משאבים${lecturerOnlyCount ? ` · ${lecturerOnlyCount} Lecturer Only` : ''}</span>
+        </div>
+        <div style="font-size:11px;color:#64748b;line-height:1.6;">${resources.slice(0, 4).map(resource => escapeHtml(resource.title)).join(' | ') || 'אין משאבים ביחידה זו'}</div>
+      </label>`;
+  }).join("");
+
+  container.querySelectorAll("[data-playlist-unit]").forEach(input => {
+    input.addEventListener("change", () => {
+      const unitId = input.getAttribute("data-playlist-unit");
+      if (!unitId) return;
+      if (input.checked) selectedPlaylistUnitIds.add(unitId);
+      else selectedPlaylistUnitIds.delete(unitId);
+      renderImportedUnits();
+    });
+  });
+}
+
+function renderSprintDrafts() {
+  const container = document.getElementById("sprintDraftList");
+  if (!container) return;
+  if (!sprintDrafts.length) {
+    container.innerHTML = '<div class="thread-empty">טרם הוגדרו ספרינטים</div>';
+    return;
+  }
+
+  container.innerHTML = sprintDrafts.map((sprint, index) => `
+    <div style="padding:10px 12px;border:1px solid #dbeafe;border-radius:12px;background:#fff;display:grid;gap:6px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <strong>${escapeHtml(sprint.title)}</strong>
+        <button class="btn btn-outline" type="button" data-remove-sprint="${index}" style="font-size:11px;padding:4px 8px;">הסר</button>
+      </div>
+      <div style="font-size:11px;color:#64748b;">${escapeHtml(sprint.stationType)}${sprint.evidenceRequired ? ' · Requires Proof' : ''}</div>
+      <div style="font-size:12px;color:#334155;line-height:1.6;">${escapeHtml(sprint.instructions || '')}</div>
+    </div>`).join("");
+
+  container.querySelectorAll("[data-remove-sprint]").forEach(button => {
+    button.addEventListener("click", () => {
+      const index = Number(button.getAttribute("data-remove-sprint"));
+      sprintDrafts = sprintDrafts.filter((_, itemIndex) => itemIndex !== index);
+      renderSprintDrafts();
+    });
+  });
+}
+
+async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
+  const statusEl = document.getElementById("moodleImportStatus");
+  if (!courseId) {
+    importedMetadataCache = null;
+    selectedPlaylistUnitIds = new Set();
+    sprintDrafts = [];
+    renderImportedUnits();
+    renderSprintDrafts();
+    if (statusEl) statusEl.textContent = 'בחר קורס כדי לטעון מטא-דאטה';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/.netlify/functions/classroom?action=course_metadata&courseId=${encodeURIComponent(courseId)}`);
+    const data = await res.json();
+    importedMetadataCache = data?.metadata || null;
+    const lessonId = currentLessonTargetId();
+    const existingPlaylist = data?.playlists?.[lessonId] || null;
+    selectedPlaylistUnitIds = new Set(Array.isArray(existingPlaylist?.unitIds) ? existingPlaylist.unitIds : []);
+    const sprintSet = data?.sprintDefinitions?.[lessonId]?.items || [];
+    sprintDrafts = Array.isArray(sprintSet) ? sprintSet : [];
+    renderImportedUnits();
+    renderSprintDrafts();
+    if (statusEl) statusEl.textContent = importedMetadataCache ? `נטענו ${importedMetadataCache.unitCount || 0} יחידות מהמטא-דאטה` : 'אין מטא-דאטה לקורס זה';
+  } catch (error) {
+    if (statusEl) statusEl.textContent = 'שגיאה בטעינת מטא-דאטה';
+  }
+}
+
+async function importMoodleJson() {
+  const courseId = currentCourseForSync();
+  const input = document.getElementById("moodleJsonInput");
+  const statusEl = document.getElementById("moodleImportStatus");
+  if (!courseId) {
+    if (statusEl) statusEl.textContent = 'בחר קורס לפני יבוא JSON';
+    return;
+  }
+  const raw = String(input?.value || '').trim();
+  if (!raw) {
+    if (statusEl) statusEl.textContent = 'הדבק JSON לפני יבוא';
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'מייבא...';
+  const res = await callClassroom({
+    action: 'course_metadata_save',
+    courseId,
+    classId: courseId,
+    metadataJson: raw
+  });
+
+  if (!res?.ok) {
+    if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביבוא';
+    return;
+  }
+
+  importedMetadataCache = res.metadata || null;
+  selectedPlaylistUnitIds = new Set((importedMetadataCache?.units || []).map(unit => unit.unitId));
+  renderImportedUnits();
+  if (statusEl) statusEl.textContent = `יובאו ${importedMetadataCache?.unitCount || 0} יחידות ו-${importedMetadataCache?.resourceCount || 0} משאבים`;
+}
+
+async function saveLessonPlaylist() {
+  const courseId = currentCourseForSync();
+  const statusEl = document.getElementById("playlistStatus");
+  const lessonId = currentLessonTargetId();
+  if (!courseId) {
+    if (statusEl) statusEl.textContent = 'בחר קורס לפני שמירה';
+    return;
+  }
+  if (!selectedPlaylistUnitIds.size) {
+    if (statusEl) statusEl.textContent = 'בחר לפחות יחידה אחת';
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'שומר...';
+  const res = await callClassroom({
+    action: 'lesson_playlist_save',
+    courseId,
+    classId: courseId,
+    lessonId,
+    unitIds: Array.from(selectedPlaylistUnitIds)
+  });
+  if (!res?.ok) {
+    if (statusEl) statusEl.textContent = res?.error || 'שגיאה בשמירה';
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'Playlist נשמר';
+}
+
+function addSprintDraft() {
+  const stationType = document.getElementById("sprintStationType")?.value || 'AI_STATION';
+  const title = String(document.getElementById("sprintTitleInput")?.value || '').trim();
+  const instructions = String(document.getElementById("sprintInstructionsInput")?.value || '').trim();
+  const deepDivePrompt = String(document.getElementById("sprintDeepDiveInput")?.value || '').trim();
+  const supportHint = String(document.getElementById("sprintSupportInput")?.value || '').trim();
+  const evidenceRequired = !!document.getElementById("sprintEvidenceRequired")?.checked;
+  const statusEl = document.getElementById("sprintStatus");
+
+  if (!title) {
+    if (statusEl) statusEl.textContent = 'הזן כותרת ספרינט';
+    return;
+  }
+
+  sprintDrafts.push({
+    id: `sprint_${String(sprintDrafts.length + 1).padStart(2, '0')}`,
+    title,
+    stationType,
+    instructions,
+    deepDivePrompt,
+    supportHint,
+    evidenceRequired
+  });
+
+  document.getElementById("sprintTitleInput").value = '';
+  document.getElementById("sprintInstructionsInput").value = '';
+  document.getElementById("sprintDeepDiveInput").value = '';
+  document.getElementById("sprintSupportInput").value = '';
+  document.getElementById("sprintEvidenceRequired").checked = false;
+  if (statusEl) statusEl.textContent = 'ספרינט נוסף לטיוטה';
+  renderSprintDrafts();
+}
+
+async function saveSprintDefinitions() {
+  const courseId = currentCourseForSync();
+  const lessonId = currentLessonTargetId();
+  const statusEl = document.getElementById("sprintStatus");
+  if (!courseId) {
+    if (statusEl) statusEl.textContent = 'בחר קורס לפני שמירה';
+    return;
+  }
+  if (!sprintDrafts.length) {
+    if (statusEl) statusEl.textContent = 'אין ספרינטים לשמירה';
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = 'שומר...';
+  const res = await callClassroom({
+    action: 'sprint_definitions_save',
+    courseId,
+    classId: courseId,
+    lessonId,
+    sprints: sprintDrafts
+  });
+  if (!res?.ok) {
+    if (statusEl) statusEl.textContent = res?.error || 'שגיאה בשמירה';
+    return;
+  }
+  if (statusEl) statusEl.textContent = 'Sprint Set נשמר';
+}
+
+async function loadPacingHeatmap() {
+  const container = document.getElementById("pacingHeatmap");
+  if (!container) return;
+  if (!sessionId) {
+    container.innerHTML = '<div class="thread-empty">פתח שיעור כדי לראות Heatmap</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`/.netlify/functions/classroom?action=pacing_snapshot&sessionId=${encodeURIComponent(sessionId)}`);
+    const data = await res.json();
+    const heatmap = data?.pacing?.heatmap || [];
+    if (!heatmap.length) {
+      container.innerHTML = '<div class="thread-empty">אין עדיין נתוני pacing פעילים</div>';
+      return;
+    }
+    container.innerHTML = heatmap.map(item => {
+      const bg = item.isStuck ? '#fee2e2' : item.pathDecision === 'fast' ? '#cffafe' : '#eef2ff';
+      const color = item.isStuck ? '#991b1b' : item.pathDecision === 'fast' ? '#155e75' : '#1e3a8a';
+      const name = escapeHtml(item.studentName || item.studentId || 'student');
+      const sprint = escapeHtml(item.sprint || '—');
+      const status = item.isStuck ? 'תקוע' : item.pathDecision === 'fast' ? 'מהיר' : 'במסלול';
+      return `<div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:10px 12px;border-radius:12px;background:${bg};color:${color};font-size:12px;font-weight:700;">
+        <span>${name}</span>
+        <span>${sprint}</span>
+        <span>${status}</span>
+      </div>`;
+    }).join('');
+  } catch {
+    container.innerHTML = '<div class="thread-empty">שגיאה בטעינת Heatmap</div>';
+  }
 }
 
 // ─── Insights Panel ───
@@ -3058,6 +3585,11 @@ window.addEventListener('resize', syncCockpitNavOffset);
 startWaitingPressurePolling();
 renderPreSessionAudioPreview();
 loadPreSessionMission();
+renderImportedUnits();
+renderSprintDrafts();
+loadCourseMetadataWorkspace();
+loadPacingHeatmap();
+document.getElementById("playlistLessonId")?.addEventListener("change", () => loadCourseMetadataWorkspace());
 
 document.addEventListener("click", (event) => {
   const avatarEl = event.target?.closest?.(".thread-msg-avatar");
@@ -3079,6 +3611,7 @@ document.addEventListener("keydown", (event) => {
 <!-- Firebase SDK + Auth utility -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="/firebase-init.js"></script>
 <script src="/firebase-auth.js"></script>
 </body>

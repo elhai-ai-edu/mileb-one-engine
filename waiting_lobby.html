@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Waiting Lobby - MilEd.One</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #475569;
+      --panel: rgba(255,255,255,0.92);
+      --line: #dbe7f5;
+      --accent: #0f766e;
+      --accent-soft: #ccfbf1;
+      --gold: #f59e0b;
+      --gold-soft: #fff7d6;
+      --ok: #166534;
+      --warn: #92400e;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Assistant", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(20,184,166,0.18), transparent 34%),
+        radial-gradient(circle at 85% 15%, rgba(245,158,11,0.18), transparent 28%),
+        linear-gradient(165deg, #f8fbff 0%, #edf7f6 46%, #fffaf0 100%);
+    }
+    .shell {
+      width: min(1180px, 94vw);
+      margin: 18px auto 28px;
+      display: grid;
+      gap: 16px;
+    }
+    .hero, .grid-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+      backdrop-filter: blur(10px);
+    }
+    .hero {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 800;
+      font-size: 0.82rem;
+      margin-bottom: 10px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.05;
+    }
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+      max-width: 62ch;
+    }
+    .status-box {
+      border-radius: 20px;
+      padding: 16px;
+      background: linear-gradient(180deg, #0f172a, #1e293b);
+      color: #f8fafc;
+      min-height: 180px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+    .status-pill {
+      display: inline-flex;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.18);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+    .status-note {
+      color: rgba(255,255,255,0.78);
+      line-height: 1.7;
+      font-size: 0.94rem;
+    }
+    .lobby-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .grid-card {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+    .grid-card h2 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+    .meta {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.65;
+    }
+    .field label {
+      display: block;
+      font-size: 0.84rem;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      padding: 11px 12px;
+      font: inherit;
+      background: #fff;
+      color: var(--ink);
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    .answer-list, .ticket-box, .mission-box, .memory-board {
+      display: grid;
+      gap: 10px;
+    }
+    .answer-btn, .action-btn, .memory-card {
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px;
+      font: inherit;
+      cursor: pointer;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+    .answer-btn:hover, .action-btn:hover, .memory-card:hover {
+      transform: translateY(-1px);
+      border-color: #5eead4;
+      box-shadow: 0 10px 24px rgba(13,148,136,0.12);
+    }
+    .answer-btn.selected {
+      border-color: #14b8a6;
+      background: #f0fdfa;
+      color: #115e59;
+      font-weight: 700;
+    }
+    .memory-board {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .memory-card {
+      min-height: 88px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-weight: 800;
+      color: transparent;
+      background: linear-gradient(135deg, #0f766e, #115e59);
+      border-color: #0f766e;
+    }
+    .memory-card.revealed,
+    .memory-card.matched {
+      color: #0f172a;
+      background: #ffffff;
+      border-color: #99f6e4;
+    }
+    .memory-card.matched {
+      background: #ecfdf5;
+      color: var(--ok);
+    }
+    .ticket-box {
+      border-radius: 18px;
+      padding: 16px;
+      background: linear-gradient(140deg, var(--gold-soft), #fffef7);
+      border: 1px solid #fcd34d;
+    }
+    .ticket-chip {
+      display: inline-flex;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(245,158,11,0.14);
+      color: var(--warn);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+    .ticket-code {
+      font-size: 1.3rem;
+      font-weight: 800;
+      letter-spacing: .08em;
+      color: #7c2d12;
+    }
+    .action-btn.primary {
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      border-color: #0f766e;
+      color: #fff;
+      font-weight: 800;
+    }
+    .action-btn.gold {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      border-color: #f59e0b;
+      color: #431407;
+      font-weight: 800;
+    }
+    .action-btn[disabled] {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .small-note {
+      font-size: 0.84rem;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .ready-banner {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      background: linear-gradient(140deg, #ecfdf5, #f0fdf4);
+      border: 1px solid #86efac;
+    }
+    .ready-banner.visible { display: flex; }
+    .mission-box {
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px dashed #94a3b8;
+      background: #f8fafc;
+    }
+    @media (max-width: 1040px) {
+      .hero, .lobby-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Hybrid Sprint Lobby</div>
+        <h1 id="courseTitle">כניסה חכמה לשיעור</h1>
+        <p class="subtitle" id="courseSubtitle">משימת חימום קצרה, משחק זיכרון מהיר, כרטיס זהב, ואז מעבר חלק לשיעור החי.</p>
+      </div>
+      <div class="status-box">
+        <div id="doorPill" class="status-pill">מצב דלת: AUTO</div>
+        <div class="status-note" id="doorNote">המערכת ממתינה לפתיחת השיעור או להשלמת משימת הכניסה.</div>
+        <div class="small-note" id="sessionLine">sessionId: --</div>
+        <div class="small-note" id="unitLine">unitId: --</div>
+      </div>
+    </section>
+
+    <section id="readyBanner" class="ready-banner">
+      <div>
+        <strong>המסלול הושלם</strong>
+        <div class="small-note" id="readyNote">המעבר יתבצע אוטומטית כשהשיעור זמין.</div>
+      </div>
+      <button class="action-btn primary" id="manualEnterBtn" type="button">כניסה לשיעור</button>
+    </section>
+
+    <section class="lobby-grid">
+      <article class="grid-card">
+        <h2>זיהוי ונוכחות</h2>
+        <div class="meta">השם והכרטיס נשמרים כדי שתוכל להיכנס מיד כשהדלת נפתחת.</div>
+        <div class="field">
+          <label for="studentNameInput">איך להציג אותך?</label>
+          <input id="studentNameInput" type="text" placeholder="שם פרטי או מזהה קצר">
+        </div>
+        <div class="mission-box">
+          <strong>משימת פתיחה</strong>
+          <div class="small-note" id="missionText">טוען...</div>
+        </div>
+      </article>
+
+      <article class="grid-card">
+        <h2>AI Warmup</h2>
+        <div class="meta" id="warmupQuestion">טוען שאלה...</div>
+        <div id="warmupAnswers" class="answer-list"></div>
+        <div id="warmupFallback" style="display:none;" class="field">
+          <label for="warmupFreeText">תגובה קצרה</label>
+          <textarea id="warmupFreeText" placeholder="כתוב כאן מחשבה קצרה או תובנה מהמשימה"></textarea>
+          <button id="warmupSubmitBtn" class="action-btn primary" type="button">אישור חימום</button>
+        </div>
+        <div class="small-note" id="warmupStatus">טרם הושלם</div>
+      </article>
+
+      <article class="grid-card">
+        <h2>Memory Game</h2>
+        <div class="meta">מצא שלושה זוגות כדי לחמם את הזיכרון העבודה לפני תחילת הספרינט.</div>
+        <div id="memoryBoard" class="memory-board"></div>
+        <div class="small-note" id="memoryStatus">טרם הושלם</div>
+      </article>
+    </section>
+
+    <section class="grid-card">
+      <h2>Golden Ticket</h2>
+      <div class="meta">אחרי השלמת החימום והמשחק אפשר לייצר כרטיס זהב אישי. אם המרצה פתח את הדלת, הכניסה תתבצע גם בלי להמתין.</div>
+      <div id="ticketBox" class="ticket-box">
+        <div class="ticket-chip">Entrance Ticket</div>
+        <div class="ticket-code" id="ticketCode">ממתין ליצירה</div>
+        <div class="small-note" id="ticketStatus">השלים את שתי המשימות כדי להנפיק כרטיס.</div>
+        <button id="generateTicketBtn" class="action-btn gold" type="button" disabled>הפק Golden Ticket</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="/firebase-init.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const courseId = String(params.get("courseId") || params.get("classId") || "").trim();
+    const unitId = String(params.get("unitId") || "unit_01").trim() || "unit_01";
+    let waitingSessionId = String(params.get("sessionId") || "").trim();
+    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    const studentIdKey = `miled_student_id_${courseId || "global"}`;
+    const studentNameKey = `miled_student_name_${courseId || "global"}`;
+    const studentId = localStorage.getItem(studentIdKey) || (`stu_${Math.random().toString(36).slice(2, 10)}`);
+    localStorage.setItem(studentIdKey, studentId);
+
+    let db = null;
+    let activeDoorRef = null;
+    let warmupDone = false;
+    let memoryDone = false;
+    let ticketGenerated = false;
+    let redirecting = false;
+    let selectedWarmupAnswer = "";
+    let latestDoorSignal = "auto";
+    let lessonStateTimer = null;
+    let pendingTicketPayload = null;
+
+    const memoryPairs = shuffle([
+      { id: "pair_1_a", label: "Sprint" },
+      { id: "pair_1_b", label: "Sprint" },
+      { id: "pair_2_a", label: "AI" },
+      { id: "pair_2_b", label: "AI" },
+      { id: "pair_3_a", label: "Evidence" },
+      { id: "pair_3_b", label: "Evidence" }
+    ]);
+    let revealedMemory = [];
+    let matchedMemoryIds = new Set();
+
+    function shuffle(items) {
+      const arr = items.slice();
+      for (let index = arr.length - 1; index > 0; index -= 1) {
+        const other = Math.floor(Math.random() * (index + 1));
+        const current = arr[index];
+        arr[index] = arr[other];
+        arr[other] = current;
+      }
+      return arr;
+    }
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function getStudentName() {
+      const input = document.getElementById("studentNameInput");
+      const fallback = auth?.displayName || auth?.name || "";
+      const value = String(input?.value || localStorage.getItem(studentNameKey) || fallback).trim();
+      return value || studentId.slice(0, 8);
+    }
+
+    function persistStudentName() {
+      localStorage.setItem(studentNameKey, getStudentName());
+    }
+
+    function updateReadyState() {
+      const generateBtn = document.getElementById("generateTicketBtn");
+      const readyBanner = document.getElementById("readyBanner");
+      const readyNote = document.getElementById("readyNote");
+      const tasksCompleted = warmupDone && memoryDone && ticketGenerated;
+      if (generateBtn) generateBtn.disabled = !(warmupDone && memoryDone && !ticketGenerated);
+      if (readyBanner) readyBanner.classList.toggle("visible", tasksCompleted || latestDoorSignal === "open");
+      if (readyNote) {
+        if (latestDoorSignal === "open") readyNote.textContent = "המרצה פתח את הדלת. אפשר לעבור מיד לשיעור.";
+        else if (tasksCompleted) readyNote.textContent = "המעבר יתבצע אוטומטית כשהשיעור זמין.";
+      }
+      if ((tasksCompleted || latestDoorSignal === "open") && waitingSessionId) {
+        attemptRedirect();
+      }
+    }
+
+    function setDoorSignal(signal, note) {
+      latestDoorSignal = signal;
+      const pill = document.getElementById("doorPill");
+      const noteEl = document.getElementById("doorNote");
+      if (pill) pill.textContent = `מצב דלת: ${signal.toUpperCase()}`;
+      if (noteEl && note) noteEl.textContent = note;
+      updateReadyState();
+    }
+
+    function updateSessionLine() {
+      const sessionLine = document.getElementById("sessionLine");
+      const unitLine = document.getElementById("unitLine");
+      if (sessionLine) sessionLine.textContent = `sessionId: ${waitingSessionId || "--"}`;
+      if (unitLine) unitLine.textContent = `unitId: ${unitId}`;
+    }
+
+    async function callClassroom(method, payload = null, query = "") {
+      if (method === "GET") {
+        const res = await fetch(`/.netlify/functions/classroom${query}`);
+        return res.json();
+      }
+      const res = await fetch("/.netlify/functions/classroom", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
+      return res.json();
+    }
+
+    async function loadConfigTitle() {
+      if (!courseId) return;
+      try {
+        const config = await fetch(`/config.json?ts=${Date.now()}`).then(response => response.json());
+        const course = config?.my_courses?.[courseId];
+        if (course?.name) {
+          document.getElementById("courseTitle").textContent = course.name;
+        }
+      } catch {}
+    }
+
+    async function loadPreSession() {
+      if (!courseId) {
+        document.getElementById("missionText").textContent = "לא התקבל courseId. פתח את הדף דרך קישור הקורס.";
+        document.getElementById("warmupQuestion").textContent = "אין שאלת חימום זמינה.";
+        document.getElementById("warmupFallback").style.display = "";
+        return;
+      }
+
+      const data = await callClassroom("GET", null, `?action=pre_session&classId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}&studentId=${encodeURIComponent(studentId)}&sessionId=${encodeURIComponent(waitingSessionId)}`);
+      const missionText = data?.mission?.text || "משימת הכניסה תופיע כאן כשהמרצה יעדכן אותה.";
+      document.getElementById("missionText").textContent = missionText;
+
+      const warmup = data?.warmup || null;
+      const warmupQuestion = document.getElementById("warmupQuestion");
+      const answersBox = document.getElementById("warmupAnswers");
+      const fallback = document.getElementById("warmupFallback");
+      if (!warmup || !warmup.question) {
+        warmupQuestion.textContent = "כתוב מחשבה קצרה על המשימה שלפניך.";
+        fallback.style.display = "";
+        return;
+      }
+
+      warmupQuestion.textContent = warmup.question;
+      if (Array.isArray(warmup.answers) && warmup.answers.length) {
+        answersBox.innerHTML = warmup.answers.map((answer, index) => (
+          `<button class="answer-btn" type="button" data-choice="${index}">${escapeHtml(answer)}</button>`
+        )).join("");
+        answersBox.querySelectorAll(".answer-btn").forEach(button => {
+          button.addEventListener("click", async () => {
+            answersBox.querySelectorAll(".answer-btn").forEach(node => node.classList.remove("selected"));
+            button.classList.add("selected");
+            selectedWarmupAnswer = button.textContent.trim();
+            warmupDone = true;
+            document.getElementById("warmupStatus").textContent = "החימום הושלם";
+            if (waitingSessionId) {
+              await callClassroom("POST", {
+                action: "warmup_vote",
+                classId: courseId,
+                courseId,
+                unitId,
+                sessionId: waitingSessionId,
+                studentId,
+                choice: Number(button.dataset.choice || 0)
+              });
+            }
+            updateReadyState();
+          });
+        });
+      } else {
+        fallback.style.display = "";
+      }
+    }
+
+    function initWarmupFallback() {
+      const button = document.getElementById("warmupSubmitBtn");
+      if (!button) return;
+      button.addEventListener("click", () => {
+        const value = String(document.getElementById("warmupFreeText")?.value || "").trim();
+        if (!value) return;
+        selectedWarmupAnswer = value;
+        warmupDone = true;
+        document.getElementById("warmupStatus").textContent = "החימום הושלם";
+        updateReadyState();
+      });
+    }
+
+    function renderMemoryBoard() {
+      const board = document.getElementById("memoryBoard");
+      board.innerHTML = memoryPairs.map(card => {
+        const visible = revealedMemory.includes(card.id) || matchedMemoryIds.has(card.id);
+        const matched = matchedMemoryIds.has(card.id);
+        const classes = ["memory-card"];
+        if (visible) classes.push("revealed");
+        if (matched) classes.push("matched");
+        return `<button type="button" class="${classes.join(" ")}" data-card-id="${card.id}">${escapeHtml(card.label)}</button>`;
+      }).join("");
+
+      board.querySelectorAll(".memory-card").forEach(button => {
+        button.addEventListener("click", () => handleMemoryFlip(button.dataset.cardId));
+      });
+    }
+
+    function handleMemoryFlip(cardId) {
+      if (!cardId || matchedMemoryIds.has(cardId) || revealedMemory.includes(cardId) || revealedMemory.length === 2) return;
+      revealedMemory = revealedMemory.concat(cardId);
+      renderMemoryBoard();
+      if (revealedMemory.length < 2) return;
+
+      const selectedCards = memoryPairs.filter(card => revealedMemory.includes(card.id));
+      const isMatch = selectedCards.length === 2 && selectedCards[0].label === selectedCards[1].label;
+      window.setTimeout(() => {
+        if (isMatch) {
+          selectedCards.forEach(card => matchedMemoryIds.add(card.id));
+        }
+        revealedMemory = [];
+        renderMemoryBoard();
+        if (matchedMemoryIds.size === memoryPairs.length) {
+          memoryDone = true;
+          document.getElementById("memoryStatus").textContent = "המשחק הושלם";
+          updateReadyState();
+        }
+      }, isMatch ? 250 : 700);
+    }
+
+    function buildGoldenTicket() {
+      const stamp = Date.now().toString(36).slice(-6).toUpperCase();
+      return `GT-${studentId.slice(-4).toUpperCase()}-${stamp}`;
+    }
+
+    async function flushPendingTicket() {
+      if (!pendingTicketPayload || !waitingSessionId) return;
+      await callClassroom("POST", {
+        action: "entrance_ticket_submit",
+        classId: courseId,
+        courseId,
+        unitId,
+        sessionId: waitingSessionId,
+        studentId,
+        studentName: getStudentName(),
+        answer: pendingTicketPayload.answer
+      });
+      pendingTicketPayload = null;
+    }
+
+    function attemptRedirect() {
+      if (redirecting || !waitingSessionId) return;
+      const tasksCompleted = warmupDone && memoryDone && ticketGenerated;
+      if (!tasksCompleted && latestDoorSignal !== "open") return;
+      redirecting = true;
+      location.replace(`/lesson_view.html?sessionId=${encodeURIComponent(waitingSessionId)}&courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}`);
+    }
+
+    async function refreshLessonState() {
+      if (!waitingSessionId) return;
+      const data = await callClassroom("GET", null, `?action=lesson_payload&sessionId=${encodeURIComponent(waitingSessionId)}`);
+      const doorStatus = String(data?.state?.door_status || "auto").toLowerCase();
+      if (doorStatus === "open") {
+        setDoorSignal("open", "המרצה פתח את הדלת. אפשר לעבור מיד לשיעור.");
+      }
+      updateSessionLine();
+      flushPendingTicket();
+    }
+
+    function startLessonStatePolling() {
+      if (lessonStateTimer) clearInterval(lessonStateTimer);
+      lessonStateTimer = setInterval(refreshLessonState, 5000);
+    }
+
+    function initRealtimeDoorListener() {
+      if (!courseId || !window.firebase || !window.MILED_FIREBASE_CONFIG) return;
+      if (!firebase.apps.length) {
+        firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+      }
+      db = firebase.database();
+      const doorKey = `${courseId}_${unitId}`;
+      activeDoorRef = db.ref(`active_sessions/${doorKey}`);
+      activeDoorRef.on("value", snapshot => {
+        const data = snapshot.val() || {};
+        if (data?.sessionId) waitingSessionId = String(data.sessionId).trim();
+        updateSessionLine();
+        const entryPolicy = String(data?.entryPolicy || "ticket_only").toLowerCase();
+        if (entryPolicy === "open_all") {
+          setDoorSignal("open", "המרצה פתח את הדלת לכל הסטודנטים.");
+        } else if (String(data?.status || "").toLowerCase() === "active") {
+          setDoorSignal("auto", "השיעור פעיל. השלמת המשימה תכניס אותך אוטומטית.");
+        } else {
+          setDoorSignal("closed", "השיעור עדיין לא נפתח. אפשר להשלים את משימות הכניסה בינתיים.");
+        }
+        flushPendingTicket();
+      });
+    }
+
+    function initGoldenTicket() {
+      const button = document.getElementById("generateTicketBtn");
+      button.addEventListener("click", async () => {
+        persistStudentName();
+        const code = buildGoldenTicket();
+        const answer = `${code} | ${selectedWarmupAnswer || "Warmup complete"}`;
+        document.getElementById("ticketCode").textContent = code;
+        document.getElementById("ticketStatus").textContent = "הכרטיס הונפק ונשמר עבורך.";
+        ticketGenerated = true;
+        pendingTicketPayload = { answer };
+        await flushPendingTicket();
+        updateReadyState();
+      });
+    }
+
+    function initManualEnter() {
+      document.getElementById("manualEnterBtn").addEventListener("click", attemptRedirect);
+    }
+
+    async function init() {
+      const input = document.getElementById("studentNameInput");
+      input.value = localStorage.getItem(studentNameKey) || auth?.displayName || "";
+      input.addEventListener("change", persistStudentName);
+      input.addEventListener("blur", persistStudentName);
+
+      updateSessionLine();
+      initWarmupFallback();
+      initGoldenTicket();
+      initManualEnter();
+      renderMemoryBoard();
+      await loadConfigTitle();
+      await loadPreSession();
+      initRealtimeDoorListener();
+      if (waitingSessionId) {
+        await refreshLessonState();
+      }
+      startLessonStatePolling();
+    }
+
+    init().catch(() => {
+      document.getElementById("doorNote").textContent = "שגיאה בטעינת הלובי. רענן ונסה שוב.";
+    });
+  </script>
+</body>
+</html>

@@ -4,6 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Course & Unit Manager</title>
+  <script>(function(){
+    var auth = null;
+    try { auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null"); } catch(e) {}
+    var role = String(auth && auth.role || "").toLowerCase();
+    var allowed = {
+      faculty: true,
+      lecturer: true,
+      institution: true,
+      institution_admin: true,
+      superadmin: true,
+      system_admin: true
+    };
+    if (!auth || !allowed[role]) {
+      document.documentElement.style.visibility = "hidden";
+      location.replace("/");
+    }
+  }());</script>
   <style>
     :root {
       --bg: #f5f8fc;
@@ -169,7 +186,7 @@
   <div class="shell">
     <aside class="sidebar">
       <div class="brand">MilEd.One</div>
-      <a href="portal.html" class="nav-link">🏠 פורטל</a>
+      <a href="lecturer_hub.html" class="nav-link">🏠 Lecturer Hub</a>
       <a href="course_units.html" class="nav-link active">📚 קורסים ויחידות</a>
       <a href="lecturer_cockpit.html" class="nav-link">🧑‍🏫 קוקפיט מרצה</a>
       <a href="students.html" class="nav-link">👥 סטודנטים</a>

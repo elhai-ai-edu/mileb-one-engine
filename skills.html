@@ -143,7 +143,7 @@
     if (sl) sl.style.display = "none";
   }
   window.navigateHome = function() {
-    if (isFaculty) { window.location.href = "/lecturer_cockpit.html"; }
+    if (isFaculty) { window.location.href = "/lecturer_hub.html"; }
     else { window.location.href = "/student_dashboard.html"; }
   };
 })();
@@ -199,7 +199,7 @@ function getStepLabel(bot, status) {
 
 // ─── URL resolution ───
 function resolveUrl(id, bot) {
-  return `/workspace.html?skillId=${id}`;
+  return `/chat.html?classId=${id}`;
 }
 
 // ─── Icon per bot ───

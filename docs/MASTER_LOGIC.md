@@ -1351,7 +1351,7 @@ The classroom manager is a **separate layer** from the individual bot. It operat
 - Classroom manager reads `sessions/{studentId}/{courseId}` in Firebase (student state)
 - Stage lock writes to `sessions/{studentId}/{courseId}/stageLock: true`
 - Bot reads `stageLock` before processing stage advancement requests
-- Instructor dashboard is a separate frontend route — not `workspace.html`
+- Instructor dashboard is a separate frontend route (`lecturer_hub.html` / `lecturer_cockpit.html`) — not the student lesson routes
 
 ### Enforcement Rule
 Stage lock from instructor overrides student-level readiness signals. If `stageLock = true`, the No-Skip principle is **additionally** enforced externally (instructor layer) regardless of bot state.
@@ -1757,13 +1757,13 @@ The Architect Studio uses the MilEd.One design system (`style.css`) but with an 
 - **Color**: Gradient purple-to-blue header (matching the `bot_architect` brand identity)
 - **Cards**: White with generous padding and soft shadows — not the compact Cockpit style
 - **Typography**: Larger headings, more line-height — reading-optimized, not scanning-optimized
-- **No sidebar**: Navigation is minimal — only a "← Faculty Portal" link in the header
+- **No sidebar**: Navigation is minimal — only a "← Lecturer Hub" link in the header
 - **RTL Hebrew** throughout, same as all faculty-facing pages
 
 ### 32.7 Entry Points
 
 Faculty can reach the Architect Studio from:
-1. A direct link in their Faculty Portal (`/faculty.html`) — "Create a new bot" card
+1. A direct link in their Lecturer Hub (`/lecturer_hub.html`) — "Create a new bot" card
 2. A button in the Cockpit → Bots tab → "New Bot" action
 3. Direct URL: `/architect_studio.html`
 

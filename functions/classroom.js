@@ -91,6 +91,200 @@ function normalizeUnitId(value, fallback = "unit_01") {
   return unit || fallback;
 }
 
+function tryParseJson(value) {
+  if(typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function slugifySegment(value, fallback = "item") {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return normalized || fallback;
+}
+
+function cleanResourceTitle(value) {
+  const raw = String(value || "").replace(/\s+/g, " ").trim();
+  if(!raw) return "ללא כותרת";
+  const cleaned = raw.replace(/^(קישור לאתר אינטרנט|קובץ|file|url|page|folder|label)\s*[:\-–]?\s*/i, "").trim();
+  return cleaned || raw;
+}
+
+function inferResourceUrl(item = {}) {
+  return String(
+    item.url ||
+    item.link ||
+    item.href ||
+    item.externalUrl ||
+    item.resourceUrl ||
+    item.downloadUrl ||
+    ""
+  ).trim() || null;
+}
+
+function inferResourceKind(item = {}, url = "") {
+  const declared = String(item.kind || item.type || item.modname || item.resourceType || "").trim().toLowerCase();
+  const lowerUrl = String(url || "").toLowerCase();
+  if(declared.includes("pdf") || lowerUrl.endsWith(".pdf")) return "pdf";
+  if(declared.includes("file") || lowerUrl.match(/\.(docx?|pptx?|xlsx?|zip)$/)) return "file";
+  if(declared.includes("task") || declared.includes("assignment") || declared.includes("forum")) return "task";
+  if(declared.includes("page")) return "page";
+  if(declared.includes("url") || declared.includes("link") || /^https?:\/\//.test(lowerUrl)) return "link";
+  return "resource";
+}
+
+function isLecturerOnlyResource(title) {
+  return /(נוכחות|יומן|הודעות)/.test(String(title || ""));
+}
+
+function normalizeMoodleMetadata(rawInput) {
+  const raw = tryParseJson(rawInput);
+  if(!raw || typeof raw !== "object") return null;
+
+  const sections =
+    (Array.isArray(raw.sections) && raw.sections) ||
+    (Array.isArray(raw?.course?.sections) && raw.course.sections) ||
+    (Array.isArray(raw?.data?.sections) && raw.data.sections) ||
+    (Array.isArray(raw) && raw) ||
+    [];
+
+  const units = sections.map((section, sectionIndex) => {
+    const sectionName = String(section?.name || section?.title || section?.section || `Unit ${sectionIndex + 1}`).trim();
+    const unitId = normalizeUnitId(
+      section?.unitId || section?.id || slugifySegment(sectionName, `unit_${String(sectionIndex + 1).padStart(2, "0")}`),
+      `unit_${String(sectionIndex + 1).padStart(2, "0")}`
+    );
+    const itemList =
+      (Array.isArray(section?.items) && section.items) ||
+      (Array.isArray(section?.modules) && section.modules) ||
+      (Array.isArray(section?.resources) && section.resources) ||
+      [];
+
+    const resources = itemList.map((item, itemIndex) => {
+      const originalTitle = String(item?.name || item?.title || item?.label || item?.resourceName || `Resource ${itemIndex + 1}`).trim();
+      const cleanedTitle = cleanResourceTitle(originalTitle);
+      const url = inferResourceUrl(item);
+      const kind = inferResourceKind(item, url || "");
+      return {
+        id: String(item?.id || `${unitId}_res_${String(itemIndex + 1).padStart(2, "0")}`),
+        title: cleanedTitle,
+        originalTitle,
+        url,
+        kind,
+        lecturerOnly: isLecturerOnlyResource(cleanedTitle),
+        sourceType: String(item?.type || item?.modname || item?.resourceType || kind),
+        description: String(item?.description || item?.summary || "").trim() || null,
+        icon: kind,
+        updatedAt: Date.now()
+      };
+    });
+
+    return {
+      unitId,
+      name: sectionName || `Unit ${sectionIndex + 1}`,
+      resources
+    };
+  }).filter(unit => unit.name || unit.resources.length);
+
+  const resourceCount = units.reduce((sum, unit) => sum + unit.resources.length, 0);
+
+  return {
+    importedAt: Date.now(),
+    raw,
+    unitCount: units.length,
+    resourceCount,
+    units
+  };
+}
+
+function getCourseLessonBundle(courseNode = {}, lessonId) {
+  const metadata = courseNode?.metadata || {};
+  const units = Array.isArray(metadata?.units) ? metadata.units : [];
+  const playlists = courseNode?.playlists || {};
+  const normalizedLessonId = normalizeUnitId(lessonId, "unit_01");
+  const playlist = playlists?.[normalizedLessonId] || null;
+  const selectedUnitIds = Array.isArray(playlist?.unitIds) && playlist.unitIds.length
+    ? playlist.unitIds.map(id => normalizeUnitId(id)).filter(Boolean)
+    : [normalizedLessonId];
+  const selectedUnits = units.filter(unit => selectedUnitIds.includes(normalizeUnitId(unit?.unitId)));
+  const resources = selectedUnits.flatMap(unit => (Array.isArray(unit?.resources) ? unit.resources : []).map(resource => ({
+    ...resource,
+    unitId: normalizeUnitId(unit?.unitId),
+    unitName: unit?.name || normalizeUnitId(unit?.unitId)
+  })));
+
+  return {
+    lessonId: normalizedLessonId,
+    playlist,
+    selectedUnits,
+    resources,
+    sprintDefinitions: Array.isArray(courseNode?.sprintDefinitions?.[normalizedLessonId]?.items)
+      ? courseNode.sprintDefinitions[normalizedLessonId].items
+      : []
+  };
+}
+
+function computePacingSummary(pacingMap = {}, activeSprint = null) {
+  const students = Object.values(pacingMap || {}).map(entry => ({
+    studentId: entry?.studentId || null,
+    studentName: entry?.studentName || entry?.name || null,
+    currentSprint: entry?.currentSprint || null,
+    status: entry?.status || "idle",
+    pathDecision: entry?.pathDecision || "normal",
+    guidance: entry?.guidance || null,
+    lastActivityAt: Number(entry?.lastActivityAt) || 0,
+    completedSprints: entry?.completedSprints || {},
+    evidenceCount: Number(entry?.evidenceCount) || 0
+  }));
+
+  const averagesBySprint = {};
+  students.forEach(student => {
+    Object.entries(student.completedSprints || {}).forEach(([sprintId, info]) => {
+      const durationMs = Number(info?.durationMs) || 0;
+      if(!durationMs) return;
+      if(!averagesBySprint[sprintId]) averagesBySprint[sprintId] = [];
+      averagesBySprint[sprintId].push(durationMs);
+    });
+  });
+
+  const averageCompletionMs = Object.fromEntries(
+    Object.entries(averagesBySprint).map(([sprintId, values]) => [
+      sprintId,
+      Math.round(values.reduce((sum, item) => sum + item, 0) / values.length)
+    ])
+  );
+
+  const stuckThresholdMs = 12 * 60 * 1000;
+  const now = Date.now();
+  const heatmap = students.map(student => {
+    const lastDelta = student.lastActivityAt ? now - student.lastActivityAt : Number.MAX_SAFE_INTEGER;
+    return {
+      studentId: student.studentId,
+      studentName: student.studentName,
+      sprint: student.currentSprint || activeSprint || "—",
+      isStuck: lastDelta > stuckThresholdMs || student.pathDecision === "support",
+      pathDecision: student.pathDecision,
+      status: student.status,
+      evidenceCount: student.evidenceCount,
+      lastActivityAt: student.lastActivityAt
+    };
+  });
+
+  return {
+    students,
+    activeSprint: activeSprint || null,
+    averageCompletionMs,
+    heatmap,
+    stuckCount: heatmap.filter(item => item.isStuck).length
+  };
+}
+
 function getUnitPath(userId, courseId, unitId) {
   return `users/${userId}/courses/${courseId}/units/${unitId}`;
 }
@@ -198,6 +392,76 @@ export async function handler(event){
         classId,
         waitingStudentsCount: waitingSnapshot.count,
         waitingStudents: waitingSnapshot.students
+      });
+    }
+
+    if(action === "course_metadata"){
+      const courseId = String(event.queryStringParameters?.courseId || event.queryStringParameters?.classId || "").trim();
+      if(!courseId) return err("courseId required");
+      const snap = await db.ref(`courses/${courseId}`).once("value");
+      const courseNode = snap.val() || {};
+      return ok({
+        courseId,
+        metadata: courseNode.metadata || null,
+        playlists: courseNode.playlists || {},
+        sprintDefinitions: courseNode.sprintDefinitions || {}
+      });
+    }
+
+    if(action === "lesson_payload"){
+      if(!sessionId) return err("sessionId required");
+      const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+      const session = sessionSnap.val() || null;
+      if(!session) return err("session not found");
+
+      const courseId = session.courseId || session.classId || null;
+      const state = session.state || {
+        current_unit: normalizeUnitId(session.unitId),
+        active_sprint: null,
+        door_status: session.active ? "auto" : "closed"
+      };
+      const lessonId = normalizeUnitId(state.current_unit || session.unitId);
+      const courseSnap = courseId
+        ? await db.ref(`courses/${courseId}`).once("value")
+        : { val: () => ({}) };
+      const courseNode = courseSnap.val() || {};
+      const lessonBundle = getCourseLessonBundle(courseNode, lessonId);
+      const pacingSummary = computePacingSummary(session.pacing || {}, state.active_sprint || null);
+
+      return ok({
+        sessionId,
+        courseId,
+        lessonId,
+        botType: session.botType || null,
+        facultyId: session.facultyId || null,
+        active: !!session.active,
+        state: {
+          current_unit: lessonId,
+          active_sprint: state.active_sprint || null,
+          door_status: String(state.door_status || "auto").toLowerCase(),
+          pushed_resource: state.pushed_resource || null,
+          updatedAt: Number(state.updatedAt) || null
+        },
+        playlist: lessonBundle.playlist || null,
+        selectedUnits: lessonBundle.selectedUnits,
+        resources: lessonBundle.resources,
+        sprintDefinitions: lessonBundle.sprintDefinitions,
+        pacing: pacingSummary,
+        activeTask: session.active_task || null,
+        broadcast: session.broadcast || null,
+        broadcastedAt: session.broadcastedAt || null
+      });
+    }
+
+    if(action === "pacing_snapshot"){
+      if(!sessionId) return err("sessionId required");
+      const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
+      const session = sessionSnap.val() || null;
+      if(!session) return err("session not found");
+      const state = session.state || {};
+      return ok({
+        sessionId,
+        pacing: computePacingSummary(session.pacing || {}, state.active_sprint || null)
       });
     }
 
@@ -1105,10 +1369,237 @@ export async function handler(event){
     return ok({ ok:true, userId, courseId, unitId });
   }
 
+  if(action === "course_metadata_save"){
+    const courseId = String(body.courseId || body.classId || "").trim();
+    if(!courseId) return err("courseId required");
+    const normalizedMetadata = normalizeMoodleMetadata(body.metadataJson ?? body.metadata ?? null);
+    if(!normalizedMetadata) return err("invalid metadata json");
+    await db.ref(`courses/${courseId}/metadata`).set(normalizedMetadata);
+    return ok({
+      ok:true,
+      courseId,
+      metadata: normalizedMetadata
+    });
+  }
+
+  if(action === "lesson_playlist_save"){
+    const courseId = String(body.courseId || body.classId || "").trim();
+    const lessonId = normalizeUnitId(body.lessonId || body.unitId, "unit_01");
+    const unitIds = Array.isArray(body.unitIds)
+      ? body.unitIds.map(id => normalizeUnitId(id)).filter(Boolean)
+      : [];
+    if(!courseId) return err("courseId required");
+    if(!unitIds.length) return err("unitIds required");
+
+    const payload = {
+      lessonId,
+      unitIds,
+      updatedAt: Date.now()
+    };
+    await db.ref(`courses/${courseId}/playlists/${lessonId}`).set(payload);
+    return ok({ ok:true, courseId, playlist: payload });
+  }
+
+  if(action === "sprint_definitions_save"){
+    const courseId = String(body.courseId || body.classId || "").trim();
+    const lessonId = normalizeUnitId(body.lessonId || body.unitId, "unit_01");
+    const sprints = Array.isArray(body.sprints) ? body.sprints : [];
+    if(!courseId) return err("courseId required");
+    if(!sprints.length) return err("sprints required");
+
+    const normalizedSprints = sprints.map((sprint, index) => ({
+      id: String(sprint?.id || `sprint_${String(index + 1).padStart(2, "0")}`),
+      title: String(sprint?.title || `Sprint ${index + 1}`).trim(),
+      stationType: ["AI_STATION", "PHYSICAL_STATION", "PLENARY_STATION"].includes(String(sprint?.stationType || "").trim().toUpperCase())
+        ? String(sprint.stationType).trim().toUpperCase()
+        : "AI_STATION",
+      instructions: String(sprint?.instructions || "").trim() || null,
+      deepDivePrompt: String(sprint?.deepDivePrompt || "").trim() || null,
+      supportHint: String(sprint?.supportHint || "").trim() || null,
+      evidenceRequired: !!sprint?.evidenceRequired,
+      order: index + 1
+    }));
+
+    await db.ref(`courses/${courseId}/sprintDefinitions/${lessonId}`).set({
+      lessonId,
+      items: normalizedSprints,
+      updatedAt: Date.now()
+    });
+
+    return ok({ ok:true, courseId, lessonId, sprints: normalizedSprints });
+  }
+
   if(!sessionId) return err("sessionId required");
 
   const sessionRef =
     db.ref(`sessions/${sessionId}`);
+
+  if(action === "session_state_update"){
+    const { facultyId } = body;
+    if(!facultyId) return err("facultyId required");
+    const snap = await sessionRef.once("value");
+    const session = snap.val() || null;
+    if(!session) return err("session not found");
+    if(session.facultyId !== facultyId) return err("not session owner");
+
+    const updates = {
+      updatedAt: Date.now()
+    };
+
+    if(body.currentUnit !== undefined) updates.current_unit = normalizeUnitId(body.currentUnit, normalizeUnitId(session.unitId));
+    if(body.activeSprint !== undefined) updates.active_sprint = String(body.activeSprint || "").trim() || null;
+    if(body.doorStatus !== undefined) updates.door_status = String(body.doorStatus || "auto").trim().toLowerCase();
+    if(body.clearPushedResource) updates.pushed_resource = null;
+
+    await sessionRef.child("state").update(updates);
+    return ok({ ok:true, state: updates });
+  }
+
+  if(action === "resource_push"){
+    const { facultyId } = body;
+    if(!facultyId) return err("facultyId required");
+    const snap = await sessionRef.once("value");
+    const session = snap.val() || null;
+    if(!session) return err("session not found");
+    if(session.facultyId !== facultyId) return err("not session owner");
+
+    if(body.clear) {
+      await sessionRef.child("state/pushed_resource").set(null);
+      return ok({ ok:true, pushedResource:null });
+    }
+
+    const resource = body.resource || {};
+    const payload = {
+      id: String(resource.id || `resource_${Date.now()}`),
+      title: cleanResourceTitle(resource.title || resource.originalTitle || "משאב"),
+      url: String(resource.url || "").trim() || null,
+      kind: inferResourceKind(resource, resource.url || ""),
+      lecturerOnly: !!resource.lecturerOnly,
+      unitId: normalizeUnitId(resource.unitId || session.unitId),
+      pushedAt: Date.now(),
+      pushedBy: facultyId
+    };
+
+    await sessionRef.child("state").update({
+      pushed_resource: payload,
+      updatedAt: Date.now()
+    });
+    return ok({ ok:true, pushedResource: payload });
+  }
+
+  if(action === "pacing_update"){
+    const studentId = String(body.studentId || "").trim();
+    if(!studentId) return err("studentId required");
+
+    const snap = await sessionRef.once("value");
+    const session = snap.val() || null;
+    if(!session) return err("session not found");
+
+    const pacingMap = session.pacing || {};
+    const current = pacingMap[studentId] || {};
+    const now = Date.now();
+    const currentSprint = String(body.currentSprint || current.currentSprint || session?.state?.active_sprint || "").trim() || null;
+    const eventType = String(body.eventType || "heartbeat").trim().toLowerCase();
+    const completedSprints = current.completedSprints || {};
+    const nextEntry = {
+      studentId,
+      studentName: String(body.studentName || current.studentName || current.name || "").trim() || null,
+      currentSprint,
+      status: "active",
+      firstSeenAt: Number(current.firstSeenAt) || now,
+      sprintStartedAt: Number(current.sprintStartedAt) || now,
+      lastActivityAt: now,
+      completedSprints,
+      evidenceCount: Number(current.evidenceCount) || 0,
+      pathDecision: current.pathDecision || "normal",
+      guidance: current.guidance || null
+    };
+
+    if(eventType === "sprint_started") {
+      nextEntry.sprintStartedAt = now;
+      nextEntry.status = "in_progress";
+    }
+
+    if(eventType === "sprint_completed" && currentSprint) {
+      const durationMs = Math.max(1000, now - (Number(current.sprintStartedAt) || now));
+      completedSprints[currentSprint] = {
+        completedAt: now,
+        durationMs
+      };
+      nextEntry.completedSprints = completedSprints;
+      nextEntry.status = "completed_sprint";
+      nextEntry.sprintStartedAt = now;
+
+      const cohortDurations = Object.values(pacingMap).map(item => Number(item?.completedSprints?.[currentSprint]?.durationMs) || 0).filter(Boolean);
+      const avgDuration = cohortDurations.length
+        ? cohortDurations.reduce((sum, item) => sum + item, 0) / cohortDurations.length
+        : 0;
+
+      if(avgDuration && durationMs < avgDuration * 0.7) {
+        nextEntry.pathDecision = "fast";
+        nextEntry.guidance = "Deep Dive: עצור לרפלקציה עמוקה והסבר את התהליך שבחרת.";
+      } else {
+        nextEntry.pathDecision = "normal";
+        nextEntry.guidance = null;
+      }
+    }
+
+    if(eventType === "heartbeat") {
+      const activeDuration = Math.max(0, now - (Number(current.sprintStartedAt) || now));
+      const cohortDurations = currentSprint
+        ? Object.values(pacingMap).map(item => Number(item?.completedSprints?.[currentSprint]?.durationMs) || 0).filter(Boolean)
+        : [];
+      const avgDuration = cohortDurations.length
+        ? cohortDurations.reduce((sum, item) => sum + item, 0) / cohortDurations.length
+        : 0;
+      const isSupport = activeDuration > 8 * 60 * 1000 || (avgDuration && activeDuration > avgDuration * 1.3);
+      if(isSupport) {
+        nextEntry.pathDecision = "support";
+        nextEntry.guidance = "Support Path: פרק את המשימה למיקרו-שלבים ובדוק רמז אחד בכל פעם.";
+        nextEntry.status = "stuck";
+      }
+    }
+
+    await sessionRef.child(`pacing/${studentId}`).set(nextEntry);
+    return ok({
+      ok:true,
+      pacing: nextEntry,
+      summary: computePacingSummary({ ...pacingMap, [studentId]: nextEntry }, session?.state?.active_sprint || currentSprint || null)
+    });
+  }
+
+  if(action === "evidence_submit"){
+    const studentId = String(body.studentId || "").trim();
+    const sprintId = String(body.sprintId || body.currentSprint || "").trim();
+    const text = String(body.text || "").trim();
+    const imageDataUrl = String(body.imageDataUrl || "").trim();
+    if(!studentId) return err("studentId required");
+    if(!sprintId) return err("sprintId required");
+    if(!text && !imageDataUrl) return err("evidence required");
+
+    const payload = {
+      studentId,
+      studentName: String(body.studentName || "").trim() || null,
+      sprintId,
+      text: text || null,
+      imageDataUrl: imageDataUrl.startsWith("data:image/") ? imageDataUrl : null,
+      submittedAt: Date.now()
+    };
+
+    await sessionRef.child(`evidence/${studentId}`).push(payload);
+    const pacingSnap = await sessionRef.child(`pacing/${studentId}`).once("value");
+    const pacing = pacingSnap.val() || {};
+    await sessionRef.child(`pacing/${studentId}`).update({
+      studentId,
+      studentName: payload.studentName || pacing.studentName || null,
+      currentSprint: sprintId,
+      evidenceCount: (Number(pacing.evidenceCount) || 0) + 1,
+      lastActivityAt: Date.now(),
+      status: "evidence_submitted"
+    });
+
+    return ok({ ok:true, evidence: payload, unlocked:true });
+  }
 
   if(action === "open"){
 
@@ -1141,6 +1632,14 @@ export async function handler(event){
       currentStep:1,
       stepVersion:0,
       lockedSteps:[],
+      state: {
+        current_unit: unitId,
+        active_sprint: null,
+        door_status: resolvedCourseId ? "auto" : "open",
+        pushed_resource: null,
+        updatedAt: Date.now()
+      },
+      pacing: {},
       active:true,
       openedAt:Date.now(),
       answers:{}
@@ -1474,6 +1973,11 @@ export async function handler(event){
     await sessionRef.update({
 
       active:false,
+      state: {
+        ...(session.state || {}),
+        door_status:"closed",
+        updatedAt:Date.now()
+      },
       closedAt:Date.now()
 
     });
@@ -1544,6 +2048,8 @@ export async function handler(event){
       step: 1,
       gateBroadcastAt: Date.now()
     };
+    updates[`sessions/${sessionId}/state/door_status`] = "open";
+    updates[`sessions/${sessionId}/state/updatedAt`] = Date.now();
     
     await db.ref().update(updates);
     return ok({ ok: true });

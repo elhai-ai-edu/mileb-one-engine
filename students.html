@@ -46,7 +46,7 @@
     if (sl) sl.style.display = "none";
   }
   window.navigateHome = function() {
-    if (isFaculty) { window.location.href = "/lecturer_cockpit.html"; }
+    if (isFaculty) { window.location.href = "/lecturer_hub.html"; }
     else { sessionStorage.clear(); window.location.href = "/student_dashboard.html"; }
   };
 })();
@@ -120,7 +120,7 @@ function renderCourses() {
     const course = courses[id];
     const a = document.createElement("a");
     a.className = "btn";
-    a.href = `/workspace.html?courseId=${id}`;
+    a.href = `/waiting_lobby.html?courseId=${id}`;
     a.innerHTML = `<h3 style="margin:0 0 4px 0;">${course.name}</h3>
                    <p style="margin:0;opacity:.7;font-size:13px;">לחץ להיכנס למרחב הקורס</p>`;
     container.appendChild(a);

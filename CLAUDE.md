@@ -82,7 +82,7 @@ This is the single authoritative reference for:
 - **Config changes:** Bump `system_version` in `config.json` after any structural change.
 - **Kernel changes:** Require `system_version` bump + MASTER_LOGIC.md update + architectural alignment.
 - **Firebase path:** `sessions/{studentId}/{courseId}` for student state; `admin/auth/{username}` for credentials; `conversations/{sessionId}` for chat logs; `classes/{classId}` for lifecycle settings (lockDate, retentionDate); `authorized_users/{key}.isBypassingLock` for individual access override.
-- **courseId vs classId:** `workspace.html` sends `classId: courseId` in POST body; `chat.js` destructures as `classId` then aliases to `courseId`. Do not break this.
+- **courseId vs classId:** `waiting_lobby.html`/`lesson_view.html` preserve `courseId` in routing, while classroom payloads use `classId` as the canonical key. `chat.js` destructures `classId` then aliases to `courseId`. Do not break this.
 - **Hebrew responses:** All bot output is in Hebrew. System code and comments may be in English.
 
 ---
@@ -119,7 +119,7 @@ docs/
 | PV-5 | Faculty bots with `scope: "global"` accessible to students | Open |
 | AR-1 | `architect_api.js` — export bridge: `handleExport()` fully implemented | Completed |
 | AR-2 | `architect_api.js` — intake & bootstrap: `handleTallyIntake()` + `handleBootstrapSession()` fully implemented; `architect_studio.html` wired to bootstrap endpoint | Completed |
-| DL-1 | Data Lifecycle Management (v9.0.7) — lockDate/retentionDate per class in admin UI, isBypassingLock toggle per user, workspace gatekeeper, retention cleanup prompt | Completed |
+| DL-1 | Data Lifecycle Management (v9.0.7) — lockDate/retentionDate per class in admin UI, isBypassingLock toggle per user, waiting/lesson gatekeeper, retention cleanup prompt | Completed |
 
 ---
 

@@ -288,8 +288,8 @@ async function loadPage() {
       document.getElementById("units-panel").style.display = "";
     }
 
-    // Student workspace link
-    document.getElementById("student-link").href = `/workspace.html?courseId=${encodeURIComponent(classId)}`;
+    // Student waiting lobby link
+    document.getElementById("student-link").href = `/waiting_lobby.html?courseId=${encodeURIComponent(classId)}`;
 
     // Load lifecycle from Firebase
     if (DB_URL) {
@@ -334,7 +334,7 @@ function renderBotLaunchers(course) {
     const label   = bot.label   || key;
     const botType = bot.botType || bot;
     const icon = BOT_ICONS[botType] || "🤖";
-    const url = `/workspace.html?courseId=${encodeURIComponent(classId)}`;
+    const url = `/waiting_lobby.html?courseId=${encodeURIComponent(classId)}`;
     html += `<a href="${url}" class="bot-launch-btn" target="_blank">
       <span>${icon} ${escHtml(label)}</span>
       <span class="btn-arrow">← פתח</span>
@@ -349,7 +349,7 @@ function renderBotLaunchers(course) {
   for (const u of universalBots) {
     const info = UNI_MAP[u];
     if (!info) continue;
-    html += `<a href="/workspace.html?courseId=${encodeURIComponent(classId)}" class="bot-launch-btn" target="_blank">
+    html += `<a href="/waiting_lobby.html?courseId=${encodeURIComponent(classId)}" class="bot-launch-btn" target="_blank">
       <span>${escHtml(info.label)}</span>
       <span class="btn-arrow">← פתח</span>
     </a>`;
