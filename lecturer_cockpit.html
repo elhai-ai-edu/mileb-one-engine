@@ -1405,6 +1405,8 @@ let facultyAvatar = localStorage.getItem(LECTURER_AVATAR_KEY) || "";
 let latestStudentsSnapshot = [];
 let waitingStudentsSnapshot = 0;
 let waitingPressureTimer = null;
+let waitingAttendeesRef = null;
+let waitingAttendeesListener = null;
 let preSessionAudioDataUrl = "";
 let lecturerAvatarCropper = null;
 let importedMetadataCache = null;
@@ -1489,6 +1491,31 @@ function updateWaitingPressure(count) {
   }
 }
 
+function stopWaitingAttendeesListener() {
+  if (waitingAttendeesRef && waitingAttendeesListener) {
+    waitingAttendeesRef.off('value', waitingAttendeesListener);
+  }
+  waitingAttendeesRef = null;
+  waitingAttendeesListener = null;
+}
+
+function startWaitingAttendeesListener(classId, unitId) {
+  stopWaitingAttendeesListener();
+  const db = getRealtimeDb();
+  if (!db || !classId || !unitId) {
+    updateWaitingPressure(0);
+    return;
+  }
+  const syncKey = `${classId}_${unitId}`;
+  waitingAttendeesRef = db.ref(`sessions/${syncKey}/attendees`);
+  waitingAttendeesListener = (snapshot) => {
+    const attendees = snapshot?.val() || {};
+    const count = Object.keys(attendees).length;
+    updateWaitingPressure(count);
+  };
+  waitingAttendeesRef.on('value', waitingAttendeesListener);
+}
+
 async function fetchWaitingPressureForSelectedCourse() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
   if (!classId) {
@@ -1506,8 +1533,9 @@ async function fetchWaitingPressureForSelectedCourse() {
 
 function startWaitingPressurePolling() {
   if (waitingPressureTimer) clearInterval(waitingPressureTimer);
-  fetchWaitingPressureForSelectedCourse();
-  waitingPressureTimer = setInterval(fetchWaitingPressureForSelectedCourse, 5000);
+  const classId = currentLessonId || getSelectedTeachingContext().classId || null;
+  const unitId = currentUnitId || 'unit_01';
+  startWaitingAttendeesListener(classId, unitId);
 }
 
 function renderPreSessionAudioPreview() {
@@ -2021,10 +2049,20 @@ async function writeActiveDoorState({ classId, unitId, sessionId, status, entryP
   const doorKey = `${classId}_${unitId}`;
   const normalizedStatus = String(status || '').trim().toLowerCase() || 'active';
   const normalizedEntryPolicy = String(entryPolicy || (normalizedStatus === 'active' ? 'ticket_only' : 'closed')).trim().toLowerCase();
+  const sessionActive = normalizedStatus === 'active';
+  const doorOpen = normalizedEntryPolicy === 'open_all';
   await db.ref(`${ACTIVE_SESSIONS_NODE}/${doorKey}`).update({
     status: normalizedStatus,
     sessionId: sessionId || null,
     entryPolicy: normalizedEntryPolicy
+  });
+  await db.ref(`sessions/${doorKey}`).update({
+    courseId: classId,
+    unitId,
+    sessionId: sessionId || null,
+    session_active: sessionActive,
+    door_open: doorOpen,
+    updatedAt: Date.now()
   });
 }
 
@@ -2099,7 +2137,8 @@ async function openSession() {
     // Immediate atomic signal for student door listener.
     if (classId) {
       // Canonical session signal key: active_sessions/{courseId}_{unitId}
-      await writeActiveDoorState({ classId, unitId, sessionId, status: 'active', entryPolicy: 'ticket_only' });
+      await writeActiveDoorState({ classId, unitId, sessionId, status: 'active', entryPolicy: 'open_all' });
+      startWaitingAttendeesListener(classId, unitId);
     }
 
     const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
@@ -2215,6 +2254,7 @@ async function closeSession() {
       entryPolicy: "closed"
     });
   }
+  stopWaitingAttendeesListener();
 
   clearInterval(pollTimer);
   if (pacingHeatmapTimer) clearInterval(pacingHeatmapTimer);
@@ -2260,7 +2300,6 @@ async function fetchDashboard() {
 
 function renderDashboard(data) {
   const grid = document.getElementById('studentGrid');
-  updateWaitingPressure(data?.waitingStudentsCount || 0);
   renderEntranceTicketsList(data?.entranceTickets || []);
   const studentsRaw = data.students || [];
   const students = [...studentsRaw].sort((a, b) => {

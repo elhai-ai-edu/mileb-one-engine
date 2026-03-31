@@ -311,12 +311,11 @@
 
     <section class="grid-card">
       <h2>Golden Ticket</h2>
-      <div class="meta">אחרי השלמת החימום והמשחק אפשר לייצר כרטיס זהב אישי. אם המרצה פתח את הדלת, הכניסה תתבצע גם בלי להמתין.</div>
+      <div class="meta">הכרטיס מונפק אוטומטית ברגע שהאימות הושלם. אין צורך בלחיצה ידנית.</div>
       <div id="ticketBox" class="ticket-box">
         <div class="ticket-chip">Entrance Ticket</div>
-        <div class="ticket-code" id="ticketCode">ממתין ליצירה</div>
-        <div class="small-note" id="ticketStatus">השלים את שתי המשימות כדי להנפיק כרטיס.</div>
-        <button id="generateTicketBtn" class="action-btn gold" type="button" disabled>הפק Golden Ticket</button>
+        <div class="ticket-code" id="ticketCode">ממתין לאימות</div>
+        <div class="small-note" id="ticketStatus">השלים את שתי המשימות כדי לעדכן מוכנות אוטומטית.</div>
       </div>
     </section>
   </div>
@@ -337,14 +336,25 @@
 
     let db = null;
     let activeDoorRef = null;
+    let attendeeHeartbeatTimer = null;
     let warmupDone = false;
     let memoryDone = false;
-    let ticketGenerated = false;
+    let readySynced = false;
     let redirecting = false;
     let selectedWarmupAnswer = "";
     let latestDoorSignal = "auto";
     let lessonStateTimer = null;
     let pendingTicketPayload = null;
+
+    function getSyncKey() {
+      if (!courseId) return "";
+      return `${courseId}_${unitId}`;
+    }
+
+    function getSyncNodePath() {
+      const key = getSyncKey();
+      return key ? `sessions/${key}` : "";
+    }
 
     const memoryPairs = shuffle([
       { id: "pair_1_a", label: "Sprint" },
@@ -388,17 +398,26 @@
       localStorage.setItem(studentNameKey, getStudentName());
     }
 
-    function updateReadyState() {
-      const generateBtn = document.getElementById("generateTicketBtn");
+    async function updateReadyState() {
       const readyBanner = document.getElementById("readyBanner");
       const readyNote = document.getElementById("readyNote");
-      const tasksCompleted = warmupDone && memoryDone && ticketGenerated;
-      if (generateBtn) generateBtn.disabled = !(warmupDone && memoryDone && !ticketGenerated);
+      const tasksCompleted = warmupDone && memoryDone;
       if (readyBanner) readyBanner.classList.toggle("visible", tasksCompleted || latestDoorSignal === "open");
       if (readyNote) {
         if (latestDoorSignal === "open") readyNote.textContent = "המרצה פתח את הדלת. אפשר לעבור מיד לשיעור.";
-        else if (tasksCompleted) readyNote.textContent = "המעבר יתבצע אוטומטית כשהשיעור זמין.";
+        else if (tasksCompleted) readyNote.textContent = "האימות הושלם. ממתין שהמרצה יפתח את השיעור...";
       }
+
+      if (tasksCompleted && !readySynced) {
+        readySynced = true;
+        const code = buildGoldenTicket();
+        const answer = `${code} | ${selectedWarmupAnswer || "Warmup complete"}`;
+        document.getElementById("ticketCode").textContent = code;
+        document.getElementById("ticketStatus").textContent = "האימות עבר בהצלחה. ממתין לפתיחת הדלת על ידי המרצה.";
+        pendingTicketPayload = { answer };
+        await flushPendingTicket();
+      }
+
       if ((tasksCompleted || latestDoorSignal === "open") && waitingSessionId) {
         attemptRedirect();
       }
@@ -489,7 +508,7 @@
                 choice: Number(button.dataset.choice || 0)
               });
             }
-            updateReadyState();
+            await updateReadyState();
           });
         });
       } else {
@@ -500,13 +519,13 @@
     function initWarmupFallback() {
       const button = document.getElementById("warmupSubmitBtn");
       if (!button) return;
-      button.addEventListener("click", () => {
+      button.addEventListener("click", async () => {
         const value = String(document.getElementById("warmupFreeText")?.value || "").trim();
         if (!value) return;
         selectedWarmupAnswer = value;
         warmupDone = true;
         document.getElementById("warmupStatus").textContent = "החימום הושלם";
-        updateReadyState();
+        await updateReadyState();
       });
     }
 
@@ -565,15 +584,31 @@
         studentName: getStudentName(),
         answer: pendingTicketPayload.answer
       });
+      await upsertAttendeePresence();
       pendingTicketPayload = null;
     }
 
     function attemptRedirect() {
       if (redirecting || !waitingSessionId) return;
-      const tasksCompleted = warmupDone && memoryDone && ticketGenerated;
+      const tasksCompleted = warmupDone && memoryDone;
       if (!tasksCompleted && latestDoorSignal !== "open") return;
       redirecting = true;
       location.replace(`/lesson_view.html?sessionId=${encodeURIComponent(waitingSessionId)}&courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}`);
+    }
+
+    async function upsertAttendeePresence() {
+      if (!db || !courseId) return;
+      const syncNodePath = getSyncNodePath();
+      if (!syncNodePath) return;
+      const attendeePayload = {
+        userId: studentId,
+        studentId,
+        name: getStudentName(),
+        ready: !!(warmupDone && memoryDone),
+        lastSeen: Date.now(),
+        sessionId: waitingSessionId || null
+      };
+      await db.ref(`${syncNodePath}/attendees/${studentId}`).update(attendeePayload);
     }
 
     async function refreshLessonState() {
@@ -584,7 +619,8 @@
         setDoorSignal("open", "המרצה פתח את הדלת. אפשר לעבור מיד לשיעור.");
       }
       updateSessionLine();
-      flushPendingTicket();
+      await flushPendingTicket();
+      await upsertAttendeePresence();
     }
 
     function startLessonStatePolling() {
@@ -598,36 +634,26 @@
         firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
       }
       db = firebase.database();
-      const doorKey = `${courseId}_${unitId}`;
-      activeDoorRef = db.ref(`active_sessions/${doorKey}`);
+      const syncNodePath = getSyncNodePath();
+      if (!syncNodePath) return;
+      activeDoorRef = db.ref(syncNodePath);
       activeDoorRef.on("value", snapshot => {
         const data = snapshot.val() || {};
-        if (data?.sessionId) waitingSessionId = String(data.sessionId).trim();
+        const nextSessionId = String(data?.sessionId || "").trim();
+        if (nextSessionId) waitingSessionId = nextSessionId;
         updateSessionLine();
-        const entryPolicy = String(data?.entryPolicy || "ticket_only").toLowerCase();
-        if (entryPolicy === "open_all") {
+        const doorOpen = !!data?.door_open;
+        const sessionActive = !!data?.session_active;
+        if (doorOpen) {
           setDoorSignal("open", "המרצה פתח את הדלת לכל הסטודנטים.");
-        } else if (String(data?.status || "").toLowerCase() === "active") {
+          attemptRedirect();
+        } else if (sessionActive) {
           setDoorSignal("auto", "השיעור פעיל. השלמת המשימה תכניס אותך אוטומטית.");
         } else {
           setDoorSignal("closed", "השיעור עדיין לא נפתח. אפשר להשלים את משימות הכניסה בינתיים.");
         }
         flushPendingTicket();
-      });
-    }
-
-    function initGoldenTicket() {
-      const button = document.getElementById("generateTicketBtn");
-      button.addEventListener("click", async () => {
-        persistStudentName();
-        const code = buildGoldenTicket();
-        const answer = `${code} | ${selectedWarmupAnswer || "Warmup complete"}`;
-        document.getElementById("ticketCode").textContent = code;
-        document.getElementById("ticketStatus").textContent = "הכרטיס הונפק ונשמר עבורך.";
-        ticketGenerated = true;
-        pendingTicketPayload = { answer };
-        await flushPendingTicket();
-        updateReadyState();
+        upsertAttendeePresence();
       });
     }
 
@@ -643,16 +669,20 @@
 
       updateSessionLine();
       initWarmupFallback();
-      initGoldenTicket();
       initManualEnter();
       renderMemoryBoard();
       await loadConfigTitle();
       await loadPreSession();
       initRealtimeDoorListener();
+      await upsertAttendeePresence();
       if (waitingSessionId) {
         await refreshLessonState();
       }
       startLessonStatePolling();
+      if (attendeeHeartbeatTimer) clearInterval(attendeeHeartbeatTimer);
+      attendeeHeartbeatTimer = setInterval(() => {
+        upsertAttendeePresence();
+      }, 8000);
     }
 
     init().catch(() => {
