@@ -11,6 +11,7 @@ Validation performed after deployment of the access-hardening, cockpit split, Ar
 - `6f011ed` — Architect runtime asset loading follow-up
 - `0b35918` — Architect site URL resolution from Netlify request
 - `a5dd70b` — Research Lab boundary cleanup and cockpit separation hardening
+- `0fd41f0` — remove leaked legacy cockpit content from public Research Lab page
 
 ## Production Outcomes
 
@@ -43,12 +44,28 @@ Observed public page markers:
 - Research Lab copy is present (`מעבדת מחקר וביצועים`)
 - research-only explanatory copy is present
 - old UI markers for `tab-btn-config` and `tab-btn-security` are absent
+- leaked legacy strings are absent on both domains (`scope (תחום הרשאה)`, `createdBy`, `Stage Workflow`)
 
 Interpretation:
 
 - `cockpit.html` is now serving as a lecturer-facing Research Lab / performance page
 - config, security, and user-management tabs are no longer exposed on the public Research Lab route
 - admin/system management remains separated into `admin_cockpit.html`
+- both `miled.one` and the Netlify subdomain are now serving the cleaned Research Lab page consistently
+
+### Cockpit Leakage Audit
+
+Checked lecturer-facing surfaces for the same legacy leakage markers:
+
+- `micro_cockpit.html`
+- `macro_cockpit.html`
+- `lecturer_cockpit.html`
+- `lecturer_hub.html`
+
+Outcome:
+
+- no matching leakage markers were found on lecturer-facing cockpit pages
+- matching strings remain only inside `admin_cockpit.html`, where config/security/workflow editing is expected behavior
 
 ### Architect Flow
 
@@ -109,6 +126,7 @@ Command used:
 - Student preview routing markers present in public HTML
 - Access guard markers present in public HTML
 - public Research Lab route no longer exposes old config/security tab markers
+- public Research Lab route no longer exposes leaked legacy config/workflow strings on either production domain
 
 ### Completed via manual browser QA
 
