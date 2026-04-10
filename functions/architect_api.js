@@ -37,7 +37,7 @@ const headers = {
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const SITE_URL = process.env.SITE_URL || "http://localhost:8888";
+const DEFAULT_SITE_URL = process.env.SITE_URL || process.env.URL || "http://localhost:8888";
 const ARCHITECT_DEFAULT_MODEL = "google/gemini-2.0-flash-001";
 const ARCHITECT_DEFAULT_THINKING_BUDGET = 2048;
 
@@ -80,7 +80,14 @@ async function loadArchitectBotConfig() {
   return config?.system?.bot_architect || {};
 }
 
-async function loadArchitectSystemPrompt() {
+function resolveSiteUrl(event) {
+  const proto = event?.headers?.["x-forwarded-proto"] || event?.headers?.["X-Forwarded-Proto"] || "https";
+  const host = event?.headers?.["x-forwarded-host"] || event?.headers?.["X-Forwarded-Host"] || event?.headers?.host;
+  if (host) return `${proto}://${host}`;
+  return DEFAULT_SITE_URL;
+}
+
+async function loadArchitectSystemPrompt(siteUrl) {
   const botConfig = await loadArchitectBotConfig();
   const promptPath = botConfig.systemPromptPath || "docs/BOT_ARCHITECT_SP.md";
   const resolvedPath = path.resolve(process.cwd(), promptPath);
@@ -92,7 +99,7 @@ async function loadArchitectSystemPrompt() {
     };
   }
 
-  const response = await fetch(new URL(`/${promptPath.replace(/^\/+/, "")}`, SITE_URL));
+  const response = await fetch(new URL(`/${promptPath.replace(/^\/+/, "")}`, siteUrl));
   if (!response.ok) {
     throw new Error(`Failed to load prompt file: HTTP ${response.status}`);
   }
@@ -176,10 +183,12 @@ async function handleArchitectChat(event) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: "OpenRouter is not configured" }) };
   }
 
+  const siteUrl = resolveSiteUrl(event);
+
   let botConfig;
   let systemPrompt;
   try {
-    ({ botConfig, systemPrompt } = await loadArchitectSystemPrompt());
+    ({ botConfig, systemPrompt } = await loadArchitectSystemPrompt(siteUrl));
   } catch (error) {
     console.error("ARCHITECT CHAT: failed to load system prompt:", error.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: "Failed to load Architect system prompt" }) };
@@ -212,7 +221,7 @@ async function handleArchitectChat(event) {
       headers: {
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": SITE_URL,
+        "HTTP-Referer": siteUrl,
         "X-Title": "MilEd.One"
       },
       body: JSON.stringify({
