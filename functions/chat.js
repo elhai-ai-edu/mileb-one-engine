@@ -1,10 +1,7 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
-const FUNCTIONS_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(FUNCTIONS_DIR, "..");
-const kernelPath = path.resolve(PROJECT_ROOT, "kernel.txt");
+const kernelPath = path.resolve(process.cwd(), "kernel.txt");
 const kernel = fs.readFileSync(kernelPath, "utf8");
 // functions/chat.js — MilEd.One v5.5
 // Scope-aware authorization + Owner-aware bots + Kernel injection + Logging + Model routing

@@ -25,7 +25,6 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { fileURLToPath } from "url";
 import { getDatabase } from "firebase-admin/database";
 import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
@@ -41,8 +40,6 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const SITE_URL = process.env.SITE_URL || "http://localhost:8888";
 const ARCHITECT_DEFAULT_MODEL = "google/gemini-2.0-flash-001";
 const ARCHITECT_DEFAULT_THINKING_BUDGET = 2048;
-const FUNCTIONS_DIR = path.dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = path.resolve(FUNCTIONS_DIR, "..");
 
 // ─── Firebase init (same pattern as admin-auth.js) ───
 function getDB() {
@@ -63,19 +60,46 @@ function readJsonFile(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
-function loadArchitectBotConfig() {
-  const configPath = path.resolve(PROJECT_ROOT, "config.json");
-  const config = readJsonFile(configPath);
+function readTextFile(filePath) {
+  return fs.readFileSync(filePath, "utf8");
+}
+
+async function loadArchitectBotConfig() {
+  const configPath = path.resolve(process.cwd(), "config.json");
+  if (fs.existsSync(configPath)) {
+    const config = readJsonFile(configPath);
+    return config?.system?.bot_architect || {};
+  }
+
+  const response = await fetch(new URL("/config.json", SITE_URL));
+  if (!response.ok) {
+    throw new Error(`Failed to load config.json: HTTP ${response.status}`);
+  }
+
+  const config = await response.json();
   return config?.system?.bot_architect || {};
 }
 
-function loadArchitectSystemPrompt() {
-  const botConfig = loadArchitectBotConfig();
+async function loadArchitectSystemPrompt() {
+  const botConfig = await loadArchitectBotConfig();
   const promptPath = botConfig.systemPromptPath || "docs/BOT_ARCHITECT_SP.md";
-  const resolvedPath = path.resolve(PROJECT_ROOT, promptPath);
+  const resolvedPath = path.resolve(process.cwd(), promptPath);
+
+  if (fs.existsSync(resolvedPath)) {
+    return {
+      botConfig,
+      systemPrompt: readTextFile(resolvedPath)
+    };
+  }
+
+  const response = await fetch(new URL(`/${promptPath.replace(/^\/+/, "")}`, SITE_URL));
+  if (!response.ok) {
+    throw new Error(`Failed to load prompt file: HTTP ${response.status}`);
+  }
+
   return {
     botConfig,
-    systemPrompt: fs.readFileSync(resolvedPath, "utf8")
+    systemPrompt: await response.text()
   };
 }
 
@@ -155,7 +179,7 @@ async function handleArchitectChat(event) {
   let botConfig;
   let systemPrompt;
   try {
-    ({ botConfig, systemPrompt } = loadArchitectSystemPrompt());
+    ({ botConfig, systemPrompt } = await loadArchitectSystemPrompt());
   } catch (error) {
     console.error("ARCHITECT CHAT: failed to load system prompt:", error.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: "Failed to load Architect system prompt" }) };
@@ -751,7 +775,7 @@ async function handleExport(event) {
   let devMessage = null;
   if (process.env.IS_DEV === "true") {
     try {
-      const configPath = path.resolve(PROJECT_ROOT, "config.json");
+      const configPath = path.resolve(process.cwd(), "config.json");
       const raw = fs.readFileSync(configPath, "utf8");
       const cfg = JSON.parse(raw);
       if (!cfg.universal) cfg.universal = {};
