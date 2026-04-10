@@ -1515,9 +1515,8 @@ async function fetchWaitingPressureForSelectedCourse() {
 
 function startWaitingPressurePolling() {
   if (waitingPressureTimer) clearInterval(waitingPressureTimer);
-  const classId = currentLessonId || getSelectedTeachingContext().classId || null;
-  const unitId = currentUnitId || 'unit_01';
-  startWaitingAttendeesListener(classId, unitId);
+  fetchWaitingPressureForSelectedCourse();
+  waitingPressureTimer = setInterval(fetchWaitingPressureForSelectedCourse, 8000);
 }
 
 function renderPreSessionAudioPreview() {
@@ -2060,19 +2059,12 @@ async function openAllEntryPolicy() {
   setOpenAllGateState(true);
 
   try {
-    await writeActiveDoorState({
-      classId,
-      unitId,
-      sessionId,
-      status: 'active',
-      entryPolicy: 'open_all'
-    });
     await callClassroom({
-      action: 'session_state_update',
+      action: 'gate_open_all',
       sessionId,
-      facultyId,
-      doorStatus: 'open'
+      facultyId
     });
+    if (typeof startPolling === 'function') startPolling();
 
   } catch (e) {
     setOpenAllGateState(false);
@@ -2116,18 +2108,8 @@ async function openSession() {
     sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
     studentURL = studentURL.replace('SESSION_ID', sessionId);
 
-    // Immediate atomic signal for student door listener.
-    if (classId) {
-      // Canonical session signal key: active_sessions/{courseId}_{unitId}
-      await writeActiveDoorState({ classId, unitId, sessionId, status: 'active', entryPolicy: 'open_all' });
-      startWaitingAttendeesListener(classId, unitId);
-    }
-
     const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
     if (!res.ok) {
-      if (classId) {
-        await writeActiveDoorState({ classId, unitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
-      }
       alert("שגיאה בפתיחת שיעור");
       return;
     }
@@ -2141,6 +2123,7 @@ async function openSession() {
       `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
 
     if (classId) loadTemplates(classId);
+    fetchWaitingPressureForSelectedCourse();
     setOpenAllGateState(false);
     renderDJBooth();
     startPolling();
