@@ -3,14 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-
-<title>MilEd.One Cockpit v2 – System Manager</title>
+<title>MilEd.One - Research Lab</title>
 
 <script>document.documentElement.style.visibility = "hidden";</script>
-
 </head>
 
 <body class="management-theme">
@@ -18,12 +15,13 @@
 <div class="panel">
 
 <div class="userbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-  <span>משתמש נוכחי: <span id="currentUser"></span></span>
+  <span>מעבדת מחקר וביצועים</span>
+  <span id="currentUser" style="font-size:12px;color:var(--color-text-muted);"></span>
   <span style="margin-right:auto;"></span>
+  <a href="/lecturer_hub.html" class="btn btn-outline" style="text-decoration:none;font-size:12px;padding:6px 12px;">⌂ פורטל מרצה</a>
   <span id="user-badge"></span>
-  <!-- ─── Super-Admin Role Switcher ─── -->
   <div id="role-switcher" style="position:relative;display:none;">
-    <button onclick="document.getElementById('sw-menu').style.display=document.getElementById('sw-menu').style.display==='none'?'block':'none'"
+    <button onclick="toggleRoleMenu()"
       style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;">
       🔀 החלף תפקיד
     </button>
@@ -37,197 +35,120 @@
   <button onclick="window.MiledAccess?.signOutAndRedirect?.('/index.html')" class="logout-btn">← יציאה</button>
 </div>
 
-<h1>MilEd Cockpit v2</h1>
-
-<!-- ─── TAB NAV ─── -->
-<div class="mgmt-tabs">
-  <button id="tab-btn-skills"   class="mgmt-tab-btn active" onclick="switchTab('skills')">👥 ביצועים ומיומנויות</button>
-  <button id="tab-btn-config"   class="mgmt-tab-btn"        onclick="switchTab('config')">⚙️ הגדרות מערכת</button>
-  <button id="tab-btn-security" class="mgmt-tab-btn"        onclick="switchTab('security')">🔐 אבטחה ומשתמשים</button>
-  <a href="/admin_cockpit.html" class="mgmt-tab-btn" style="text-decoration:none;background:#f1f5f9;color:#64748b;">🛠 ניהול מלא →</a>
-</div>
-
-<!-- ─── CONFIG TAB ─── -->
-<div id="tab-config" style="display:none;">
-
-  <div id="editor"></div>
-
-  <button class="btn btn-blue" onclick="saveConfig()">
-  שמור config לשרת
-  </button>
-
-</div>
-
-<!-- ─── SKILLS / PERFORMANCE TAB ─── -->
-<div id="tab-skills">
-
-  <div class="mgmt-section">
-    <h2>ניתוח ביצועים ומיומנויות</h2>
-    <p>מבט משולב על ביצועי הסטודנטים בקורסים ובמסלולי המיומנויות. לטעינת נתונים — אמת תחילה בלשונית "אבטחה", ואז לחץ "טען".</p>
-    <button class="btn btn-blue" style="margin-bottom:16px;padding:8px 16px;font-size:13px;" onclick="skillsLoaded=false;loadSkillsData()">🔄 טען נתונים</button>
-
-    <!-- Toggle: Course Performance ↔ Skills Profile -->
-    <div class="perf-toggle-row">
-      <button id="perf-btn-course" class="perf-toggle-btn active" onclick="switchPerfView('course')">📋 ביצועים בקורסים</button>
-      <button id="perf-btn-skills" class="perf-toggle-btn"        onclick="switchPerfView('skills')">⭐ פרופיל מיומנויות</button>
+<div class="mgmt-section" style="margin-top:18px;background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 50%,#ecfeff 100%);border:1px solid #dbeafe;">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;">
+    <div style="max-width:680px;">
+      <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#4f46e5;text-transform:uppercase;">Research Lab</div>
+      <h1 style="margin:8px 0 10px;">ניתוח ביצועים ומיומנויות</h1>
+      <p style="margin:0;color:#475569;line-height:1.8;">כאן מוצגים נתוני עומק פדגוגיים בלבד: רמת השתתפות, רמת ביטחון במיומנויות, מגמות שיפור ומוקדי תמיכה. הגדרות מערכת, אבטחה וניהול נשארים בלעדית ב-Admin Cockpit.</p>
     </div>
-
-    <!-- Course Performance View -->
-    <div id="perf-course">
-      <div class="mgmt-section">
-        <h3>סטטוס משימות קורסיות</h3>
-        <p>טעינת נתונים מ-Firebase — פעיל ב-Production עם הרשאות Firebase מלאות</p>
-        <table class="mgmt-table" id="course-perf-table">
-          <thead>
-            <tr>
-              <th>קורס</th>
-              <th>בוט</th>
-              <th>שיחות</th>
-              <th>עדכון אחרון</th>
-              <th>סטטוס</th>
-            </tr>
-          </thead>
-          <tbody id="course-perf-body">
-            <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>
-          </tbody>
-        </table>
-      </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <a href="/macro_cockpit.html#live" class="btn btn-outline" style="text-decoration:none;font-size:12px;padding:7px 14px;">🧭 חזרה למעבדת המחקר במאקרו</a>
+      <button class="btn btn-blue" type="button" onclick="loadInsightsData()" style="font-size:12px;padding:7px 14px;">🔄 רענן נתונים</button>
     </div>
-
-    <!-- Skills Profile View -->
-    <div id="perf-skills" style="display:none;">
-      <div class="mgmt-section">
-        <h3>פרופיל מיומנויות — סקירת כיתה</h3>
-        <p>נתוני אבחון מיומנויות — נטענים מ-<code>skills_sessions/</code> ב-Firebase</p>
-        <table class="mgmt-table" id="skills-perf-table">
-          <thead>
-            <tr>
-              <th>סטודנט</th>
-              <th>בוט מיומנות</th>
-              <th>שכבה</th>
-              <th>פעיל לאחרונה</th>
-              <th>סשן</th>
-            </tr>
-          </thead>
-          <tbody id="skills-perf-body">
-            <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="mgmt-section" style="margin-top:16px;">
-        <h3>פילוח מיומנויות — סטודנטים פעילים</h3>
-        <div id="skills-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:8px;">
-          <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-            <div style="font-size:24px;font-weight:700;color:var(--color-accent);" id="cnt-total">—</div>
-            <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">סטודנטים פעילים</div>
-          </div>
-          <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-            <div style="font-size:24px;font-weight:700;color:#0891b2;" id="cnt-diagnostic">—</div>
-            <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">אבחונים הושלמו</div>
-          </div>
-          <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-            <div style="font-size:24px;font-weight:700;color:#059669;" id="cnt-process">—</div>
-            <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">תהליכי פיתוח</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ─── Skills Heatmap ─── -->
-      <div class="mgmt-section" style="margin-top:20px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-          <h3 style="margin:0;">🌡️ מפת חום מיומנויות — רמת ביטחון לפי גל</h3>
-          <div class="perf-toggle-row" style="margin:0;">
-            <button id="heatmap-btn-w1" class="perf-toggle-btn active" onclick="switchHeatmapWave('w1')">גל 1 — בסיס</button>
-            <button id="heatmap-btn-w2" class="perf-toggle-btn"        onclick="switchHeatmapWave('w2')">גל 2 — אמצע</button>
-            <button id="heatmap-btn-cmp" class="perf-toggle-btn"       onclick="switchHeatmapWave('cmp')">השוואה</button>
-          </div>
-        </div>
-        <div id="heatmap-container">
-          <p style="color:var(--color-text-muted);font-size:13px;">לחץ "טען נתונים" כדי לאתחל את המפה</p>
-        </div>
-      </div>
-
-      <!-- ─── Competency Matrix ─── -->
-      <div class="mgmt-section" style="margin-top:20px;">
-        <h3>📊 מטריצת כשירות כיתתית — סטודנטים × מיומנויות</h3>
-        <p style="font-size:12px;color:var(--color-text-muted);margin-bottom:10px;">
-          כל תא = רמת ביטחון לפי מספר הודעות בשיחה. ↑ = שיפור בין גל 1 לגל 2.
-        </p>
-        <div id="competency-matrix-container">
-          <p style="color:var(--color-text-muted);font-size:13px;">לחץ "טען נתונים" כדי לאתחל את המטריצה</p>
-        </div>
-      </div>
-    </div>
-
   </div>
 </div>
 
-<!-- ─── SECURITY TAB ─── -->
-<div id="tab-security" style="display:none;margin-top:16px;">
+<div id="insights-status" class="mgmt-section" style="display:none;margin-top:16px;padding:12px 14px;font-size:13px;"></div>
 
-  <div class="panel">
-    <h2>ניהול משתמשי מערכת</h2>
-    <p style="color:#888;font-size:13px;margin-bottom:16px;">שינויים נשמרים ישירות ב-Firebase. נדרש אימות מחדש לכל פעולה.</p>
-
-    <!-- Re-auth -->
-    <div class="mgmt-reauth">
-      <p>אימות מחדש נדרש לפעולות אבטחה</p>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <input id="sec-user" type="text" placeholder="שם משתמש" autocomplete="off" style="width:150px;direction:ltr;">
-        <input id="sec-pass" type="password" placeholder="סיסמה" autocomplete="off" style="width:150px;direction:ltr;">
-        <button class="btn btn-blue btn-sm" onclick="loadUsers()">טען משתמשים</button>
-      </div>
-      <p id="sec-msg" class="auth-error" style="margin:8px 0 0;"></p>
+<div class="mgmt-section" style="margin-top:16px;">
+  <h2 style="margin:0;">תמונת מצב כיתתית</h2>
+  <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">מדדים מצרפיים על סמך נתוני מיומנויות וגלי פעילות שנשמרו במערכת.</p>
+  <div id="summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px;">
+    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+      <div id="summary-total-students" style="font-size:24px;font-weight:700;color:var(--color-accent);">-</div>
+      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">סטודנטים פעילים</div>
     </div>
-
-    <!-- Users list -->
-    <div id="users-list" style="margin-bottom:20px;"></div>
-
-    <!-- Create user -->
-    <div id="create-user-form" class="mgmt-section" style="display:none;">
-      <h3 style="margin:0 0 12px;font-size:14px;">+ הוסף משתמש חדש</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-        <input id="new-username" type="text" placeholder="שם משתמש (login)" autocomplete="off"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
-        <input id="new-name" type="text" placeholder="שם לתצוגה"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
-        <input id="new-password" type="password" placeholder="סיסמה ראשונית"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;direction:ltr;">
-        <select id="new-role"
-          style="padding:8px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;">
-          <option value="faculty">faculty</option>
-          <option value="superadmin">superadmin</option>
-        </select>
-      </div>
-      <button class="btn btn-green" onclick="createUser()" style="padding:8px 16px;font-size:13px;">
-        צור משתמש
-      </button>
-      <p id="create-msg" style="font-size:13px;color:#e53;margin:8px 0 0;min-height:18px;"></p>
+    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+      <div id="summary-total-skills" style="font-size:24px;font-weight:700;color:#0891b2;">-</div>
+      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות פעילות</div>
     </div>
-
+    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+      <div id="summary-total-interactions" style="font-size:24px;font-weight:700;color:#0f766e;">-</div>
+      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">אינטראקציות מתועדות</div>
+    </div>
+    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+      <div id="summary-improved" style="font-size:24px;font-weight:700;color:#059669;">-</div>
+      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות במגמת שיפור</div>
+    </div>
+    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
+      <div id="summary-needs-help" style="font-size:24px;font-weight:700;color:#dc2626;">-</div>
+      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות הדורשות תשומת לב</div>
+    </div>
   </div>
+</div>
 
+<div class="mgmt-section" style="margin-top:20px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+    <div>
+      <h2 style="margin:0;">מפת חום מיומנויות</h2>
+      <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">רמת ביטחון והשתתפות בין גלי הפעילות.</p>
+    </div>
+    <div class="perf-toggle-row" style="margin:0;">
+      <button id="heatmap-btn-w1" class="perf-toggle-btn active" onclick="switchHeatmapWave('w1')">גל 1</button>
+      <button id="heatmap-btn-w2" class="perf-toggle-btn" onclick="switchHeatmapWave('w2')">גל 2</button>
+      <button id="heatmap-btn-cmp" class="perf-toggle-btn" onclick="switchHeatmapWave('cmp')">השוואה</button>
+    </div>
+  </div>
+  <div id="heatmap-container">
+    <p style="color:var(--color-text-muted);font-size:13px;">טוען נתונים...</p>
+  </div>
+</div>
+
+<div class="mgmt-section" style="margin-top:20px;">
+  <h2 style="margin:0 0 6px;">מוקדי מחקר והחלטה</h2>
+  <p style="margin:0 0 14px;color:var(--color-text-muted);font-size:12px;">סיכום מהיר של נקודות חוזקה, סיכונים ומוקדי ליווי.</p>
+  <div id="research-focus-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+    <div class="mgmt-section" style="padding:16px;">
+      <div style="font-size:13px;color:#64748b;">טוען מוקדים...</div>
+    </div>
+  </div>
+</div>
+
+<div class="mgmt-section" style="margin-top:20px;">
+  <h2 style="margin:0;">טבלת עדיפויות</h2>
+  <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">המיומנויות עם הביצועים הנמוכים ביותר מוצגות ראשונות כדי לסייע בתעדוף פדגוגי.</p>
+  <table class="mgmt-table" style="margin-top:14px;">
+    <thead>
+      <tr>
+        <th>מיומנות</th>
+        <th>שכבה</th>
+        <th>השתתפות</th>
+        <th>גל 1</th>
+        <th>גל 2</th>
+        <th>מגמה</th>
+        <th>סטטוס</th>
+      </tr>
+    </thead>
+    <tbody id="research-priority-body">
+      <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>
+    </tbody>
+  </table>
 </div>
 
 </div>
 
 <script>
+let currentUser = null;
+let heatmapData = null;
+let heatmapWave = "w1";
 
-let config={}
-let currentUser=null
+function toggleRoleMenu() {
+  const menu = document.getElementById("sw-menu");
+  if (!menu) return;
+  menu.style.display = menu.style.display === "none" ? "block" : "none";
+}
 
-const branchKeys=["courses","faculty","skills","admin"]
+document.addEventListener("click", function (event) {
+  const switcher = document.getElementById("role-switcher");
+  const menu = document.getElementById("sw-menu");
+  if (switcher && menu && !switcher.contains(event.target)) menu.style.display = "none";
+});
 
-// ─── AUTH (Google-only) ───
-
-// ─── INIT ───
-
-async function init(){
+async function init() {
   const access = await (window.__miledCockpitAccessReady || Promise.resolve(null));
   if (!access?.ok) return;
 
-  // Route guard already handles unauthenticated users.
   const auth = window.MiledAccess?.getSessionUser?.()
     || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
     || null;
@@ -241,126 +162,259 @@ async function init(){
   } : null;
 
   if (auth) {
-    document.getElementById("currentUser").innerText =
-      (auth.displayName || auth.email || "") + " (" + auth.role + ")";
-    if (accessRole === "system_admin")
-      document.getElementById("role-switcher").style.display = "";
+    document.getElementById("currentUser").innerText = (auth.displayName || auth.email || "") + " (" + auth.role + ")";
+    if (accessRole === "system_admin") document.getElementById("role-switcher").style.display = "";
   }
-  if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
+  if (window.MiledAuth) window.MiledAuth.renderUserBadge("user-badge");
 
-  const res=await fetch("/config.json")
-  config=await res.json()
-  // Skills tab is default — load its data. Config editor renders lazily on tab click.
-  switchTab('skills');
-
+  await loadInsightsData();
 }
 
-document.addEventListener("click", function(e) {
-  var sw = document.getElementById("role-switcher");
-  var m  = document.getElementById("sw-menu");
-  if (sw && m && !sw.contains(e.target)) m.style.display = "none";
-});
-
-function render(){
-
-const root=document.getElementById("editor")
-
-root.innerHTML=""
-
-branchKeys.forEach(branchKey=>{
-
-const branch=config.branches[branchKey]
-
-let html=`
-
-<div class="panel">
-
-<h2>${branch.title}</h2>
-
-<button class="btn btn-green"
-onclick="addTool('${branchKey}')">
-
-+ הוסף כלי חדש
-
-</button>
-
-`
-
-for(let id in branch.items){
-
-html+=renderTool(branchKey,id,branch.items[id])
-
+function setStatus(message, tone) {
+  const node = document.getElementById("insights-status");
+  if (!node) return;
+  if (!message) {
+    node.style.display = "none";
+    node.textContent = "";
+    return;
+  }
+  const styles = {
+    info: { bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" },
+    success: { bg: "#ecfdf5", border: "#a7f3d0", color: "#047857" },
+    error: { bg: "#fef2f2", border: "#fecaca", color: "#b91c1c" }
+  };
+  const palette = styles[tone] || styles.info;
+  node.style.display = "block";
+  node.style.background = palette.bg;
+  node.style.border = "1px solid " + palette.border;
+  node.style.color = palette.color;
+  node.textContent = message;
 }
 
-html+="</div>"
+async function loadInsightsData() {
+  setStatus("טוען נתוני מחקר...", "info");
+  document.getElementById("heatmap-container").innerHTML = '<p style="color:var(--color-text-muted);font-size:13px;">טוען נתונים...</p>';
+  document.getElementById("research-priority-body").innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>';
 
-root.innerHTML+=html
+  try {
+    const response = await fetch("/api/insights", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: "{}"
+    });
+    const data = await response.json();
 
-})
+    if (!response.ok || !data.ok) {
+      throw new Error(data.error || "Insights unavailable");
+    }
 
+    heatmapData = data;
+    renderSummary(data);
+    renderHeatmap(data);
+    renderResearchFocus(data);
+    renderPriorityTable(data);
+
+    if ((data.insights || []).length === 0) {
+      setStatus("עדיין אין מספיק נתוני מיומנויות להצגת מגמות.", "info");
+      return;
+    }
+
+    setStatus("נתוני המחקר נטענו בהצלחה.", "success");
+  } catch (error) {
+    console.error("RESEARCH LAB LOAD ERROR:", error);
+    document.getElementById("heatmap-container").innerHTML = '<p style="color:#dc2626;font-size:13px;">שגיאה בטעינת מפת החום: ' + escapeHtml(error.message) + '</p>';
+    document.getElementById("research-focus-grid").innerHTML = '<div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;color:#b91c1c;">לא ניתן לטעון את מוקדי המחקר כרגע.</div></div>';
+    document.getElementById("research-priority-body").innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:20px;">שגיאה בטעינת הנתונים</td></tr>';
+    setStatus("טעינת נתוני המחקר נכשלה.", "error");
+  }
 }
 
-function renderTool(branch,id,tool){
+function renderSummary(data) {
+  const insights = data.insights || [];
+  const improvedCount = insights.filter(item => item.improved).length;
+  const needsHelpCount = insights.filter(item => item.needsHelp).length;
 
-return`
+  document.getElementById("summary-total-students").innerText = String(data.totalStudents || 0);
+  document.getElementById("summary-total-skills").innerText = String(insights.length);
+  document.getElementById("summary-total-interactions").innerText = String(data.totalInteractions || 0);
+  document.getElementById("summary-improved").innerText = String(improvedCount);
+  document.getElementById("summary-needs-help").innerText = String(needsHelpCount);
+}
 
-<div class="panel">
+function renderResearchFocus(data) {
+  const insights = data.insights || [];
+  const container = document.getElementById("research-focus-grid");
 
-<div class="field">
-<label>name</label>
+  if (insights.length === 0) {
+    container.innerHTML = '<div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;color:#64748b;">אין עדיין מספיק נתונים ליצירת מוקדי מחקר.</div></div>';
+    return;
+  }
 
-<input
-value="${tool.name||''}"
-onchange="update('${branch}','${id}','name',this.value)">
-</div>
+  const needsSupport = insights.filter(item => item.needsHelp).slice(0, 3);
+  const improving = insights.filter(item => item.improved).slice(0, 3);
+  const highParticipation = insights.filter(item => item.pctParticipated >= 70).slice(0, 3);
 
-<div class="field">
-<label>botType</label>
+  const cards = [
+    {
+      title: "מוקדי תמיכה",
+      tone: "#dc2626",
+      body: needsSupport.length
+        ? needsSupport.map(item => item.botName + ' (' + item.pctParticipated + '% השתתפות)').join("<br>")
+        : "אין כרגע מיומנויות אדומות, אבל כדאי להמשיך מעקב אחרי גלי ההמשך."
+    },
+    {
+      title: "מיומנויות במגמת שיפור",
+      tone: "#059669",
+      body: improving.length
+        ? improving.map(item => item.botName + ' (+' + item.improvementPct + '%)').join("<br>")
+        : "עדיין לא זוהתה מגמת שיפור מובהקת בין הגלים."
+    },
+    {
+      title: "עוגנים חזקים בכיתה",
+      tone: "#2563eb",
+      body: highParticipation.length
+        ? highParticipation.map(item => item.botName + ' (' + item.pctParticipated + '% השתתפות)').join("<br>")
+        : "אין עדיין מיומנויות עם השתתפות גבוהה ועקבית."
+    }
+  ];
 
-<input
-value="${tool.botType||''}"
-onchange="update('${branch}','${id}','botType',this.value)">
-</div>
+  container.innerHTML = cards.map(card => `
+    <div class="mgmt-section" style="padding:16px;">
+      <div style="font-size:13px;font-weight:800;color:${card.tone};margin-bottom:8px;">${card.title}</div>
+      <div style="font-size:13px;line-height:1.8;color:#334155;">${card.body}</div>
+    </div>`).join("");
+}
 
-<div class="field">
-<label>botCategory</label>
+function renderPriorityTable(data) {
+  const insights = data.insights || [];
+  const body = document.getElementById("research-priority-body");
 
-<select
-onchange="update('${branch}','${id}','botCategory',this.value)">
+  if (insights.length === 0) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">אין עדיין נתונים להצגה.</td></tr>';
+    return;
+  }
 
-<option value="universal" ${tool.botCategory==="universal"?"selected":""}>universal</option>
-<option value="course" ${tool.botCategory==="course"?"selected":""}>course</option>
-<option value="task" ${tool.botCategory==="task"?"selected":""}>task</option>
+  body.innerHTML = insights.map(item => `
+    <tr>
+      <td>${escapeHtml(item.botName || item.botType || "-")}</td>
+      <td>${escapeHtml(item.layer || "-")}</td>
+      <td>${Number(item.pctParticipated || 0)}%</td>
+      <td>${formatAverage(item.avgW1)}</td>
+      <td>${formatAverage(item.avgW2)}</td>
+      <td>${renderTrend(item)}</td>
+      <td>${renderStatusBadge(item)}</td>
+    </tr>`).join("");
+}
 
-</select>
-</div>
+function renderTrend(item) {
+  if (item.improved) return '<span class="growth-indicator growth-up">↑ ' + Number(item.improvementPct || 0) + '%</span>';
+  if (Number(item.wave2Count || 0) > 0) return '<span class="growth-indicator growth-same">→ יציב</span>';
+  return '<span style="color:#94a3b8;font-size:12px;">ממתין לגל 2</span>';
+}
 
-<div class="field">
-<label>processMode</label>
+function renderStatusBadge(item) {
+  if (item.needsHelp) return '<span class="badge" style="background:#fef2f2;color:#b91c1c;">דורש תשומת לב</span>';
+  if (item.improved) return '<span class="badge" style="background:#ecfdf5;color:#047857;">במגמת שיפור</span>';
+  return '<span class="badge" style="background:#eff6ff;color:#1d4ed8;">יציב</span>';
+}
 
-<select
-onchange="update('${branch}','${id}','processMode',this.value)">
+function formatAverage(value) {
+  if (typeof value !== "number" || Number.isNaN(value)) return "-";
+  return value.toFixed(1);
+}
 
-<option value="guided" ${tool.processMode==="guided"?"selected":""}>guided</option>
-<option value="adaptive" ${tool.processMode==="adaptive"?"selected":""}>adaptive</option>
-<option value="gated" ${tool.processMode==="gated"?"selected":""}>gated</option>
+function switchHeatmapWave(wave) {
+  heatmapWave = wave;
+  ["w1", "w2", "cmp"].forEach(key => {
+    document.getElementById("heatmap-btn-" + key).classList.toggle("active", key === wave);
+  });
+  if (heatmapData) renderHeatmap(heatmapData);
+}
 
-</select>
-</div>
+function renderHeatmap(data) {
+  const container = document.getElementById("heatmap-container");
+  const insights = data.insights || [];
 
-${tool.botCategory==="task" ? renderStagesEditor(branch,id,tool) : ""}
+  if (insights.length === 0) {
+    container.innerHTML = '<p style="color:var(--color-text-muted);font-size:13px;">אין מספיק נתונים להצגת מפת חום עדיין.</p>';
+    return;
+  }
 
-<div class="field">
-<label>systemPrompt</label>
+  const confColor = { high: "heatmap-green", medium: "heatmap-yellow", low: "heatmap-red" };
+  let rows = "";
 
-<textarea
-onchange="update('${branch}','${id}','systemPrompt',this.value)">
-${tool.systemPrompt||''}
-</textarea>
-</div>
+  insights.forEach(insight => {
+    if (heatmapWave === "w1") {
+      const cls = confColor[insight.w1Confidence] || "heatmap-yellow";
+      rows += `<tr>
+        <td>${escapeHtml(insight.botName)}</td>
+        <td><span class="heatmap-cell ${cls}">${translateConfidence(insight.w1Confidence)}</span></td>
+        <td>${Number(insight.wave1Count || 0)} / ${Number(data.totalStudents || 0)}</td>
+        <td>${formatAverage(insight.avgW1)} הודעות</td>
+        <td>${Number(insight.pctParticipated || 0)}%</td>
+      </tr>`;
+      return;
+    }
 
-<div class="field">
-<label>thinkingBudget</label>
+    if (heatmapWave === "w2") {
+      const cls = insight.wave2Count > 0 ? (confColor[insight.w2Confidence] || "heatmap-yellow") : "";
+      rows += `<tr>
+        <td>${escapeHtml(insight.botName)}</td>
+        <td>${insight.wave2Count > 0 ? `<span class="heatmap-cell ${cls}">${translateConfidence(insight.w2Confidence)}</span>` : '<span style="color:#94a3b8;font-size:12px;">אין נתוני גל 2</span>'}</td>
+        <td>${Number(insight.wave2Count || 0)} / ${Number(data.totalStudents || 0)}</td>
+        <td>${Number(insight.wave2Count || 0) > 0 ? formatAverage(insight.avgW2) + ' הודעות' : '-'}</td>
+        <td>${renderTrend(insight)}</td>
+      </tr>`;
+      return;
+    }
+
+    const w1Class = confColor[insight.w1Confidence] || "heatmap-yellow";
+    const w2Class = insight.wave2Count > 0 ? (confColor[insight.w2Confidence] || "heatmap-yellow") : "";
+    rows += `<tr>
+      <td>${escapeHtml(insight.botName)}</td>
+      <td><span class="heatmap-cell ${w1Class}">${formatAverage(insight.avgW1)}</span></td>
+      <td>${insight.wave2Count > 0 ? `<span class="heatmap-cell ${w2Class}">${formatAverage(insight.avgW2)}</span>` : '<span style="color:#94a3b8;font-size:12px;">-</span>'}</td>
+      <td>${renderTrend(insight)}</td>
+      <td>${renderStatusBadge(insight)}</td>
+    </tr>`;
+  });
+
+  const headers = heatmapWave === "cmp"
+    ? "<tr><th>מיומנות</th><th>גל 1</th><th>גל 2</th><th>מגמה</th><th>סטטוס</th></tr>"
+    : heatmapWave === "w2"
+    ? "<tr><th>מיומנות</th><th>ביטחון גל 2</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>מגמה</th></tr>"
+    : "<tr><th>מיומנות</th><th>ביטחון גל 1</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>השתתפות</th></tr>";
+
+  container.innerHTML = '<table class="heatmap-table mgmt-table"><thead>' + headers + '</thead><tbody>' + rows + '</tbody></table>';
+}
+
+function translateConfidence(level) {
+  if (level === "high") return "גבוה";
+  if (level === "medium") return "בינוני";
+  return "נמוך";
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/firebase-auth.js"></script>
+<script src="/auth-guard.js"></script>
+<script>
+  window.__miledCockpitAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+  init();
+</script>
+</body>
+</html>
 
 <input type="number"
 value="${tool.thinkingBudget||512}"
