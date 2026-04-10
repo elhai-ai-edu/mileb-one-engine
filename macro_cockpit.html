@@ -872,7 +872,7 @@
   cursor: pointer;
 }
 </style>
-<title>MilEd.One – כיתה חכמה</title>
+<title>MilEd.One — Macro Cockpit</title>
 
 </head>
 <body class="management-theme">
@@ -899,7 +899,7 @@
 <div class="top-bar" style="margin-top:0; top:0; z-index:10001;">
   <div>
     <span class="brand">MilEd.One</span>
-    <h1>כיתה חכמה — לוח מרצה</h1>
+    <h1>Macro Cockpit — ניהול אסטרטגי</h1>
   </div>
   <span id="welcome-msg" style="font-size:13px;color:var(--color-text-muted,#6b7280);margin-inline-end:auto;align-self:center;"></span>
   <span id="user-badge" style="align-self:center;"></span>
@@ -911,19 +911,20 @@
     </button>
     <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
       <a href="/student_dashboard.html" onclick="window.MiledAccess?.setPreviewRole?.('student')" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 תצוגת סטודנט</a>
-      <a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 פורטל מרצה</a>
+      <a href="/macro_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧭 Macro Cockpit</a>
       <a href="/institution_dashboard.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
       <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
   </div>
+  <a href="/micro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">← עבור למיקרו</a>
   <a href="/cockpit.html#skills" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
 </div>
 
 <div id="cockpit-nav">
-  <button class="cockpit-tab-btn" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>Stage 1: Syllabus/Setup</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>Stage 2: Planning/Prep</span></button>
-  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>Stage 3: Live Management</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>Stage 4: Post-Class/Analytics</span></button>
+  <button class="cockpit-tab-btn active" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>חיבור קורס-מיומנויות</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>תכנון ראשי</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>מעבדת מחקר</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>שיווק ופרסום</span></button>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {
@@ -936,83 +937,26 @@
 <div class="classroom-grid">
 
   <div class="panel" data-tab-panel="live">
-    <div id="unread-bar" class="unread-bar" role="button" tabindex="0" onclick="openPresenceModal()" onkeypress="if(event.key==='Enter'){openPresenceModal();}">🔔 יש לך 0 הודעות שלא נקראו · 0/30 Students Present</div>
-    <h2>🎛️ שליטת מרצה</h2>
+    <h2>🔬 מעבדת מחקר</h2>
+    <p class="panel-sub">מרחב אסטרטגי לניתוח עומק. תפעול שיעור חי נמצא ב-Micro Cockpit.</p>
 
-    <div class="field" style="margin-bottom:8px;">
-      <label>תמונת מרצה</label>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button id="lecturer-avatar-btn" class="lecturer-avatar-btn" onclick="triggerLecturerAvatarUpload()" title="עדכן תמונת מרצה">
-          <img id="lecturer-avatar-preview" alt="avatar" style="display:none;" />
-          <span id="lecturer-avatar-fallback">🧑‍🏫</span>
-        </button>
-        <input id="lecturer-avatar-input" type="file" accept="image/*" style="display:none;" onchange="handleLecturerAvatarUpload(event)">
-        <span style="font-size:12px;color:#64748b;">לחץ לעדכון או החלפת תמונת פרופיל</span>
-      </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <a href="/micro_cockpit.html" class="btn btn-outline" style="font-size:12px;padding:7px 14px;text-decoration:none;">← עבור למיקרו לניהול שיעור חי</a>
+      <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:12px;padding:7px 14px;">📊 פרופיל מיומנויות כיתתי</button>
+      <a href="/cockpit.html#skills" class="btn btn-outline" style="font-size:12px;padding:7px 14px;text-decoration:none;">📈 אנליטיקה רוחבית</a>
     </div>
 
-    <div class="field">
-      <label>בחר בוט / קורס</label>
-      <select id="botSelect"><option value="">טוען...</option></select>
-    </div>
-
-    <div id="sessionControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
-      <a href="course_units.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ חזרה ליחידות</a>
-      <div id="activeSessionControls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
-        <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל - כולם פנימה! 🔓</button>
-        <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
-        <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן הוראה</button>
+    <div style="margin-top:10px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
+      <div style="font-size:15px;font-weight:800;color:#0f172a;">סביבת מחקר אסטרטגית</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.7;">
+        כאן מתבצע ניתוח מגמות, הפקת תובנות ומעקב איכותני לאורך זמן.
+        ניהול נוכחות, שידורים, פתיחת דלת ושאר פעולות בזמן אמת מנוהלים בלעדית ב-Micro Cockpit.
       </div>
-    </div>
-
-    <div id="sessionInfo" style="display:none">
-      <div class="session-id-box">
-        <strong>קוד שיעור לתלמידים:</strong><br>
-        <span id="sessionIdDisplay"></span>
-      </div>
-    </div>
-
-    <div class="broadcast-box" style="margin-top:12px;">
-      <div class="field" style="margin-bottom:8px;">
-        <label>שידור לכיתה</label>
-        <textarea id="broadcastText" placeholder="כתוב הודעה מיידית לכל הסטודנטים..."></textarea>
-      </div>
-      <div class="broadcast-controls">
-        <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
-        <button class="broadcast-mic-btn" id="broadcastMicBtn" onclick="toggleBroadcastAudio()" title="הקלט שידור קולי לכל הכיתה">🎙️</button>
-        <button class="broadcast-upload-btn" id="broadcastFileBtn" onclick="document.getElementById('broadcastFileInput').click()" title="העלה קובץ לשידור">📎</button>
-        <input type="file" id="broadcastFileInput" style="display:none;" onchange="handleBroadcastFileUpload(event)">
-      </div>
-      <div id="broadcastHistory" class="broadcast-history"></div>
-      <div class="broadcast-gates">
-        <button class="gate-btn gate-open" onclick="openStageAll()" title="פתח שלב לכל הסטודנטים">🔓 פתח שלב לכולם</button>
-        <button class="gate-btn gate-lock" onclick="lockStageAll()" title="נעל שלב לכל הסטודנטים">🔒 נעל שלב לכולם</button>
-        <button class="gate-btn gate-recall" onclick="recallAllStudents()" title="שלח קריאה מיידית לחזרה לשיעור">🚨 קרא לכולם חזרה</button>
-      </div>
-      <div id="recall-status" class="recall-status"></div>
-    </div>
-
-    <hr class="workspace-divider">
-
-    <h2>🏛 במת המרצה</h2>
-    <p class="panel-sub" id="dj-booth-status">DJ Booth הוא כלי אופציונלי לדחיפת שלבים מתוך תבנית שיעור</p>
-    <div id="dj-booth-steps" class="dj-booth-steps">
-      <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
-    </div>
-
-    <div style="margin-top:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:#0f172a;">Heatmap ספרינטים</div>
-          <div style="font-size:12px;color:#64748b;">מבט מהיר על מי תקוע, מי מתקדם מהר, ובאיזה ספרינט הכיתה נמצאת.</div>
-        </div>
-        <button class="btn btn-outline" type="button" onclick="loadPacingHeatmap()" style="font-size:12px;padding:7px 12px;">רענן Heatmap</button>
-      </div>
-      <div id="pacingHeatmap" style="display:grid;gap:8px;">
-        <div class="thread-empty">אין עדיין נתוני pacing פעילים</div>
-      </div>
+      <ul style="margin:0;padding-inline-start:20px;color:#334155;font-size:13px;line-height:1.8;">
+        <li>השוואת דפוסי מיומנות בין יחידות וסבבים</li>
+        <li>זיהוי צווארי בקבוק וחוזקות לאורך סמסטר</li>
+        <li>הכנת חומרים לדוחות מחקר, הנהלה ושיווק</li>
+      </ul>
     </div>
   </div>
 
@@ -1245,8 +1189,8 @@
       </div>
   </div>
 
-  <!-- RIGHT: Live view -->
-  <div class="panel" data-tab-panel="live">
+  <!-- RIGHT: Live view (legacy hidden in Macro mode) -->
+  <div class="panel" data-tab-panel="live_legacy">
     <div class="live-header">
       <h2>👥 מצב הכיתה בזמן אמת</h2>
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -3617,16 +3561,14 @@ async function exportSession() {
   }
 }
 
-switchCockpitTab('live');
+switchCockpitTab('syllabus');
 syncCockpitNavOffset();
 window.addEventListener('resize', syncCockpitNavOffset);
-startWaitingPressurePolling();
 renderPreSessionAudioPreview();
 loadPreSessionMission();
 renderImportedUnits();
 renderSprintDrafts();
 loadCourseMetadataWorkspace();
-loadPacingHeatmap();
 document.getElementById("playlistLessonId")?.addEventListener("change", () => loadCourseMetadataWorkspace());
 
 document.addEventListener("click", (event) => {

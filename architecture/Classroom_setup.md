@@ -8,7 +8,7 @@
 1. עבור ל-https://console.firebase.google.com
 2. **Add project** → שם: `miled-one-classroom`
 3. בתפריט שמאל: **Realtime Database** → Create database → Start in test mode
-4. העתק את ה-URL (נראה כך: `https://miled-one-classroom-default-rtdb.firebaseio.com`)
+4. העתק את ה-URL (נראה כך: `https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app`)
 5. **Project Settings** → Service accounts → **Generate new private key** → הורד JSON
 
 ---
@@ -18,7 +18,7 @@
 ב-Netlify Dashboard → Site settings → Environment variables → הוסף:
 
 ```
-FIREBASE_DB_URL        = https://miled-one-classroom-default-rtdb.firebaseio.com
+FIREBASE_DB_URL        = https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app
 FIREBASE_SERVICE_ACCOUNT = [תוכן קובץ ה-JSON שהורדת — הכל בשורה אחת]
 ```
 

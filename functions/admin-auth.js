@@ -11,8 +11,8 @@
 //   update_password — change a user's password
 //   delete_user     — remove a user record (cannot delete self)
 
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
+import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 const headers = {
   "Access-Control-Allow-Origin":  "*",
@@ -22,14 +22,7 @@ const headers = {
 };
 
 function getDB() {
-  if (!getApps().length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    initializeApp({
-      credential:  cert(serviceAccount),
-      databaseURL: process.env.FIREBASE_DB_URL
-    });
-  }
-  return getDatabase();
+  return getDatabase(ensureFirebaseAdminApp());
 }
 
 // ─── Re-authenticate requester ───

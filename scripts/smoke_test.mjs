@@ -9,9 +9,11 @@
  * Prerequisites:
  *   1. Copy your Firebase service account JSON to scripts/service_account.json
  *      (it is already gitignored — safe to place here temporarily)
- *   OR set the env var:
+ *   OR set one of these env vars:
  *      $env:FIREBASE_SERVICE_ACCOUNT = (Get-Content scripts\service_account.json -Raw)
- *      $env:FIREBASE_DB_URL = "https://miled-one-classroom-default-rtdb.firebaseio.com"
+ *      $env:FIREBASE_SERVICE_ACCOUNT_FILE = "C:\path\to\service-account.json"
+ *      $env:GOOGLE_APPLICATION_CREDENTIALS = "C:\path\to\service-account.json"
+ *      $env:FIREBASE_DB_URL = "https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app"
  *
  * Run:
  *   node scripts/smoke_test.mjs
@@ -30,20 +32,35 @@ const COURSE_ID   = "hebrew_advanced_b_2026";
 const SKILL_KEY   = "s03_logical_structure";       // a known COURSE_SKILLS member
 const SA_PATH     = new URL("./service_account.json", import.meta.url).pathname
                       .replace(/^\/([A-Z]:)/, "$1"); // fix Windows /C: → C:
-const DB_URL      = process.env.FIREBASE_DB_URL
-                  || "https://miled-one-classroom-default-rtdb.firebaseio.com";
+const DEFAULT_DB_URL = "https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app";
+
+function resolveDbUrl() {
+  return process.env.FIREBASE_DB_URL || DEFAULT_DB_URL;
+}
+
+const DB_URL = resolveDbUrl();
 
 // ── CREDENTIALS ──────────────────────────────────────────────────────────────
 function loadServiceAccount() {
   if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     return JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
   }
+
+  const explicitPath = process.env.FIREBASE_SERVICE_ACCOUNT_FILE || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (explicitPath && existsSync(explicitPath)) {
+    return JSON.parse(readFileSync(explicitPath, "utf8"));
+  }
+
   if (existsSync(SA_PATH)) {
     return JSON.parse(readFileSync(SA_PATH, "utf8"));
   }
+
   console.error("❌  No credentials found.");
-  console.error("    Either set $env:FIREBASE_SERVICE_ACCOUNT or place");
-  console.error("    scripts/service_account.json in the scripts/ folder.");
+  console.error("    Provide one of these:");
+  console.error("    1. $env:FIREBASE_SERVICE_ACCOUNT = (Get-Content scripts\\service_account.json -Raw)");
+  console.error("    2. $env:FIREBASE_SERVICE_ACCOUNT_FILE = \"C:\\path\\to\\service-account.json\"");
+  console.error("    3. $env:GOOGLE_APPLICATION_CREDENTIALS = \"C:\\path\\to\\service-account.json\"");
+  console.error("    4. Place scripts/service_account.json in the scripts/ folder.");
   process.exit(1);
 }
 
@@ -97,6 +114,10 @@ function fail(msg) { console.log(`  ❌  FAIL — ${msg}`); }
 // ── MAIN ─────────────────────────────────────────────────────────────────────
 async function run() {
   const sa = loadServiceAccount();
+
+  console.log("\n🔐  Firebase smoke preflight");
+  console.log(`    databaseURL: ${DB_URL}`);
+  console.log(`    projectId: ${sa.project_id || sa.projectId || "unknown"}`);
 
   if (!getApps().length) {
     initializeApp({ credential: cert(sa), databaseURL: DB_URL });

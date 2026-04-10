@@ -3,6 +3,7 @@
  * MilEd.One v9.6.9
  *
  * Routes:
+ *   GET  /api/lexicon/list         — Public: read lexicon catalog
  *   POST /api/lexicon/personalize  — AI curates study set from student familiarity ratings
  *   POST /api/lexicon/submit       — Saves handwriting submission (sentence + photo ref)
  *   POST /api/lexicon/ingest       — Admin: AI enrichment preview (no Firebase write, superadmin auth required)
@@ -23,8 +24,8 @@
  */
 
 import crypto from "crypto";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
+import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -33,16 +34,12 @@ const MODEL              = "google/gemini-2.0-flash-001";
 const headers = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json"
 };
 
 function getDB() {
-  if (!getApps().length) {
-    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    initializeApp({ credential: cert(sa), databaseURL: process.env.FIREBASE_DB_URL });
-  }
-  return getDatabase();
+  return getDatabase(ensureFirebaseAdminApp());
 }
 
 async function authenticate(username, password) {
@@ -71,6 +68,17 @@ async function callAI(system, user, maxTokens = 1500) {
 
 const FIELD_LABELS = { management: "ניהול", optics: "אופטיקה", social: "רווחה חברתית" };
 const DIFF_LABELS  = { 1: "בסיסי", 2: "ביניים", 3: "מתקדם" };
+
+function serializeLexiconSnapshot(snapshotValue) {
+  if (!snapshotValue || typeof snapshotValue !== "object") return [];
+  return Object.entries(snapshotValue).map(([id, word]) => ({ id, ...word }));
+}
+
+async function handleList() {
+  const snap = await getDB().ref("lexicon").get();
+  const words = serializeLexiconSnapshot(snap.exists() ? snap.val() : null);
+  return { statusCode: 200, body: JSON.stringify({ ok: true, words }) };
+}
 
 // ─── PERSONALIZE ───
 async function handlePersonalize(body) {
@@ -397,6 +405,7 @@ export async function handler(event) {
   try {
     let result;
     switch (action) {
+      case "list":         result = await handleList();             break;
       case "personalize":  result = await handlePersonalize(body);  break;
       case "submit":       result = await handleSubmit(body);       break;
       case "ingest":       result = await handleIngest(body);       break;
@@ -405,7 +414,7 @@ export async function handler(event) {
       case "bulk-import":  result = await handleBulkImport(body);   break;
       default:
         return { statusCode: 404, headers,
-          body: JSON.stringify({ error: "Unknown route", valid: ["/personalize","/submit","/add-word","/delete-word","/bulk-import"] }) };
+          body: JSON.stringify({ error: "Unknown route", valid: ["/list","/personalize","/submit","/add-word","/delete-word","/bulk-import"] }) };
     }
     return { ...result, headers };
   } catch (e) {

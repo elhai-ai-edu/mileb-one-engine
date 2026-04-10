@@ -2,6 +2,10 @@
   "name": "miled-one",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "smoke:contracts": "node scripts/smoke_contracts.mjs",
+    "smoke:skills": "node scripts/smoke_test.mjs"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
     "firebase-admin": "^12.0.0",

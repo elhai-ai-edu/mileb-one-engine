@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <title>לקסיקון אקדמי — MilEd.One</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/auth-guard.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Assistant', sans-serif; background: #f0f4ff; min-height: 100vh; color: #1e1b4b; }
@@ -294,7 +298,7 @@ body { font-family: 'Assistant', sans-serif; background: #f0f4ff; min-height: 10
 const DB_URL = "https://miled-one-classroom-default-rtdb.europe-west1.firebasedatabase.app";
 
 // Student identity
-const sessionAuth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+const sessionAuth = window.MiledAccess?.getSessionUser?.() || null;
 let studentId = sessionAuth?.uid
   || sessionAuth?.email?.replace(/[@.]/g, "_")
   || localStorage.getItem("miled_anon_lex_id")
@@ -317,11 +321,8 @@ try { ratings = JSON.parse(localStorage.getItem("lex_ratings_" + studentId) || "
 // ─────────────────────────────
 async function init() {
   try {
-    const res = await fetch(`${DB_URL}/lexicon.json`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (!data) { renderEmpty(); return; }
-    allWords = Object.entries(data).map(([id, w]) => ({ id, ...w }));
+    allWords = await loadLexiconCatalog();
+    if (!allWords.length) { renderEmpty(); return; }
     document.getElementById("word-count-badge").innerText = `${allWords.length} מילים`;
     renderWordGrid();
     updateRatedLabel();
@@ -330,6 +331,64 @@ async function init() {
       `<div class="lex-empty">⚠️ שגיאה בטעינת הלקסיקון: ${escHtml(e.message)}</div>`;
     document.getElementById("word-count-badge").innerText = "שגיאה";
   }
+}
+
+async function loadLexiconCatalog() {
+  try {
+    const res = await fetch("/api/lexicon/list");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data?.ok) throw new Error(data?.error || "Lexicon load failed");
+    return Array.isArray(data.words) ? data.words : [];
+  } catch {
+    return loadLexiconCatalogFromFirebase();
+  }
+}
+
+async function loadLexiconCatalogFromFirebase() {
+  if (!window.firebase || !window.MILED_FIREBASE_CONFIG) {
+    throw new Error("Firebase not ready");
+  }
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+  }
+
+  const authUser = await waitForFirebaseUser();
+  if (!authUser) {
+    throw new Error("No authenticated user");
+  }
+
+  const idToken = await authUser.getIdToken();
+  const res = await fetch(`${DB_URL}/lexicon.json?auth=${encodeURIComponent(idToken)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return Object.entries(data || {}).map(([id, word]) => ({ id, ...word }));
+}
+
+async function waitForFirebaseUser(timeoutMs = 5000) {
+  const currentUser = window.firebase?.apps?.length ? firebase.auth().currentUser : null;
+  if (currentUser) return currentUser;
+
+  if (!window.firebase?.apps?.length || !firebase.auth) return null;
+
+  return new Promise((resolve) => {
+    let finished = false;
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      try { unsubscribe(); } catch {}
+      resolve(firebase.auth().currentUser || null);
+    }, timeoutMs);
+
+    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      try { unsubscribe(); } catch {}
+      resolve(user || null);
+    });
+  });
 }
 
 // ─────────────────────────────

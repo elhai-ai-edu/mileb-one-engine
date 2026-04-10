@@ -224,6 +224,10 @@
       transform: none;
       box-shadow: none;
     }
+    .preview-exit-btn {
+      display: none;
+      width: fit-content;
+    }
     .small-note {
       font-size: 0.84rem;
       color: var(--muted);
@@ -261,6 +265,8 @@
       </div>
       <div class="status-box">
         <div id="doorPill" class="status-pill">מצב דלת: AUTO</div>
+        <div id="previewPill" class="status-pill" style="display:none;background:rgba(245,158,11,0.18);border-color:rgba(245,158,11,0.34);color:#92400e;">תצוגת סטודנט למרצה</div>
+        <button id="previewExitBtn" class="action-btn preview-exit-btn" type="button">חזרה לתצוגה הרגילה</button>
         <div class="status-note" id="doorNote">המערכת ממתינה לפתיחת השיעור או להשלמת משימת הכניסה.</div>
         <div class="small-note" id="sessionLine">sessionId: --</div>
         <div class="small-note" id="unitLine">unitId: --</div>
@@ -321,14 +327,21 @@
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
   <script src="/firebase-init.js"></script>
+  <script src="/auth-guard.js?v=20260409a"></script>
   <script>
     const params = new URLSearchParams(location.search);
+    const gatewayRedirect = `/index.html${params.toString() ? `?${params.toString()}` : ""}`;
+    window.MiledAccess?.enforcePageAccess(["student"], gatewayRedirect);
     const courseId = String(params.get("courseId") || params.get("classId") || "").trim();
     const unitId = String(params.get("unitId") || "unit_01").trim() || "unit_01";
     let waitingSessionId = String(params.get("sessionId") || "").trim();
-    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    const sessionUser = window.MiledAccess?.getSessionUser?.() || null;
+    const canonicalRole = sessionUser?.canonicalRole || window.MiledAccess?.normalizeRole?.(sessionUser?.role) || "";
+    const isStudentPreview = !!window.MiledAccess?.isStudentPreviewEnabled?.(canonicalRole);
+    const previewExitTarget = window.MiledAccess?.getRoleHome?.(canonicalRole) || "/index.html";
     const studentIdKey = `miled_student_id_${courseId || "global"}`;
     const studentNameKey = `miled_student_name_${courseId || "global"}`;
     const studentId = localStorage.getItem(studentIdKey) || (`stu_${Math.random().toString(36).slice(2, 10)}`);
@@ -345,6 +358,19 @@
     let latestDoorSignal = "auto";
     let lessonStateTimer = null;
     let pendingTicketPayload = null;
+
+    if (isStudentPreview) {
+      const previewPill = document.getElementById("previewPill");
+      if (previewPill) previewPill.style.display = "inline-flex";
+      const previewExitBtn = document.getElementById("previewExitBtn");
+      if (previewExitBtn) {
+        previewExitBtn.style.display = "inline-flex";
+        previewExitBtn.addEventListener("click", () => {
+          window.MiledAccess?.clearPreviewRole?.();
+          location.replace(previewExitTarget);
+        });
+      }
+    }
 
     function getSyncKey() {
       if (!courseId) return "";

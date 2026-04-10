@@ -66,6 +66,18 @@
       font-size: 0.82rem;
       font-weight: 700;
     }
+    .preview-exit-btn {
+      border-radius: 999px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(255,255,255,0.96);
+      color: #0f172a;
+      font: inherit;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+    }
     .layout {
       display: grid;
       grid-template-columns: 320px minmax(0, 1fr) 400px;
@@ -295,6 +307,10 @@
       .chat-frame, .presentation-frame { min-height: 540px; }
     }
   </style>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="/firebase-init.js"></script>
+    <script src="/auth-guard.js?v=20260409a"></script>
 </head>
 <body>
   <div class="shell">
@@ -305,6 +321,8 @@
       </div>
       <div class="topbar-chips">
         <div class="chip" id="roleChip">Student View</div>
+        <div class="chip" id="previewChip" style="display:none;background:#fff7ed;color:#9a3412;border-color:#fdba74;">Student Preview</div>
+        <button id="previewExitBtn" class="preview-exit-btn" type="button">חזרה לתצוגה הרגילה</button>
         <div class="chip" id="doorChip">Door: --</div>
         <div class="chip" id="sessionChip">sessionId: --</div>
       </div>
@@ -363,19 +381,61 @@
   <script>
     const params = new URLSearchParams(location.search);
     const sessionId = String(params.get("sessionId") || "").trim();
-    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
-    const role = ["faculty", "institution", "superadmin"].includes(auth?.role) ? "lecturer" : "student";
-    const studentIdKey = `miled_student_id_${sessionId || "global"}`;
-    const studentNameKey = `miled_student_name_${sessionId || "global"}`;
+    const courseIdFromUrl = String(params.get("courseId") || params.get("classId") || "").trim();
+    const unitIdFromUrl = String(params.get("unitId") || "unit_01").trim() || "unit_01";
+    const gatewayRedirect = `/index.html${params.toString() ? `?${params.toString()}` : ""}`;
+    const lessonViewAccessReady = window.MiledAccess?.enforcePageAccess(["student", "lecturer", "institution_admin", "system_admin"], gatewayRedirect);
+    let sessionUser = null;
+    let canonicalRole = "";
+    let isStudentPreview = false;
+    let role = "student";
+    let previewExitTarget = "/index.html";
+    const studentContextKey = courseIdFromUrl || sessionId || "global";
+    const studentIdKey = `miled_student_id_${studentContextKey}`;
+    const studentNameKey = `miled_student_name_${studentContextKey}`;
     const studentId = localStorage.getItem(studentIdKey) || (`stu_${Math.random().toString(36).slice(2, 10)}`);
     localStorage.setItem(studentIdKey, studentId);
-    const studentName = localStorage.getItem(studentNameKey) || auth?.displayName || auth?.name || studentId.slice(0, 8);
+    let studentName = localStorage.getItem(studentNameKey) || studentId.slice(0, 8);
 
     let lessonData = null;
     let refreshTimer = null;
     let heartbeatTimer = null;
     let lastPushedSignature = null;
     let currentGuidance = null;
+
+    async function bootstrapLessonAccess() {
+      const access = await lessonViewAccessReady;
+      if (!access?.ok) return false;
+
+      sessionUser = window.MiledAccess?.getSessionUser?.()
+        || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
+        || null;
+      canonicalRole = access.canonicalRole || sessionUser?.canonicalRole || window.MiledAccess?.normalizeRole?.(sessionUser?.role) || "";
+      isStudentPreview = !!window.MiledAccess?.isStudentPreviewEnabled?.(canonicalRole);
+      role = !isStudentPreview && canonicalRole && canonicalRole !== "student" ? "lecturer" : "student";
+      previewExitTarget = window.MiledAccess?.getRoleHome?.(canonicalRole) || "/index.html";
+      studentName = localStorage.getItem(studentNameKey) || sessionUser?.displayName || sessionUser?.name || studentId.slice(0, 8);
+      localStorage.setItem(studentNameKey, studentName);
+
+      if (isStudentPreview) {
+        const previewChip = document.getElementById("previewChip");
+        if (previewChip) previewChip.style.display = "inline-flex";
+        const previewExitBtn = document.getElementById("previewExitBtn");
+        if (previewExitBtn) {
+          previewExitBtn.style.display = "inline-flex";
+          previewExitBtn.addEventListener("click", () => {
+            window.MiledAccess?.clearPreviewRole?.();
+            location.replace(previewExitTarget);
+          });
+        }
+      }
+
+      return true;
+    }
+
+    function resolveFacultyActorId() {
+      return sessionUser?.id || sessionUser?.uid || sessionUser?.email || lessonData?.facultyId || "";
+    }
 
     function escapeHtml(value) {
       return String(value || "")
@@ -405,6 +465,26 @@
         body: JSON.stringify(payload || {})
       });
       return res.json();
+    }
+
+    function buildWaitingLobbyUrl() {
+      const query = new URLSearchParams();
+      if (courseIdFromUrl) query.set("courseId", courseIdFromUrl);
+      if (unitIdFromUrl) query.set("unitId", unitIdFromUrl);
+      if (sessionId) query.set("sessionId", sessionId);
+      return `/waiting_lobby.html?${query.toString()}`;
+    }
+
+    function syncLessonUrlContext() {
+      if (!lessonData) return;
+      const nextParams = new URLSearchParams(location.search);
+      if (sessionId) nextParams.set("sessionId", sessionId);
+      if (lessonData.courseId) nextParams.set("courseId", lessonData.courseId);
+      if (lessonData.lessonId) nextParams.set("unitId", lessonData.lessonId);
+      const nextUrl = `/lesson_view.html?${nextParams.toString()}`;
+      if (`${location.pathname}${location.search}` !== nextUrl) {
+        history.replaceState({}, "", nextUrl);
+      }
     }
 
     function setChatFrame(courseId, botType) {
@@ -456,7 +536,7 @@
           await callClassroom("POST", {
             action: "resource_push",
             sessionId,
-            facultyId: auth?.id || auth?.uid || auth?.email || lessonData?.facultyId,
+            facultyId: resolveFacultyActorId(),
             resource
           });
           await refreshLesson();
@@ -589,7 +669,7 @@
           await callClassroom("POST", {
             action: "session_state_update",
             sessionId,
-            facultyId: auth?.id || auth?.uid || auth?.email || lessonData?.facultyId,
+            facultyId: resolveFacultyActorId(),
             activeSprint: button.dataset.activateSprint
           });
           await refreshLesson();
@@ -706,6 +786,7 @@
     async function refreshLesson() {
       if (!sessionId) return;
       lessonData = await callClassroom("GET", null, `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}`);
+      syncLessonUrlContext();
       const courseLabel = lessonData?.courseId ? `courseId: ${lessonData.courseId}` : "Faculty Tool";
       document.getElementById("lessonTitle").textContent = lessonData?.playlist?.lessonId || lessonData?.lessonId || "שיעור חי";
       document.getElementById("lessonSubtitle").textContent = `${courseLabel} | ${lessonData?.resources?.length || 0} resources | ${lessonData?.selectedUnits?.length || 0} mapped units`;
@@ -754,7 +835,7 @@
         await callClassroom("POST", {
           action: "resource_push",
           sessionId,
-          facultyId: auth?.id || auth?.uid || auth?.email || lessonData?.facultyId,
+          facultyId: resolveFacultyActorId(),
           clear: true
         });
         await refreshLesson();
@@ -762,7 +843,13 @@
     }
 
     async function init() {
+      const accessOk = await bootstrapLessonAccess();
+      if (!accessOk) return;
       if (!sessionId) {
+        if (courseIdFromUrl) {
+          location.replace(buildWaitingLobbyUrl());
+          return;
+        }
         document.getElementById("lessonSubtitle").textContent = "לא התקבל sessionId. פתח את הדף דרך waiting_lobby.html.";
         return;
       }

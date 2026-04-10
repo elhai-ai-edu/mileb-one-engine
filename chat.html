@@ -10,6 +10,7 @@
 <title>MilEd.One - למידה חכמה</title>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="/auth-guard.js"></script>
 
 </head>
 
@@ -21,9 +22,9 @@
 
 <a href="/students.html">קורסים</a>
 <a href="/skills.html">מיומנויות</a>
-<a href="/lecturer_hub.html">הוראה</a>
+<a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()">הוראה</a>
 <a href="/admin_cockpit.html">ניהול</a>
-<a href="/" onclick="sessionStorage.clear()" style="margin-top:20px;color:#999;font-size:13px;">← יציאה</a>
+<a href="/index.html" onclick="window.MiledAccess?.signOutAndRedirect?.('/index.html'); return false;" style="margin-top:20px;color:#999;font-size:13px;">← יציאה</a>
 </div>
 
 <div class="main">

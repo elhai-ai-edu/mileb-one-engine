@@ -17,36 +17,36 @@
     margin: 0;
     min-height: 100vh;
     font-family: "Assistant", sans-serif;
-    background: radial-gradient(circle at 8% 10%, rgba(29,78,216,0.14), transparent 35%),
-                radial-gradient(circle at 84% 14%, rgba(20,184,166,0.12), transparent 28%),
-                linear-gradient(160deg, #f8fbff 0%, #eef4ff 50%, #f7fafc 100%);
+    background: radial-gradient(circle at 9% 12%, rgba(14,116,144,0.16), transparent 33%),
+                radial-gradient(circle at 84% 14%, rgba(29,78,216,0.18), transparent 35%),
+                linear-gradient(160deg, #f8fbff 0%, #eef4ff 48%, #f1f5f9 100%);
     color: var(--ink);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     padding: 20px;
   }
   .card {
-    width: min(540px, 94vw);
+    width: min(1080px, 96vw);
     border: 1px solid var(--line);
-    border-radius: 18px;
+    border-radius: 22px;
     background: #fff;
-    box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
-    padding: 26px;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+    padding: 30px;
   }
   h1 {
-    margin: 0 0 8px;
-    font-size: 1.65rem;
+    margin: 0 0 7px;
+    font-size: 2rem;
+    letter-spacing: -0.4px;
   }
   p {
     margin: 0;
     color: var(--muted);
-    line-height: 1.65;
+    line-height: 1.7;
   }
   .row {
-    margin-top: 16px;
+    margin-top: 18px;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: center;
     flex-wrap: wrap;
   }
@@ -54,102 +54,434 @@
     border: 1px solid #bfdbfe;
     background: #eff6ff;
     color: #1e3a8a;
-    border-radius: 10px;
-    padding: 9px 14px;
+    border-radius: 12px;
+    padding: 9px 16px;
     font-family: inherit;
     font-weight: 700;
     cursor: pointer;
+    transition: transform .2s ease, box-shadow .2s ease;
+  }
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 16px rgba(30, 58, 138, 0.12);
   }
   .btn.primary {
     border-color: #1d4ed8;
     background: #1d4ed8;
     color: #fff;
   }
+
+  .hero-strip {
+    margin-top: 16px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #dbeafe;
+    background: linear-gradient(100deg, #eff6ff, #f8fafc);
+    font-size: 13px;
+    font-weight: 700;
+    color: #1d4ed8;
+  }
+
+  .loading-screen {
+    margin-top: 22px;
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 22px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  }
+
+  .spinner {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 3px solid #dbeafe;
+    border-top-color: #2563eb;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .roles-grid {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  @media (max-width: 760px) {
+    .roles-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .role-card {
+    border: 1px solid #dbeafe;
+    border-top: 5px solid #1d4ed8;
+    border-radius: 18px;
+    padding: 18px;
+    text-align: right;
+    background: linear-gradient(145deg, #ffffff, #f8fbff);
+    cursor: pointer;
+    transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  }
+
+  .role-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.14);
+    border-color: #93c5fd;
+  }
+
+  .role-card.student { border-top-color: #2563eb; }
+  .role-card.lecturer { border-top-color: #7c3aed; }
+  .role-card.mgmt { border-top-color: #0f766e; }
+  .role-card.admin { border-top-color: #ea580c; }
+
+  .role-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .role-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: #eff6ff;
+    border: 1px solid #dbeafe;
+  }
+
+  .role-title {
+    font-size: 1.26rem;
+    font-weight: 800;
+    color: #0f172a;
+  }
+
+  .role-sub {
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #475569;
+    margin-bottom: 8px;
+  }
+
+  .role-desc {
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.7;
+    min-height: 54px;
+  }
+
+  .role-cta {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 13px;
+    font-weight: 800;
+    color: #1d4ed8;
+  }
+
   .status {
-    margin-top: 12px;
-    min-height: 18px;
-    font-size: 0.9rem;
+    margin-top: 14px;
+    min-height: 20px;
+    font-size: 0.95rem;
     color: #1e40af;
   }
   .status.error { color: #b91c1c; }
+  .status.ok { color: #166534; }
+
+  .hidden {
+    display: none !important;
+  }
 </style>
 </head>
 <body>
   <div class="card">
     <h1>MilEd.One</h1>
-    <p id="subtitle">בודק מסלול כניסה...</p>
+    <p id="subtitle">התחברות מאובטחת ולאחריה בחירת תפקיד ידנית.</p>
+    <div class="hero-strip" id="heroStrip">כניסה למערכת מתבצעת דרך Google בלבד ובהתאם להרשאות שהוגדרו.</div>
+
+    <div class="loading-screen" id="loadingScreen">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>בודק התחברות והרשאות...</p>
+    </div>
+
     <div class="row" id="actions" style="display:none;">
       <button class="btn primary" id="googleBtn" type="button">כניסה עם Google</button>
     </div>
+
+    <section class="roles-grid hidden" id="roleSelector" aria-live="polite">
+      <button class="role-card student" type="button" data-target-role="student">
+        <div class="role-head">
+          <div class="role-title">סטודנט</div>
+          <div class="role-icon">🎓</div>
+        </div>
+        <div class="role-sub">Student</div>
+        <div class="role-desc">למידה אישית, תרגול מיומנויות והתקדמות במסלול הקורס. למרצים ומנהלים זו תצוגת preview.</div>
+        <div class="role-cta">כניסה לתצוגת הסטודנט ←</div>
+      </button>
+
+      <button class="role-card lecturer" type="button" data-target-role="lecturer">
+        <div class="role-head">
+          <div class="role-title">מרצה</div>
+          <div class="role-icon">🧑‍🏫</div>
+        </div>
+        <div class="role-sub">Lecturer</div>
+        <div class="role-desc">ניהול שיעורים, כלי AI להוראה, מחקר ופרסום תוצרי הוראה.</div>
+        <div class="role-cta">כניסה לפורטל הסגל ←</div>
+      </button>
+
+      <button class="role-card mgmt" type="button" data-target-role="institution_admin">
+        <div class="role-head">
+          <div class="role-title">הנהלה</div>
+          <div class="role-icon">🏛️</div>
+        </div>
+        <div class="role-sub">Management</div>
+        <div class="role-desc">תצוגת מדדים מוסדית, השוואות כיתות ודוחות ROI לתהליכי קבלת החלטות.</div>
+        <div class="role-cta">כניסה ללוח הנהלה ←</div>
+      </button>
+
+      <button class="role-card admin" type="button" data-target-role="system_admin">
+        <div class="role-head">
+          <div class="role-title">ניהול מערכת</div>
+          <div class="role-icon">🛠️</div>
+        </div>
+        <div class="role-sub">System Admin</div>
+        <div class="role-desc">ניהול הרשאות, הגדרות מערכת, תצורה רוחבית ואבטחת פלטפורמה.</div>
+        <div class="role-cta">כניסה לקוקפיט ניהול ←</div>
+      </button>
+    </section>
+
     <div class="status" id="statusLine"></div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="/firebase-init.js"></script>
-  <script src="/firebase-auth.js"></script>
+  <script src="/auth-guard.js?v=20260409a"></script>
+  <script src="/firebase-auth.js?v=20260409a"></script>
   <script>
-    function normalizeRole(rawRole) {
-      const role = String(rawRole || "").trim().toLowerCase();
-      if (role === "student") return "student";
-      if (["faculty", "lecturer"].includes(role)) return "lecturer";
-      if (["institution", "institution_admin"].includes(role)) return "institution_admin";
-      if (["superadmin", "system_admin"].includes(role)) return "system_admin";
-      return "student";
+    function hasFastTrackParams(params) {
+      return params.has("courseId");
     }
 
-    function routeByRole(rawRole) {
-      const role = normalizeRole(rawRole);
-      if (role === "lecturer") {
-        location.replace("/lecturer_hub.html");
+    function routeToUnauthorized() {
+      location.replace("/unauthorized.html");
+    }
+
+    function routeFastTrack(params) {
+      const query = params.toString();
+      location.replace(`/waiting_lobby.html?${query}`);
+    }
+
+    function setStudentPreviewMode(enabled) {
+      if (!window.MiledAccess) return;
+      if (enabled) window.MiledAccess.setPreviewRole("student");
+      else window.MiledAccess.clearPreviewRole();
+    }
+
+    function setViewState(view) {
+      const loadingScreen = document.getElementById("loadingScreen");
+      const actions = document.getElementById("actions");
+      const selector = document.getElementById("roleSelector");
+
+      loadingScreen.classList.toggle("hidden", view !== "loading");
+      selector.classList.toggle("hidden", view !== "roles");
+      actions.style.display = view === "login" ? "flex" : "none";
+    }
+
+    function routeBySelectedRole(targetRole, sourceContext = null) {
+      const previewStudent = targetRole === "student" && ["lecturer", "institution_admin", "system_admin"].includes(sourceContext?.canonicalRole || "");
+      setStudentPreviewMode(previewStudent);
+
+      if (targetRole === "system_admin") {
+        location.replace("/admin_cockpit.html");
         return;
       }
-      if (role === "institution_admin") {
+      if (targetRole === "institution_admin") {
         location.replace("/institution_dashboard.html");
         return;
       }
-      if (role === "system_admin") {
-        location.replace("/admin_cockpit.html");
+      if (targetRole === "lecturer") {
+        location.replace("/lecturer_hub.html");
         return;
       }
       location.replace("/student_dashboard.html");
     }
 
-    function fastTrackMoodleEntry(params) {
-      const hasCourseId = params.has("courseId");
-      const hasUnitId = params.has("unitId");
-      if (!hasCourseId || !hasUnitId) return false;
-      const query = params.toString();
-      location.replace(`/waiting_lobby.html?${query}`);
-      return true;
+    function canAccessTargetRole(canonicalRole, targetRole) {
+      const levels = {
+        student: 0,
+        lecturer: 1,
+        institution_admin: 2,
+        system_admin: 3
+      };
+      const userLevel = levels[canonicalRole] ?? -1;
+      const targetLevel = levels[targetRole] ?? 99;
+      return userLevel >= targetLevel;
     }
 
-    async function mainGateFlow() {
+    function showRoleSelector(context) {
+      const statusLine = document.getElementById("statusLine");
+      const subtitle = document.getElementById("subtitle");
+      const selector = document.getElementById("roleSelector");
+
+      setViewState("roles");
+      selector.classList.remove("hidden");
+      subtitle.textContent = "בחרו תפקיד כניסה. הרשאות ייבדקו בלחיצה על כל כרטיס.";
+      statusLine.classList.remove("error", "ok");
+      statusLine.textContent = `התחברת כ-${context?.email || "משתמש"}.`;
+
+      selector.querySelectorAll("[data-target-role]").forEach((button) => {
+        button.onclick = async () => {
+          const targetRole = button.getAttribute("data-target-role");
+          statusLine.classList.remove("error", "ok");
+          statusLine.textContent = "בודק הרשאה לתפקיד שנבחר...";
+
+          let latestContext = null;
+          try {
+            latestContext = await window.MiledAccess.resolveAccess();
+          } catch (error) {
+            statusLine.classList.add("error");
+            statusLine.textContent = "שגיאת אימות. נסו שוב.";
+            return;
+          }
+
+          if (!latestContext?.authenticated) {
+            statusLine.classList.add("error");
+            statusLine.textContent = "המשתמש אינו מחובר. התחברו מחדש.";
+            setViewState("login");
+            return;
+          }
+
+          if (!latestContext?.authorized || !latestContext?.canonicalRole) {
+            routeToUnauthorized();
+            return;
+          }
+
+          window.MiledAccess.persistSession(latestContext.authUser, latestContext.canonicalRole, latestContext.institutionId);
+
+          if (!canAccessTargetRole(latestContext.canonicalRole, targetRole)) {
+            statusLine.classList.add("error");
+            statusLine.textContent = "אין הרשאה לתפקיד זה. ניתן לבחור תפקיד אחר. בחירת סטודנט אצל מרצה/הנהלה פותחת תצוגת preview בלבד.";
+            return;
+          }
+
+          statusLine.classList.add("ok");
+          statusLine.textContent = "הרשאה אושרה. מעביר...";
+          routeBySelectedRole(targetRole, latestContext);
+        };
+      });
+    }
+
+    async function evaluateAccessForEntry(params) {
+      if (!window.MiledAccess?.resolveAccess) {
+        throw new Error("Missing access guard module");
+      }
+
+      const context = await window.MiledAccess.resolveAccess();
+      if (!context.authenticated) return false;
+
+      if (!context.authorized) {
+        routeToUnauthorized();
+        return { handled: true, context: null };
+      }
+
+      window.MiledAccess.persistSession(context.authUser, context.canonicalRole, context.institutionId);
+
+      if (hasFastTrackParams(params)) {
+        if (context.canonicalRole === "student") {
+          setStudentPreviewMode(false);
+          routeFastTrack(params);
+          return { handled: true, context: null };
+        }
+
+        if (["lecturer", "institution_admin", "system_admin"].includes(context.canonicalRole)) {
+          setStudentPreviewMode(true);
+          routeFastTrack(params);
+          return { handled: true, context: null, previewMode: true };
+        }
+
+        return { handled: false, context, fastTrackBlocked: true };
+      }
+
+      return { handled: false, context };
+    }
+
+    async function mainGateFlow(params) {
       const subtitle = document.getElementById("subtitle");
       const statusLine = document.getElementById("statusLine");
-      const actions = document.getElementById("actions");
       const googleBtn = document.getElementById("googleBtn");
 
-      subtitle.textContent = "שער ראשי: התחברו לפי תפקיד כדי להמשיך.";
+      subtitle.textContent = "שער ראשי: התחברו עם Google, ולאחר מכן בחרו תפקיד ידנית.";
+      setViewState("loading");
 
-      const existing = window.MiledAuth?.getUser?.();
-      if (existing?.role) {
-        statusLine.textContent = "זוהתה התחברות קיימת, מעביר למסך הבית...";
-        routeByRole(existing.role);
+      try {
+        await window.MiledAuth?.completeRedirectSignIn?.();
+      } catch (error) {
+        statusLine.classList.add("error");
+        statusLine.textContent = error?.message || "שגיאה בהשלמת התחברות Google";
+        setViewState("login");
         return;
       }
 
-      actions.style.display = "flex";
+      try {
+        const result = await evaluateAccessForEntry(params);
+        if (result.handled) return;
+        if (result.context) {
+          if (result.fastTrackBlocked) {
+            subtitle.textContent = "קישור הקורס הישיר מיועד לסטודנטים. התחברת בחשבון שאינו סטודנט.";
+          }
+          showRoleSelector(result.context);
+          return;
+        }
+      } catch (error) {
+        statusLine.classList.add("error");
+        statusLine.textContent = "שגיאת אימות. נסו להתחבר מחדש.";
+      }
+
+      const existing = window.MiledAuth?.getUser?.() || null;
+      if (existing?.email) {
+        statusLine.textContent = "זוהתה התחברות קיימת. ממתין לבחירת תפקיד...";
+      }
+
+      setViewState("login");
       googleBtn.addEventListener("click", async () => {
         googleBtn.disabled = true;
         statusLine.classList.remove("error");
         statusLine.textContent = "מתחבר...";
+        setViewState("loading");
         try {
-          const user = await window.MiledAuth.signInWithGoogle();
-          routeByRole(user?.role || "student");
+          const signInResult = await window.MiledAuth.signInWithGoogle();
+          if (signInResult?.redirecting) {
+            statusLine.textContent = "מעביר להתחברות Google...";
+            return;
+          }
+          const result = await evaluateAccessForEntry(params);
+          if (result.handled) return;
+          if (result.context) {
+            showRoleSelector(result.context);
+            return;
+          }
+          statusLine.classList.add("error");
+          statusLine.textContent = "לא ניתן להשלים אימות משתמש.";
+          setViewState("login");
+          googleBtn.disabled = false;
         } catch (error) {
           statusLine.classList.add("error");
           statusLine.textContent = error?.message || "שגיאה בהתחברות";
+          setViewState("login");
           googleBtn.disabled = false;
         }
       });
@@ -157,8 +489,7 @@
 
     (function initRouter() {
       const params = new URLSearchParams(location.search);
-      if (fastTrackMoodleEntry(params)) return;
-      mainGateFlow();
+      mainGateFlow(params);
     }());
   </script>
 </body>

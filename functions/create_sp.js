@@ -73,23 +73,19 @@ export async function handler(event) {
     }
 
     const engine = config.engine || {};
-    const functionPolicies = config.functionPolicies || {};
 
-    // Resolve function key:
-    // prefer explicit answers.function, else answers.channel, else "teaching"
+    // Resolve function key for reporting only.
     const functionKey =
       (typeof answers.function === "string" && answers.function.trim()) ||
       (typeof answers.channel === "string" && answers.channel.trim()) ||
       "teaching";
 
-    const policy = functionPolicies[functionKey] || {};
-
-    // Optional: export = public kernel only
+    // Optional: export = strip private kernel notes while keeping the active phase binding.
     const engineForBuild = exportPublicOnly
       ? {
           ...engine,
           kernel: {
-            public: engine?.kernel?.public || {},
+            ...(engine?.kernel || {}),
             private: {},
           },
         }
@@ -99,7 +95,6 @@ export async function handler(event) {
     const { spi, systemPrompt, meta } = buildSPI({
       answers,
       engine: engineForBuild,
-      policy,
       kernelText, // keep or set "" if you want kernel only in chat.js
     });
 

@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <title>פאזל טקסט — MilEd.One</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
 <style>
 /* ─── Base ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -957,18 +960,70 @@ let lexiconMap = {}; // word (lowercase) → { word, meaning, id }
 
 async function loadLexiconHighlights() {
   try {
-    const res = await fetch(`${DB_URL}/lexicon.json`);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (!data) return;
+    const entries = await loadLexiconEntries();
+    if (!entries.length) return;
 
     // Build lookup map (longest words first to avoid partial matches)
-    const entries = Object.entries(data).map(([id, w]) => ({ id, ...w }));
     entries.sort((a, b) => b.word.length - a.word.length);
     entries.forEach(w => { if (w.word) lexiconMap[w.word.trim()] = w; });
 
     applyLexiconHighlights();
   } catch { /* non-fatal — lexicon integration is additive only */ }
+}
+
+async function loadLexiconEntries() {
+  try {
+    const res = await fetch("/api/lexicon/list");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data?.ok || !Array.isArray(data.words)) return [];
+    return data.words.slice();
+  } catch {
+    return loadLexiconEntriesFromFirebase();
+  }
+}
+
+async function loadLexiconEntriesFromFirebase() {
+  if (!window.firebase || !window.MILED_FIREBASE_CONFIG) return [];
+
+  if (!firebase.apps.length) {
+    firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+  }
+
+  const authUser = await waitForFirebaseUser();
+  if (!authUser) return [];
+
+  const idToken = await authUser.getIdToken();
+  const res = await fetch(`${DB_URL}/lexicon.json?auth=${encodeURIComponent(idToken)}`);
+  if (!res.ok) return [];
+
+  const data = await res.json();
+  return Object.entries(data || {}).map(([id, word]) => ({ id, ...word }));
+}
+
+async function waitForFirebaseUser(timeoutMs = 5000) {
+  const currentUser = window.firebase?.apps?.length ? firebase.auth().currentUser : null;
+  if (currentUser) return currentUser;
+
+  if (!window.firebase?.apps?.length || !firebase.auth) return null;
+
+  return new Promise((resolve) => {
+    let finished = false;
+    const timer = setTimeout(() => {
+      if (finished) return;
+      finished = true;
+      try { unsubscribe(); } catch {}
+      resolve(firebase.auth().currentUser || null);
+    }, timeoutMs);
+
+    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      try { unsubscribe(); } catch {}
+      resolve(user || null);
+    });
+  });
 }
 
 function applyLexiconHighlights() {

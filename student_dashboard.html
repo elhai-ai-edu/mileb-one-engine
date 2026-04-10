@@ -351,7 +351,9 @@
   <div class="topbar">
     <span>🧭 לוח החלוץ</span>
     <span style="font-size:11px;color:var(--color-text-muted);margin-right:auto;">מסלול הצמיחה האישי שלך</span>
-    <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn">← יציאה</button>
+    <span id="student-preview-pill" style="display:none;font-size:11px;padding:4px 10px;border-radius:999px;background:#fff7ed;color:#9a3412;border:1px solid #fdba74;">תצוגת סטודנט למרצה</span>
+    <button id="student-preview-exit" onclick="exitStudentPreview()" class="logout-btn" style="display:none;">חזרה לתצוגה הרגילה</button>
+    <button onclick="logoutStudent()" class="logout-btn">← יציאה</button>
   </div>
 
   <div class="container pioneer-container">
@@ -443,12 +445,51 @@
 
     </div>
 
-    <a href="/" onclick="sessionStorage.clear()" class="btn btn-outline" style="font-size:12px;padding:6px 16px;">← חזרה למסך הבית</a>
+    <a href="/index.html" onclick="window.MiledAccess?.signOutAndRedirect?.('/index.html'); return false;" class="btn btn-outline" style="font-size:12px;padding:6px 16px;">← חזרה למסך הבית</a>
 
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="/firebase-init.js"></script>
+<script src="/auth-guard.js?v=20260409a"></script>
 <script>
+
+const studentDashboardAccessReady = window.MiledAccess?.enforcePageAccess(["student"], "/index.html");
+
+let sessionUser = null;
+let canonicalRole = "";
+let previewExitTarget = "/index.html";
+
+async function bootstrapStudentDashboardAccess() {
+  const access = await studentDashboardAccessReady;
+  if (!access?.ok) return;
+
+  sessionUser = window.MiledAccess?.getSessionUser?.()
+    || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
+    || null;
+  canonicalRole = access.canonicalRole || sessionUser?.canonicalRole || window.MiledAccess?.normalizeRole?.(sessionUser?.role) || "";
+  previewExitTarget = window.MiledAccess?.getRoleHome?.(canonicalRole) || "/index.html";
+
+  if (window.MiledAccess?.isStudentPreviewEnabled?.(canonicalRole)) {
+    const previewPill = document.getElementById("student-preview-pill");
+    if (previewPill) previewPill.style.display = "inline-flex";
+    const previewExit = document.getElementById("student-preview-exit");
+    if (previewExit) previewExit.style.display = "inline-flex";
+  }
+}
+
+bootstrapStudentDashboardAccess();
+
+function exitStudentPreview() {
+  window.MiledAccess?.clearPreviewRole?.();
+  location.replace(previewExitTarget);
+}
+
+function logoutStudent() {
+  window.MiledAccess?.signOutAndRedirect?.('/index.html');
+}
 
 // ─── Student ID ───
 let studentId = sessionStorage.getItem("studentId");

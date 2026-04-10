@@ -25,8 +25,8 @@
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
+import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 const headers = {
   "Access-Control-Allow-Origin":  "*",
@@ -35,16 +35,15 @@ const headers = {
   "Content-Type": "application/json"
 };
 
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+const SITE_URL = process.env.SITE_URL || "http://localhost:8888";
+const ARCHITECT_DEFAULT_MODEL = "google/gemini-2.0-flash-001";
+const ARCHITECT_DEFAULT_THINKING_BUDGET = 2048;
+
 // ─── Firebase init (same pattern as admin-auth.js) ───
 function getDB() {
-  if (!getApps().length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    initializeApp({
-      credential:  cert(serviceAccount),
-      databaseURL: process.env.FIREBASE_DB_URL
-    });
-  }
-  return getDatabase();
+  return getDatabase(ensureFirebaseAdminApp());
 }
 
 // ─── Re-authenticate requester ───
@@ -55,6 +54,185 @@ async function authenticate(db, username, password) {
   if (record.password !== password) return null;
   if (record.role !== "superadmin") return null;
   return record;
+}
+
+function readJsonFile(filePath) {
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function loadArchitectBotConfig() {
+  const configPath = path.resolve(process.cwd(), "config.json");
+  const config = readJsonFile(configPath);
+  return config?.system?.bot_architect || {};
+}
+
+function loadArchitectSystemPrompt() {
+  const botConfig = loadArchitectBotConfig();
+  const promptPath = botConfig.systemPromptPath || "docs/BOT_ARCHITECT_SP.md";
+  const resolvedPath = path.resolve(process.cwd(), promptPath);
+  return {
+    botConfig,
+    systemPrompt: fs.readFileSync(resolvedPath, "utf8")
+  };
+}
+
+function normalizeArchitectHistory(history) {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter((entry) => entry && typeof entry.content === "string" && entry.content.trim())
+    .map((entry) => ({
+      role: entry.role === "assistant" ? "assistant" : "user",
+      content: entry.content.trim()
+    }))
+    .slice(-20);
+}
+
+function resolveArchitectUserMessage(rawMessage, bootstrapMessage) {
+  const message = (rawMessage || "").trim();
+
+  if (message === "__INIT__") {
+    return bootstrapMessage || "התחל בשלב 1. אין כרגע נתוני שאלון זמינים, ולכן עליך לאסוף את נתוני התכנון מהמרצה בשיחה, שאלה אחת בכל פעם, בעברית.";
+  }
+
+  if (message === "__INIT_FREEFORM__") {
+    return "התחל בשלב 1 של איסוף הנתונים ללא שאלון מוקדם. עליך להוביל את המרצה דרך האשכולות הנדרשים, שאלה אחת בכל פעם, בעברית, עד שתהיה מפת משתנים מלאה מספיק למעבר לשלב 2.";
+  }
+
+  return message;
+}
+
+async function loadArchitectSessionContext(db, sessionId) {
+  if (!sessionId) return { bootstrapMessage: null, parsedVariables: null };
+
+  const [bootstrapSnap, variablesSnap] = await Promise.all([
+    db.ref(`architect_sessions/${sessionId}/bootstrapMessage`).get(),
+    db.ref(`architect_sessions/${sessionId}/parsedVariables`).get()
+  ]);
+
+  return {
+    bootstrapMessage: bootstrapSnap.exists() ? bootstrapSnap.val() : null,
+    parsedVariables: variablesSnap.exists() ? variablesSnap.val() : null
+  };
+}
+
+async function saveArchitectConversation(db, sessionId, messages, reply) {
+  if (!sessionId) return;
+
+  const transcript = [
+    ...messages
+      .filter((entry) => entry.role !== "system")
+      .map((entry) => ({ role: entry.role, content: entry.content })),
+    { role: "assistant", content: reply }
+  ].slice(-40);
+
+  await db.ref(`architect_sessions/${sessionId}/conversation`).set({
+    updatedAt: new Date().toISOString(),
+    messages: transcript
+  });
+}
+
+async function handleArchitectChat(event) {
+  let body;
+  try {
+    body = JSON.parse(event.body || "{}");
+  } catch {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "Invalid JSON" }) };
+  }
+
+  const { message, history = [], sessionId } = body;
+
+  if (!message || typeof message !== "string") {
+    return { statusCode: 400, headers, body: JSON.stringify({ error: "message is required" }) };
+  }
+
+  if (!OPENROUTER_API_KEY) {
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "OpenRouter is not configured" }) };
+  }
+
+  let botConfig;
+  let systemPrompt;
+  try {
+    ({ botConfig, systemPrompt } = loadArchitectSystemPrompt());
+  } catch (error) {
+    console.error("ARCHITECT CHAT: failed to load system prompt:", error.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "Failed to load Architect system prompt" }) };
+  }
+
+  const db = getDB();
+  let sessionContext;
+  try {
+    sessionContext = await loadArchitectSessionContext(db, sessionId);
+  } catch (error) {
+    console.error("ARCHITECT CHAT: failed to load session context:", error.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: "Failed to load Architect session context" }) };
+  }
+
+  const normalizedHistory = normalizeArchitectHistory(history);
+  const userMessage = resolveArchitectUserMessage(message, sessionContext.bootstrapMessage);
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...normalizedHistory,
+    { role: "user", content: userMessage }
+  ];
+
+  const model = botConfig.model || ARCHITECT_DEFAULT_MODEL;
+  const maxTokens = Math.max(Number(botConfig.thinkingBudget || ARCHITECT_DEFAULT_THINKING_BUDGET), 512);
+
+  let response;
+  try {
+    response = await fetch(OPENROUTER_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": SITE_URL,
+        "X-Title": "MilEd.One"
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature: 0.4,
+        max_tokens: maxTokens
+      })
+    });
+  } catch (error) {
+    console.error("ARCHITECT CHAT: OpenRouter request failed:", error.message);
+    return { statusCode: 502, headers, body: JSON.stringify({ error: "Failed to reach Architect model" }) };
+  }
+
+  const raw = await response.text();
+  if (!response.ok) {
+    console.error("ARCHITECT CHAT: LLM error:", response.status, raw);
+    return { statusCode: 502, headers, body: JSON.stringify({ error: "Architect model request failed" }) };
+  }
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (error) {
+    console.error("ARCHITECT CHAT: invalid LLM JSON:", error.message);
+    return { statusCode: 502, headers, body: JSON.stringify({ error: "Invalid Architect model response" }) };
+  }
+
+  const reply = data.choices?.[0]?.message?.content?.trim()
+    || "מצטער, לא הצלחתי להחזיר תשובה כרגע.";
+
+  try {
+    await saveArchitectConversation(db, sessionId, messages, reply);
+  } catch (error) {
+    console.error("ARCHITECT CHAT: failed to save conversation:", error.message);
+  }
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      ok: true,
+      reply,
+      botType: botConfig.botId || "bot_architect",
+      botName: botConfig.name || "בונה הבוטים"
+    })
+  };
 }
 
 // =============================================================================
@@ -610,6 +788,7 @@ export async function handler(event) {
   const action = event.path.split("/").filter(Boolean).at(-1);
 
   switch (action) {
+    case "chat":    return handleArchitectChat(event);
     case "export":  return handleExport(event);
     case "intake":  return handleTallyIntake(event);
     case "session": return handleBootstrapSession(event);
@@ -619,7 +798,7 @@ export async function handler(event) {
         headers,
         body: JSON.stringify({
           error: "Unknown architect route",
-          validRoutes: ["/api/architect/export", "/api/architect/intake", "/api/architect/session"]
+          validRoutes: ["/api/architect/chat", "/api/architect/export", "/api/architect/intake", "/api/architect/session"]
         })
       };
   }

@@ -101,7 +101,7 @@
 <div class="topbar">
   <div class="brand">MilEd<span>.</span>One</div>
   <div class="topbar-nav">
-    <a href="/lecturer_hub.html" class="back-link">→ חזרה לפורטל</a>
+    <a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()" class="back-link">→ חזרה לפורטל</a>
     <button class="logout-btn" onclick="logout()">יציאה</button>
   </div>
 </div>
@@ -115,15 +115,14 @@
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/firebase-init.js"></script>
+<script src="/auth-guard.js"></script>
 <script>
 
 // ─── Auth guard ───
-const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
-if (!auth || !["faculty", "institution", "superadmin"].includes(auth.role)) {
-  document.documentElement.style.visibility = "hidden";
-  location.replace("/");
-}
+const myCoursesAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
 
 const DB_URL = window.MILED_FIREBASE_CONFIG?.databaseURL;
 
@@ -212,11 +211,16 @@ function escHtml(s) {
 }
 
 function logout() {
-  sessionStorage.removeItem("miled_auth");
-  location.replace("/");
+  window.MiledAccess?.signOutAndRedirect?.("/index.html");
 }
 
-loadCourses();
+async function initMyCoursesPage() {
+  const access = await myCoursesAccessReady;
+  if (!access?.ok) return;
+  await loadCourses();
+}
+
+initMyCoursesPage();
 </script>
 </body>
 </html>

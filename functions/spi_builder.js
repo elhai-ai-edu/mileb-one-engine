@@ -47,6 +47,35 @@ function normalizeTone(toneRaw) {
   return DEFAULTS.tone;
 }
 
+function normalizePhase(phaseRaw, channel) {
+  const phase = normStr(phaseRaw).toLowerCase();
+
+  if (["diagnostic", "development", "reflection", "design", "analytics"].includes(phase)) {
+    return phase;
+  }
+
+  if (channel === "learning") return "development";
+  if (channel === "teaching") return "design";
+  return "analytics";
+}
+
+function resolveKernelContext(engine, fn, phase) {
+  const kernel = engine?.kernel || {};
+  const universal = kernel?.universal || {};
+  const privateKernel = kernel?.private || {};
+  const phaseBinding = kernel?.binding?.contextEnforcement?.[fn]?.[phase] || {};
+
+  return {
+    universal,
+    privateKernel,
+    phaseBinding,
+    preserveAgency: universal.preserveAgency ?? universal.preserveHumanResponsibility ?? false,
+    noSkipStructuralSteps: universal.noSkipStructuralSteps ?? universal.noSkipPrinciple ?? universal.processIntegrity ?? false,
+    requireCriteriaForEvaluation: universal.evaluationRequiresExplicitCriteria ?? false,
+    noFullSolution: phaseBinding.noFullSolution ?? kernel.noFullSolutionForStudent ?? false,
+  };
+}
+
 function buildLanguageInstruction(lang) {
   if (lang === "ar") return "ענה בערבית (Arabic). אם חייבים מונחים באנגלית – בסוגריים.";
   if (lang === "en") return "Answer in English. If you must use Hebrew terms – put them in parentheses.";
@@ -81,12 +110,11 @@ function buildToneInstruction(tone) {
  * Core: Build SPI + Prompt
  * @param {object} args
  * @param {object} args.answers - questionnaire answers (raw)
- * @param {object} args.engine - config.engine (for kernel flags)
- * @param {object} args.policy - functionPolicies resolved for selected function
+ * @param {object} args.engine - config.engine (for kernel + phase binding)
  * @param {string} args.kernelText - kernel.txt content (optional; if you want to include it here)
  * @returns {{ spi: object, systemPrompt: string, meta: object }}
  */
-export function buildSPI({ answers = {}, engine = {}, policy = {}, kernelText = "" } = {}) {
+export function buildSPI({ answers = {}, engine = {}, kernelText = "" } = {}) {
   // ---- Normalize key fields from answers ----
   const facultyName = pick(answers, ["facultyName", "name", "fullName", "מרצה"], "");
   const facultyId   = pick(answers, ["facultyId", "email", "mail"], "");
@@ -96,22 +124,17 @@ export function buildSPI({ answers = {}, engine = {}, policy = {}, kernelText = 
   const language = normalizeLanguage(pick(answers, ["language", "lang"], DEFAULTS.language));
   const tone = normalizeTone(pick(answers, ["tone", "styleTone"], DEFAULTS.tone));
 
-  // "function" determines policy (learning/teaching/admin) – you can map it however you like
+  // function + phase determine enforcement according to engine.kernel.binding.contextEnforcement
   const fn = pick(answers, ["function", "botFunction"], channel);
+  const phase = normalizePhase(pick(answers, ["phase", "botPhase"], ""), channel);
 
-  // ---- Kernel flags (base + channel policies) ----
-  const publicKernel  = engine?.kernel?.public  || {};
-  const privateKernel = engine?.kernel?.private || {};
+  // ---- Kernel flags + phase binding ----
+  const kernelContext = resolveKernelContext(engine, fn, phase);
 
-  // mergedKernel: private first, public overrides (as you already chose)
-  const mergedKernel = { ...privateKernel, ...publicKernel };
-
-  // Effective policy: policy overrides kernel only where needed
-  // (Example: teaching allows full lesson plans, learning blocks full solutions)
   const effective = {
-    allowFullSolution: policy?.allowFullSolution ?? true,
-    requireCriteriaForEvaluation: policy?.requireCriteriaForEvaluation ?? mergedKernel.evaluationRequiresExplicitCriteria ?? false,
-    noFullSolutionForStudent: mergedKernel.noFullSolutionForStudent ?? false,
+    allowFullSolution: !kernelContext.noFullSolution,
+    requireCriteriaForEvaluation: kernelContext.requireCriteriaForEvaluation,
+    noFullSolutionForStudent: kernelContext.noFullSolution,
   };
 
   // enforce noFullSolution if policy says not allowed
@@ -122,7 +145,8 @@ export function buildSPI({ answers = {}, engine = {}, policy = {}, kernelText = 
   const spi = {
     version: "0.1",
     channel,          // teaching | learning | admin
-    function: fn,     // matches your config.functionPolicies keys
+    function: fn,
+    phase,
     language,
     tone,
     identity: {
@@ -160,10 +184,10 @@ export function buildSPI({ answers = {}, engine = {}, policy = {}, kernelText = 
   if (effective.requireCriteriaForEvaluation) {
     govLines.push("כלל ליבה: אין לבצע הערכה/שיפוט ללא קריטריונים מפורשים. אם אין קריטריונים — בקש אותם או הצע סט קריטריונים אפשרי.");
   }
-  if (mergedKernel.noSkipStructuralSteps) {
+  if (kernelContext.noSkipStructuralSteps) {
     govLines.push("כלל ליבה: אל תדלג על שלבים מבניים; בנה תהליך מדורג.");
   }
-  if (mergedKernel.preserveAgency) {
+  if (kernelContext.preserveAgency) {
     govLines.push("כלל ליבה: שמור על סוכנות המשתמש. העדף העצמה על פני החלפה.");
   }
 
@@ -192,6 +216,7 @@ export function buildSPI({ answers = {}, engine = {}, policy = {}, kernelText = 
       effectiveNoFullSolution,
       channel,
       function: fn,
+      phase,
       language,
       tone,
     },

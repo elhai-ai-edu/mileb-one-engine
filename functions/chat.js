@@ -12,8 +12,8 @@ const kernel = fs.readFileSync(kernelPath, "utf8");
 // + Persist and restore chat history via Firebase
 // + isNewBotSession guard — prevent loading stale history on bot switch
 
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
+import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -34,14 +34,7 @@ const PROFESSIONAL_GROUPS = new Set(["academic", "resilience", "social", "tools"
 // ─────────────────────────────────────────
 
 function getDB() {
-  if (!getApps().length) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    initializeApp({
-      credential: cert(serviceAccount),
-      databaseURL: process.env.FIREBASE_DB_URL
-    });
-  }
-  return getDatabase();
+  return getDatabase(ensureFirebaseAdminApp());
 }
 
 
@@ -315,7 +308,7 @@ function buildFullSystemPrompt(engine, botConfig, hebrewLevel = null, contextBlo
 // MAIN HANDLER
 // ─────────────────────────────────────────
 
-exports.handler = async (event) => {
+export async function handler(event) {
 
   const headers = {
     "Access-Control-Allow-Origin":  "*",

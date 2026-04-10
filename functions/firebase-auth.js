@@ -12,9 +12,10 @@
 // Return users keep their stored role; institutionId is refreshed
 // Valid roles: student | faculty | institution | superadmin
 
-import { initializeApp, getApps, cert } from "firebase-admin/app";
+import { getApps } from "firebase-admin/app";
 import { getAuth }     from "firebase-admin/auth";
 import { getDatabase } from "firebase-admin/database";
+import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 const headers = {
   "Access-Control-Allow-Origin":  "*",
@@ -25,8 +26,7 @@ const headers = {
 
 function getApp() {
   if (!getApps().length) {
-    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    return initializeApp({ credential: cert(sa), databaseURL: process.env.FIREBASE_DB_URL });
+    return ensureFirebaseAdminApp();
   }
   return getApps()[0];
 }

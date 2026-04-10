@@ -19,8 +19,8 @@
  */
 
 import crypto from "crypto";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
+import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -35,11 +35,7 @@ const headers = {
 
 // ─── Firebase ───
 function getDB() {
-  if (!getApps().length) {
-    const sa = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-    initializeApp({ credential: cert(sa), databaseURL: process.env.FIREBASE_DB_URL });
-  }
-  return getDatabase();
+  return getDatabase(ensureFirebaseAdminApp());
 }
 
 async function authenticate(username, password) {

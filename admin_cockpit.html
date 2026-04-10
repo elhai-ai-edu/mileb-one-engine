@@ -7,21 +7,17 @@
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — Admin Cockpit</title>
 
-<!-- ─── Route Guard: requires superadmin (Google auth) ─── -->
-<script>(function(){
-  var auth = null;
-  try { auth = JSON.parse(sessionStorage.getItem("miled_auth")||"null"); } catch(e){}
-  var LEVEL = {student:0,faculty:1,institution:2,superadmin:3};
-  if (!auth || (LEVEL[auth.role]||0) < LEVEL.superadmin) {
-    document.documentElement.style.visibility="hidden"; location.replace("/");
-  }
-}());</script>
+<script>document.documentElement.style.visibility = "hidden";</script>
 
 <!-- ─── Firebase SDK — loaded in <head> so it's available to all body scripts ─── -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/firebase-init.js"></script>
 <script src="/firebase-auth.js"></script>
+<script src="/auth-guard.js"></script>
+<script>
+  window.MiledAccess?.enforcePageAccess(["system_admin"], "/index.html");
+</script>
 
 <style>
 /* Loading spinner for institution/user lists */
@@ -50,6 +46,7 @@
   <span>ניהול מערכת — MilEd.One</span>
   <span id="currentUser" style="font-size:12px;color:var(--color-text-muted);"></span>
   <span style="margin-right:auto;"></span>
+  <a href="/index.html" class="btn btn-outline" style="text-decoration:none;font-size:12px;padding:6px 12px;">⌂ Home</a>
   <span id="user-badge"></span>
   <!-- ─── Super-Admin Role Switcher ─── -->
   <div id="role-switcher" style="position:relative;display:none;">
@@ -58,13 +55,13 @@
       🔀 החלף תפקיד
     </button>
     <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
-      <a href="/student_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 לוח סטודנט</a>
-      <a href="/lecturer_cockpit.html"  style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 קוקפיט מרצה</a>
-      <a href="/institution_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
-      <a href="/admin_cockpit.html"     style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
+      <a href="/student_dashboard.html" onclick="window.MiledAccess?.setPreviewRole?.('student')" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 תצוגת סטודנט</a>
+      <a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 פורטל מרצה</a>
+      <a href="/institution_dashboard.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
+      <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
   </div>
-  <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn">← יציאה</button>
+  <button onclick="reAuthenticate()" class="logout-btn">← יציאה</button>
 </div>
 
 <h1>🛠 לוח ניהול מערכת</h1>
@@ -478,21 +475,43 @@ const branchKeys = ["courses","faculty","skills","admin"];
 // ─── INIT (synchronous session data — runs before Firebase SDK loads) ───
 const SUPER_ADMIN_EMAIL = "elnahum@gmail.com";
 
+function ensureSuperAdminSession(auth) {
+  if (!auth || auth.email !== SUPER_ADMIN_EMAIL) return auth;
+  const canonicalRole = window.MiledAccess?.normalizeRole?.(auth.canonicalRole || auth.role) || "";
+  if (canonicalRole === "system_admin" && auth.role === "superadmin") return auth;
+  if (window.MiledAccess?.persistSession) {
+    window.MiledAccess.persistSession(auth, "system_admin", auth.institutionId || null);
+    return window.MiledAccess.getSessionUser?.() || { ...auth, role: "superadmin", canonicalRole: "system_admin" };
+  }
+  const nextAuth = { ...auth, role: "superadmin", canonicalRole: "system_admin" };
+  sessionStorage.setItem("miled_auth", JSON.stringify(nextAuth));
+  return nextAuth;
+}
+
 async function init(){
   try {
-    const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
+    let auth = window.MiledAccess?.getSessionUser?.() || null;
+    currentUser = auth ? {
+      id: auth.uid || auth.email || "",
+      name: auth.displayName || auth.email || "",
+      email: auth.email || "",
+      role: auth.role || ""
+    } : null;
     // Hardcode bypass: grant admin UI access by email regardless of stored role
-    const isAdmin = (auth && auth.role === "superadmin")
+    const accessRole = window.MiledAccess?.normalizeRole?.(auth?.role) || "";
+    const isAdmin = accessRole === "system_admin"
       || (auth && auth.email === SUPER_ADMIN_EMAIL);
     if (isAdmin) {
+      auth = ensureSuperAdminSession(auth) || auth;
+      currentUser = auth ? {
+        id: auth.uid || auth.email || "",
+        name: auth.displayName || auth.email || "",
+        email: auth.email || "",
+        role: auth.role || ""
+      } : currentUser;
       document.getElementById("role-switcher").style.display = "";
       document.getElementById("currentUser").innerText =
         (auth.displayName || auth.email || "") + " (superadmin)";
-      // Patch session role if it was wrong
-      if (auth && auth.email === SUPER_ADMIN_EMAIL && auth.role !== "superadmin") {
-        auth.role = "superadmin";
-        sessionStorage.setItem("miled_auth", JSON.stringify(auth));
-      }
     }
   } catch {}
   const res = await fetch("/config.json");
@@ -563,16 +582,12 @@ document.addEventListener("click", function(e) {
 
       // Hardcode bypass: allow by email regardless of stored role
       let mAuth = null;
-      try { mAuth = JSON.parse(sessionStorage.getItem("miled_auth") || "null"); } catch {}
-      const isAdmin = (mAuth && mAuth.role === "superadmin")
+      try { mAuth = window.MiledAccess?.getSessionUser?.() || null; } catch {}
+      const isAdmin = ((window.MiledAccess?.normalizeRole?.(mAuth?.role) || "") === "system_admin")
         || fbUser.email === SUPER_ADMIN_EMAIL;
       if (!isAdmin) return;
 
-      // Patch session role if needed
-      if (fbUser.email === SUPER_ADMIN_EMAIL && mAuth && mAuth.role !== "superadmin") {
-        mAuth.role = "superadmin";
-        sessionStorage.setItem("miled_auth", JSON.stringify(mAuth));
-      }
+      mAuth = ensureSuperAdminSession(mAuth) || mAuth;
 
       // Force token refresh so latest claims are active before any writes
       fbUser.getIdToken(/* forceRefresh= */ true)
@@ -622,9 +637,7 @@ async function getFirebaseToken() {
 // ─── Re-authenticate ───
 // Clears all session data and sends back to the landing page for a fresh Google Login.
 function reAuthenticate() {
-  if (window.firebase?.apps?.length) firebase.auth().signOut().catch(() => {});
-  sessionStorage.clear();
-  window.location.href = "/";
+  window.MiledAccess?.signOutAndRedirect?.("/index.html");
 }
 
 function reAuthBtn() {
@@ -1499,18 +1512,27 @@ async function loadLexiconWords() {
   const el = document.getElementById("lex-word-list");
   if (!el) return;
   try {
-    const res = await fetch(`${dbUrl()}/lexicon.json`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    let data = null;
+    try {
+      const res = await fetch("/api/lexicon/list");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      data = await res.json();
+    } catch {
+      const fallbackData = await dbFetch("/lexicon.json");
+      data = {
+        ok: true,
+        words: Object.entries(fallbackData || {}).map(([id, word]) => ({ id, ...word }))
+      };
+    }
     const badge = document.getElementById("lex-count-badge");
 
-    if (!data) {
+    if (!data?.ok || !Array.isArray(data.words) || !data.words.length) {
       el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין מילים עדיין.</p>';
       if (badge) badge.innerText = "0 מילים";
       return;
     }
 
-    lexWords = Object.entries(data).map(([id, w]) => ({ id, ...w }));
+    lexWords = data.words.slice();
     lexWords.sort((a, b) => (a.field || "").localeCompare(b.field || "") || (b.difficulty_level || 1) - (a.difficulty_level || 1));
     if (badge) badge.innerText = `${lexWords.length} מילים`;
 

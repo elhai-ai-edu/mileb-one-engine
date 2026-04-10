@@ -214,16 +214,14 @@
 
 <!-- Firebase SDK for lifecycle writes -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="/firebase-init.js"></script>
+<script src="/auth-guard.js"></script>
 <script>
 
 // ─── Auth guard ───
-const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
-if (!auth || !["faculty", "institution", "superadmin"].includes(auth.role)) {
-  document.documentElement.style.visibility = "hidden";
-  location.replace("/");
-}
+const smartClassAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
 
 const params  = new URLSearchParams(location.search);
 const classId = params.get("classId") || "";
@@ -248,11 +246,14 @@ let db = null;
 
 // ─── Init Firebase for writes ───
 window.addEventListener("load", () => {
-  if (window.firebase && window.MILED_FIREBASE_CONFIG && !firebase.apps.length) {
-    firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
-  }
-  if (window.firebase?.apps?.length) db = firebase.database();
-  if (classId) loadPage();
+  smartClassAccessReady?.then((access) => {
+    if (!access?.ok) return;
+    if (window.firebase && window.MILED_FIREBASE_CONFIG && !firebase.apps.length) {
+      firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+    }
+    if (window.firebase?.apps?.length) db = firebase.database();
+    if (classId) loadPage();
+  });
 });
 
 async function loadPage() {
@@ -407,8 +408,7 @@ function escHtml(s) {
 }
 
 function logout() {
-  sessionStorage.removeItem("miled_auth");
-  location.replace("/");
+  window.MiledAccess?.signOutAndRedirect?.("/index.html");
 }
 
 </script>

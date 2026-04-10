@@ -872,7 +872,7 @@
   cursor: pointer;
 }
 </style>
-<title>MilEd.One – כיתה חכמה</title>
+<title>MilEd.One — Micro Cockpit</title>
 
 </head>
 <body class="management-theme">
@@ -899,7 +899,7 @@
 <div class="top-bar" style="margin-top:0; top:0; z-index:10001;">
   <div>
     <span class="brand">MilEd.One</span>
-    <h1>כיתה חכמה — לוח מרצה</h1>
+    <h1>Micro Cockpit — מרחב השיעור</h1>
   </div>
   <span id="welcome-msg" style="font-size:13px;color:var(--color-text-muted,#6b7280);margin-inline-end:auto;align-self:center;"></span>
   <span id="user-badge" style="align-self:center;"></span>
@@ -911,19 +911,19 @@
     </button>
     <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
       <a href="/student_dashboard.html" onclick="window.MiledAccess?.setPreviewRole?.('student')" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 תצוגת סטודנט</a>
-      <a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 פורטל מרצה</a>
+      <a href="/micro_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 Micro Cockpit</a>
       <a href="/institution_dashboard.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
       <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
   </div>
+  <a href="/macro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">עבור למאקרו →</a>
   <a href="/cockpit.html#skills" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
 </div>
 
 <div id="cockpit-nav">
-  <button class="cockpit-tab-btn" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>Stage 1: Syllabus/Setup</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>Stage 2: Planning/Prep</span></button>
-  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>Stage 3: Live Management</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>Stage 4: Post-Class/Analytics</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>לפני השיעור (Prep)</span></button>
+  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>בתוך השיעור (Live)</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>לאחר השיעור (Post)</span></button>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {

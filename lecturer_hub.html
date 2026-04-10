@@ -4,9 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>פורטל הסגל — MilEd.One</title>
+  <script>document.documentElement.style.visibility = "hidden";</script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; min-height: 100vh; direction: rtl; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.18), transparent 28%),
+        radial-gradient(circle at 88% 20%, rgba(99, 102, 241, 0.2), transparent 34%),
+        linear-gradient(150deg, #f8fbff 0%, #eef4ff 50%, #f1f5f9 100%);
+      min-height: 100vh;
+      direction: rtl;
+      color: #0f172a;
+    }
 
     /* ─── Top bar ─── */
     .topbar {
@@ -35,90 +45,175 @@
 
     /* ─── Page ─── */
     .page {
-      max-width: 900px;
+      max-width: 1150px;
       margin: 0 auto;
-      padding: 48px 24px 80px;
+      padding: 46px 24px 80px;
     }
     .page-greeting {
-      font-size: 28px; font-weight: 700; color: #1e293b; margin-bottom: 4px;
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 6px;
+      letter-spacing: -0.4px;
     }
-    .page-subtitle { font-size: 14px; color: #64748b; margin-bottom: 40px; }
+    .page-subtitle {
+      font-size: 15px;
+      color: #475569;
+      margin-bottom: 28px;
+      line-height: 1.7;
+    }
 
-    /* ─── Branch grid ─── */
-    .branches { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 640px) { .branches { grid-template-columns: 1fr; } }
+    .hero-strip {
+      margin-bottom: 26px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid #dbeafe;
+      background: linear-gradient(115deg, rgba(255,255,255,0.9), rgba(239,246,255,0.92));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hero-strip span {
+      font-size: 13px;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    .hero-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border: 1px solid #bfdbfe;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #1d4ed8;
+      font-size: 13px;
+      font-weight: 800;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
+    }
+    .hero-action:hover {
+      background: #eff6ff;
+    }
+
+    /* ─── Service Cards Grid ─── */
+    .branches {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+    }
+    @media (max-width: 900px) {
+      .branches { grid-template-columns: 1fr; }
+    }
 
     .branch-card {
-      background: #fff;
-      border-radius: 20px;
-      border: 2px solid #e2e8f0;
-      padding: 28px 26px;
+      background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+      border-radius: 24px;
+      border: 1px solid #dbe7ff;
+      padding: 26px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      cursor: pointer;
+      min-height: 250px;
+      gap: 12px;
       text-decoration: none;
       color: inherit;
-      transition: border-color .18s, box-shadow .18s, transform .18s;
+      transition: transform .26s ease, box-shadow .26s ease, border-color .26s ease;
       position: relative;
       overflow: hidden;
+      isolation: isolate;
+      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+    }
+    .branch-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 110% -10%, rgba(59,130,246,0.14), transparent 38%);
+      z-index: -1;
     }
     .branch-card:hover {
-      box-shadow: 0 8px 32px rgba(99,102,241,.13);
-      transform: translateY(-2px);
+      transform: translateY(-6px) scale(1.01);
+      box-shadow: 0 22px 44px rgba(30, 41, 59, 0.15);
+      border-color: #93c5fd;
     }
-    .branch-card.branch-a { border-top: 5px solid #6366f1; }
-    .branch-card.branch-b { border-top: 5px solid #10b981; }
-    .branch-card.branch-a:hover { border-color: #6366f1; }
-    .branch-card.branch-b:hover { border-color: #10b981; }
+    .branch-card.branch-1 { border-top: 5px solid #2563eb; }
+    .branch-card.branch-2 { border-top: 5px solid #7c3aed; }
+    .branch-card.branch-3 { border-top: 5px solid #0f766e; }
+    .branch-card.branch-4 { border-top: 5px solid #ea580c; }
 
-    .branch-icon { font-size: 40px; margin-bottom: 2px; }
-    .branch-tag {
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 1.2px;
+    .branch-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
     }
-    .branch-a .branch-tag { color: #6366f1; }
-    .branch-b .branch-tag { color: #10b981; }
-    .branch-title { font-size: 20px; font-weight: 700; color: #1e293b; line-height: 1.3; }
-    .branch-desc { font-size: 13px; color: #64748b; line-height: 1.65; }
+    .branch-icon {
+      width: 54px;
+      height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      font-size: 28px;
+      background: #eff6ff;
+      border: 1px solid #dbeafe;
+      flex-shrink: 0;
+    }
+    .branch-4 .branch-icon {
+      background: #fff7ed;
+      border-color: #fed7aa;
+    }
+    .soon-chip {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #c2410c;
+      font-weight: 700;
+      align-self: flex-start;
+    }
+    .branch-tag {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.1px;
+      color: #334155;
+      margin-top: 2px;
+    }
+    .branch-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.28;
+    }
+    .branch-desc {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.78;
+      min-height: 72px;
+    }
     .branch-cta {
-      margin-top: 8px;
+      margin-top: auto;
       display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 13px;
-      font-weight: 600;
-    }
-    .branch-a .branch-cta { color: #6366f1; }
-    .branch-b .branch-cta { color: #10b981; }
-
-    /* ─── Branch B sub-items ─── */
-    .branch-b-subitems {
-      display: none;
-      flex-direction: column;
-      gap: 8px;
-      padding-top: 14px;
-      margin-top: 6px;
+      font-weight: 800;
+      color: #1d4ed8;
+      padding-top: 10px;
       border-top: 1px solid #e2e8f0;
     }
-    .branch-b-subitems.open { display: flex; }
-
-    .sub-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      border-radius: 10px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      text-decoration: none;
-      color: #374151;
-      font-size: 13px;
-      font-weight: 500;
-      transition: background .15s, border-color .15s, color .15s;
+    .branch-card.branch-2 .branch-cta { color: #6d28d9; }
+    .branch-card.branch-3 .branch-cta { color: #0f766e; }
+    .branch-card.branch-4 .branch-cta { color: #c2410c; }
+    .branch-card[aria-disabled="true"] {
+      opacity: 0.94;
+      cursor: default;
     }
-    .sub-item:hover { background: #ecfdf5; border-color: #6ee7b7; color: #059669; }
-    .sub-item-icon { font-size: 18px; flex-shrink: 0; }
 
     /* ─── Footer links ─── */
     .footer-links {
@@ -156,87 +251,55 @@
 
 <div class="page">
   <div class="page-greeting">שלום, <span id="greeting-name">מרצה</span> 👋</div>
-  <div class="page-subtitle">בחר את אזור הפעילות שלך</div>
+  <div class="page-subtitle">לוח בקרה אסטרטגי ל-4 ערוצי עבודה: הוראה חיה, כלי AI להוראה, מחקר עומק ומיתוג מקצועי.</div>
+
+  <div class="hero-strip">
+    <span>תוכנית עבודה מומלצת: התחילו בהוראה פעילה, המשיכו לכלי קידום הוראה, והעמיקו במחקר.</span>
+    <a href="/student_dashboard.html" class="hero-action" onclick="return openStudentPreview();">🎓 תצוגת סטודנט</a>
+  </div>
 
   <div class="branches">
 
-    <a href="/my_courses.html" class="branch-card branch-a">
-      <div class="branch-icon">📚</div>
-      <div class="branch-tag">Teaching (Live)</div>
-      <div class="branch-title">הוראה חיה</div>
-      <div class="branch-desc">
-        מעבר לקורסים, בחירת כיתה פעילה וניהול שיעור בזמן אמת דרך הקוקפיט.
+    <a href="/micro_cockpit.html" class="branch-card branch-1">
+      <div class="branch-head">
+        <div class="branch-icon">🖥️</div>
       </div>
-      <div class="branch-cta">my_courses -> lecturer_cockpit <span>←</span></div>
+      <div class="branch-tag">Micro Cockpit</div>
+      <div class="branch-title">מרחב השיעור (Micro Cockpit)</div>
+      <div class="branch-desc">ניהול מחזור שיעור מיידי: לפני השיעור, בתוך השיעור ולאחר השיעור.</div>
+      <div class="branch-cta">כניסה למרחב השיעור <span>←</span></div>
     </a>
 
-    <div class="branch-card branch-b">
-      <div class="branch-icon">🧰</div>
-      <div class="branch-tag">EdTech Tools</div>
-      <div class="branch-title">כלי אדטק</div>
-      <div class="branch-desc">
-        בניית בוטים וכלי ניתוח תוצרים כדי לשפר את איכות ההוראה וההערכה.
+    <a href="/macro_cockpit.html" class="branch-card branch-2">
+      <div class="branch-head">
+        <div class="branch-icon">🧭</div>
       </div>
-      <div class="branch-b-subitems open">
-        <a href="/architect_studio.html" class="sub-item">
-          <span class="sub-item-icon">🏗️</span>
-          <div>
-            <div style="font-weight:700;">Bot Builder</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">יצירת בוטים חדשים לפי שאלון אדריכל</div>
-          </div>
-        </a>
-        <a href="/chat.html?classId=faculty_assessment_model_builder" class="sub-item">
-          <span class="sub-item-icon">📊</span>
-          <div>
-            <div style="font-weight:700;">Output Analysis Bot</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">ניתוח ביצועי סטודנטים ותובנות הערכה</div>
-          </div>
-        </a>
-      </div>
-    </div>
+      <div class="branch-tag">Macro Cockpit</div>
+      <div class="branch-title">ניהול אסטרטגי (Macro Cockpit)</div>
+      <div class="branch-desc">חיבור קורס-מיומנויות, תכנון ראשי, מעבדת מחקר ושיווק אקדמי לאורך זמן.</div>
+      <div class="branch-cta">כניסה למקרו <span>←</span></div>
+    </a>
 
-    <div class="branch-card branch-a">
-      <div class="branch-icon">🔬</div>
+    <a href="/cockpit.html" class="branch-card branch-3">
+      <div class="branch-head">
+        <div class="branch-icon">🔬</div>
+      </div>
       <div class="branch-tag">Research Lab</div>
       <div class="branch-title">מעבדת מחקר</div>
-      <div class="branch-desc">
-        גישה ליומן, נתוני משוב, Heatmap ותיעוד מחקרי של תהליכי הלמידה בכיתה.
-      </div>
-      <div class="branch-b-subitems open">
-        <a href="/lecturer_cockpit.html" class="sub-item">
-          <span class="sub-item-icon">🧾</span>
-          <div>
-            <div style="font-weight:700;">Class Journal</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">מעקב Evidence, יומן שיעור וייצוא נתונים</div>
-          </div>
-        </a>
-        <a href="/cockpit.html" class="sub-item">
-          <span class="sub-item-icon">📈</span>
-          <div>
-            <div style="font-weight:700;">Research Analytics</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">תמונת מצב רוחבית ומדדים מצטברים</div>
-          </div>
-        </a>
-      </div>
-    </div>
+      <div class="branch-desc">ניתוח לוגים, משובים ונתוני עומק לטובת מחקר אקדמי.</div>
+      <div class="branch-cta">כניסה לניתוח נתונים <span>←</span></div>
+    </a>
 
-    <div class="branch-card branch-b">
-      <div class="branch-icon">📣</div>
+    <a href="#" class="branch-card branch-4" aria-disabled="true" onclick="event.preventDefault();">
+      <div class="branch-head">
+        <div class="branch-icon">📣</div>
+        <span class="soon-chip">בקרוב</span>
+      </div>
       <div class="branch-tag">Social / PR</div>
-      <div class="branch-title">מיתוג ושיתוף</div>
-      <div class="branch-desc">
-        הפקת סיכומי הצלחה, ייצוא תובנות ושיתוף הישגים לצרכי קהילה ומיתוג.
-      </div>
-      <div class="branch-b-subitems open">
-        <a href="/lecturer_cockpit.html" class="sub-item">
-          <span class="sub-item-icon">📤</span>
-          <div>
-            <div style="font-weight:700;">Export Success Stories</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:1px;">ייצוא תוצרים ותקצירי הצלחה מהכיתה</div>
-          </div>
-        </a>
-      </div>
-    </div>
+      <div class="branch-title">שיווק ופרסום</div>
+      <div class="branch-desc">ייצוא תובנות והצלחות מהכיתה למיתוג אישי ברשתות חברתיות.</div>
+      <div class="branch-cta">כלי הייצוא בדרך <span>←</span></div>
+    </a>
 
   </div>
 
@@ -247,34 +310,46 @@
   </div>
 </div>
 
-<!-- Firebase init for DB URL (no SDK needed — REST only) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/firebase-init.js"></script>
+<script src="/auth-guard.js"></script>
 <script>
 
-// ─── Auth guard ───
-const auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null");
-const role = String(auth?.role || "").toLowerCase();
-if (!auth || !["faculty", "lecturer", "institution", "institution_admin", "superadmin", "system_admin"].includes(role)) {
-  document.documentElement.style.visibility = "hidden";
-  location.replace("/");
+const lecturerHubAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+
+async function bootstrapLecturerHub() {
+  const access = await lecturerHubAccessReady;
+  if (!access?.ok) return;
+
+  const auth = window.MiledAccess?.getSessionUser?.()
+    || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
+    || null;
+  const role = access.canonicalRole || auth?.canonicalRole || window.MiledAccess?.normalizeRole?.(auth?.role) || "";
+
+  const firstName = (auth?.displayName || "מרצה").split(" ")[0];
+  document.getElementById("greeting-name").textContent = firstName;
+  document.getElementById("user-name").textContent = auth?.displayName || auth?.email || "";
+
+  const avatarEl = document.getElementById("user-avatar");
+  if (auth?.photoURL) { avatarEl.src = auth.photoURL; avatarEl.style.display = ""; }
+
+  if (role === "system_admin") {
+    document.getElementById("admin-link").style.display = "";
+  }
 }
 
-// ─── Populate greeting ───
-const firstName = (auth?.displayName || "מרצה").split(" ")[0];
-document.getElementById("greeting-name").textContent = firstName;
-document.getElementById("user-name").textContent = auth?.displayName || auth?.email || "";
-
-const avatarEl = document.getElementById("user-avatar");
-if (auth?.photoURL) { avatarEl.src = auth.photoURL; avatarEl.style.display = ""; }
-
-if (["superadmin", "system_admin"].includes(role)) {
-  document.getElementById("admin-link").style.display = "";
-}
+bootstrapLecturerHub();
 
 // ─── Logout ───
 function logout() {
-  sessionStorage.removeItem("miled_auth");
-  location.replace("/");
+  window.MiledAccess?.signOutAndRedirect?.("/index.html");
+}
+
+function openStudentPreview() {
+  window.MiledAccess?.setPreviewRole?.("student");
+  location.href = "/student_dashboard.html";
+  return false;
 }
 
 </script>

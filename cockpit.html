@@ -9,15 +9,7 @@
 
 <title>MilEd.One Cockpit v2 – System Manager</title>
 
-<!-- ─── Route Guard: requires superadmin (Google auth) ─── -->
-<script>(function(){
-  var auth = null;
-  try { auth = JSON.parse(sessionStorage.getItem("miled_auth")||"null"); } catch(e){}
-  var LEVEL = {student:0,faculty:1,institution:2,superadmin:3};
-  if (!auth || (LEVEL[auth.role]||0) < LEVEL.superadmin) {
-    document.documentElement.style.visibility="hidden"; location.replace("/");
-  }
-}());</script>
+<script>document.documentElement.style.visibility = "hidden";</script>
 
 </head>
 
@@ -36,13 +28,13 @@
       🔀 החלף תפקיד
     </button>
     <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
-      <a href="/student_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 לוח סטודנט</a>
-      <a href="/lecturer_cockpit.html"  style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 קוקפיט מרצה</a>
-      <a href="/institution_dashboard.html" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
-      <a href="/admin_cockpit.html"     style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
+      <a href="/student_dashboard.html" onclick="window.MiledAccess?.setPreviewRole?.('student')" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 תצוגת סטודנט</a>
+      <a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 פורטל מרצה</a>
+      <a href="/institution_dashboard.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
+      <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
   </div>
-  <button onclick="sessionStorage.clear();location.replace('/')" class="logout-btn">← יציאה</button>
+  <button onclick="window.MiledAccess?.signOutAndRedirect?.('/index.html')" class="logout-btn">← יציאה</button>
 </div>
 
 <h1>MilEd Cockpit v2</h1>
@@ -232,14 +224,26 @@ const branchKeys=["courses","faculty","skills","admin"]
 // ─── INIT ───
 
 async function init(){
+  const access = await (window.__miledCockpitAccessReady || Promise.resolve(null));
+  if (!access?.ok) return;
+
   // Route guard already handles unauthenticated users.
-  let auth = null;
-  try { auth = JSON.parse(sessionStorage.getItem("miled_auth") || "null"); } catch {}
+  const auth = window.MiledAccess?.getSessionUser?.()
+    || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
+    || null;
+  const accessRole = access.canonicalRole || auth?.canonicalRole || window.MiledAccess?.normalizeRole?.(auth?.role) || "";
+
+  currentUser = auth ? {
+    id: auth.uid || auth.email || "",
+    name: auth.displayName || auth.email || "",
+    email: auth.email || "",
+    role: auth.role || ""
+  } : null;
 
   if (auth) {
     document.getElementById("currentUser").innerText =
       (auth.displayName || auth.email || "") + " (" + auth.role + ")";
-    if (auth.role === "superadmin")
+    if (accessRole === "system_admin")
       document.getElementById("role-switcher").style.display = "";
   }
   if (window.MiledAuth) MiledAuth.renderUserBadge("user-badge");
@@ -251,7 +255,6 @@ async function init(){
 
 }
 
-init();
 document.addEventListener("click", function(e) {
   var sw = document.getElementById("role-switcher");
   var m  = document.getElementById("sw-menu");
@@ -990,5 +993,10 @@ async function createUser(){
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/firebase-init.js"></script>
 <script src="/firebase-auth.js"></script>
+<script src="/auth-guard.js"></script>
+<script>
+  window.__miledCockpitAccessReady = window.MiledAccess?.enforcePageAccess(["system_admin"], "/index.html");
+  init();
+</script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 // netlify/functions/submit.js — MilEd.One
 // Stores student submissions (assignments / artifacts)
 
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getDatabase } from "firebase-admin/database";
+import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 
 // ─────────────────────────────────────────
@@ -10,20 +10,7 @@ import { getDatabase } from "firebase-admin/database";
 // ─────────────────────────────────────────
 
 function getDB(){
-
-  if(!getApps().length){
-
-    const serviceAccount =
-      JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-
-    initializeApp({
-      credential: cert(serviceAccount),
-      databaseURL: process.env.FIREBASE_DB_URL
-    });
-
-  }
-
-  return getDatabase();
+  return getDatabase(ensureFirebaseAdminApp());
 
 }
 

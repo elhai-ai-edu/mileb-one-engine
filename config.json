@@ -1,5 +1,5 @@
 {
-  "system_version": "5.9 - Bot Routing Fix v9.8.1",
+  "system_version": "5.10 - Architect Routing + Access Hardening v9.8.2",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "balance": {
@@ -129,13 +129,13 @@
           "name": "בוט בנייה ושיפור מערכי שיעור", "_layer": "faculty_tool",
           "botType": "faculty_lesson_builder", "function": "teaching", "phase": "design",
           "thinkingBudget": 2048, "systemPrompt": "אתה עוזר פדגוגי מקצועי למרצים...",
-          "scope": "global", "owner": "system", "createdAt": "2026-02-26"
+          "scope": "institution", "owner": "system", "createdAt": "2026-02-26"
         },
         "faculty_bot_builder": {
           "name": "בוט בונה בוטים פדגוגיים", "_layer": "faculty_tool",
           "botType": "faculty_bot_builder", "function": "teaching", "phase": "design",
           "thinkingBudget": 2048, "systemPrompt": "אתה מסייע למרצים לבנות בוטים פדגוגיים...",
-          "scope": "global", "owner": "system", "createdAt": "2026-02-26"
+          "scope": "institution", "owner": "system", "createdAt": "2026-02-26"
         }
       }
     },
