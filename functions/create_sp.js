@@ -3,12 +3,15 @@
 
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 import { buildSPI } from "./spi_builder.js";
 
 const SITE_URL = "https://cozy-seahorse-7c5204.netlify.app";
+const FUNCTIONS_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = path.resolve(FUNCTIONS_DIR, "..");
 
 // --- kernel.txt (optional injection here; you can also keep kernel injection only in chat.js)
-const kernelPath = path.resolve(process.cwd(), "kernel.txt");
+const kernelPath = path.resolve(PROJECT_ROOT, "kernel.txt");
 const kernelText = fs.existsSync(kernelPath) ? fs.readFileSync(kernelPath, "utf8") : "";
 
 // ─────────────────────────────────────────
