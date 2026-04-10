@@ -1392,6 +1392,7 @@ let importedMetadataCache = null;
 let selectedPlaylistUnitIds = new Set();
 let sprintDrafts = [];
 let pacingHeatmapTimer = null;
+const WAITING_ATTENDEE_STALE_MS = 60000;
 
 function safeAvatar(avatar) {
   const value = String(avatar || "").trim();
@@ -1489,7 +1490,8 @@ function startWaitingAttendeesListener(classId, unitId) {
   waitingAttendeesRef = db.ref(`sessions/${syncKey}/attendees`);
   waitingAttendeesListener = (snapshot) => {
     const attendees = snapshot?.val() || {};
-    const count = Object.keys(attendees).length;
+    const now = Date.now();
+    const count = Object.values(attendees).filter(item => now - (Number(item?.lastSeen) || 0) <= WAITING_ATTENDEE_STALE_MS).length;
     updateWaitingPressure(count);
   };
   waitingAttendeesRef.on('value', waitingAttendeesListener);
@@ -1497,13 +1499,14 @@ function startWaitingAttendeesListener(classId, unitId) {
 
 async function fetchWaitingPressureForSelectedCourse() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
+  const unitId = currentUnitId || 'unit_01';
   if (!classId) {
     updateWaitingPressure(0);
     return;
   }
 
   try {
-    const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}`);
+    const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(unitId)}`);
     if (!res.ok) return;
     const data = await res.json();
     updateWaitingPressure(data?.waitingStudentsCount || 0);
@@ -2141,6 +2144,9 @@ async function openSession() {
     setOpenAllGateState(false);
     renderDJBooth();
     startPolling();
+  } catch (error) {
+    console.error('[openSession] failed', error);
+    alert(`שגיאה בפתיחת שיעור: ${error?.message || 'בדוק בחירת קורס וחיבור Firebase'}`);
   } finally {
     openSessionInFlight = false;
     setOpenSessionBusy(false);

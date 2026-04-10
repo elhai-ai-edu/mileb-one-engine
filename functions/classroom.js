@@ -292,7 +292,7 @@ async function ensureUnitNode(db, { userId, courseId, unitId, structureType = "S
 
 const WAITING_ROOM_STALE_MS = 60000;
 
-async function getFreshWaitingSnapshot(db, classId){
+async function getFreshLegacyWaitingSnapshot(db, classId){
   if(!classId) return { count: 0, students: [] };
 
   const waitingRef = db.ref(`waiting_room/${classId}`);
@@ -335,8 +335,112 @@ async function getFreshWaitingSnapshot(db, classId){
   };
 }
 
-async function getFreshWaitingCount(db, classId){
-  const snapshot = await getFreshWaitingSnapshot(db, classId);
+async function getFreshAttendeeSnapshot(db, classId, unitId = null){
+  if(!classId) return { count: 0, students: [] };
+
+  const normalizedUnitId = unitId ? normalizeUnitId(unitId) : null;
+  const syncKeys = [];
+
+  if(normalizedUnitId) {
+    syncKeys.push(`${classId}_${normalizedUnitId}`);
+  } else {
+    try {
+      const activeSnap = await db.ref(`active_sessions/${classId}`).once("value");
+      const activeUnits = activeSnap.val()?.units || {};
+      Object.keys(activeUnits).forEach((activeUnitId) => {
+        const resolvedUnitId = normalizeUnitId(activeUnitId);
+        const syncKey = `${classId}_${resolvedUnitId}`;
+        if(!syncKeys.includes(syncKey)) syncKeys.push(syncKey);
+      });
+    } catch {}
+  }
+
+  if(!syncKeys.length) return { count: 0, students: [] };
+
+  const snapshots = await Promise.all(
+    syncKeys.map((syncKey) => db.ref(`sessions/${syncKey}/attendees`).once("value"))
+  );
+
+  const now = Date.now();
+  const staleUpdates = {};
+  const studentsById = new Map();
+
+  snapshots.forEach((snapshot, index) => {
+    const syncKey = syncKeys[index];
+    const attendees = snapshot.val() || {};
+    const syncUnitId = syncKey.slice(`${classId}_`.length) || normalizedUnitId || "unit_01";
+
+    Object.entries(attendees).forEach(([sid, item]) => {
+      const lastSeen = Number(item?.lastSeen) || 0;
+      const fresh = now - lastSeen <= WAITING_ROOM_STALE_MS;
+      if(!fresh) {
+        staleUpdates[`sessions/${syncKey}/attendees/${sid}`] = null;
+        return;
+      }
+
+      const studentId = String(item?.studentId || item?.userId || sid || "").trim() || sid;
+      const candidate = {
+        studentId,
+        name: item?.name || item?.studentName || null,
+        avatar: normalizeAvatar(item?.avatar) || null,
+        reaction: String(item?.reaction || "").trim() || null,
+        lastSeen,
+        status: item?.ready ? "ready" : (item?.status || "waiting"),
+        sessionId: item?.sessionId || null,
+        unitId: syncUnitId
+      };
+
+      const existing = studentsById.get(studentId);
+      if(!existing || lastSeen > (Number(existing.lastSeen) || 0)) {
+        studentsById.set(studentId, candidate);
+      }
+    });
+  });
+
+  if(Object.keys(staleUpdates).length) {
+    await db.ref().update(staleUpdates);
+  }
+
+  const students = Array.from(studentsById.values())
+    .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
+    .slice(0, 80);
+
+  return {
+    count: students.length,
+    students
+  };
+}
+
+async function getFreshWaitingSnapshot(db, classId, unitId = null){
+  if(!classId) return { count: 0, students: [] };
+
+  const [legacySnapshot, attendeeSnapshot] = await Promise.all([
+    getFreshLegacyWaitingSnapshot(db, classId),
+    getFreshAttendeeSnapshot(db, classId, unitId)
+  ]);
+
+  const studentsById = new Map();
+  [...legacySnapshot.students, ...attendeeSnapshot.students].forEach((student) => {
+    const studentId = String(student?.studentId || "").trim();
+    if(!studentId) return;
+    const existing = studentsById.get(studentId);
+    if(!existing || Number(student?.lastSeen) > Number(existing?.lastSeen || 0)) {
+      studentsById.set(studentId, student);
+    }
+  });
+
+  const students = Array.from(studentsById.values())
+    .sort((a, b) => (b.lastSeen || 0) - (a.lastSeen || 0))
+    .slice(0, 80);
+
+  return {
+    count: students.length,
+    students
+  };
+}
+
+async function getFreshWaitingCount(db, classId, unitId = null){
+  const snapshot = await getFreshWaitingSnapshot(db, classId, unitId);
   return snapshot.count;
 }
 
@@ -373,10 +477,12 @@ export async function handler(event){
 
     if(action === "waiting_count"){
       const classId = event.queryStringParameters?.classId;
+      const unitId = event.queryStringParameters?.unitId || null;
       if(!classId) return err("classId required");
-      const waitingSnapshot = await getFreshWaitingSnapshot(db, classId);
+      const waitingSnapshot = await getFreshWaitingSnapshot(db, classId, unitId);
       return ok({
         classId,
+        unitId: unitId ? normalizeUnitId(unitId) : null,
         waitingStudentsCount: waitingSnapshot.count,
         waitingStudents: waitingSnapshot.students
       });
@@ -489,6 +595,7 @@ export async function handler(event){
       let unitId = normalizeUnitId(event.queryStringParameters?.unitId);
       const requestedSessionId = event.queryStringParameters?.sessionId || null;
       const requestedStudentId = event.queryStringParameters?.studentId || null;
+      let resolvedSessionId = requestedSessionId || null;
       if((!classId || !userId) && requestedSessionId){
         const sessionSnap = await db.ref(`sessions/${requestedSessionId}`).once("value");
         const sessionData = sessionSnap.val() || {};
@@ -503,6 +610,7 @@ export async function handler(event){
         const activeData = activeSnap.val() || {};
         const activeSessionId = activeData?.units?.[unitId]?.sessionId || activeData?.sessionId || null;
         if(activeSessionId){
+          resolvedSessionId = activeSessionId;
           const activeSessionSnap = await db.ref(`sessions/${activeSessionId}`).once("value");
           const activeSession = activeSessionSnap.val() || {};
           userId = activeSession.userId || activeSession.facultyId || null;
@@ -519,7 +627,7 @@ export async function handler(event){
         db.ref(`pre_session_content/${classId}`).once("value"),
         db.ref(`pre_session_tickets/${classId}`).once("value"),
         db.ref(`pre_session_warmup/${classId}`).once("value"),
-        getFreshWaitingSnapshot(db, classId)
+        getFreshWaitingSnapshot(db, classId, unitId)
       ]);
 
       const unitData = unitSnap.val() || {};
@@ -554,6 +662,7 @@ export async function handler(event){
         courseId: classId,
         userId,
         unitId,
+        activeSessionId: resolvedSessionId,
         topicName: unitData?.topicName || null,
         structureType: unitData?.structureType || null,
         mission,
@@ -717,7 +826,7 @@ export async function handler(event){
 
       const online = students.filter(s => Date.now() - (s.lastSeen || 0) < 15000).length;
       const waitingStudentsCount = resolvedClassId
-        ? await getFreshWaitingCount(db, resolvedClassId)
+        ? await getFreshWaitingCount(db, resolvedClassId, resolvedUnitId)
         : 0;
       let entranceTickets = [];
 

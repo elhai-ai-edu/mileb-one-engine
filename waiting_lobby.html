@@ -358,6 +358,7 @@
     let latestDoorSignal = "auto";
     let lessonStateTimer = null;
     let pendingTicketPayload = null;
+    const sessionDisplayName = String(sessionUser?.displayName || sessionUser?.name || "").trim();
 
     if (isStudentPreview) {
       const previewPill = document.getElementById("previewPill");
@@ -415,7 +416,7 @@
 
     function getStudentName() {
       const input = document.getElementById("studentNameInput");
-      const fallback = auth?.displayName || auth?.name || "";
+      const fallback = sessionDisplayName;
       const value = String(input?.value || localStorage.getItem(studentNameKey) || fallback).trim();
       return value || studentId.slice(0, 8);
     }
@@ -498,6 +499,11 @@
       }
 
       const data = await callClassroom("GET", null, `?action=pre_session&classId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}&studentId=${encodeURIComponent(studentId)}&sessionId=${encodeURIComponent(waitingSessionId)}`);
+      const discoveredSessionId = String(data?.activeSessionId || "").trim();
+      if (!waitingSessionId && discoveredSessionId) {
+        waitingSessionId = discoveredSessionId;
+        updateSessionLine();
+      }
       const missionText = data?.mission?.text || "משימת הכניסה תופיע כאן כשהמרצה יעדכן אותה.";
       document.getElementById("missionText").textContent = missionText;
 
@@ -689,7 +695,7 @@
 
     async function init() {
       const input = document.getElementById("studentNameInput");
-      input.value = localStorage.getItem(studentNameKey) || auth?.displayName || "";
+      input.value = localStorage.getItem(studentNameKey) || sessionDisplayName || "";
       input.addEventListener("change", persistStudentName);
       input.addEventListener("blur", persistStudentName);
 
@@ -711,7 +717,8 @@
       }, 8000);
     }
 
-    init().catch(() => {
+    init().catch((error) => {
+      console.error("[waiting_lobby:init]", error);
       document.getElementById("doorNote").textContent = "שגיאה בטעינת הלובי. רענן ונסה שוב.";
     });
   </script>
