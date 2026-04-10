@@ -6,130 +6,92 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One - Research Lab</title>
-
 <script>document.documentElement.style.visibility = "hidden";</script>
 </head>
-
 <body class="management-theme">
-
 <div class="panel">
+  <div class="userbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span>מעבדת מחקר וביצועים</span>
+    <span id="currentUser" style="font-size:12px;color:var(--color-text-muted);"></span>
+    <span style="margin-right:auto;"></span>
+    <a href="/lecturer_hub.html" class="btn btn-outline" style="text-decoration:none;font-size:12px;padding:6px 12px;">⌂ פורטל מרצה</a>
+    <span id="user-badge"></span>
+    <div id="role-switcher" style="position:relative;display:none;">
+      <button onclick="toggleRoleMenu()" style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;">🔀 החלף תפקיד</button>
+      <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
+        <a href="/student_dashboard.html" onclick="window.MiledAccess?.setPreviewRole?.('student')" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 תצוגת סטודנט</a>
+        <a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 פורטל מרצה</a>
+        <a href="/institution_dashboard.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
+        <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
+      </div>
+    </div>
+    <button onclick="window.MiledAccess?.signOutAndRedirect?.('/index.html')" class="logout-btn">← יציאה</button>
+  </div>
 
-<div class="userbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-  <span>מעבדת מחקר וביצועים</span>
-  <span id="currentUser" style="font-size:12px;color:var(--color-text-muted);"></span>
-  <span style="margin-right:auto;"></span>
-  <a href="/lecturer_hub.html" class="btn btn-outline" style="text-decoration:none;font-size:12px;padding:6px 12px;">⌂ פורטל מרצה</a>
-  <span id="user-badge"></span>
-  <div id="role-switcher" style="position:relative;display:none;">
-    <button onclick="toggleRoleMenu()"
-      style="background:#6366f1;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Assistant',sans-serif;">
-      🔀 החלף תפקיד
-    </button>
-    <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
-      <a href="/student_dashboard.html" onclick="window.MiledAccess?.setPreviewRole?.('student')" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 תצוגת סטודנט</a>
-      <a href="/lecturer_hub.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧑‍🏫 פורטל מרצה</a>
-      <a href="/institution_dashboard.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
-      <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
+  <div class="mgmt-section" style="margin-top:18px;background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 50%,#ecfeff 100%);border:1px solid #dbeafe;">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;">
+      <div style="max-width:680px;">
+        <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#4f46e5;text-transform:uppercase;">Research Lab</div>
+        <h1 style="margin:8px 0 10px;">ניתוח ביצועים ומיומנויות</h1>
+        <p style="margin:0;color:#475569;line-height:1.8;">כאן מוצגים נתוני עומק פדגוגיים בלבד: רמת השתתפות, רמת ביטחון במיומנויות, מגמות שיפור ומוקדי תמיכה. הגדרות מערכת, אבטחה וניהול נשארים בלעדית ב-Admin Cockpit.</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <a href="/macro_cockpit.html#live" class="btn btn-outline" style="text-decoration:none;font-size:12px;padding:7px 14px;">🧭 חזרה למעבדת המחקר במאקרו</a>
+        <button class="btn btn-blue" type="button" onclick="loadInsightsData()" style="font-size:12px;padding:7px 14px;">🔄 רענן נתונים</button>
+      </div>
     </div>
   </div>
-  <button onclick="window.MiledAccess?.signOutAndRedirect?.('/index.html')" class="logout-btn">← יציאה</button>
-</div>
 
-<div class="mgmt-section" style="margin-top:18px;background:linear-gradient(135deg,#eef2ff 0%,#f8fafc 50%,#ecfeff 100%);border:1px solid #dbeafe;">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:18px;flex-wrap:wrap;">
-    <div style="max-width:680px;">
-      <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:#4f46e5;text-transform:uppercase;">Research Lab</div>
-      <h1 style="margin:8px 0 10px;">ניתוח ביצועים ומיומנויות</h1>
-      <p style="margin:0;color:#475569;line-height:1.8;">כאן מוצגים נתוני עומק פדגוגיים בלבד: רמת השתתפות, רמת ביטחון במיומנויות, מגמות שיפור ומוקדי תמיכה. הגדרות מערכת, אבטחה וניהול נשארים בלעדית ב-Admin Cockpit.</p>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-      <a href="/macro_cockpit.html#live" class="btn btn-outline" style="text-decoration:none;font-size:12px;padding:7px 14px;">🧭 חזרה למעבדת המחקר במאקרו</a>
-      <button class="btn btn-blue" type="button" onclick="loadInsightsData()" style="font-size:12px;padding:7px 14px;">🔄 רענן נתונים</button>
+  <div id="insights-status" class="mgmt-section" style="display:none;margin-top:16px;padding:12px 14px;font-size:13px;"></div>
+
+  <div class="mgmt-section" style="margin-top:16px;">
+    <h2 style="margin:0;">תמונת מצב כיתתית</h2>
+    <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">מדדים מצרפיים על סמך נתוני מיומנויות וגלי פעילות שנשמרו במערכת.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px;">
+      <div class="mgmt-section" style="text-align:center;padding:16px 12px;"><div id="summary-total-students" style="font-size:24px;font-weight:700;color:var(--color-accent);">-</div><div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">סטודנטים פעילים</div></div>
+      <div class="mgmt-section" style="text-align:center;padding:16px 12px;"><div id="summary-total-skills" style="font-size:24px;font-weight:700;color:#0891b2;">-</div><div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות פעילות</div></div>
+      <div class="mgmt-section" style="text-align:center;padding:16px 12px;"><div id="summary-total-interactions" style="font-size:24px;font-weight:700;color:#0f766e;">-</div><div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">אינטראקציות מתועדות</div></div>
+      <div class="mgmt-section" style="text-align:center;padding:16px 12px;"><div id="summary-improved" style="font-size:24px;font-weight:700;color:#059669;">-</div><div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות במגמת שיפור</div></div>
+      <div class="mgmt-section" style="text-align:center;padding:16px 12px;"><div id="summary-needs-help" style="font-size:24px;font-weight:700;color:#dc2626;">-</div><div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות הדורשות תשומת לב</div></div>
     </div>
   </div>
-</div>
 
-<div id="insights-status" class="mgmt-section" style="display:none;margin-top:16px;padding:12px 14px;font-size:13px;"></div>
+  <div class="mgmt-section" style="margin-top:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+      <div>
+        <h2 style="margin:0;">מפת חום מיומנויות</h2>
+        <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">רמת ביטחון והשתתפות בין גלי הפעילות.</p>
+      </div>
+      <div class="perf-toggle-row" style="margin:0;">
+        <button id="heatmap-btn-w1" class="perf-toggle-btn active" onclick="switchHeatmapWave('w1')">גל 1</button>
+        <button id="heatmap-btn-w2" class="perf-toggle-btn" onclick="switchHeatmapWave('w2')">גל 2</button>
+        <button id="heatmap-btn-cmp" class="perf-toggle-btn" onclick="switchHeatmapWave('cmp')">השוואה</button>
+      </div>
+    </div>
+    <div id="heatmap-container"><p style="color:var(--color-text-muted);font-size:13px;">טוען נתונים...</p></div>
+  </div>
 
-<div class="mgmt-section" style="margin-top:16px;">
-  <h2 style="margin:0;">תמונת מצב כיתתית</h2>
-  <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">מדדים מצרפיים על סמך נתוני מיומנויות וגלי פעילות שנשמרו במערכת.</p>
-  <div id="summary-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-top:14px;">
-    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-      <div id="summary-total-students" style="font-size:24px;font-weight:700;color:var(--color-accent);">-</div>
-      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">סטודנטים פעילים</div>
-    </div>
-    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-      <div id="summary-total-skills" style="font-size:24px;font-weight:700;color:#0891b2;">-</div>
-      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות פעילות</div>
-    </div>
-    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-      <div id="summary-total-interactions" style="font-size:24px;font-weight:700;color:#0f766e;">-</div>
-      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">אינטראקציות מתועדות</div>
-    </div>
-    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-      <div id="summary-improved" style="font-size:24px;font-weight:700;color:#059669;">-</div>
-      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות במגמת שיפור</div>
-    </div>
-    <div class="mgmt-section" style="text-align:center;padding:16px 12px;">
-      <div id="summary-needs-help" style="font-size:24px;font-weight:700;color:#dc2626;">-</div>
-      <div style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">מיומנויות הדורשות תשומת לב</div>
+  <div class="mgmt-section" style="margin-top:20px;">
+    <h2 style="margin:0 0 6px;">מוקדי מחקר והחלטה</h2>
+    <p style="margin:0 0 14px;color:var(--color-text-muted);font-size:12px;">סיכום מהיר של נקודות חוזקה, סיכונים ומוקדי ליווי.</p>
+    <div id="research-focus-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+      <div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;color:#64748b;">טוען מוקדים...</div></div>
     </div>
   </div>
-</div>
 
-<div class="mgmt-section" style="margin-top:20px;">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-    <div>
-      <h2 style="margin:0;">מפת חום מיומנויות</h2>
-      <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">רמת ביטחון והשתתפות בין גלי הפעילות.</p>
-    </div>
-    <div class="perf-toggle-row" style="margin:0;">
-      <button id="heatmap-btn-w1" class="perf-toggle-btn active" onclick="switchHeatmapWave('w1')">גל 1</button>
-      <button id="heatmap-btn-w2" class="perf-toggle-btn" onclick="switchHeatmapWave('w2')">גל 2</button>
-      <button id="heatmap-btn-cmp" class="perf-toggle-btn" onclick="switchHeatmapWave('cmp')">השוואה</button>
-    </div>
+  <div class="mgmt-section" style="margin-top:20px;">
+    <h2 style="margin:0;">טבלת עדיפויות</h2>
+    <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">המיומנויות עם הביצועים הנמוכים ביותר מוצגות ראשונות כדי לסייע בתעדוף פדגוגי.</p>
+    <table class="mgmt-table" style="margin-top:14px;">
+      <thead>
+        <tr><th>מיומנות</th><th>שכבה</th><th>השתתפות</th><th>גל 1</th><th>גל 2</th><th>מגמה</th><th>סטטוס</th></tr>
+      </thead>
+      <tbody id="research-priority-body"><tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr></tbody>
+    </table>
   </div>
-  <div id="heatmap-container">
-    <p style="color:var(--color-text-muted);font-size:13px;">טוען נתונים...</p>
-  </div>
-</div>
-
-<div class="mgmt-section" style="margin-top:20px;">
-  <h2 style="margin:0 0 6px;">מוקדי מחקר והחלטה</h2>
-  <p style="margin:0 0 14px;color:var(--color-text-muted);font-size:12px;">סיכום מהיר של נקודות חוזקה, סיכונים ומוקדי ליווי.</p>
-  <div id="research-focus-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
-    <div class="mgmt-section" style="padding:16px;">
-      <div style="font-size:13px;color:#64748b;">טוען מוקדים...</div>
-    </div>
-  </div>
-</div>
-
-<div class="mgmt-section" style="margin-top:20px;">
-  <h2 style="margin:0;">טבלת עדיפויות</h2>
-  <p style="margin:6px 0 0;color:var(--color-text-muted);font-size:12px;">המיומנויות עם הביצועים הנמוכים ביותר מוצגות ראשונות כדי לסייע בתעדוף פדגוגי.</p>
-  <table class="mgmt-table" style="margin-top:14px;">
-    <thead>
-      <tr>
-        <th>מיומנות</th>
-        <th>שכבה</th>
-        <th>השתתפות</th>
-        <th>גל 1</th>
-        <th>גל 2</th>
-        <th>מגמה</th>
-        <th>סטטוס</th>
-      </tr>
-    </thead>
-    <tbody id="research-priority-body">
-      <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>
-    </tbody>
-  </table>
-</div>
-
 </div>
 
 <script>
-let currentUser = null;
 let heatmapData = null;
 let heatmapWave = "w1";
 
@@ -145,45 +107,27 @@ document.addEventListener("click", function (event) {
   if (switcher && menu && !switcher.contains(event.target)) menu.style.display = "none";
 });
 
-async function init() {
-  const access = await (window.__miledCockpitAccessReady || Promise.resolve(null));
-  if (!access?.ok) return;
-
-  const auth = window.MiledAccess?.getSessionUser?.()
-    || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
-    || null;
-  const accessRole = access.canonicalRole || auth?.canonicalRole || window.MiledAccess?.normalizeRole?.(auth?.role) || "";
-
-  currentUser = auth ? {
-    id: auth.uid || auth.email || "",
-    name: auth.displayName || auth.email || "",
-    email: auth.email || "",
-    role: auth.role || ""
-  } : null;
-
-  if (auth) {
-    document.getElementById("currentUser").innerText = (auth.displayName || auth.email || "") + " (" + auth.role + ")";
-    if (accessRole === "system_admin") document.getElementById("role-switcher").style.display = "";
-  }
-  if (window.MiledAuth) window.MiledAuth.renderUserBadge("user-badge");
-
-  await loadInsightsData();
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function setStatus(message, tone) {
   const node = document.getElementById("insights-status");
-  if (!node) return;
   if (!message) {
     node.style.display = "none";
     node.textContent = "";
     return;
   }
-  const styles = {
-    info: { bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" },
-    success: { bg: "#ecfdf5", border: "#a7f3d0", color: "#047857" },
-    error: { bg: "#fef2f2", border: "#fecaca", color: "#b91c1c" }
-  };
-  const palette = styles[tone] || styles.info;
+  const palette = tone === "error"
+    ? { bg: "#fef2f2", border: "#fecaca", color: "#b91c1c" }
+    : tone === "success"
+    ? { bg: "#ecfdf5", border: "#a7f3d0", color: "#047857" }
+    : { bg: "#eff6ff", border: "#bfdbfe", color: "#1d4ed8" };
   node.style.display = "block";
   node.style.background = palette.bg;
   node.style.border = "1px solid " + palette.border;
@@ -191,119 +135,8 @@ function setStatus(message, tone) {
   node.textContent = message;
 }
 
-async function loadInsightsData() {
-  setStatus("טוען נתוני מחקר...", "info");
-  document.getElementById("heatmap-container").innerHTML = '<p style="color:var(--color-text-muted);font-size:13px;">טוען נתונים...</p>';
-  document.getElementById("research-priority-body").innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>';
-
-  try {
-    const response = await fetch("/api/insights", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: "{}"
-    });
-    const data = await response.json();
-
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || "Insights unavailable");
-    }
-
-    heatmapData = data;
-    renderSummary(data);
-    renderHeatmap(data);
-    renderResearchFocus(data);
-    renderPriorityTable(data);
-
-    if ((data.insights || []).length === 0) {
-      setStatus("עדיין אין מספיק נתוני מיומנויות להצגת מגמות.", "info");
-      return;
-    }
-
-    setStatus("נתוני המחקר נטענו בהצלחה.", "success");
-  } catch (error) {
-    console.error("RESEARCH LAB LOAD ERROR:", error);
-    document.getElementById("heatmap-container").innerHTML = '<p style="color:#dc2626;font-size:13px;">שגיאה בטעינת מפת החום: ' + escapeHtml(error.message) + '</p>';
-    document.getElementById("research-focus-grid").innerHTML = '<div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;color:#b91c1c;">לא ניתן לטעון את מוקדי המחקר כרגע.</div></div>';
-    document.getElementById("research-priority-body").innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:20px;">שגיאה בטעינת הנתונים</td></tr>';
-    setStatus("טעינת נתוני המחקר נכשלה.", "error");
-  }
-}
-
-function renderSummary(data) {
-  const insights = data.insights || [];
-  const improvedCount = insights.filter(item => item.improved).length;
-  const needsHelpCount = insights.filter(item => item.needsHelp).length;
-
-  document.getElementById("summary-total-students").innerText = String(data.totalStudents || 0);
-  document.getElementById("summary-total-skills").innerText = String(insights.length);
-  document.getElementById("summary-total-interactions").innerText = String(data.totalInteractions || 0);
-  document.getElementById("summary-improved").innerText = String(improvedCount);
-  document.getElementById("summary-needs-help").innerText = String(needsHelpCount);
-}
-
-function renderResearchFocus(data) {
-  const insights = data.insights || [];
-  const container = document.getElementById("research-focus-grid");
-
-  if (insights.length === 0) {
-    container.innerHTML = '<div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;color:#64748b;">אין עדיין מספיק נתונים ליצירת מוקדי מחקר.</div></div>';
-    return;
-  }
-
-  const needsSupport = insights.filter(item => item.needsHelp).slice(0, 3);
-  const improving = insights.filter(item => item.improved).slice(0, 3);
-  const highParticipation = insights.filter(item => item.pctParticipated >= 70).slice(0, 3);
-
-  const cards = [
-    {
-      title: "מוקדי תמיכה",
-      tone: "#dc2626",
-      body: needsSupport.length
-        ? needsSupport.map(item => item.botName + ' (' + item.pctParticipated + '% השתתפות)').join("<br>")
-        : "אין כרגע מיומנויות אדומות, אבל כדאי להמשיך מעקב אחרי גלי ההמשך."
-    },
-    {
-      title: "מיומנויות במגמת שיפור",
-      tone: "#059669",
-      body: improving.length
-        ? improving.map(item => item.botName + ' (+' + item.improvementPct + '%)').join("<br>")
-        : "עדיין לא זוהתה מגמת שיפור מובהקת בין הגלים."
-    },
-    {
-      title: "עוגנים חזקים בכיתה",
-      tone: "#2563eb",
-      body: highParticipation.length
-        ? highParticipation.map(item => item.botName + ' (' + item.pctParticipated + '% השתתפות)').join("<br>")
-        : "אין עדיין מיומנויות עם השתתפות גבוהה ועקבית."
-    }
-  ];
-
-  container.innerHTML = cards.map(card => `
-    <div class="mgmt-section" style="padding:16px;">
-      <div style="font-size:13px;font-weight:800;color:${card.tone};margin-bottom:8px;">${card.title}</div>
-      <div style="font-size:13px;line-height:1.8;color:#334155;">${card.body}</div>
-    </div>`).join("");
-}
-
-function renderPriorityTable(data) {
-  const insights = data.insights || [];
-  const body = document.getElementById("research-priority-body");
-
-  if (insights.length === 0) {
-    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">אין עדיין נתונים להצגה.</td></tr>';
-    return;
-  }
-
-  body.innerHTML = insights.map(item => `
-    <tr>
-      <td>${escapeHtml(item.botName || item.botType || "-")}</td>
-      <td>${escapeHtml(item.layer || "-")}</td>
-      <td>${Number(item.pctParticipated || 0)}%</td>
-      <td>${formatAverage(item.avgW1)}</td>
-      <td>${formatAverage(item.avgW2)}</td>
-      <td>${renderTrend(item)}</td>
-      <td>${renderStatusBadge(item)}</td>
-    </tr>`).join("");
+function formatAverage(value) {
+  return typeof value === "number" && !Number.isNaN(value) ? value.toFixed(1) : "-";
 }
 
 function renderTrend(item) {
@@ -318,9 +151,47 @@ function renderStatusBadge(item) {
   return '<span class="badge" style="background:#eff6ff;color:#1d4ed8;">יציב</span>';
 }
 
-function formatAverage(value) {
-  if (typeof value !== "number" || Number.isNaN(value)) return "-";
-  return value.toFixed(1);
+function translateConfidence(level) {
+  if (level === "high") return "גבוה";
+  if (level === "medium") return "בינוני";
+  return "נמוך";
+}
+
+function renderSummary(data) {
+  const insights = data.insights || [];
+  document.getElementById("summary-total-students").innerText = String(data.totalStudents || 0);
+  document.getElementById("summary-total-skills").innerText = String(insights.length);
+  document.getElementById("summary-total-interactions").innerText = String(data.totalInteractions || 0);
+  document.getElementById("summary-improved").innerText = String(insights.filter(item => item.improved).length);
+  document.getElementById("summary-needs-help").innerText = String(insights.filter(item => item.needsHelp).length);
+}
+
+function renderResearchFocus(data) {
+  const insights = data.insights || [];
+  const container = document.getElementById("research-focus-grid");
+  if (insights.length === 0) {
+    container.innerHTML = '<div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;color:#64748b;">אין עדיין מספיק נתונים ליצירת מוקדי מחקר.</div></div>';
+    return;
+  }
+  const needsSupport = insights.filter(item => item.needsHelp).slice(0, 3);
+  const improving = insights.filter(item => item.improved).slice(0, 3);
+  const highParticipation = insights.filter(item => item.pctParticipated >= 70).slice(0, 3);
+  const cards = [
+    { title: "מוקדי תמיכה", tone: "#dc2626", body: needsSupport.length ? needsSupport.map(item => item.botName + ' (' + item.pctParticipated + '% השתתפות)').join('<br>') : "אין כרגע מיומנויות אדומות, אבל כדאי להמשיך מעקב אחרי גלי ההמשך." },
+    { title: "מיומנויות במגמת שיפור", tone: "#059669", body: improving.length ? improving.map(item => item.botName + ' (+' + item.improvementPct + '%)').join('<br>') : "עדיין לא זוהתה מגמת שיפור מובהקת בין הגלים." },
+    { title: "עוגנים חזקים בכיתה", tone: "#2563eb", body: highParticipation.length ? highParticipation.map(item => item.botName + ' (' + item.pctParticipated + '% השתתפות)').join('<br>') : "אין עדיין מיומנויות עם השתתפות גבוהה ועקבית." }
+  ];
+  container.innerHTML = cards.map(card => '<div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;font-weight:800;color:' + card.tone + ';margin-bottom:8px;">' + card.title + '</div><div style="font-size:13px;line-height:1.8;color:#334155;">' + card.body + '</div></div>').join('');
+}
+
+function renderPriorityTable(data) {
+  const insights = data.insights || [];
+  const body = document.getElementById("research-priority-body");
+  if (insights.length === 0) {
+    body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">אין עדיין נתונים להצגה.</td></tr>';
+    return;
+  }
+  body.innerHTML = insights.map(item => '<tr><td>' + escapeHtml(item.botName || item.botType || '-') + '</td><td>' + escapeHtml(item.layer || '-') + '</td><td>' + Number(item.pctParticipated || 0) + '%</td><td>' + formatAverage(item.avgW1) + '</td><td>' + formatAverage(item.avgW2) + '</td><td>' + renderTrend(item) + '</td><td>' + renderStatusBadge(item) + '</td></tr>').join('');
 }
 
 function switchHeatmapWave(wave) {
@@ -334,723 +205,81 @@ function switchHeatmapWave(wave) {
 function renderHeatmap(data) {
   const container = document.getElementById("heatmap-container");
   const insights = data.insights || [];
-
   if (insights.length === 0) {
     container.innerHTML = '<p style="color:var(--color-text-muted);font-size:13px;">אין מספיק נתונים להצגת מפת חום עדיין.</p>';
     return;
   }
-
   const confColor = { high: "heatmap-green", medium: "heatmap-yellow", low: "heatmap-red" };
-  let rows = "";
-
-  insights.forEach(insight => {
+  const rows = insights.map(insight => {
     if (heatmapWave === "w1") {
-      const cls = confColor[insight.w1Confidence] || "heatmap-yellow";
-      rows += `<tr>
-        <td>${escapeHtml(insight.botName)}</td>
-        <td><span class="heatmap-cell ${cls}">${translateConfidence(insight.w1Confidence)}</span></td>
-        <td>${Number(insight.wave1Count || 0)} / ${Number(data.totalStudents || 0)}</td>
-        <td>${formatAverage(insight.avgW1)} הודעות</td>
-        <td>${Number(insight.pctParticipated || 0)}%</td>
-      </tr>`;
-      return;
+      return '<tr><td>' + escapeHtml(insight.botName) + '</td><td><span class="heatmap-cell ' + (confColor[insight.w1Confidence] || 'heatmap-yellow') + '">' + translateConfidence(insight.w1Confidence) + '</span></td><td>' + Number(insight.wave1Count || 0) + ' / ' + Number(data.totalStudents || 0) + '</td><td>' + formatAverage(insight.avgW1) + ' הודעות</td><td>' + Number(insight.pctParticipated || 0) + '%</td></tr>';
     }
-
     if (heatmapWave === "w2") {
-      const cls = insight.wave2Count > 0 ? (confColor[insight.w2Confidence] || "heatmap-yellow") : "";
-      rows += `<tr>
-        <td>${escapeHtml(insight.botName)}</td>
-        <td>${insight.wave2Count > 0 ? `<span class="heatmap-cell ${cls}">${translateConfidence(insight.w2Confidence)}</span>` : '<span style="color:#94a3b8;font-size:12px;">אין נתוני גל 2</span>'}</td>
-        <td>${Number(insight.wave2Count || 0)} / ${Number(data.totalStudents || 0)}</td>
-        <td>${Number(insight.wave2Count || 0) > 0 ? formatAverage(insight.avgW2) + ' הודעות' : '-'}</td>
-        <td>${renderTrend(insight)}</td>
-      </tr>`;
-      return;
+      const wave2Cell = Number(insight.wave2Count || 0) > 0
+        ? '<span class="heatmap-cell ' + (confColor[insight.w2Confidence] || 'heatmap-yellow') + '">' + translateConfidence(insight.w2Confidence) + '</span>'
+        : '<span style="color:#94a3b8;font-size:12px;">אין נתוני גל 2</span>';
+      return '<tr><td>' + escapeHtml(insight.botName) + '</td><td>' + wave2Cell + '</td><td>' + Number(insight.wave2Count || 0) + ' / ' + Number(data.totalStudents || 0) + '</td><td>' + (Number(insight.wave2Count || 0) > 0 ? formatAverage(insight.avgW2) + ' הודעות' : '-') + '</td><td>' + renderTrend(insight) + '</td></tr>';
     }
-
-    const w1Class = confColor[insight.w1Confidence] || "heatmap-yellow";
-    const w2Class = insight.wave2Count > 0 ? (confColor[insight.w2Confidence] || "heatmap-yellow") : "";
-    rows += `<tr>
-      <td>${escapeHtml(insight.botName)}</td>
-      <td><span class="heatmap-cell ${w1Class}">${formatAverage(insight.avgW1)}</span></td>
-      <td>${insight.wave2Count > 0 ? `<span class="heatmap-cell ${w2Class}">${formatAverage(insight.avgW2)}</span>` : '<span style="color:#94a3b8;font-size:12px;">-</span>'}</td>
-      <td>${renderTrend(insight)}</td>
-      <td>${renderStatusBadge(insight)}</td>
-    </tr>`;
-  });
-
+    const cmpWave2 = Number(insight.wave2Count || 0) > 0
+      ? '<span class="heatmap-cell ' + (confColor[insight.w2Confidence] || 'heatmap-yellow') + '">' + formatAverage(insight.avgW2) + '</span>'
+      : '<span style="color:#94a3b8;font-size:12px;">-</span>';
+    return '<tr><td>' + escapeHtml(insight.botName) + '</td><td><span class="heatmap-cell ' + (confColor[insight.w1Confidence] || 'heatmap-yellow') + '">' + formatAverage(insight.avgW1) + '</span></td><td>' + cmpWave2 + '</td><td>' + renderTrend(insight) + '</td><td>' + renderStatusBadge(insight) + '</td></tr>';
+  }).join('');
   const headers = heatmapWave === "cmp"
-    ? "<tr><th>מיומנות</th><th>גל 1</th><th>גל 2</th><th>מגמה</th><th>סטטוס</th></tr>"
+    ? '<tr><th>מיומנות</th><th>גל 1</th><th>גל 2</th><th>מגמה</th><th>סטטוס</th></tr>'
     : heatmapWave === "w2"
-    ? "<tr><th>מיומנות</th><th>ביטחון גל 2</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>מגמה</th></tr>"
-    : "<tr><th>מיומנות</th><th>ביטחון גל 1</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>השתתפות</th></tr>";
-
+    ? '<tr><th>מיומנות</th><th>ביטחון גל 2</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>מגמה</th></tr>'
+    : '<tr><th>מיומנות</th><th>ביטחון גל 1</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>השתתפות</th></tr>';
   container.innerHTML = '<table class="heatmap-table mgmt-table"><thead>' + headers + '</thead><tbody>' + rows + '</tbody></table>';
 }
 
-function translateConfidence(level) {
-  if (level === "high") return "גבוה";
-  if (level === "medium") return "בינוני";
-  return "נמוך";
-}
-
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-</script>
-
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="/firebase-init.js"></script>
-<script src="/firebase-auth.js"></script>
-<script src="/auth-guard.js"></script>
-<script>
-  window.__miledCockpitAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
-  init();
-</script>
-</body>
-</html>
-
-<input type="number"
-value="${tool.thinkingBudget||512}"
-onchange="update('${branch}','${id}','thinkingBudget',parseInt(this.value))">
-</div>
-
-<div class="field">
-<label>scope (תחום הרשאה)</label>
-
-<select
-onchange="update('${branch}','${id}','scope',this.value)">
-
-<option ${tool.scope==="global"?"selected":""}>global</option>
-<option ${tool.scope==="faculty_private"?"selected":""}>faculty_private</option>
-<option ${tool.scope==="institution"?"selected":""}>institution</option>
-<option ${tool.scope==="course_specific"?"selected":""}>course_specific</option>
-
-</select>
-</div>
-
-<div class="field">
-<label>visibility (רמת חשיפה)</label>
-
-<select
-onchange="update('${branch}','${id}','visibility',this.value)">
-
-<option ${tool.visibility==="system"?"selected":""}>system</option>
-<option ${tool.visibility==="faculty"?"selected":""}>faculty</option>
-<option ${tool.visibility==="institution"?"selected":""}>institution</option>
-
-</select>
-</div>
-
-<div class="field">
-<label>owner (בעלים)</label>
-
-<input
-value="${tool.owner||''}"
-onchange="update('${branch}','${id}','owner',this.value)">
-</div>
-
-<div class="field">
-<label>createdBy</label>
-
-<input
-value="${tool.createdBy||''}"
-onchange="update('${branch}','${id}','createdBy',this.value)">
-</div>
-
-<div class="field">
-<label>version</label>
-
-<input
-value="${tool.version||'1.0'}"
-onchange="update('${branch}','${id}','version',this.value)">
-</div>
-
-<button class="btn btn-red"
-onclick="deleteTool('${branch}','${id}')">
-
-מחק
-
-</button>
-
-</div>
-
-`
-
-}
-
-function update(branch,id,key,value){
-config.branches[branch].items[id][key]=value
-}
-
-function addTool(branch){
-
-const id="tool_"+Date.now()
-
-config.branches[branch].items[id]={
-
-id:id,
-name:"כלי חדש",
-botType:"",
-botCategory:"course",
-processMode:"guided",
-stages:[],
-systemPrompt:"",
-thinkingBudget:512,
-scope:"faculty_private",
-visibility:"faculty",
-owner:currentUser.id,
-createdBy:currentUser.id,
-createdAt:new Date().toISOString(),
-version:"1.0"
-
-}
-
-render()
-
-}
-
-function deleteTool(branch,id){
-
-delete config.branches[branch].items[id]
-
-render()
-
-}
-
-async function saveConfig(){
-
-await fetch("/api/saveConfig",{
-
-method:"POST",
-
-headers:{
-"Content-Type":"application/json"
-},
-
-body:JSON.stringify(config)
-
-})
-
-alert("config נשמר בהצלחה")
-
-}
-
-function renderStagesEditor(branch,id,tool){
-
-let html=`
-
-<div class="panel">
-
-<h3>Stage Workflow</h3>
-
-<button class="btn btn-green"
-onclick="addStage('${branch}','${id}')">
-
-+ הוסף שלב
-
-</button>
-
-`
-
-tool.stages=tool.stages||[]
-
-tool.stages.forEach((stage,index)=>{
-
-html+=`
-
-<div class="field">
-
-<label>Stage ID</label>
-
-<input
-value="${stage.id||''}"
-onchange="updateStage('${branch}','${id}',${index},'id',this.value)">
-
-<label>Stage Title</label>
-
-<input
-value="${stage.title||''}"
-onchange="updateStage('${branch}','${id}',${index},'title',this.value)">
-
-<button class="btn btn-red"
-onclick="deleteStage('${branch}','${id}',${index})">
-
-מחק
-
-</button>
-
-</div>
-
-`
-
-})
-
-html+="</div>"
-
-return html
-
-}
-
-function addStage(branch,id){
-
-config.branches[branch].items[id].stages.push({
- id:"stage_"+Date.now(),
- title:"שלב חדש"
-})
-
-render()
-
-}
-
-function updateStage(branch,id,index,key,value){
-
-config.branches[branch].items[id].stages[index][key]=value
-
-}
-
-function deleteStage(branch,id,index){
-
-config.branches[branch].items[id].stages.splice(index,1)
-
-render()
-
-}
-
-// ─── TAB SWITCHING ───
-
-function switchTab(tab){
-  ["config","security","skills"].forEach(t => {
-    document.getElementById("tab-" + t).style.display = tab === t ? "" : "none";
-    document.getElementById("tab-btn-" + t).classList.toggle("active", tab === t);
-  });
-  if (tab === "skills") loadSkillsData();
-  if (tab === "config" && config && Object.keys(config).length) render(); // lazy render
-}
-
-// ─── PERFORMANCE TOGGLE ───
-
-function switchPerfView(view) {
-  document.getElementById("perf-course").style.display  = view === "course" ? "" : "none";
-  document.getElementById("perf-skills").style.display  = view === "skills" ? "" : "none";
-  document.getElementById("perf-btn-course").classList.toggle("active", view === "course");
-  document.getElementById("perf-btn-skills").classList.toggle("active", view === "skills");
-}
-
-// ─── SKILLS DATA LOADER (Firebase via admin-auth readPath) ───
-
-let skillsLoaded = false;
-
-async function loadSkillsData() {
-  if (skillsLoaded) return;
-
-  // Re-use security tab credentials if available
-  const username = document.getElementById("sec-user")?.value?.trim()
-    || (currentUser?.name || currentUser?.id || "");
-  const password = document.getElementById("sec-pass")?.value || "";
-
-  if (!username || !password) {
-    // Show inline prompt in the skills tab
-    document.getElementById("course-perf-body").innerHTML =
-      `<tr><td colspan="5" style="text-align:center;padding:16px;">
-        <em>הזן פרטי אימות בלשונית "אבטחה" ← "טען משתמשים", ואז חזור לכאן ולחץ טען.</em>
-        <br><button class="btn btn-blue" style="margin-top:10px;padding:7px 14px;font-size:12px;" onclick="skillsLoaded=false;loadSkillsData()">🔄 טען נתונים</button>
-      </td></tr>`;
-    return;
-  }
-
-  skillsLoaded = true;
-  const courseBody = document.getElementById("course-perf-body");
-  const skillsBody = document.getElementById("skills-perf-body");
-
-  async function readPath(path, limit = 100) {
-    const res = await fetch("/.netlify/functions/admin-auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "readPath", path, limit, requesterUsername: username, requesterPassword: password })
-    });
-    if (!res.ok) return null;
-    const d = await res.json();
-    return d.ok ? (d.data || {}) : null;
-  }
-
+async function loadInsightsData() {
+  setStatus("טוען נתוני מחקר...", "info");
+  document.getElementById("heatmap-container").innerHTML = '<p style="color:var(--color-text-muted);font-size:13px;">טוען נתונים...</p>';
+  document.getElementById("research-priority-body").innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px;">טוען נתונים...</td></tr>';
   try {
-    // Course conversations
-    const convData = await readPath("conversations", 50);
-    if (convData) {
-      const rows = Object.entries(convData).filter(([, v]) => v.type !== "skill").slice(0, 30);
-      courseBody.innerHTML = rows.length === 0
-        ? `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">אין שיחות קורסיות עדיין</td></tr>`
-        : rows.map(([, r]) => `
-          <tr>
-            <td>${r.courseId || "—"}</td>
-            <td>${r.botType || "—"}</td>
-            <td>—</td>
-            <td>${r.updatedAt ? new Date(r.updatedAt).toLocaleString("he-IL") : "—"}</td>
-            <td><span class="badge badge-inprogress">פעיל</span></td>
-          </tr>`).join("");
-    } else {
-      courseBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:16px;">שגיאת אימות או הרשאה</td></tr>`;
-    }
-
-    // Skills sessions
-    const skillsData = await readPath("skills_sessions", 200);
-    if (skillsData) {
-      const allRows = []; let diagCount = 0; let procCount = 0;
-      for (const sid in skillsData) {
-        for (const botKey in skillsData[sid]) {
-          const r = skillsData[sid][botKey];
-          allRows.push({ studentId: sid, ...r });
-          if ((r.layer || "").includes("diagnostic")) diagCount++;
-          else procCount++;
-        }
-      }
-      document.getElementById("cnt-total").innerText      = Object.keys(skillsData).length;
-      document.getElementById("cnt-diagnostic").innerText = diagCount;
-      document.getElementById("cnt-process").innerText    = procCount;
-
-      renderCompetencyMatrix(skillsData);
-
-      skillsBody.innerHTML = allRows.length === 0
-        ? `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:20px;">אין נתוני מיומנויות עדיין</td></tr>`
-        : allRows.slice(0, 30).map(r => `
-          <tr>
-            <td style="font-size:11px;color:#94a3b8;">${(r.studentId || "").slice(0, 12)}</td>
-            <td>${r.botName || r.botType || "—"}</td>
-            <td><span class="badge badge-inprogress">${r.layer || "—"}</span></td>
-            <td>${r.lastActive ? new Date(r.lastActive).toLocaleString("he-IL") : "—"}</td>
-            <td style="font-size:11px;color:#94a3b8;">${(r.sessionId || "").slice(0, 16)}</td>
-          </tr>`).join("");
-    } else {
-      skillsBody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#dc2626;padding:16px;">שגיאת אימות</td></tr>`;
-    }
-
-  } catch (e) {
-    console.error("SKILLS DATA LOAD ERROR:", e);
-    courseBody.innerHTML = `<tr><td colspan="5" style="color:#dc2626;text-align:center;padding:16px;">שגיאת חיבור: ${e.message}</td></tr>`;
-  }
-
-  // Load heatmap independently (no auth required)
-  loadInsightsHeatmap();
-}
-
-// ─── Competency Matrix ───
-
-function renderCompetencyMatrix(skillsData) {
-  const container = document.getElementById("competency-matrix-container");
-  if (!skillsData || Object.keys(skillsData).length === 0) {
-    container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">אין נתונים עדיין</p>`;
-    return;
-  }
-
-  // Collect unique skill keys and their display names
-  const skillMeta = {}; // botKey → botName
-  for (const sid in skillsData) {
-    for (const botKey in skillsData[sid]) {
-      const rec = skillsData[sid][botKey];
-      if (rec && typeof rec === "object" && rec.botType && !skillMeta[botKey]) {
-        skillMeta[botKey] = rec.botName || botKey;
-      }
-    }
-  }
-  const skillKeys = Object.keys(skillMeta);
-  if (skillKeys.length === 0) {
-    container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">אין נתוני מיומנויות עדיין</p>`;
-    return;
-  }
-
-  const confLabel = n => n >= 6 ? "high" : n >= 3 ? "medium" : "low";
-  const confClass = { high: "heatmap-green", medium: "heatmap-yellow", low: "heatmap-red" };
-  const confText  = { high: "מיומן", medium: "מתפתח", low: "בסיסי" };
-
-  const header = `<tr>
-    <th style="font-size:11px;min-width:80px;">סטודנט</th>
-    ${skillKeys.map(k => `<th style="font-size:10px;white-space:nowrap;padding:4px 8px;">${skillMeta[k]}</th>`).join("")}
-  </tr>`;
-
-  const rows = Object.entries(skillsData).map(([sid, studentData]) => {
-    const cells = skillKeys.map(botKey => {
-      const rec = studentData[botKey];
-      if (!rec || !rec.waves) return `<td style="text-align:center;color:#ddd;padding:4px;">—</td>`;
-
-      const w1 = rec.waves.wave_1_baseline?.messageCount || 0;
-      const w2 = rec.waves.wave_2_midterm?.messageCount  || 0;
-      const latest   = w2 > 0 ? w2 : w1;
-      const conf     = confLabel(latest);
-      const improved = w2 > 0 && w2 > w1;
-
-      return `<td style="text-align:center;padding:4px;">
-        <span class="heatmap-cell ${confClass[conf]}" style="font-size:10px;display:inline-flex;align-items:center;gap:2px;">
-          ${confText[conf]}${improved ? '<span style="color:#059669;font-size:9px;font-weight:700;"> ↑</span>' : ""}
-        </span>
-      </td>`;
-    }).join("");
-
-    return `<tr>
-      <td style="font-size:10px;color:#94a3b8;padding:6px 8px;white-space:nowrap;">${sid.slice(0, 12)}</td>
-      ${cells}
-    </tr>`;
-  }).join("");
-
-  container.innerHTML = `
-    <div style="overflow-x:auto;margin-bottom:10px;">
-      <table class="heatmap-table mgmt-table" style="min-width:300px;">
-        <thead>${header}</thead>
-        <tbody>${rows || '<tr><td colspan="20" style="text-align:center;color:#94a3b8;">אין נתונים</td></tr>'}</tbody>
-      </table>
-    </div>
-    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--color-text-muted);">
-      <span><span class="heatmap-cell heatmap-green" style="padding:1px 6px;font-size:10px;">מיומן</span> ≥6 הודעות</span>
-      <span><span class="heatmap-cell heatmap-yellow" style="padding:1px 6px;font-size:10px;">מתפתח</span> 3–5</span>
-      <span><span class="heatmap-cell heatmap-red" style="padding:1px 6px;font-size:10px;">בסיסי</span> 1–2</span>
-      <span style="color:#059669;font-weight:600;">↑ שיפור גל 1→2</span>
-    </div>`;
-}
-
-// ─── Skills Heatmap ───
-
-let heatmapData   = null;
-let heatmapWave   = "w1";
-
-function switchHeatmapWave(wave) {
-  heatmapWave = wave;
-  ["w1","w2","cmp"].forEach(w => {
-    document.getElementById("heatmap-btn-" + w).classList.toggle("active", w === wave);
-  });
-  if (heatmapData) renderHeatmap(heatmapData);
-}
-
-async function loadInsightsHeatmap() {
-  const container = document.getElementById("heatmap-container");
-  container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">⏳ טוען מפת חום...</p>`;
-  try {
-    const res  = await fetch("/api/insights", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-    const data = await res.json();
-    if (!data.ok || !data.insights?.length) {
-      container.innerHTML = `<p style="color:var(--color-text-muted);font-size:13px;">אין מספיק נתונים להצגת מפת חום עדיין.</p>`;
-      return;
-    }
+    const response = await fetch("/api/insights", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const data = await response.json();
+    if (!response.ok || !data.ok) throw new Error(data.error || "Insights unavailable");
     heatmapData = data;
+    renderSummary(data);
     renderHeatmap(data);
-  } catch(e) {
-    container.innerHTML = `<p style="color:#dc2626;font-size:13px;">שגיאה בטעינת מפת החום: ${e.message}</p>`;
-  }
-}
-
-function renderHeatmap(data) {
-  const container = document.getElementById("heatmap-container");
-  const insights  = data.insights;
-
-  const confColor = { high: "heatmap-green", medium: "heatmap-yellow", low: "heatmap-red" };
-
-  let rows = "";
-  insights.forEach(ins => {
-    if (heatmapWave === "w1") {
-      const cls = confColor[ins.w1Confidence] || "heatmap-yellow";
-      rows += `<tr>
-        <td>${ins.botName}</td>
-        <td><span class="heatmap-cell ${cls}">${ins.w1Confidence === "high" ? "גבוה" : ins.w1Confidence === "medium" ? "בינוני" : "נמוך"}</span></td>
-        <td>${ins.wave1Count} / ${data.totalStudents}</td>
-        <td>${ins.avgW1} הודעות ממוצע</td>
-        <td>${ins.pctParticipated}%</td>
-      </tr>`;
-    } else if (heatmapWave === "w2") {
-      const cls = ins.wave2Count > 0 ? (confColor[ins.w2Confidence] || "heatmap-yellow") : "";
-      rows += `<tr>
-        <td>${ins.botName}</td>
-        <td>${ins.wave2Count > 0 ? `<span class="heatmap-cell ${cls}">${ins.w2Confidence === "high" ? "גבוה" : ins.w2Confidence === "medium" ? "בינוני" : "נמוך"}</span>` : "<span style='color:#94a3b8;font-size:12px;'>אין נתוני גל 2</span>"}</td>
-        <td>${ins.wave2Count} / ${data.totalStudents}</td>
-        <td>${ins.avgW2 > 0 ? ins.avgW2 + " הודעות ממוצע" : "—"}</td>
-        <td>${ins.improved ? `<span class="growth-indicator growth-up">↑ ${ins.improvementPct}%</span>` : "—"}</td>
-      </tr>`;
-    } else {
-      // comparison
-      const c1 = confColor[ins.w1Confidence] || "heatmap-yellow";
-      const c2 = ins.wave2Count > 0 ? (confColor[ins.w2Confidence] || "heatmap-yellow") : null;
-      rows += `<tr>
-        <td>${ins.botName}</td>
-        <td><span class="heatmap-cell ${c1}">${ins.avgW1}</span></td>
-        <td>${c2 ? `<span class="heatmap-cell ${c2}">${ins.avgW2}</span>` : "<span style='color:#94a3b8;font-size:12px;'>—</span>"}</td>
-        <td>${ins.improved ? `<span class="growth-indicator growth-up">↑ ${ins.improvementPct}%</span>` : ins.wave2Count > 0 ? "<span class='growth-indicator growth-same'>→</span>" : "—"}</td>
-        <td>${ins.needsHelp ? "<span style='color:#dc2626;font-size:12px;font-weight:600;'>⚠ דורש תשומת לב</span>" : "✓"}</td>
-      </tr>`;
-    }
-  });
-
-  const headers = heatmapWave === "cmp"
-    ? `<tr><th>מיומנות</th><th>ביטחון גל 1</th><th>ביטחון גל 2</th><th>שיפור</th><th>סטטוס</th></tr>`
-    : heatmapWave === "w2"
-    ? `<tr><th>מיומנות</th><th>ביטחון גל 2</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>שיפור</th></tr>`
-    : `<tr><th>מיומנות</th><th>ביטחון גל 1</th><th>סטודנטים</th><th>ממוצע הודעות</th><th>השתתפות</th></tr>`;
-
-  container.innerHTML = `<table class="heatmap-table mgmt-table"><thead>${headers}</thead><tbody>${rows}</tbody></table>`;
-}
-
-// ─── Deep-link: open Skills tab if URL has #skills ───
-if (location.hash === "#skills") switchTab("skills");
-
-// ─── SECURITY TAB ───
-
-function secCredentials(){
-  return {
-    requesterUsername: document.getElementById("sec-user").value.trim(),
-    requesterPassword: document.getElementById("sec-pass").value
-  };
-}
-
-async function adminAuthCall(body){
-  const res = await fetch("/.netlify/functions/admin-auth", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
-
-async function loadUsers(){
-  const { requesterUsername, requesterPassword } = secCredentials();
-  document.getElementById("sec-msg").innerText = "";
-  if(!requesterUsername || !requesterPassword){
-    document.getElementById("sec-msg").innerText = "יש למלא שם משתמש וסיסמה.";
-    return;
-  }
-
-  document.getElementById("sec-msg").innerText = "טוען...";
-  try {
-    const data = await adminAuthCall({ action:"list", requesterUsername, requesterPassword });
-    if(!data.ok){
-      document.getElementById("sec-msg").innerText = data.error || "שגיאה";
+    renderResearchFocus(data);
+    renderPriorityTable(data);
+    if ((data.insights || []).length === 0) {
+      setStatus("עדיין אין מספיק נתוני מיומנויות להצגת מגמות.", "info");
       return;
     }
-    document.getElementById("sec-msg").innerText = "";
-    renderUsers(data.users);
-    document.getElementById("create-user-form").style.display = "";
-  } catch(e){
-    document.getElementById("sec-msg").innerText = "שגיאת חיבור לשרת.";
+    setStatus("נתוני המחקר נטענו בהצלחה.", "success");
+  } catch (error) {
+    document.getElementById("heatmap-container").innerHTML = '<p style="color:#dc2626;font-size:13px;">שגיאה בטעינת מפת החום: ' + escapeHtml(error.message) + '</p>';
+    document.getElementById("research-focus-grid").innerHTML = '<div class="mgmt-section" style="padding:16px;"><div style="font-size:13px;color:#b91c1c;">לא ניתן לטעון את מוקדי המחקר כרגע.</div></div>';
+    document.getElementById("research-priority-body").innerHTML = '<tr><td colspan="7" style="text-align:center;color:#dc2626;padding:20px;">שגיאה בטעינת הנתונים</td></tr>';
+    setStatus("טעינת נתוני המחקר נכשלה.", "error");
   }
 }
 
-function renderUsers(users){
-  const container = document.getElementById("users-list");
-  if(!users.length){
-    container.innerHTML = "<p style='color:#aaa;font-size:13px;'>אין משתמשים.</p>";
-    return;
+async function init() {
+  const access = await (window.__miledCockpitAccessReady || Promise.resolve(null));
+  if (!access?.ok) return;
+  const auth = window.MiledAccess?.getSessionUser?.() || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId) || null;
+  const accessRole = access.canonicalRole || auth?.canonicalRole || window.MiledAccess?.normalizeRole?.(auth?.role) || "";
+  if (auth) {
+    document.getElementById("currentUser").innerText = (auth.displayName || auth.email || "") + ' (' + auth.role + ')';
+    if (accessRole === "system_admin") document.getElementById("role-switcher").style.display = "";
   }
-
-  let html = "<table style='width:100%;border-collapse:collapse;font-size:13px;'>" +
-    "<thead><tr style='background:#f5f7fb;'>" +
-    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>שם משתמש</th>" +
-    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>שם</th>" +
-    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>תפקיד</th>" +
-    "<th style='padding:8px 12px;text-align:right;border-bottom:1px solid #eee;'>סיסמה חדשה</th>" +
-    "<th style='padding:8px 12px;border-bottom:1px solid #eee;'></th>" +
-    "</tr></thead><tbody>";
-
-  users.forEach(u => {
-    html += `<tr id="user-row-${u.username}" style="border-bottom:1px solid #f0f0f0;">
-      <td style="padding:8px 12px;direction:ltr;">${u.username}</td>
-      <td style="padding:8px 12px;">${u.name || ""}</td>
-      <td style="padding:8px 12px;">${u.role}</td>
-      <td style="padding:8px 12px;">
-        <input id="pw-${u.username}" type="password" placeholder="סיסמה חדשה"
-          style="padding:6px 10px;border:1px solid #ddd;border-radius:6px;font-size:12px;width:140px;direction:ltr;">
-      </td>
-      <td style="padding:8px 12px;white-space:nowrap;">
-        <button class="btn btn-blue" onclick="updatePassword('${u.username}')"
-          style="padding:5px 10px;font-size:12px;margin-left:4px;">עדכן</button>
-        <button class="btn btn-red" onclick="deleteUser('${u.username}')"
-          style="padding:5px 10px;font-size:12px;">מחק</button>
-      </td>
-    </tr>`;
-  });
-
-  html += "</tbody></table>";
-  container.innerHTML = html;
+  if (window.MiledAuth) window.MiledAuth.renderUserBadge("user-badge");
+  await loadInsightsData();
 }
-
-async function updatePassword(username){
-  const { requesterUsername, requesterPassword } = secCredentials();
-  const newPassword = document.getElementById("pw-" + username)?.value;
-  if(!newPassword){ alert("יש להזין סיסמה חדשה."); return; }
-
-  try {
-    const data = await adminAuthCall({ action:"update_password", requesterUsername, requesterPassword, username, newPassword });
-    if(data.ok){
-      alert("סיסמה עודכנה בהצלחה.");
-      document.getElementById("pw-" + username).value = "";
-    } else {
-      alert("שגיאה: " + (data.error || "Unknown"));
-    }
-  } catch(e){
-    alert("שגיאת חיבור לשרת.");
-  }
-}
-
-async function deleteUser(username){
-  if(!confirm("למחוק את המשתמש " + username + "? פעולה זו אינה הפיכה.")) return;
-  const { requesterUsername, requesterPassword } = secCredentials();
-
-  try {
-    const data = await adminAuthCall({ action:"delete_user", requesterUsername, requesterPassword, username });
-    if(data.ok){
-      const row = document.getElementById("user-row-" + username);
-      if(row) row.remove();
-      alert("משתמש נמחק.");
-    } else {
-      alert("שגיאה: " + (data.error || "Unknown"));
-    }
-  } catch(e){
-    alert("שגיאת חיבור לשרת.");
-  }
-}
-
-async function createUser(){
-  const { requesterUsername, requesterPassword } = secCredentials();
-  const username = document.getElementById("new-username").value.trim();
-  const name     = document.getElementById("new-name").value.trim();
-  const password = document.getElementById("new-password").value;
-  const role     = document.getElementById("new-role").value;
-
-  document.getElementById("create-msg").innerText = "";
-
-  if(!username || !name || !password){
-    document.getElementById("create-msg").innerText = "יש למלא את כל השדות.";
-    return;
-  }
-
-  try {
-    const data = await adminAuthCall({ action:"create_user", requesterUsername, requesterPassword, username, name, password, role });
-    if(data.ok){
-      alert("משתמש נוצר בהצלחה.");
-      document.getElementById("new-username").value = "";
-      document.getElementById("new-name").value     = "";
-      document.getElementById("new-password").value = "";
-      loadUsers(); // refresh list
-    } else {
-      document.getElementById("create-msg").innerText = data.error || "שגיאה";
-    }
-  } catch(e){
-    document.getElementById("create-msg").innerText = "שגיאת חיבור לשרת.";
-  }
-}
-
 </script>
-
-<!-- Firebase Auth utility -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/firebase-init.js"></script>
 <script src="/firebase-auth.js"></script>
 <script src="/auth-guard.js"></script>
 <script>
-  window.__miledCockpitAccessReady = window.MiledAccess?.enforcePageAccess(["system_admin"], "/index.html");
-  init();
+window.__miledCockpitAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+init();
 </script>
 </body>
 </html>
