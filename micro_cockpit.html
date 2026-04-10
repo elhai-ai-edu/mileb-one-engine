@@ -2210,19 +2210,7 @@ async function broadcast() {
 // ─────────────────────────────────────────
 async function closeSession() {
   if (!confirm("לסגור את השיעור?")) return;
-  const closingClassId = currentLessonId || getSelectedTeachingContext().classId || null;
-  const closingUnitId = currentUnitId || "unit_01";
   await callClassroom({ action: "close", sessionId, facultyId });
-  if (closingClassId) {
-    await writeActiveDoorState({
-      classId: closingClassId,
-      unitId: closingUnitId,
-      sessionId: null,
-      status: "closed",
-      entryPolicy: "closed"
-    });
-  }
-  stopWaitingAttendeesListener();
 
   clearInterval(pollTimer);
   if (pacingHeatmapTimer) clearInterval(pacingHeatmapTimer);
