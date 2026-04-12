@@ -306,6 +306,40 @@
       .chat-shell, .stage { min-height: auto; }
       .chat-frame, .presentation-frame { min-height: 540px; }
     }
+    #broadcastBanner {
+      display: none;
+      background: #1d4ed8;
+      color: #fff;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+      direction: rtl;
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      box-shadow: 0 3px 12px rgba(29,78,216,0.35);
+      border-bottom: 2px solid #1e40af;
+      word-break: break-word;
+    }
+    @keyframes broadcastPulse {
+      0%   { opacity: 0; transform: translateY(-8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    #broadcastBanner.new-msg {
+      animation: broadcastPulse 0.35s ease forwards;
+    }
+    #broadcastBanner .broadcast-dismiss {
+      margin-inline-start: 14px;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 2px 9px;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
   </style>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -327,6 +361,8 @@
         <div class="chip" id="sessionChip">sessionId: --</div>
       </div>
     </header>
+
+    <div id="broadcastBanner" role="alert" aria-live="polite"></div>
 
     <main class="layout">
       <aside class="panel">
@@ -401,6 +437,7 @@
     let refreshTimer = null;
     let heartbeatTimer = null;
     let lastPushedSignature = null;
+    let lastBroadcastTs = null;
     let currentGuidance = null;
 
     async function bootstrapLessonAccess() {
@@ -1085,6 +1122,7 @@
         }
       }
 
+      renderBroadcast();
       renderAdminLinks();
       renderResources();
       renderHeatStrip();
@@ -1092,6 +1130,27 @@
       renderSprintList();
       renderPushedModal();
       setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
+    }
+
+    function renderBroadcast() {
+      const banner = document.getElementById("broadcastBanner");
+      if (!banner) return;
+      const text = String(lessonData?.broadcast || "").trim();
+      const ts = lessonData?.broadcastedAt || null;
+      if (!text) {
+        banner.style.display = "none";
+        return;
+      }
+      const isNew = ts && ts !== lastBroadcastTs;
+      if (isNew) {
+        lastBroadcastTs = ts;
+        banner.classList.remove("new-msg");
+        void banner.offsetHeight;
+        banner.classList.add("new-msg");
+      }
+      const timeLabel = ts ? new Date(ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
+      banner.style.display = "block";
+      banner.innerHTML = `📡 <span>${escapeHtml(text)}</span>${timeLabel ? `<span style="font-weight:400;margin-inline-start:8px;opacity:0.85;">${timeLabel}</span>` : ""}<button class="broadcast-dismiss" onclick="document.getElementById('broadcastBanner').style.display='none'" title="סגור">✕</button>`;
     }
 
     async function sendHeartbeat() {
