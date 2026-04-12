@@ -1,7 +1,10 @@
 // netlify/functions/classroom.js — MilEd.One
 
 import { getDatabase } from "firebase-admin/database";
+import { readFile } from "fs/promises";
 import { ensureFirebaseAdminApp } from "./firebase-admin.js";
+
+let cachedConfigCourses = null;
 
 function getDB() {
   return getDatabase(ensureFirebaseAdminApp());
@@ -76,6 +79,56 @@ function computeVotePercentages(votesMap = {}, optionsCount = 3) {
 function normalizeUnitId(value, fallback = "unit_01") {
   const unit = String(value || "").trim();
   return unit || fallback;
+}
+
+function normalizeConfigUnitId(value, fallbackIndex = 1) {
+  const raw = String(value ?? "").trim();
+  if(/^unit_\d+$/i.test(raw)) return normalizeUnitId(raw.toLowerCase());
+  const numeric = Number(raw);
+  if(Number.isInteger(numeric) && numeric > 0) {
+    return `unit_${String(numeric).padStart(2, "0")}`;
+  }
+  return `unit_${String(fallbackIndex).padStart(2, "0")}`;
+}
+
+async function getConfigCourses() {
+  if(cachedConfigCourses) return cachedConfigCourses;
+  try {
+    const configPath = new URL("../config.json", import.meta.url);
+    const raw = await readFile(configPath, "utf8");
+    const parsed = JSON.parse(raw);
+    cachedConfigCourses = parsed?.my_courses || {};
+  } catch {
+    cachedConfigCourses = {};
+  }
+  return cachedConfigCourses;
+}
+
+function buildConfigCourseBundle(courseConfig = {}, lessonId) {
+  const semesterUnits = Array.isArray(courseConfig?.course_units?.semester_a?.units)
+    ? courseConfig.course_units.semester_a.units
+    : [];
+  const fallbackUnits = semesterUnits.map((unit, index) => ({
+    unitId: normalizeConfigUnitId(unit?.unitId || unit?.id, index + 1),
+    name: String(unit?.label || unit?.name || `Unit ${index + 1}`).trim() || `Unit ${index + 1}`,
+    resources: []
+  }));
+  const normalizedLessonId = normalizeUnitId(lessonId, "unit_01");
+  const selectedUnits = fallbackUnits.filter(unit => unit.unitId === normalizedLessonId);
+  const activeUnit = selectedUnits[0] || null;
+
+  return {
+    courseName: String(courseConfig?.name || "").trim() || null,
+    selectedUnits,
+    resources: [],
+    sprintDefinitions: activeUnit ? [{
+      id: `${normalizedLessonId}_focus`,
+      title: activeUnit.name,
+      stationType: "AI_STATION",
+      instructions: `עובדים כעת על היחידה "${activeUnit.name}". השתמשו בשיחה ובמשאבים הזמינים כדי להתקדם במשימה.`,
+      order: 1
+    }] : []
+  };
 }
 
 function tryParseJson(value) {
@@ -190,12 +243,16 @@ function normalizeMoodleMetadata(rawInput) {
   };
 }
 
-function getCourseLessonBundle(courseNode = {}, lessonId) {
+function getCourseLessonBundle(courseNode = {}, lessonId, courseConfig = null) {
   const metadata = courseNode?.metadata || {};
-  const units = Array.isArray(metadata?.units) ? metadata.units : [];
+  let units = Array.isArray(metadata?.units) ? metadata.units : [];
   const playlists = courseNode?.playlists || {};
   const normalizedLessonId = normalizeUnitId(lessonId, "unit_01");
   const playlist = playlists?.[normalizedLessonId] || null;
+  const configBundle = !units.length && courseConfig ? buildConfigCourseBundle(courseConfig, normalizedLessonId) : null;
+  if(!units.length && configBundle?.selectedUnits?.length) {
+    units = configBundle.selectedUnits;
+  }
   const selectedUnitIds = Array.isArray(playlist?.unitIds) && playlist.unitIds.length
     ? playlist.unitIds.map(id => normalizeUnitId(id)).filter(Boolean)
     : [normalizedLessonId];
@@ -209,11 +266,12 @@ function getCourseLessonBundle(courseNode = {}, lessonId) {
   return {
     lessonId: normalizedLessonId,
     playlist,
-    selectedUnits,
-    resources,
+    selectedUnits: selectedUnits.length ? selectedUnits : (configBundle?.selectedUnits || []),
+    resources: resources.length ? resources : (configBundle?.resources || []),
+    courseName: String(courseNode?.name || courseConfig?.name || "").trim() || null,
     sprintDefinitions: Array.isArray(courseNode?.sprintDefinitions?.[normalizedLessonId]?.items)
       ? courseNode.sprintDefinitions[normalizedLessonId].items
-      : []
+      : (configBundle?.sprintDefinitions || [])
   };
 }
 
@@ -514,16 +572,19 @@ export async function handler(event){
         door_status: session.active ? "auto" : "closed"
       };
       const lessonId = normalizeUnitId(state.current_unit || session.unitId);
+      const configCourses = await getConfigCourses();
+      const courseConfig = courseId ? (configCourses?.[courseId] || null) : null;
       const courseSnap = courseId
         ? await db.ref(`courses/${courseId}`).once("value")
         : { val: () => ({}) };
       const courseNode = courseSnap.val() || {};
-      const lessonBundle = getCourseLessonBundle(courseNode, lessonId);
+      const lessonBundle = getCourseLessonBundle(courseNode, lessonId, courseConfig);
       const pacingSummary = computePacingSummary(session.pacing || {}, state.active_sprint || null);
 
       return ok({
         sessionId,
         courseId,
+        courseName: lessonBundle.courseName,
         lessonId,
         botType: session.botType || null,
         facultyId: session.facultyId || null,

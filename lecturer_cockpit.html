@@ -3654,7 +3654,10 @@ document.addEventListener("keydown", (event) => {
 <script src="/firebase-auth.js"></script>
 <script src="/auth-guard.js"></script>
 <script>
-  window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+  const lecturerSessionUser = window.MiledAccess?.getSessionUser?.();
+  const lecturerCanonicalRole = window.MiledAccess?.normalizeRole?.(lecturerSessionUser?.canonicalRole || lecturerSessionUser?.role);
+  const lecturerRedirect = window.MiledAccess?.getRoleHome?.(lecturerCanonicalRole) || "/index.html";
+  window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], lecturerRedirect);
 </script>
 </body>
 </html>

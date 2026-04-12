@@ -1,0 +1,2 @@
+auditId,timestamp,courseId,studentId,stageId,submissionId,decision,actorId,actorRole,actorEmail,evaluationId,validationEventId,authVerifiedByToken
+audit_mnvbpni7zndcty,2026-04-12T05:28:47.935Z,course_integration_test,stu_mnvbpmel,stage_integration,sub_mnvbpn9qv83cs0,approved,local_lecturer,lecturer,,eval_mnvbpni7k0zsu7,val_mnvbpni73jrl9e,false

@@ -66,6 +66,56 @@ async function saveSessionContext(studentId, courseId, data) {
   }
 }
 
+function normalizeStageStorageKey(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return normalized || null;
+}
+
+function buildGatekeepingContextBlock(sessionCtx, currentStep = null) {
+  if (!sessionCtx) return "";
+
+  const lines = [];
+  const continuityState = sessionCtx.continuity?.state || null;
+  const gatekeeping = sessionCtx.gatekeeping || {};
+  const stageKey = normalizeStageStorageKey(currentStep);
+
+  if (continuityState?.currentStageId)
+    lines.push(`שלב רצף פעיל: ${continuityState.currentStageId}`);
+
+  if (stageKey) {
+    const unlockState = sessionCtx.continuity?.unlockStates?.[stageKey] || null;
+    const activeSubmissionId = gatekeeping.activeSubmissionIdByStage?.[stageKey] || null;
+    const latestEvaluationId = gatekeeping.lastEvaluationIdByStage?.[stageKey] || null;
+    const latestTokenId = gatekeeping.lastTokenIdByStage?.[stageKey] || null;
+    const latestEvaluation = latestEvaluationId ? gatekeeping.evaluations?.[latestEvaluationId] : null;
+    const latestToken = latestTokenId ? gatekeeping.tokens?.[latestTokenId] : null;
+    const openRevision = Object.values(gatekeeping.revisionRequests || {}).find(item => {
+      if (!item || item.status !== "open") return false;
+      if (activeSubmissionId && item.submissionId === activeSubmissionId) return true;
+      return false;
+    }) || null;
+
+    if (unlockState?.state)
+      lines.push(`סטטוס פתיחת שלב: ${unlockState.state}`);
+    if (activeSubmissionId)
+      lines.push(`הוגשה בקשת אישור: ${activeSubmissionId}`);
+    if (latestEvaluation?.status)
+      lines.push(`תוצאת gatekeeping אחרונה: ${latestEvaluation.status}`);
+    if (latestEvaluation?.feedback)
+      lines.push(`משוב gatekeeping: ${latestEvaluation.feedback}`);
+    if (latestToken?.status)
+      lines.push(`סטטוס טוקן אישור: ${latestToken.status}`);
+    if (openRevision?.reasonSummary)
+      lines.push(`נדרש תיקון לפני התקדמות: ${openRevision.reasonSummary}`);
+  }
+
+  return lines.length ? "## מצב Gatekeeping\n" + lines.join("\n") : "";
+}
+
 
 // ─────────────────────────────────────────
 // CONVERSATION LOGGING
@@ -400,6 +450,11 @@ export async function handler(event) {
       contextBlock = contextBlock
         ? contextBlock + "\n" + stepLine
         : "## הקשר\n" + stepLine;
+    }
+
+    const gatekeepingBlock = buildGatekeepingContextBlock(sessionCtx, currentStep);
+    if (gatekeepingBlock) {
+      contextBlock = [contextBlock, gatekeepingBlock].filter(Boolean).join("\n\n");
     }
 
     // ─── INJECT COURSE CONTEXT ───

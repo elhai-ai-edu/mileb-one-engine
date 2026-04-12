@@ -467,6 +467,89 @@
       return res.json();
     }
 
+    async function callGatekeeping(method, payload = null, query = "") {
+      const url = `/api/gatekeeping${query}`;
+      if (method === "GET") {
+        const res = await fetch(url);
+        return res.json();
+      }
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {})
+      });
+      return res.json();
+    }
+
+    function renderGateStatusHtml(statusData = null) {
+      if (!statusData || statusData.ok === false) {
+        return '<div class="resource-meta">אין נתוני gatekeeping זמינים כרגע.</div>';
+      }
+
+      const unlockState = statusData.unlockState?.state || null;
+      const submissionId = statusData.submission?.submissionId || null;
+      const evaluationStatus = statusData.evaluation?.status || null;
+      const feedback = statusData.evaluation?.feedback || null;
+      const tokenStatus = statusData.token?.status || null;
+      const revision = Object.values(statusData.revisionRequests || {}).find(item => item?.status === "open") || null;
+
+      const rows = [];
+      if (unlockState) rows.push(`<div class="resource-meta"><strong>unlock:</strong> ${escapeHtml(unlockState)}</div>`);
+      if (submissionId) rows.push(`<div class="resource-meta"><strong>submission:</strong> ${escapeHtml(submissionId)}</div>`);
+      if (evaluationStatus) rows.push(`<div class="resource-meta"><strong>evaluation:</strong> ${escapeHtml(evaluationStatus)}</div>`);
+      if (feedback) rows.push(`<div class="resource-meta"><strong>feedback:</strong> ${escapeHtml(feedback)}</div>`);
+      if (tokenStatus) rows.push(`<div class="resource-meta"><strong>token:</strong> ${escapeHtml(tokenStatus)}</div>`);
+      if (revision?.reasonSummary) rows.push(`<div class="resource-meta"><strong>revision:</strong> ${escapeHtml(revision.reasonSummary)}</div>`);
+
+      const history = statusData.history || {};
+      const historyRows = [];
+      (history.submissions || []).slice(0, 3).forEach(item => {
+        historyRows.push(`submit ${item?.submissionId || "-"} | ${item?.submittedAt || "-"}`);
+      });
+      (history.evaluations || []).slice(0, 3).forEach(item => {
+        historyRows.push(`eval ${item?.status || "-"} | ${item?.evaluatedAt || "-"}`);
+      });
+      if (historyRows.length) {
+        rows.push(`<div class="resource-meta"><strong>history:</strong><br>${historyRows.map(line => escapeHtml(line)).join("<br>")}</div>`);
+      }
+
+      return rows.length ? rows.join("") : '<div class="resource-meta">אין אירועי gatekeeping לשלב הנוכחי.</div>';
+    }
+
+    function renderGateQueueHtml(queue = []) {
+      if (!Array.isArray(queue) || !queue.length) {
+        return '<div class="resource-meta">אין פריטי gatekeeping לשלב הנוכחי.</div>';
+      }
+
+      return queue.slice(0, 12).map(item => `
+        <div class="heat-row" style="grid-template-columns:1.2fr 1fr 1fr 1fr;">
+          <span>${escapeHtml(item.studentName || item.studentId || "student")}</span>
+          <span>${escapeHtml(item.stageId || "-")}</span>
+          <span>${escapeHtml(item.evaluationStatus || "pending")}</span>
+          <span class="heat-pill ${escapeHtml((item.unlockState || "locked") === "unlocked" ? "fast" : "support")}">${escapeHtml(item.unlockState || "locked")}</span>
+        </div>
+      `).join("");
+    }
+
+    async function getCurrentGateStatusForStage(stageId) {
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (!courseId || !stageId) return null;
+      const targetStudentId = role === "student"
+        ? studentId
+        : String(document.getElementById("gateLecturerStudentId")?.value || "").trim();
+      if (!targetStudentId) return null;
+
+      try {
+        return await callGatekeeping(
+          "GET",
+          null,
+          `?studentId=${encodeURIComponent(targetStudentId)}&courseId=${encodeURIComponent(courseId)}&stageId=${encodeURIComponent(stageId)}`
+        );
+      } catch {
+        return null;
+      }
+    }
+
     function buildWaitingLobbyUrl() {
       const query = new URLSearchParams();
       if (courseIdFromUrl) query.set("courseId", courseIdFromUrl);
@@ -617,6 +700,35 @@
           </div>`
         : "";
 
+      const gatekeepingBox = role === "student"
+        ? `
+          <div class="evidence-box">
+            <strong>Gatekeeping Submission</strong>
+            <div class="resource-meta">הגשה פורמלית לאישור שלב ${escapeHtml(activeSprint.id || "")}</div>
+            <textarea id="gateSubmissionText" placeholder="מה מוגש לבדיקה? צרף סיכום קצר"></textarea>
+            <input id="gatePayloadRef" placeholder="מזהה חיצוני (אופציונלי)">
+            <button class="action-btn support" id="gateSubmitBtn" type="button">שלח ל-Gatekeeping</button>
+            <div id="gateStatusBox"></div>
+          </div>`
+        : `
+          <div class="evidence-box">
+            <strong>Gatekeeping Control</strong>
+            <div class="resource-meta">בקרת אישור/דחייה לשלב ${escapeHtml(activeSprint.id || "")}</div>
+            <input id="gateLecturerStudentId" placeholder="studentId לבדיקה">
+            <input id="gateLecturerSubmissionId" placeholder="submissionId (אם ריק תיבחר ההגשה האחרונה בשלב)">
+            <select id="gateDecision">
+              <option value="approved">approved</option>
+              <option value="rejected">rejected</option>
+              <option value="review_required">review_required</option>
+            </select>
+            <textarea id="gateDecisionFeedback" placeholder="משוב למערכת ולסטודנט"></textarea>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="action-btn primary" id="gateLoadStatusBtn" type="button">טען סטטוס</button>
+              <button class="action-btn support" id="gateEvaluateBtn" type="button">שלח החלטה</button>
+            </div>
+            <div id="gateStatusBox"></div>
+          </div>`;
+
       const controls = role === "student"
         ? `
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -633,6 +745,7 @@
         ${plenaryNote}
         ${controls}
         ${evidenceBox}
+        ${gatekeepingBox}
       `;
 
       bindSprintActions(activeSprint);
@@ -681,9 +794,20 @@
       const startBtn = document.getElementById("startSprintBtn");
       const completeBtn = document.getElementById("completeSprintBtn");
       const evidenceBtn = document.getElementById("submitEvidenceBtn");
+      const gateSubmitBtn = document.getElementById("gateSubmitBtn");
+      const gateLoadStatusBtn = document.getElementById("gateLoadStatusBtn");
+      const gateEvaluateBtn = document.getElementById("gateEvaluateBtn");
+      const gateStatusBox = document.getElementById("gateStatusBox");
 
       if (startBtn) {
         startBtn.addEventListener("click", async () => {
+          const gateStatus = await getCurrentGateStatusForStage(activeSprint.id);
+          const unlockState = gateStatus?.unlockState?.state || null;
+          if (["locked", "pending_review", "relocked"].includes(String(unlockState || ""))) {
+            if (gateStatusBox) gateStatusBox.innerHTML = `<div class="resource-meta">${escapeHtml(`השלב חסום כרגע (${unlockState}).`)}</div>`;
+            return;
+          }
+
           const response = await callClassroom("POST", {
             action: "pacing_update",
             sessionId,
@@ -702,6 +826,13 @@
 
       if (completeBtn) {
         completeBtn.addEventListener("click", async () => {
+          const gateStatus = await getCurrentGateStatusForStage(activeSprint.id);
+          const unlockState = gateStatus?.unlockState?.state || null;
+          if (["locked", "pending_review", "relocked"].includes(String(unlockState || ""))) {
+            if (gateStatusBox) gateStatusBox.innerHTML = `<div class="resource-meta">${escapeHtml(`לא ניתן לסיים ספרינט לפני אישור (${unlockState}).`)}</div>`;
+            return;
+          }
+
           const response = await callClassroom("POST", {
             action: "pacing_update",
             sessionId,
@@ -754,6 +885,140 @@
           renderActiveSprint();
         });
       }
+
+      if (gateSubmitBtn) {
+        gateSubmitBtn.addEventListener("click", async () => {
+          const payloadText = String(document.getElementById("gateSubmissionText")?.value || "").trim();
+          const payloadRef = String(document.getElementById("gatePayloadRef")?.value || "").trim();
+          const courseId = lessonData?.courseId || courseIdFromUrl;
+          if (!courseId) {
+            if (gateStatusBox) gateStatusBox.innerHTML = '<div class="resource-meta">חסר courseId להגשה.</div>';
+            return;
+          }
+
+          if (gateStatusBox) gateStatusBox.innerHTML = '<div class="resource-meta">שולח הגשת gatekeeping...</div>';
+          const submitResult = await callGatekeeping("POST", {
+            action: "submit",
+            studentId,
+            courseId,
+            stageId: activeSprint.id,
+            sessionId,
+            payloadRef: payloadRef || null,
+            payload: { summary: payloadText || null },
+            payloadSummary: payloadText || null
+          });
+
+          if (submitResult?.ok) {
+            const statusResult = await callGatekeeping(
+              "GET",
+              null,
+              `?studentId=${encodeURIComponent(studentId)}&courseId=${encodeURIComponent(courseId)}&stageId=${encodeURIComponent(activeSprint.id)}`
+            );
+            if (gateStatusBox) gateStatusBox.innerHTML = renderGateStatusHtml(statusResult);
+          } else if (gateStatusBox) {
+            gateStatusBox.innerHTML = `<div class="resource-meta">${escapeHtml(submitResult?.error || "הגשה נכשלה")}</div>`;
+          }
+        });
+      }
+
+      if (gateLoadStatusBtn) {
+        gateLoadStatusBtn.addEventListener("click", async () => {
+          const targetStudentId = String(document.getElementById("gateLecturerStudentId")?.value || "").trim();
+          const courseId = lessonData?.courseId || courseIdFromUrl;
+          if (!targetStudentId || !courseId) {
+            if (gateStatusBox) gateStatusBox.innerHTML = '<div class="resource-meta">נדרש studentId ו-courseId לטעינת סטטוס.</div>';
+            return;
+          }
+          if (gateStatusBox) gateStatusBox.innerHTML = '<div class="resource-meta">טוען סטטוס...</div>';
+          const statusResult = await callGatekeeping(
+            "GET",
+            null,
+            `?studentId=${encodeURIComponent(targetStudentId)}&courseId=${encodeURIComponent(courseId)}&stageId=${encodeURIComponent(activeSprint.id)}`
+          );
+          if (gateStatusBox) gateStatusBox.innerHTML = renderGateStatusHtml(statusResult);
+          const candidateSubmissionId = statusResult?.submission?.submissionId || "";
+          if (candidateSubmissionId) {
+            const submissionInput = document.getElementById("gateLecturerSubmissionId");
+            if (submissionInput && !String(submissionInput.value || "").trim()) {
+              submissionInput.value = candidateSubmissionId;
+            }
+          }
+        });
+      }
+
+      if (gateEvaluateBtn) {
+        gateEvaluateBtn.addEventListener("click", async () => {
+          const targetStudentId = String(document.getElementById("gateLecturerStudentId")?.value || "").trim();
+          const explicitSubmissionId = String(document.getElementById("gateLecturerSubmissionId")?.value || "").trim();
+          const decision = String(document.getElementById("gateDecision")?.value || "approved").trim();
+          const feedback = String(document.getElementById("gateDecisionFeedback")?.value || "").trim();
+          const courseId = lessonData?.courseId || courseIdFromUrl;
+
+          if (!targetStudentId || !courseId) {
+            if (gateStatusBox) gateStatusBox.innerHTML = '<div class="resource-meta">נדרש studentId ו-courseId להחלטה.</div>';
+            return;
+          }
+
+          let submissionId = explicitSubmissionId;
+          if (!submissionId) {
+            const statusResult = await callGatekeeping(
+              "GET",
+              null,
+              `?studentId=${encodeURIComponent(targetStudentId)}&courseId=${encodeURIComponent(courseId)}&stageId=${encodeURIComponent(activeSprint.id)}`
+            );
+            submissionId = String(statusResult?.submission?.submissionId || "").trim();
+          }
+
+          if (!submissionId) {
+            if (gateStatusBox) gateStatusBox.innerHTML = '<div class="resource-meta">לא נמצאה הגשה לשלב הנוכחי.</div>';
+            return;
+          }
+
+          if (gateStatusBox) gateStatusBox.innerHTML = '<div class="resource-meta">שולח החלטה...</div>';
+          const evalResult = await callGatekeeping("POST", {
+            action: "evaluate",
+            studentId: targetStudentId,
+            courseId,
+            submissionId,
+            stageId: activeSprint.id,
+            status: decision,
+            feedback,
+            reviewMode: "hybrid",
+            actorId: resolveFacultyActorId(),
+            actorRole: canonicalRole || role,
+            actorEmail: sessionUser?.email || null
+          });
+
+          if (evalResult?.ok) {
+            const statusResult = await callGatekeeping(
+              "GET",
+              null,
+              `?studentId=${encodeURIComponent(targetStudentId)}&courseId=${encodeURIComponent(courseId)}&stageId=${encodeURIComponent(activeSprint.id)}`
+            );
+            if (gateStatusBox) gateStatusBox.innerHTML = renderGateStatusHtml(statusResult);
+          } else if (gateStatusBox) {
+            gateStatusBox.innerHTML = `<div class="resource-meta">${escapeHtml(evalResult?.error || "שליחת החלטה נכשלה")}</div>`;
+          }
+        });
+      }
+
+      if (gateStatusBox) {
+        const courseId = lessonData?.courseId || courseIdFromUrl;
+        const targetStudentId = role === "student"
+          ? studentId
+          : String(document.getElementById("gateLecturerStudentId")?.value || "").trim();
+        if (targetStudentId && courseId) {
+          callGatekeeping(
+            "GET",
+            null,
+            `?studentId=${encodeURIComponent(targetStudentId)}&courseId=${encodeURIComponent(courseId)}&stageId=${encodeURIComponent(activeSprint.id)}`
+          ).then(statusResult => {
+            gateStatusBox.innerHTML = renderGateStatusHtml(statusResult);
+          }).catch(() => {
+            gateStatusBox.innerHTML = '<div class="resource-meta">שגיאה בטעינת סטטוס gatekeeping.</div>';
+          });
+        }
+      }
     }
 
     function renderPushedModal() {
@@ -781,18 +1046,44 @@
             </div>`).join("")
         : '<div class="resource-meta">אין עדיין נתוני pacing פעילים.</div>';
       admin.innerHTML += `<div class="state-strip"><strong>Live Heatmap</strong>${strip}</div>`;
+
+      const currentStage = String(findActiveSprint()?.id || "").trim();
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (courseId && currentStage) {
+        callGatekeeping(
+          "GET",
+          null,
+          `?action=queue_by_course&courseId=${encodeURIComponent(courseId)}&stageId=${encodeURIComponent(currentStage)}`
+        ).then(queueResult => {
+          admin.innerHTML += `<div class="state-strip"><strong>Gatekeeping Queue</strong>${renderGateQueueHtml(queueResult?.queue || [])}</div>`;
+        }).catch(() => {
+          admin.innerHTML += '<div class="state-strip"><strong>Gatekeeping Queue</strong><div class="resource-meta">טעינת תור נכשלה.</div></div>';
+        });
+      }
     }
 
     async function refreshLesson() {
       if (!sessionId) return;
       lessonData = await callClassroom("GET", null, `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}`);
       syncLessonUrlContext();
+      const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
+      const primaryUnitName = selectedUnits[0]?.name || lessonData?.lessonId || "יחידה פעילה";
+      const courseName = lessonData?.courseName || lessonData?.courseId || "שיעור חי";
       const courseLabel = lessonData?.courseId ? `courseId: ${lessonData.courseId}` : "Faculty Tool";
-      document.getElementById("lessonTitle").textContent = lessonData?.playlist?.lessonId || lessonData?.lessonId || "שיעור חי";
-      document.getElementById("lessonSubtitle").textContent = `${courseLabel} | ${lessonData?.resources?.length || 0} resources | ${lessonData?.selectedUnits?.length || 0} mapped units`;
+      document.getElementById("lessonTitle").textContent = courseName;
+      document.getElementById("lessonSubtitle").textContent = `${primaryUnitName} | ${courseLabel} | ${lessonData?.resources?.length || 0} resources | ${selectedUnits.length || 0} mapped units`;
       document.getElementById("sessionChip").textContent = `sessionId: ${sessionId}`;
       document.getElementById("doorChip").textContent = `Door: ${String(lessonData?.state?.door_status || "auto").toUpperCase()}`;
       document.getElementById("roleChip").textContent = role === "lecturer" ? "Lecturer View" : "Student View";
+
+      const activeSprint = findActiveSprint();
+      if (activeSprint) {
+        const stageStatus = await getCurrentGateStatusForStage(activeSprint.id);
+        const unlockState = stageStatus?.unlockState?.state || null;
+        if (unlockState) {
+          document.getElementById("lessonSubtitle").textContent += ` | gate: ${String(unlockState).toUpperCase()}`;
+        }
+      }
 
       renderAdminLinks();
       renderResources();

@@ -116,6 +116,56 @@
 
 /* ─── Lesson Planner ─── */
 .panel-sub { font-size: 12px; color: var(--color-text-muted, #64748b); margin: -4px 0 12px; line-height: 1.5; }
+.gatekeeping-panel {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: #f8fbff;
+  display: grid;
+  gap: 10px;
+}
+.gatekeeping-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.gatekeeping-filter-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.gatekeeping-item {
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+.gatekeeping-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #475569;
+}
+.gatekeeping-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.gatekeeping-empty {
+  color: #94a3b8;
+  font-size: 12px;
+  text-align: center;
+  padding: 10px;
+}
 .lp-input {
   width: 100%; border: 1px solid #e2e8f0; border-radius: 8px;
   padding: 8px 10px; font-family: inherit; font-size: 13px; color: #1e293b;
@@ -1014,6 +1064,70 @@
         <div class="thread-empty">אין עדיין נתוני pacing פעילים</div>
       </div>
     </div>
+
+    <div class="gatekeeping-panel">
+      <div class="gatekeeping-head">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;">Gatekeeping Queue</div>
+          <div style="font-size:12px;color:#64748b;">תור בדיקות להגשות לפי הקורס שנבחר כרגע.</div>
+        </div>
+        <button class="btn btn-outline" type="button" onclick="loadGatekeepingQueue()" style="font-size:12px;padding:7px 12px;">רענן תור</button>
+      </div>
+
+      <div class="gatekeeping-filter-row">
+        <input id="gatekeepingStageFilter" class="lp-input" style="margin:0;max-width:180px;" placeholder="סינון לפי Stage ID">
+        <input id="gatekeepingStudentFilter" class="lp-input" style="margin:0;max-width:180px;" placeholder="סינון לפי Student ID">
+        <select id="gatekeepingStatusFilter" class="lp-input" style="margin:0;max-width:170px;">
+          <option value="">כל הסטטוסים</option>
+          <option value="pending_review">ממתין לבדיקה</option>
+          <option value="approved">מאושר</option>
+          <option value="rejected">נדחה</option>
+          <option value="review_required">נדרש תיקון</option>
+        </select>
+        <input id="gatekeepingFromDate" type="date" class="lp-input" style="margin:0;max-width:170px;" title="מתאריך">
+        <input id="gatekeepingToDate" type="date" class="lp-input" style="margin:0;max-width:170px;" title="עד תאריך">
+        <input id="gatekeepingSearchText" class="lp-input" style="margin:0;max-width:200px;" placeholder="חיפוש חופשי">
+        <select id="gatekeepingSortBy" class="lp-input" style="margin:0;max-width:210px;">
+          <option value="submitted_desc">מיון: חדש לישן</option>
+          <option value="submitted_asc">מיון: ישן לחדש</option>
+          <option value="student_asc">מיון: סטודנט א-ת</option>
+          <option value="status_asc">מיון: לפי סטטוס</option>
+        </select>
+        <select id="gatekeepingPageSize" class="lp-input" style="margin:0;max-width:140px;">
+          <option value="20">20 לעמוד</option>
+          <option value="50" selected>50 לעמוד</option>
+          <option value="100">100 לעמוד</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;font-weight:700;">
+          <input id="gatekeepingSelectAll" type="checkbox">
+          סמן הכל
+        </label>
+        <span id="gatekeepingSelectionCount" style="font-size:12px;color:#64748b;"></span>
+        <span id="gatekeepingQueueStatus" style="font-size:12px;color:#475569;"></span>
+      </div>
+
+      <textarea id="gatekeepingFeedback" class="lp-textarea" rows="2" style="margin:0;" placeholder="משוב להערכה (אופציונלי)"></textarea>
+      <div class="gatekeeping-actions">
+        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="clearGatekeepingSelection()">נקה בחירה</button>
+        <button class="btn btn-green" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('approved')">אישור נבחרים</button>
+        <button class="btn btn-red" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('rejected')">דחיית נבחרים</button>
+        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('review_required')">נדרש תיקון לנבחרים</button>
+        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="retryGatekeepingFailedBulk()">נסה שוב נכשלים</button>
+        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="stopGatekeepingBulk()">עצור Bulk</button>
+        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="exportGatekeepingAuditCsv()">ייצא Audit CSV</button>
+      </div>
+      <div class="gatekeeping-filter-row" style="justify-content:space-between;">
+        <span id="gatekeepingBulkProgress" style="font-size:12px;color:#1e293b;"></span>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(-1)">הקודם</button>
+          <span id="gatekeepingPageInfo" style="font-size:12px;color:#475569;"></span>
+          <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(1)">הבא</button>
+        </div>
+      </div>
+      <div id="gatekeepingQueueList" style="display:grid;gap:8px;">
+        <div class="gatekeeping-empty">בחר קורס כדי לטעון תור Gatekeeping</div>
+      </div>
+    </div>
   </div>
 
   <div class="panel" data-tab-panel="prep">
@@ -1392,6 +1506,15 @@ let importedMetadataCache = null;
 let selectedPlaylistUnitIds = new Set();
 let sprintDrafts = [];
 let pacingHeatmapTimer = null;
+let gatekeepingQueueCache = [];
+let gatekeepingFilteredQueue = [];
+let gatekeepingSelectedKeys = new Set();
+let gatekeepingPage = 1;
+let gatekeepingPageSize = 50;
+let gatekeepingTotal = 0;
+let gatekeepingTotalPages = 1;
+let gatekeepingBulkFailures = [];
+let gatekeepingBulkStopRequested = false;
 const WAITING_ATTENDEE_STALE_MS = 60000;
 
 function safeAvatar(avatar) {
@@ -1972,6 +2095,8 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
     fetchWaitingPressureForSelectedCourse();
     loadPreSessionMission();
+    gatekeepingPage = 1;
+    loadGatekeepingQueue();
   };
 
   if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
@@ -2127,6 +2252,8 @@ async function openSession() {
     setOpenAllGateState(false);
     renderDJBooth();
     startPolling();
+    gatekeepingPage = 1;
+    loadGatekeepingQueue();
   } catch (error) {
     console.error('[openSession] failed', error);
     alert(`שגיאה בפתיחת שיעור: ${error?.message || 'בדוק בחירת קורס וחיבור Firebase'}`);
@@ -2222,6 +2349,8 @@ async function closeSession() {
   pushedSteps = [];
   renderDJBooth();
   loadPacingHeatmap();
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
 }
 
 // ─────────────────────────────────────────
@@ -2735,6 +2864,431 @@ async function callClassroom(body) {
     body: JSON.stringify(body),
   });
   return res.json();
+}
+
+async function callGatekeeping(body) {
+  const idToken = await getFirebaseBearerToken();
+  const requestHeaders = { 'Content-Type': 'application/json' };
+  if (idToken) requestHeaders.Authorization = `Bearer ${idToken}`;
+  const res = await fetch('/.netlify/functions/gatekeeping', {
+    method: 'POST',
+    headers: requestHeaders,
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function getFirebaseBearerToken() {
+  try {
+    if (!window.firebase?.apps?.length) return "";
+    const user = firebase.auth().currentUser;
+    if (!user) return "";
+    return await user.getIdToken(false);
+  } catch {
+    return "";
+  }
+}
+
+function gatekeepingClassId() {
+  return currentLessonId || getSelectedTeachingContext().classId || null;
+}
+
+function gatekeepingActorRole() {
+  const accessUser = window.MiledAccess?.getSessionUser?.() || null;
+  const normalized = window.MiledAccess?.normalizeRole?.(accessUser?.role);
+  return String(normalized || "lecturer").trim() || "lecturer";
+}
+
+function gatekeepingItemKey(item) {
+  return `${String(item?.studentId || "")}::${String(item?.submissionId || "")}`;
+}
+
+function gatekeepingStatusRank(status) {
+  const normalized = String(status || "pending_review").toLowerCase();
+  if (normalized === "pending_review") return 0;
+  if (normalized === "review_required") return 1;
+  if (normalized === "rejected") return 2;
+  if (normalized === "approved") return 3;
+  return 9;
+}
+
+function sortGatekeepingQueue(items = [], sortBy = "submitted_desc") {
+  const result = [...items];
+  result.sort((a, b) => {
+    const aTs = Date.parse(a?.submittedAt || 0) || 0;
+    const bTs = Date.parse(b?.submittedAt || 0) || 0;
+    const aStudent = String(a?.studentName || a?.studentId || "").toLowerCase();
+    const bStudent = String(b?.studentName || b?.studentId || "").toLowerCase();
+    const aStatus = gatekeepingStatusRank(a?.evaluationStatus);
+    const bStatus = gatekeepingStatusRank(b?.evaluationStatus);
+
+    if (sortBy === "submitted_asc") return aTs - bTs;
+    if (sortBy === "student_asc") return aStudent.localeCompare(bStudent, "he");
+    if (sortBy === "status_asc") {
+      if (aStatus !== bStatus) return aStatus - bStatus;
+      return bTs - aTs;
+    }
+    return bTs - aTs;
+  });
+  return result;
+}
+
+function syncGatekeepingSelectionUi() {
+  const countEl = document.getElementById("gatekeepingSelectionCount");
+  const selectAllEl = document.getElementById("gatekeepingSelectAll");
+  const total = gatekeepingFilteredQueue.length;
+  const selected = gatekeepingFilteredQueue.filter(item => gatekeepingSelectedKeys.has(gatekeepingItemKey(item))).length;
+  if (countEl) countEl.textContent = `${selected}/${total} נבחרו`;
+  if (selectAllEl) {
+    selectAllEl.checked = total > 0 && selected === total;
+    selectAllEl.indeterminate = selected > 0 && selected < total;
+  }
+}
+
+function pruneGatekeepingSelection() {
+  const validKeys = new Set(gatekeepingQueueCache.map(item => gatekeepingItemKey(item)));
+  gatekeepingSelectedKeys = new Set(Array.from(gatekeepingSelectedKeys).filter(key => validKeys.has(key)));
+}
+
+function toggleGatekeepingItemSelection(checkboxEl, studentId, submissionId) {
+  const key = `${String(studentId || "")}::${String(submissionId || "")}`;
+  if (!key || key === "::") return;
+  if (checkboxEl?.checked) gatekeepingSelectedKeys.add(key);
+  else gatekeepingSelectedKeys.delete(key);
+  syncGatekeepingSelectionUi();
+}
+
+function toggleGatekeepingSelectAll(checked) {
+  gatekeepingFilteredQueue.forEach(item => {
+    const key = gatekeepingItemKey(item);
+    if (checked) gatekeepingSelectedKeys.add(key);
+    else gatekeepingSelectedKeys.delete(key);
+  });
+  applyGatekeepingQueueFilters();
+}
+
+function renderGatekeepingQueue(items = []) {
+  const listEl = document.getElementById("gatekeepingQueueList");
+  if (!listEl) return;
+  if (!items.length) {
+    listEl.innerHTML = '<div class="gatekeeping-empty">אין כרגע פריטים בתור לבדיקה</div>';
+    return;
+  }
+
+  listEl.innerHTML = items.map(item => {
+    const studentId = String(item?.studentId || "");
+    const submissionId = String(item?.submissionId || "");
+    const stageId = String(item?.stageId || "");
+    const submittedAt = item?.submittedAt
+      ? new Date(item.submittedAt).toLocaleString("he-IL", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" })
+      : "--";
+    const status = String(item?.evaluationStatus || "pending_review");
+    const feedback = String(item?.feedback || "").trim();
+    const selected = gatekeepingSelectedKeys.has(gatekeepingItemKey(item));
+    return `
+      <div class="gatekeeping-item">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:13px;font-weight:700;color:#0f172a;">${escapeHtml(item.studentName || studentId || "student")}</div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;font-weight:700;">
+            <input type="checkbox" ${selected ? "checked" : ""} onchange="toggleGatekeepingItemSelection(this, '${studentId}', '${submissionId}')">
+            בחר
+          </label>
+        </div>
+        <div class="gatekeeping-meta">
+          <span>Stage: <strong>${escapeHtml(stageId || "-")}</strong></span>
+          <span>Submitted: <strong>${escapeHtml(submittedAt)}</strong></span>
+          <span>Status: <strong>${escapeHtml(status)}</strong></span>
+        </div>
+        ${feedback ? `<div style="font-size:12px;color:#475569;">Feedback: ${escapeHtml(feedback)}</div>` : ""}
+        <div class="gatekeeping-actions">
+          <button class="btn btn-green" type="button" style="font-size:12px;padding:6px 10px;" onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'approved')">אשר</button>
+          <button class="btn btn-red" type="button" style="font-size:12px;padding:6px 10px;" onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'rejected')">דחה</button>
+          <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'review_required')">נדרש תיקון</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function toIsoStartOfDay(value) {
+  if (!value) return "";
+  const parsed = Date.parse(`${value}T00:00:00`);
+  if (!Number.isFinite(parsed)) return "";
+  return new Date(parsed).toISOString();
+}
+
+function toIsoEndOfDay(value) {
+  if (!value) return "";
+  const parsed = Date.parse(`${value}T23:59:59.999`);
+  if (!Number.isFinite(parsed)) return "";
+  return new Date(parsed).toISOString();
+}
+
+function updateGatekeepingPageUi() {
+  const pageInfoEl = document.getElementById("gatekeepingPageInfo");
+  if (pageInfoEl) pageInfoEl.textContent = `עמוד ${gatekeepingPage}/${gatekeepingTotalPages} · ${gatekeepingTotal} סהכ`;
+}
+
+function changeGatekeepingPage(delta) {
+  const nextPage = Math.min(Math.max(1, gatekeepingPage + Number(delta || 0)), Math.max(1, gatekeepingTotalPages));
+  if (nextPage === gatekeepingPage) return;
+  gatekeepingPage = nextPage;
+  loadGatekeepingQueue();
+}
+
+function gatekeepingQueueQueryParams(classId) {
+  const params = new URLSearchParams();
+  params.set("action", "queue_by_course");
+  params.set("courseId", classId);
+
+  const stageFilter = String(document.getElementById("gatekeepingStageFilter")?.value || "").trim();
+  const studentFilter = String(document.getElementById("gatekeepingStudentFilter")?.value || "").trim();
+  const statusFilter = String(document.getElementById("gatekeepingStatusFilter")?.value || "").trim();
+  const fromDate = String(document.getElementById("gatekeepingFromDate")?.value || "").trim();
+  const toDate = String(document.getElementById("gatekeepingToDate")?.value || "").trim();
+  const freeSearch = String(document.getElementById("gatekeepingSearchText")?.value || "").trim();
+  const search = [studentFilter, freeSearch].filter(Boolean).join(" ").trim();
+
+  if (stageFilter) params.set("stageId", stageFilter);
+  if (statusFilter) params.set("status", statusFilter);
+  if (search) params.set("search", search);
+
+  const fromTs = toIsoStartOfDay(fromDate);
+  const toTs = toIsoEndOfDay(toDate);
+  if (fromTs) params.set("fromDate", fromTs);
+  if (toTs) params.set("toDate", toTs);
+
+  params.set("page", String(gatekeepingPage));
+  params.set("pageSize", String(gatekeepingPageSize));
+  return params.toString();
+}
+
+function applyGatekeepingQueueFilters() {
+  const statusFilter = String(document.getElementById("gatekeepingStatusFilter")?.value || "").trim().toLowerCase();
+  const sortBy = String(document.getElementById("gatekeepingSortBy")?.value || "submitted_desc").trim();
+  const filtered = gatekeepingQueueCache.filter(item => {
+    const itemStatus = String(item?.evaluationStatus || "pending_review").toLowerCase();
+    return !statusFilter || itemStatus === statusFilter;
+  });
+  gatekeepingFilteredQueue = sortGatekeepingQueue(filtered, sortBy);
+  renderGatekeepingQueue(gatekeepingFilteredQueue);
+  syncGatekeepingSelectionUi();
+  updateGatekeepingPageUi();
+}
+
+async function loadGatekeepingQueue() {
+  const statusEl = document.getElementById("gatekeepingQueueStatus");
+  const classId = gatekeepingClassId();
+  if (!classId) {
+    gatekeepingQueueCache = [];
+    gatekeepingFilteredQueue = [];
+    gatekeepingSelectedKeys.clear();
+    gatekeepingTotal = 0;
+    gatekeepingTotalPages = 1;
+    gatekeepingPage = 1;
+    renderGatekeepingQueue([]);
+    syncGatekeepingSelectionUi();
+    updateGatekeepingPageUi();
+    if (statusEl) statusEl.textContent = "בחר קורס פעיל לטעינת תור";
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = "טוען תור...";
+  try {
+    const query = gatekeepingQueueQueryParams(classId);
+    const res = await fetch(`/.netlify/functions/gatekeeping?${query}`);
+    const data = await res.json();
+    if (!res.ok || !data?.ok) {
+      if (statusEl) statusEl.textContent = data?.error || "שגיאה בטעינת תור";
+      return;
+    }
+    gatekeepingQueueCache = Array.isArray(data.queue) ? data.queue : [];
+    gatekeepingTotal = Number(data.total || gatekeepingQueueCache.length) || 0;
+    gatekeepingTotalPages = Number(data.totalPages || 1) || 1;
+    gatekeepingPage = Math.min(Math.max(1, Number(data.page || gatekeepingPage)), Math.max(1, gatekeepingTotalPages));
+    pruneGatekeepingSelection();
+    applyGatekeepingQueueFilters();
+    if (statusEl) statusEl.textContent = `${gatekeepingFilteredQueue.length} פריטים מוצגים בעמוד`;
+  } catch {
+    if (statusEl) statusEl.textContent = "שגיאה בטעינת תור";
+  }
+}
+
+async function evaluateGatekeepingQueueItem(studentId, submissionId, stageId, status) {
+  const classId = gatekeepingClassId();
+  const statusEl = document.getElementById("gatekeepingQueueStatus");
+  const feedback = String(document.getElementById("gatekeepingFeedback")?.value || "").trim();
+  if (!classId || !studentId || !submissionId || !status) {
+    if (statusEl) statusEl.textContent = "חסרים פרטי הערכה";
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = "שומר הערכה...";
+  const data = await callGatekeeping({
+    action: "evaluate",
+    classId,
+    courseId: classId,
+    studentId,
+    submissionId,
+    stageId,
+    status,
+    feedback,
+    actorId: facultyId,
+    actorRole: gatekeepingActorRole()
+  });
+
+  if (!data?.ok) {
+    if (statusEl) statusEl.textContent = data?.error || "הערכת Gatekeeping נכשלה";
+    return;
+  }
+
+  if (statusEl) statusEl.textContent = "הערכה נשמרה";
+  await loadGatekeepingQueue();
+}
+
+function clearGatekeepingSelection() {
+  gatekeepingSelectedKeys.clear();
+  applyGatekeepingQueueFilters();
+}
+
+function stopGatekeepingBulk() {
+  gatekeepingBulkStopRequested = true;
+  const progressEl = document.getElementById("gatekeepingBulkProgress");
+  if (progressEl) progressEl.textContent = "הופסק לבקשת מרצה. ניתן להריץ ניסיון חוזר לנכשלים.";
+}
+
+async function exportGatekeepingAuditCsv() {
+  const classId = gatekeepingClassId();
+  const statusEl = document.getElementById("gatekeepingQueueStatus");
+  if (!classId) {
+    if (statusEl) statusEl.textContent = "בחר קורס פעיל לפני יצוא audit";
+    return;
+  }
+
+  const params = new URLSearchParams();
+  params.set("action", "audit_by_course");
+  params.set("courseId", classId);
+  params.set("format", "csv");
+  params.set("page", "1");
+  params.set("pageSize", "500");
+
+  const statusFilter = String(document.getElementById("gatekeepingStatusFilter")?.value || "").trim();
+  const fromDate = toIsoStartOfDay(String(document.getElementById("gatekeepingFromDate")?.value || "").trim());
+  const toDate = toIsoEndOfDay(String(document.getElementById("gatekeepingToDate")?.value || "").trim());
+  if (statusFilter) params.set("status", statusFilter);
+  if (fromDate) params.set("fromDate", fromDate);
+  if (toDate) params.set("toDate", toDate);
+
+  try {
+    if (statusEl) statusEl.textContent = "מכין יצוא Audit...";
+    const res = await fetch(`/.netlify/functions/gatekeeping?${params.toString()}`);
+    if (!res.ok) {
+      if (statusEl) statusEl.textContent = "יצוא Audit נכשל";
+      return;
+    }
+    const csv = await res.text();
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `gatekeeping_audit_${classId}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    if (statusEl) statusEl.textContent = "יצוא Audit הושלם";
+  } catch {
+    if (statusEl) statusEl.textContent = "יצוא Audit נכשל";
+  }
+}
+
+async function retryGatekeepingFailedBulk() {
+  if (!gatekeepingBulkFailures.length) {
+    const progressEl = document.getElementById("gatekeepingBulkProgress");
+    if (progressEl) progressEl.textContent = "אין נכשלים אחרונים לניסיון חוזר";
+    return;
+  }
+
+  gatekeepingSelectedKeys = new Set(
+    gatekeepingBulkFailures
+      .map(item => `${String(item.studentId || "")}::${String(item.submissionId || "")}`)
+      .filter(key => key !== "::")
+  );
+  applyGatekeepingQueueFilters();
+  await evaluateGatekeepingBulk(gatekeepingBulkFailures[0]?.status || "review_required", true);
+}
+
+async function evaluateGatekeepingBulk(status, skipConfirm = false) {
+  const statusEl = document.getElementById("gatekeepingQueueStatus");
+  const progressEl = document.getElementById("gatekeepingBulkProgress");
+  const classId = gatekeepingClassId();
+  const feedback = String(document.getElementById("gatekeepingFeedback")?.value || "").trim();
+  if (!classId) {
+    if (statusEl) statusEl.textContent = "בחר קורס פעיל";
+    return;
+  }
+
+  const selectedItems = gatekeepingQueueCache.filter(item => gatekeepingSelectedKeys.has(gatekeepingItemKey(item)));
+  if (!selectedItems.length) {
+    if (statusEl) statusEl.textContent = "סמן לפחות פריט אחד";
+    return;
+  }
+
+  const actionLabel = status === "approved"
+    ? "אישור"
+    : status === "rejected"
+      ? "דחייה"
+      : "סימון כנדרש תיקון";
+  const shouldProceed = skipConfirm ? true : confirm(`לבצע ${actionLabel} עבור ${selectedItems.length} פריטים מסומנים?`);
+  if (!shouldProceed) {
+    if (statusEl) statusEl.textContent = "פעולת ה-bulk בוטלה";
+    return;
+  }
+
+  gatekeepingBulkStopRequested = false;
+  gatekeepingBulkFailures = [];
+  if (statusEl) statusEl.textContent = `שומר הערכה לקבוצה (${selectedItems.length})...`;
+  let success = 0;
+  let failed = 0;
+  let processed = 0;
+
+  for (const item of selectedItems) {
+    if (gatekeepingBulkStopRequested) break;
+    const data = await callGatekeeping({
+      action: "evaluate",
+      classId,
+      courseId: classId,
+      studentId: item.studentId,
+      submissionId: item.submissionId,
+      stageId: item.stageId,
+      status,
+      feedback,
+      actorId: facultyId,
+      actorRole: gatekeepingActorRole()
+    });
+    processed += 1;
+    if (data?.ok) success += 1;
+    else {
+      failed += 1;
+      gatekeepingBulkFailures.push({
+        studentId: item.studentId,
+        submissionId: item.submissionId,
+        stageId: item.stageId,
+        status,
+        error: data?.error || "unknown_error"
+      });
+    }
+
+    if (progressEl) {
+      progressEl.textContent = `Bulk מתקדם: ${processed}/${selectedItems.length} · הצליחו ${success} · נכשלו ${failed}`;
+    }
+  }
+
+  const interrupted = gatekeepingBulkStopRequested && processed < selectedItems.length;
+  if (statusEl) {
+    statusEl.textContent = interrupted
+      ? `Bulk נעצר: טופלו ${processed}/${selectedItems.length}`
+      : `הערכה קבוצתית הושלמה: ${success} הצליחו, ${failed} נכשלו`;
+  }
+  if (!failed) gatekeepingSelectedKeys.clear();
+  await loadGatekeepingQueue();
 }
 
 function escapeHtml(str) {
@@ -3605,6 +4159,42 @@ renderSprintDrafts();
 loadCourseMetadataWorkspace();
 loadPacingHeatmap();
 document.getElementById("playlistLessonId")?.addEventListener("change", () => loadCourseMetadataWorkspace());
+document.getElementById("gatekeepingStageFilter")?.addEventListener("input", () => {
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
+});
+document.getElementById("gatekeepingStudentFilter")?.addEventListener("input", () => {
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
+});
+document.getElementById("gatekeepingStatusFilter")?.addEventListener("change", () => {
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
+});
+document.getElementById("gatekeepingFromDate")?.addEventListener("change", () => {
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
+});
+document.getElementById("gatekeepingToDate")?.addEventListener("change", () => {
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
+});
+document.getElementById("gatekeepingSearchText")?.addEventListener("input", () => {
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
+});
+document.getElementById("gatekeepingSortBy")?.addEventListener("change", () => {
+  applyGatekeepingQueueFilters();
+});
+document.getElementById("gatekeepingPageSize")?.addEventListener("change", (event) => {
+  gatekeepingPageSize = Number(event?.target?.value || 50) || 50;
+  gatekeepingPage = 1;
+  loadGatekeepingQueue();
+});
+document.getElementById("gatekeepingSelectAll")?.addEventListener("change", (event) => {
+  toggleGatekeepingSelectAll(!!event?.target?.checked);
+});
+loadGatekeepingQueue();
 
 document.addEventListener("click", (event) => {
   const avatarEl = event.target?.closest?.(".thread-msg-avatar");
@@ -3631,7 +4221,10 @@ document.addEventListener("keydown", (event) => {
 <script src="/firebase-auth.js"></script>
 <script src="/auth-guard.js"></script>
 <script>
-  window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+  const microSessionUser = window.MiledAccess?.getSessionUser?.();
+  const microCanonicalRole = window.MiledAccess?.normalizeRole?.(microSessionUser?.canonicalRole || microSessionUser?.role);
+  const microRedirect = window.MiledAccess?.getRoleHome?.(microCanonicalRole) || "/index.html";
+  window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], microRedirect);
 </script>
 </body>
 </html>

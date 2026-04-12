@@ -4,7 +4,10 @@
   "type": "module",
   "scripts": {
     "smoke:contracts": "node scripts/smoke_contracts.mjs",
-    "smoke:skills": "node scripts/smoke_test.mjs"
+    "smoke:skills": "node scripts/smoke_test.mjs",
+    "smoke:gatekeeping": "node scripts/smoke_gatekeeping.mjs",
+    "test:gatekeeping:integration": "node scripts/integration_gatekeeping_flow.mjs",
+    "test:gatekeeping:auth-negative": "node scripts/test_gatekeeping_auth_negative.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

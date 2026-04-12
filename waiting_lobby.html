@@ -347,8 +347,6 @@
     const studentId = localStorage.getItem(studentIdKey) || (`stu_${Math.random().toString(36).slice(2, 10)}`);
     localStorage.setItem(studentIdKey, studentId);
 
-    let db = null;
-    let activeDoorRef = null;
     let attendeeHeartbeatTimer = null;
     let warmupDone = false;
     let memoryDone = false;
@@ -477,6 +475,19 @@
         body: JSON.stringify(payload || {})
       });
       return res.json();
+    }
+
+    async function pingWaitingRoom(waiting = true) {
+      if (!courseId) return;
+      await callClassroom("POST", {
+        action: "waiting_ping",
+        classId: courseId,
+        sessionId: waitingSessionId || null,
+        studentId,
+        studentName: getStudentName(),
+        waiting,
+        status: waiting ? "waiting" : "joined"
+      });
     }
 
     async function loadConfigTitle() {
@@ -625,22 +636,23 @@
       const tasksCompleted = warmupDone && memoryDone;
       if (!tasksCompleted && latestDoorSignal !== "open") return;
       redirecting = true;
-      location.replace(`/lesson_view.html?sessionId=${encodeURIComponent(waitingSessionId)}&courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}`);
+      Promise.resolve()
+        .then(() => callClassroom("POST", {
+          action: "join",
+          sessionId: waitingSessionId,
+          studentId,
+          studentName: getStudentName(),
+          status: "online"
+        }))
+        .catch(() => null)
+        .then(() => pingWaitingRoom(false).catch(() => null))
+        .finally(() => {
+          location.replace(`/lesson_view.html?sessionId=${encodeURIComponent(waitingSessionId)}&courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}`);
+        });
     }
 
     async function upsertAttendeePresence() {
-      if (!db || !courseId) return;
-      const syncNodePath = getSyncNodePath();
-      if (!syncNodePath) return;
-      const attendeePayload = {
-        userId: studentId,
-        studentId,
-        name: getStudentName(),
-        ready: !!(warmupDone && memoryDone),
-        lastSeen: Date.now(),
-        sessionId: waitingSessionId || null
-      };
-      await db.ref(`${syncNodePath}/attendees/${studentId}`).update(attendeePayload);
+      await pingWaitingRoom(true);
     }
 
     async function refreshLessonState() {
@@ -660,35 +672,6 @@
       lessonStateTimer = setInterval(refreshLessonState, 5000);
     }
 
-    function initRealtimeDoorListener() {
-      if (!courseId || !window.firebase || !window.MILED_FIREBASE_CONFIG) return;
-      if (!firebase.apps.length) {
-        firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
-      }
-      db = firebase.database();
-      const syncNodePath = getSyncNodePath();
-      if (!syncNodePath) return;
-      activeDoorRef = db.ref(syncNodePath);
-      activeDoorRef.on("value", snapshot => {
-        const data = snapshot.val() || {};
-        const nextSessionId = String(data?.sessionId || "").trim();
-        if (nextSessionId) waitingSessionId = nextSessionId;
-        updateSessionLine();
-        const doorOpen = !!data?.door_open;
-        const sessionActive = !!data?.session_active;
-        if (doorOpen) {
-          setDoorSignal("open", "המרצה פתח את הדלת לכל הסטודנטים.");
-          attemptRedirect();
-        } else if (sessionActive) {
-          setDoorSignal("auto", "השיעור פעיל. השלמת המשימה תכניס אותך אוטומטית.");
-        } else {
-          setDoorSignal("closed", "השיעור עדיין לא נפתח. אפשר להשלים את משימות הכניסה בינתיים.");
-        }
-        flushPendingTicket();
-        upsertAttendeePresence();
-      });
-    }
-
     function initManualEnter() {
       document.getElementById("manualEnterBtn").addEventListener("click", attemptRedirect);
     }
@@ -705,7 +688,6 @@
       renderMemoryBoard();
       await loadConfigTitle();
       await loadPreSession();
-      initRealtimeDoorListener();
       await upsertAttendeePresence();
       if (waitingSessionId) {
         await refreshLessonState();

@@ -221,7 +221,10 @@
 <script>
 
 // ─── Auth guard ───
-const smartClassAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+const smartClassSessionUser = window.MiledAccess?.getSessionUser?.();
+const smartClassCanonicalRole = window.MiledAccess?.normalizeRole?.(smartClassSessionUser?.canonicalRole || smartClassSessionUser?.role);
+const smartClassRedirect = window.MiledAccess?.getRoleHome?.(smartClassCanonicalRole) || "/index.html";
+const smartClassAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], smartClassRedirect);
 
 const params  = new URLSearchParams(location.search);
 const classId = params.get("classId") || "";
