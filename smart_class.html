@@ -185,6 +185,45 @@
     .save-lifecycle-btn:hover { background: #4f46e5; }
     .lifecycle-msg { font-size: 12px; min-height: 16px; margin-top: 4px; }
 
+    /* ─── Work mode bar ─── */
+    .work-mode-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .work-mode-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      border-radius: 16px;
+      border: 1.5px solid #dbe7ff;
+      background: #fff;
+      text-decoration: none;
+      color: inherit;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+      box-shadow: 0 4px 12px rgba(15,23,42,0.06);
+    }
+    .work-mode-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px rgba(15,23,42,0.12);
+    }
+    .work-mode-btn.macro { border-color: #c7d2fe; }
+    .work-mode-btn.macro:hover { border-color: #818cf8; }
+    .work-mode-btn.micro { border-color: #bfdbfe; }
+    .work-mode-btn.micro:hover { border-color: #3b82f6; }
+    .work-mode-icon {
+      width: 46px; height: 46px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .work-mode-btn.macro .work-mode-icon { background: #eef2ff; }
+    .work-mode-btn.micro .work-mode-icon { background: #eff6ff; }
+    .work-mode-text { display: flex; flex-direction: column; gap: 3px; }
+    .work-mode-name { font-size: 15px; font-weight: 800; color: #1e293b; }
+    .work-mode-sub { font-size: 12px; color: #64748b; line-height: 1.5; }
+
     /* ─── Spinner ─── */
     .miled-spinner { color: #94a3b8; font-size: 13px; padding: 20px 0; text-align: center; }
   </style>
@@ -208,6 +247,24 @@
       <div class="course-header-meta" id="course-meta"></div>
     </div>
     <span class="lock-status-badge loading" id="lock-badge">בודק...</span>
+  </div>
+
+  <!-- ─── Work mode bar ─── -->
+  <div class="work-mode-bar">
+    <a id="macro-link" href="/macro_cockpit.html" class="work-mode-btn macro">
+      <div class="work-mode-icon">🧭</div>
+      <div class="work-mode-text">
+        <div class="work-mode-name">מאקרו — תכנון</div>
+        <div class="work-mode-sub">יחידות, בוטים, תאריכים ומבנה הקורס</div>
+      </div>
+    </a>
+    <a id="micro-link" href="/micro_cockpit.html" class="work-mode-btn micro">
+      <div class="work-mode-icon">🖥️</div>
+      <div class="work-mode-text">
+        <div class="work-mode-name">מיקרו — שיעור</div>
+        <div class="work-mode-sub">לפני השיעור, מרחב שיעור חי, אחרי השיעור</div>
+      </div>
+    </a>
   </div>
 
   <div class="grid-2">
@@ -302,6 +359,12 @@ const classId = params.get("classId") || "";
 if (!classId) {
   document.getElementById("error-msg").style.display = "";
   document.getElementById("error-msg").textContent = "לא צוין מזהה קורס (classId). חזור לדף הקורסים.";
+}
+
+// Wire classId into work-mode links
+if (classId) {
+  document.getElementById("macro-link").href = `/macro_cockpit.html?classId=${encodeURIComponent(classId)}`;
+  document.getElementById("micro-link").href  = `/micro_cockpit.html?classId=${encodeURIComponent(classId)}`;
 }
 
 const DB_URL = window.MILED_FIREBASE_CONFIG?.databaseURL;

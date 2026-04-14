@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>פורטל הסגל — MilEd.One</title>
   <script>document.documentElement.style.visibility = "hidden";</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Assistant', 'Segoe UI', system-ui, sans-serif;
       background:
-        radial-gradient(circle at 12% 8%, rgba(56, 189, 248, 0.18), transparent 28%),
-        radial-gradient(circle at 88% 20%, rgba(99, 102, 241, 0.2), transparent 34%),
+        radial-gradient(circle at 10% 6%, rgba(29,78,216,0.13), transparent 32%),
+        radial-gradient(circle at 88% 18%, rgba(99,102,241,0.16), transparent 34%),
         linear-gradient(150deg, #f8fbff 0%, #eef4ff 50%, #f1f5f9 100%);
       min-height: 100vh;
       direction: rtl;
@@ -31,7 +34,7 @@
       top: 0;
       z-index: 10;
     }
-    .brand { font-size: 18px; font-weight: 700; color: #1e293b; letter-spacing: -0.5px; }
+    .brand { font-size: 18px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px; }
     .brand span { color: #6366f1; }
     .topbar-right { display: flex; align-items: center; gap: 12px; }
     .user-info { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b; }
@@ -45,9 +48,9 @@
 
     /* ─── Page ─── */
     .page {
-      max-width: 1150px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 46px 24px 80px;
+      padding: 44px 24px 80px;
     }
     .page-greeting {
       font-size: 2rem;
@@ -59,163 +62,218 @@
     .page-subtitle {
       font-size: 15px;
       color: #475569;
-      margin-bottom: 28px;
+      margin-bottom: 36px;
       line-height: 1.7;
     }
 
-    .hero-strip {
-      margin-bottom: 26px;
-      padding: 14px 16px;
-      border-radius: 14px;
-      border: 1px solid #dbeafe;
-      background: linear-gradient(115deg, rgba(255,255,255,0.9), rgba(239,246,255,0.92));
+    /* ─── Main 2-block grid ─── */
+    .hub-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .hub-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ─── Block base ─── */
+    .hub-block {
+      border-radius: 26px;
+      border: 1px solid #dbe7ff;
+      background: linear-gradient(150deg, #ffffff 0%, #f8fbff 100%);
+      box-shadow: 0 16px 40px rgba(15,23,42,0.09);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .block-header {
+      padding: 26px 26px 20px;
+      border-bottom: 1px solid #e8f0fe;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .block-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+    }
+    .block-icon.blue  { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .block-icon.violet { background: #f5f3ff; border: 1px solid #ddd6fe; }
+
+    .block-meta { display: flex; flex-direction: column; gap: 4px; }
+    .block-label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: #64748b;
+    }
+    .block-title {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1.25;
+    }
+    .block-desc {
+      font-size: 14px;
+      color: #475569;
+      line-height: 1.75;
+      margin-top: 2px;
+    }
+
+    .block-body {
+      padding: 22px 26px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      flex: 1;
+    }
+
+    /* ─── Block 1: My Courses ─── */
+    .hub-block.courses { border-top: 5px solid #2563eb; }
+
+    .courses-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 20px;
+      border-radius: 18px;
+      border: 1.5px solid #bfdbfe;
+      background: linear-gradient(130deg, #eff6ff, #eef2ff);
+      cursor: pointer;
+      text-decoration: none;
+      color: #1e3a8a;
+      transition: transform .2s, box-shadow .2s, border-color .2s;
+      box-shadow: 0 6px 18px rgba(37,99,235,0.10);
+    }
+    .courses-cta:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 14px 30px rgba(37,99,235,0.18);
+      border-color: #93c5fd;
+    }
+    .courses-cta-left { display: flex; flex-direction: column; gap: 4px; }
+    .courses-cta-title { font-size: 1.15rem; font-weight: 800; }
+    .courses-cta-sub { font-size: 13px; color: #3b82f6; font-weight: 600; }
+    .courses-cta-arrow { font-size: 22px; color: #2563eb; }
+
+    .course-preview-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .course-preview-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      flex-wrap: wrap;
-    }
-    .hero-strip span {
-      font-size: 13px;
-      color: #1e3a8a;
-      font-weight: 700;
-    }
-    .hero-action {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 10px 16px;
-      border: 1px solid #bfdbfe;
-      border-radius: 999px;
-      background: #ffffff;
-      color: #1d4ed8;
-      font-size: 13px;
-      font-weight: 800;
-      text-decoration: none;
-      cursor: pointer;
-      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
-    }
-    .hero-action:hover {
-      background: #eff6ff;
-    }
-
-    /* ─── Service Cards Grid ─── */
-    .branches {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 22px;
-    }
-    @media (max-width: 900px) {
-      .branches { grid-template-columns: 1fr; }
-    }
-
-    .branch-card {
-      background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
-      border-radius: 24px;
-      border: 1px solid #dbe7ff;
-      padding: 26px;
-      display: flex;
-      flex-direction: column;
-      min-height: 250px;
-      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 14px;
+      border: 1px solid #dbeafe;
+      background: #fff;
       text-decoration: none;
       color: inherit;
-      transition: transform .26s ease, box-shadow .26s ease, border-color .26s ease;
-      position: relative;
-      overflow: hidden;
-      isolation: isolate;
-      box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+      font-size: 14px;
+      transition: background .15s, border-color .15s;
     }
-    .branch-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(circle at 110% -10%, rgba(59,130,246,0.14), transparent 38%);
-      z-index: -1;
-    }
-    .branch-card:hover {
-      transform: translateY(-6px) scale(1.01);
-      box-shadow: 0 22px 44px rgba(30, 41, 59, 0.15);
-      border-color: #93c5fd;
-    }
-    .branch-card.branch-1 { border-top: 5px solid #2563eb; }
-    .branch-card.branch-2 { border-top: 5px solid #7c3aed; }
-    .branch-card.branch-3 { border-top: 5px solid #0f766e; }
-    .branch-card.branch-4 { border-top: 5px solid #ea580c; }
+    .course-preview-item:hover { background: #eff6ff; border-color: #93c5fd; }
+    .course-preview-name { font-weight: 700; color: #1e3a8a; }
+    .course-preview-meta { font-size: 12px; color: #64748b; }
+    .course-preview-go { font-size: 13px; color: #2563eb; font-weight: 700; }
 
-    .branch-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
+
+    /* ─── Block 2: Professional Development ─── */
+    .hub-block.pro { border-top: 5px solid #7c3aed; }
+
+    .pro-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 12px;
     }
-    .branch-icon {
-      width: 54px;
-      height: 54px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px;
-      font-size: 28px;
-      background: #eff6ff;
-      border: 1px solid #dbeafe;
-      flex-shrink: 0;
+
+    .pro-card {
+      padding: 16px;
+      border-radius: 18px;
+      border: 1.5px solid #e9d5ff;
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
     }
-    .branch-4 .branch-icon {
-      background: #fff7ed;
-      border-color: #fed7aa;
-    }
-    .soon-chip {
-      font-size: 11px;
-      padding: 4px 10px;
+    .pro-card.teaching { border-color: #a7f3d0; grid-column: 1 / -1; }
+    .pro-card.research { border-color: #bfdbfe; }
+    .pro-card.publish  { border-color: #fed7aa; }
+    .pro-card.lll      { border-color: #e9d5ff; }
+
+    .pro-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .pro-card-icon { font-size: 22px; }
+    .soon-badge {
+      font-size: 10px; font-weight: 800;
+      padding: 3px 9px;
       border-radius: 20px;
-      background: #fff7ed;
-      border: 1px solid #fed7aa;
-      color: #c2410c;
-      font-weight: 700;
-      align-self: flex-start;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      color: #92400e;
     }
-    .branch-tag {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 1.1px;
-      color: #334155;
+    .pro-card-title { font-size: 1rem; font-weight: 800; color: #0f172a; }
+    .pro-card-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+    /* Teaching sub-tools row */
+    .teaching-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-top: 2px;
     }
-    .branch-title {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: #0f172a;
-      line-height: 1.28;
+    .tool-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      border: 1px solid #a7f3d0;
+      background: #ecfdf5;
+      color: #065f46;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background .15s, transform .15s;
     }
-    .branch-desc {
-      font-size: 14px;
-      color: #475569;
-      line-height: 1.78;
-      min-height: 72px;
+    .tool-pill:hover { background: #d1fae5; transform: translateY(-1px); }
+    .tool-pill.disabled {
+      border-color: #e2e8f0;
+      background: #f8fafc;
+      color: #94a3b8;
+      cursor: default;
     }
-    .branch-cta {
-      margin-top: auto;
+    .tool-pill.disabled:hover { background: #f8fafc; transform: none; }
+
+    .pro-card-link {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       font-size: 13px;
       font-weight: 800;
       color: #1d4ed8;
-      padding-top: 10px;
-      border-top: 1px solid #e2e8f0;
+      text-decoration: none;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
     }
-    .branch-card.branch-2 .branch-cta { color: #6d28d9; }
-    .branch-card.branch-3 .branch-cta { color: #0f766e; }
-    .branch-card.branch-4 .branch-cta { color: #c2410c; }
-    .branch-card[aria-disabled="true"] {
-      opacity: 0.94;
-      cursor: default;
-    }
+    .pro-card.research .pro-card-link { color: #1d4ed8; }
+    .pro-card.publish  .pro-card-link { color: #c2410c; }
 
-    /* ─── Footer links ─── */
+    /* ─── Footer ─── */
     .footer-links {
       margin-top: 36px;
       padding-top: 20px;
@@ -223,6 +281,7 @@
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
+      align-items: center;
     }
     .footer-link {
       font-size: 12px; color: #6366f1;
@@ -234,6 +293,19 @@
       transition: background .15s;
     }
     .footer-link:hover { background: #e0e7ff; }
+    .footer-action {
+      margin-inline-start: auto;
+      font-size: 12px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid #dbeafe;
+      color: #1d4ed8;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .footer-action:hover { background: #eff6ff; }
   </style>
 </head>
 <body>
@@ -251,62 +323,112 @@
 
 <div class="page">
   <div class="page-greeting">שלום, <span id="greeting-name">מרצה</span> 👋</div>
-  <div class="page-subtitle">לוח בקרה אסטרטגי ל-4 ערוצי עבודה: הוראה חיה, כלי AI להוראה, מחקר עומק ומיתוג מקצועי.</div>
+  <div class="page-subtitle">בחר את מרחב העבודה שלך: ניהול הקורסים הפעילים, או פיתוח וקידום מקצועי.</div>
 
-  <div class="hero-strip">
-    <span>תוכנית עבודה מומלצת: התחילו בהוראה פעילה, המשיכו לכלי קידום הוראה, והעמיקו במחקר.</span>
-    <a href="/student_dashboard.html" class="hero-action" onclick="return openStudentPreview();">🎓 תצוגת סטודנט</a>
-  </div>
+  <div class="hub-grid">
 
-  <div class="branches">
-
-    <a href="/micro_cockpit.html" class="branch-card branch-1">
-      <div class="branch-head">
-        <div class="branch-icon">🖥️</div>
+    <!-- ════════════════════════════════
+         BLOCK 1 — הקורסים שלי
+    ════════════════════════════════ -->
+    <div class="hub-block courses">
+      <div class="block-header">
+        <div class="block-icon blue">📚</div>
+        <div class="block-meta">
+          <div class="block-label">Course Management</div>
+          <div class="block-title">הקורסים שלי</div>
+          <div class="block-desc">בחר קורס, תכנן ביחידות, הפעל שיעורים חיים ועקוב אחר ההתקדמות.</div>
+        </div>
       </div>
-      <div class="branch-tag">Micro Cockpit</div>
-      <div class="branch-title">מרחב השיעור (Micro Cockpit)</div>
-      <div class="branch-desc">ניהול מחזור שיעור מיידי: לפני השיעור, בתוך השיעור ולאחר השיעור.</div>
-      <div class="branch-cta">כניסה למרחב השיעור <span>←</span></div>
-    </a>
 
-    <a href="/macro_cockpit.html" class="branch-card branch-2">
-      <div class="branch-head">
-        <div class="branch-icon">🧭</div>
+      <div class="block-body">
+
+        <!-- Main CTA -->
+        <a href="/my_courses.html" class="courses-cta">
+          <div class="courses-cta-left">
+            <div class="courses-cta-title">כל הקורסים שלי</div>
+            <div class="courses-cta-sub" id="courses-count-label">טוען...</div>
+          </div>
+          <div class="courses-cta-arrow">←</div>
+        </a>
+
+        <!-- Recent courses preview — populated by JS -->
+        <div class="course-preview-list" id="recent-courses-list">
+          <!-- populated dynamically -->
+        </div>
+
       </div>
-      <div class="branch-tag">Macro Cockpit</div>
-      <div class="branch-title">ניהול אסטרטגי (Macro Cockpit)</div>
-      <div class="branch-desc">חיבור קורס-מיומנויות, תכנון ראשי, מעבדת מחקר ושיווק אקדמי לאורך זמן.</div>
-      <div class="branch-cta">כניסה למקרו <span>←</span></div>
-    </a>
+    </div>
 
-    <a href="/cockpit.html" class="branch-card branch-3">
-      <div class="branch-head">
-        <div class="branch-icon">🔬</div>
+    <!-- ════════════════════════════════
+         BLOCK 2 — קידום מקצועי
+    ════════════════════════════════ -->
+    <div class="hub-block pro">
+      <div class="block-header">
+        <div class="block-icon violet">🌱</div>
+        <div class="block-meta">
+          <div class="block-label">Professional Development</div>
+          <div class="block-title">קידום מקצועי</div>
+          <div class="block-desc">כלים לשיפור ההוראה, מחקר פדגוגי, פרסום ופיתוח אישי.</div>
+        </div>
       </div>
-      <div class="branch-tag">Research Lab</div>
-      <div class="branch-title">מעבדת מחקר</div>
-      <div class="branch-desc">ביצועים, מיומנויות ומוקדי תמיכה פדגוגיים ללא הגדרות מערכת או ניהול משתמשים.</div>
-      <div class="branch-cta">כניסה לניתוח נתונים <span>←</span></div>
-    </a>
 
-    <a href="#" class="branch-card branch-4" aria-disabled="true" onclick="event.preventDefault();">
-      <div class="branch-head">
-        <div class="branch-icon">📣</div>
-        <span class="soon-chip">בקרוב</span>
+      <div class="block-body">
+        <div class="pro-grid">
+
+          <!-- קידום הוראה (full-width) -->
+          <div class="pro-card teaching">
+            <div class="pro-card-head">
+              <div class="pro-card-icon">🔧</div>
+            </div>
+            <div class="pro-card-title">קידום הוראה</div>
+            <div class="pro-card-desc">כלי AI לבניית ועיצוב תהליכים פדגוגיים ותמיכה שוטפת.</div>
+            <div class="teaching-tools">
+              <a href="/architect_studio.html" class="tool-pill">🤖 בוט בונה בוטים</a>
+              <span class="tool-pill disabled">📋 בוט מערכי שיעור <small>(בקרוב)</small></span>
+              <span class="tool-pill disabled">🧠 בוט תמיכה פסיכו-דידקטית <small>(בקרוב)</small></span>
+            </div>
+          </div>
+
+          <!-- מרחב מחקר -->
+          <div class="pro-card research">
+            <div class="pro-card-head">
+              <div class="pro-card-icon">🔬</div>
+            </div>
+            <div class="pro-card-title">מרחב מחקר</div>
+            <div class="pro-card-desc">תוצרים, דפוסים ולמידה שיתופית לפיתוח ידע.</div>
+            <a href="/cockpit.html" class="pro-card-link">כניסה למחקר ←</a>
+          </div>
+
+          <!-- מרחב פרסום -->
+          <div class="pro-card publish">
+            <div class="pro-card-head">
+              <div class="pro-card-icon">📣</div>
+              <span class="soon-badge">בקרוב</span>
+            </div>
+            <div class="pro-card-title">מרחב פרסום</div>
+            <div class="pro-card-desc">פוסטים ל-LinkedIn מתוך חומרי לימוד ותובנות מחקר.</div>
+          </div>
+
+          <!-- LLL -->
+          <div class="pro-card lll">
+            <div class="pro-card-head">
+              <div class="pro-card-icon">🚀</div>
+              <span class="soon-badge">עתידי</span>
+            </div>
+            <div class="pro-card-title">LLL — פיתוח אישי</div>
+            <div class="pro-card-desc">מסלול למידה מתמשכת לפיתוח המיומנויות שלך כמרצה דיגיטלי.</div>
+          </div>
+
+        </div>
       </div>
-      <div class="branch-tag">Social / PR</div>
-      <div class="branch-title">שיווק ופרסום</div>
-      <div class="branch-desc">ייצוא תובנות והצלחות מהכיתה למיתוג אישי ברשתות חברתיות.</div>
-      <div class="branch-cta">כלי הייצוא בדרך <span>←</span></div>
-    </a>
+    </div>
 
-  </div>
+  </div><!-- /hub-grid -->
 
   <div class="footer-links">
-    <a href="/my_courses.html" class="footer-link">הקורסים שלי</a>
-    <a href="/lexicon.html" class="footer-link">לקסיקון</a>
     <a id="admin-link" href="/admin_cockpit.html" class="footer-link" style="display:none;">ניהול מערכת</a>
+    <a href="/lexicon.html" class="footer-link">לקסיקון</a>
+    <a href="/student_dashboard.html" class="footer-action" onclick="return openStudentPreview();">🎓 תצוגת סטודנט</a>
   </div>
 </div>
 
@@ -316,7 +438,9 @@
 <script src="/auth-guard.js"></script>
 <script>
 
-const lecturerHubAccessReady = window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+const lecturerHubAccessReady = window.MiledAccess?.enforcePageAccess(
+  ["lecturer", "institution_admin", "system_admin"], "/index.html"
+);
 
 async function bootstrapLecturerHub() {
   const access = await lecturerHubAccessReady;
@@ -325,7 +449,8 @@ async function bootstrapLecturerHub() {
   const auth = window.MiledAccess?.getSessionUser?.()
     || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
     || null;
-  const role = access.canonicalRole || auth?.canonicalRole || window.MiledAccess?.normalizeRole?.(auth?.role) || "";
+  const role = access.canonicalRole || auth?.canonicalRole
+    || window.MiledAccess?.normalizeRole?.(auth?.role) || "";
 
   const firstName = (auth?.displayName || "מרצה").split(" ")[0];
   document.getElementById("greeting-name").textContent = firstName;
@@ -337,11 +462,40 @@ async function bootstrapLecturerHub() {
   if (role === "system_admin") {
     document.getElementById("admin-link").style.display = "";
   }
+
+  loadRecentCourses();
 }
 
-bootstrapLecturerHub();
+// ─── Load recent courses from config.json ───
+async function loadRecentCourses() {
+  const list = document.getElementById("recent-courses-list");
+  const countLabel = document.getElementById("courses-count-label");
+  try {
+    const res = await fetch("/config.json?ts=" + Date.now());
+    if (!res.ok) throw new Error("config fetch failed");
+    const config = await res.json();
+    const coursesMap = config.my_courses || {};
+    const entries = Object.entries(coursesMap);
+    countLabel.textContent = entries.length ? `${entries.length} קורסים פעילים` : "כניסה לרשימת הקורסים";
+    if (!entries.length) return;
+    list.innerHTML = entries.slice(0, 3).map(([id, c]) => `
+      <a href="/smart_class.html?classId=${encodeURIComponent(id)}" class="course-preview-item">
+        <div>
+          <div class="course-preview-name">${escHtml(c.title || c.name || id)}</div>
+          <div class="course-preview-meta">${escHtml(c.subtitle || "")}</div>
+        </div>
+        <div class="course-preview-go">פתח ←</div>
+      </a>
+    `).join("");
+  } catch {
+    countLabel.textContent = "כניסה לרשימת הקורסים";
+  }
+}
 
-// ─── Logout ───
+function escHtml(str) {
+  return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
 function logout() {
   window.MiledAccess?.signOutAndRedirect?.("/index.html");
 }
@@ -352,6 +506,7 @@ function openStudentPreview() {
   return false;
 }
 
+bootstrapLecturerHub();
 </script>
 </body>
 </html>
