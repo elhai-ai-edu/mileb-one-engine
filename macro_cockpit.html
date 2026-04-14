@@ -923,8 +923,6 @@
 <div id="cockpit-nav">
   <button class="cockpit-tab-btn active" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>חיבור קורס-מיומנויות</span></button>
   <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>תכנון ראשי</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>מעבדת מחקר</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>שיווק ופרסום</span></button>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {
@@ -935,30 +933,6 @@
 }());</script>
 
 <div class="classroom-grid">
-
-  <div class="panel" data-tab-panel="live">
-    <h2>🔬 מעבדת מחקר</h2>
-    <p class="panel-sub">מרחב אסטרטגי לניתוח עומק. תפעול שיעור חי נמצא ב-Micro Cockpit.</p>
-
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-      <a href="/micro_cockpit.html" class="btn btn-outline" style="font-size:12px;padding:7px 14px;text-decoration:none;">← עבור למיקרו לניהול שיעור חי</a>
-      <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:12px;padding:7px 14px;">📊 פרופיל מיומנויות כיתתי</button>
-      <a href="/cockpit.html" class="btn btn-outline" style="font-size:12px;padding:7px 14px;text-decoration:none;">📈 ביצועים ומיומנויות</a>
-    </div>
-
-    <div style="margin-top:10px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
-      <div style="font-size:15px;font-weight:800;color:#0f172a;">סביבת מחקר אסטרטגית</div>
-      <div style="font-size:12px;color:#64748b;line-height:1.7;">
-        כאן מתבצע ניתוח מגמות, הפקת תובנות ומעקב איכותני לאורך זמן.
-        ניהול נוכחות, שידורים, פתיחת דלת ושאר פעולות בזמן אמת מנוהלים בלעדית ב-Micro Cockpit.
-      </div>
-      <ul style="margin:0;padding-inline-start:20px;color:#334155;font-size:13px;line-height:1.8;">
-        <li>השוואת דפוסי מיומנות בין יחידות וסבבים</li>
-        <li>זיהוי צווארי בקבוק וחוזקות לאורך סמסטר</li>
-        <li>הכנת חומרים לדוחות מחקר, הנהלה ושיווק</li>
-      </ul>
-    </div>
-  </div>
 
   <div class="panel" data-tab-panel="prep">
     <h2>📚 לוח שיעורים</h2>
@@ -1170,24 +1144,6 @@
     </div>
   </div>
 
-  <div class="panel" data-tab-panel="journal">
-      <h2>📓 יומן וניתוח</h2>
-      <p class="panel-sub">יצוא יומן הוראה והפקת ניתוח מיומנויות כיתתי</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 ייצא יומן הוראה</button>
-        <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:13px;padding:8px 14px;">📊 פרופיל מיומנויות</button>
-      </div>
-
-      <div class="profiler-btn-bar" style="margin-top:16px;">
-        <div>
-          <div style="font-size:13px;font-weight:600;color:#1e293b;">📈 ניתוח מיומנויות כיתתי</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px;">הפק דוח מצב מיומנויות לכלל הכיתה</div>
-        </div>
-        <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:14px;padding:10px 22px;white-space:nowrap;">
-          📊 הפקת פרופיל מיומנויות כיתתי
-        </button>
-      </div>
-  </div>
 
   <!-- RIGHT: Live view (legacy hidden in Macro mode) -->
   <div class="panel" data-tab-panel="live_legacy">
