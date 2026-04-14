@@ -322,6 +322,30 @@ Architectural consequence:
 
 Research and redesign should consume evidence from runtime rather than act as a detached thinking room.
 
+## Layer 9.5: Lecturer Professional Development Layer (LL Socket)
+
+Status: reserved. Not yet implemented.
+
+This layer is a structural placeholder for a future lifelong learning (LL) track oriented toward the lecturer, not the student.
+
+It is distinct from Layer 9 (Research and Redesign), which focuses on improving course and lesson design.
+
+This layer will eventually address:
+
+- the lecturer's own skill and competency development as a digital educator
+- reflection loops fed by lesson and research evidence, oriented at personal professional growth
+- structured self-assessment tools for pedagogical practice
+- optional peer or institutional feedback pathways
+
+It differs from Layer 9 in that:
+
+- Layer 9 asks: what should change in the course or lesson
+- This layer asks: what should change in the lecturer's own practice and identity
+
+Reserved config entry: `branches.lecturer_development` in `config.json`.
+
+Reserved interface anchor: to be determined. Likely a dedicated section within `lecturer_hub.html` or a future `lecturer_growth.html`.
+
 ## Layer 10: Interface Layer
 
 Only here do pages appear as pages.

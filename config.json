@@ -171,6 +171,15 @@
       }
     },
 
+    "lecturer_development": {
+      "_status": "socket",
+      "_note": "Reserved: Lecturer professional development and lifelong learning (LL) track. Not yet active.",
+      "title": "פיתוח מקצועי — מרצה",
+      "subtitle": "מסלול LL — בפיתוח",
+      "scope": "faculty_private",
+      "items": {}
+    },
+
     "admin": {
       "title": "ניהול ובקרה מוסדית",
       "subtitle": "נתונים ומדדי הצלחה:",
