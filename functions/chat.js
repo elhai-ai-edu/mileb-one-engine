@@ -435,6 +435,25 @@ export async function handler(event) {
       if (sessionCtx.gender)      parts.push(`פנייה: ${sessionCtx.gender}`);
       if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
       if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
+
+      // ─── RESTORE TOKEN METADATA (MJ-3) ───
+      // Soft/structural fields saved from <!-- META: --> in previous turns.
+      // Structural fields (lastStage/nextStep/studentName/gender) are injected only
+      // if %%SESSION_UPDATE%% did not already set them at the top level.
+      // Known field families:
+      //   structural: lastStage, nextStep, studentName, gender, openingComplete, genderConfirmed
+      //   soft:       tone, emotionalTrajectory, form
+      const meta = sessionCtx.tokenMetadata;
+      if (meta && typeof meta === "object") {
+        if (meta.lastStage   && !sessionCtx.lastStage)   parts.push(`שלב אחרון: ${meta.lastStage}`);
+        if (meta.nextStep    && !sessionCtx.nextStep)    parts.push(`הצעד הבא: ${meta.nextStep}`);
+        if (meta.studentName && !sessionCtx.studentName) parts.push(`שם הסטודנט: ${meta.studentName}`);
+        if (meta.gender      && !sessionCtx.gender)      parts.push(`פנייה: ${meta.gender}`);
+        if (meta.tone)               parts.push(`טון מבוסס: ${meta.tone}`);
+        if (meta.emotionalTrajectory) parts.push(`מסלול רגשי: ${meta.emotionalTrajectory}`);
+        if (meta.form)               parts.push(`סגנון שיחה: ${meta.form}`);
+      }
+
       if (parts.length > 0)
         contextBlock = "## הקשר מהשיחה הקודמת\n" + parts.join("\n");
 
@@ -611,7 +630,9 @@ export async function handler(event) {
 
     // ─── EXTRACT CONTINUATION TOKEN METADATA (MJ-3) ───
     // Strips the hidden HTML comment from the visible reply and saves it to Firebase.
-    // Format: <!-- META: {"form":"...","name":"...","tone":"...","emotionalTrajectory":"..."} -->
+    // Fields are injected back into the context block on the next request (see RESTORE TOKEN METADATA above).
+    // Known structural fields: lastStage, nextStep, studentName, gender, openingComplete, genderConfirmed
+    // Known soft fields: tone, emotionalTrajectory, form
     let tokenMetadata = null;
     const metaMatch = reply.match(/<!--\s*META:\s*(\{[\s\S]*?\})\s*-->/);
     if (metaMatch) {
