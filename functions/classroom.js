@@ -97,7 +97,21 @@ async function getConfigCourses() {
     const configPath = new URL("../config.json", import.meta.url);
     const raw = await readFile(configPath, "utf8");
     const parsed = JSON.parse(raw);
-    cachedConfigCourses = parsed?.my_courses || {};
+    const catalog = parsed?.course_catalog || {};
+    const instances = parsed?.my_courses || {};
+    // Merge each instance with its template: template fields are defaults,
+    // instance fields override. course_units and universal_bots merge shallowly.
+    const resolved = {};
+    for(const [classId, instance] of Object.entries(instances)) {
+      const template = instance.templateId ? (catalog[instance.templateId] || {}) : {};
+      resolved[classId] = {
+        ...template,
+        ...instance,
+        universal_bots: instance.universal_bots ?? template.universal_bots,
+        course_units:   instance.course_units   ?? template.course_units,
+      };
+    }
+    cachedConfigCourses = resolved;
   } catch {
     cachedConfigCourses = {};
   }

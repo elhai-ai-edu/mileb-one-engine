@@ -1,5 +1,5 @@
 {
-  "system_version": "5.10 - Architect Routing + Access Hardening v9.8.2",
+  "system_version": "5.11 - Course Catalog + Instance Architecture",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "balance": {
@@ -221,11 +221,9 @@
     }
   },
 
-  "my_courses": {
-    "hebrew_advanced_optics": {
-      "name": "עברית מתקדמים א׳ — אופטיקה",
-      "language": "ar",
-      "hebrew_level": "he_a2_arabic",
+  "course_catalog": {
+    "hebrew_advanced_problem_solving": {
+      "description": "פתרון בעיות מקצועיות בהקשר דיסציפלינרי — קורס עברית ברמה מתקדמת",
       "course_units": {
         "semester_a": {
           "label": "סמסטר א",
@@ -257,62 +255,12 @@
             ]
           }
         }
-      },
-      "bots": {
-        "main": { "botType": "course_hebrew_advanced_companion", "label": "🤖 בוט הקורס" },
-        "research": { "botType": "course_qualitative_research", "label": "🔎 בוט מחקר" },
-        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
-      },
-      "universal_bots": ["support", "presentation"]
-    },
-
-    "hebrew_advanced_management": {
-      "name": "עברית מתקדמים א׳ — ניהול",
-      "language": "ar",
-      "hebrew_level": "he_a2_arabic",
-      "course_units": {
-        "semester_a": {
-          "label": "סמסטר א",
-          "units": [
-            { "id": 1, "label": "בחירת בעיה של לקוח" },
-            { "id": 2, "label": "ניסיונות קודמים וסיבות לאי הצלחה" },
-            { "id": 3, "label": "מקורות מידע ובחינת מהימנות" },
-            { "id": 4, "label": "שתי אלטרנטיבות — יתרונות וחסרונות" },
-            { "id": 5, "label": "בחירת פתרון ונימוקים" },
-            { "id": 6, "label": "כתיבת המסמך המסכם" },
-            { "id": 7, "label": "הצגה בפני הקהל" }
-          ],
-          "project": {
-            "name": "פרויקט פתרון בעיה מקצועית",
-            "stages": [
-              { "id": 1, "label": "בחירת בעיה של לקוח" },
-              { "id": 2, "label": "ניסיונות קודמים וסיבות לאי הצלחה" },
-              { "id": 3, "label": "מקורות מידע ובחינת מהימנות" },
-              { "id": 4, "label": "שתי אלטרנטיבות — יתרונות וחסרונות" },
-              { "id": 5, "label": "בחירת פתרון ונימוקים" },
-              { "id": 6, "label": "כתיבת המסמך המסכם" },
-              { "id": 7, "label": "הצגה בפני הקהל" }
-            ],
-            "requiredPillars": [
-              { "pillar": "resilience", "stageIds": [1, 2], "label": "זיהוי בעיה ועמידות בפני קושי" },
-              { "pillar": "academic",   "stageIds": [3, 6], "label": "חשיבה ביקורתית וכתיבה אקדמית" },
-              { "pillar": "social",     "stageIds": [4, 5], "label": "בחינת חלופות ועבודת צוות" },
-              { "pillar": "career",     "stageIds": [7],    "label": "פרזנטציה מקצועית ותקשורת" }
-            ]
-          }
-        }
-      },
-      "bots": {
-        "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
-        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
       },
       "universal_bots": ["support", "presentation"]
     },
 
     "gerontology_mechina": {
-      "name": "מבוא לגרונטולוגיה — מכינה",
-      "language": "he",
-      "hebrew_level": "he_b1_haredi",
+      "description": "מבוא לגרונטולוגיה במסגרת מכינה",
       "course_units": {
         "semester_a": {
           "label": "סמסטר א",
@@ -328,7 +276,7 @@
             "requiredPillars": [
               { "pillar": "academic",   "stageIds": [1, 2, 4, 5], "label": "תכנון, תימלול וניתוח תוכן" },
               { "pillar": "social",     "stageIds": [3],           "label": "תקשורת בין-אישית וראיון" },
-              { "pillar": "resilience", "stageIds": [6, 7],        "label": "חיבור ל חיים והרהור אישי" },
+              { "pillar": "resilience", "stageIds": [6, 7],        "label": "חיבור לחיים והרהור אישי" },
               { "pillar": "academic",   "stageIds": [8],           "label": "כתיבה אקדמית ועיבוד" }
             ],
             "stages": [
@@ -369,37 +317,16 @@
           }
         }
       },
-      "bots": {
-        "main": { "botType": "course_gerontology", "label": "🤖 בוט הקורס" },
-        "research": { "botType": "course_qualitative_research", "label": "🔎 מחקר איכותני" }
-      },
       "universal_bots": ["support", "presentation", "research_skills"]
     },
 
-    "social_science_mechina_ar": {
-      "name": "מבוא למדעי החברה — מכינה ערבית",
-      "language": "ar",
-      "hebrew_level": "he_a1_arabic",
-      "bots": {
-        "main": { "botType": "course_intro_social_science_mechina", "label": "🤖 בוט הקורס" }
-      },
+    "social_science_mechina": {
+      "description": "מבוא למדעי החברה במסגרת מכינה",
       "universal_bots": ["support", "presentation"]
     },
 
-    "academic_writing_ar": {
-      "name": "קריאה וכתיבה אקדמית — ערבית",
-      "language": "ar",
-      "hebrew_level": "he_a1_arabic",
-      "bots": {
-        "main": { "botType": "course_academic_writing", "label": "✍️ בוט כתיבה אקדמית" }
-      },
-      "universal_bots": ["support", "presentation"]
-    },
-
-    "academic_writing_he": {
-      "name": "קריאה וכתיבה אקדמית — עברית",
-      "language": "he",
-      "hebrew_level": "he_b1_haredi",
+    "academic_writing": {
+      "description": "קריאה וכתיבה אקדמית — פיתוח מיומנויות חקר וכתיבה",
       "course_units": {
         "semester_a": {
           "label": "סמסטר א",
@@ -430,10 +357,85 @@
           }
         }
       },
+      "universal_bots": ["support", "presentation", "research_skills"]
+    }
+  },
+
+  "my_courses": {
+    "hebrew_advanced_optics": {
+      "templateId": "hebrew_advanced_problem_solving",
+      "name": "עברית מתקדמים א׳ — אופטיקה",
+      "language": "ar",
+      "hebrew_level": "he_a2_arabic",
+      "semester": "2025-B",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "course_hebrew_advanced_companion", "label": "🤖 בוט הקורס" },
+        "research": { "botType": "course_qualitative_research", "label": "🔎 בוט מחקר" },
+        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      }
+    },
+
+    "hebrew_advanced_management": {
+      "templateId": "hebrew_advanced_problem_solving",
+      "name": "עברית מתקדמים א׳ — ניהול",
+      "language": "ar",
+      "hebrew_level": "he_a2_arabic",
+      "semester": "2025-B",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
+        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      }
+    },
+
+    "gerontology_mechina": {
+      "templateId": "gerontology_mechina",
+      "name": "מבוא לגרונטולוגיה — מכינה",
+      "language": "he",
+      "hebrew_level": "he_b1_haredi",
+      "semester": "2025-B",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "course_gerontology", "label": "🤖 בוט הקורס" },
+        "research": { "botType": "course_qualitative_research", "label": "🔎 מחקר איכותני" }
+      }
+    },
+
+    "social_science_mechina_ar": {
+      "templateId": "social_science_mechina",
+      "name": "מבוא למדעי החברה — מכינה ערבית",
+      "language": "ar",
+      "hebrew_level": "he_a1_arabic",
+      "semester": "2025-B",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "course_intro_social_science_mechina", "label": "🤖 בוט הקורס" }
+      }
+    },
+
+    "academic_writing_ar": {
+      "templateId": "academic_writing",
+      "name": "קריאה וכתיבה אקדמית — ערבית",
+      "language": "ar",
+      "hebrew_level": "he_a1_arabic",
+      "semester": "2025-B",
+      "status": "active",
       "bots": {
         "main": { "botType": "course_academic_writing", "label": "✍️ בוט כתיבה אקדמית" }
-      },
-      "universal_bots": ["support", "presentation", "research_skills"]
+      }
+    },
+
+    "academic_writing_he": {
+      "templateId": "academic_writing",
+      "name": "קריאה וכתיבה אקדמית — עברית",
+      "language": "he",
+      "hebrew_level": "he_b1_haredi",
+      "semester": "2025-B",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "course_academic_writing", "label": "✍️ בוט כתיבה אקדמית" }
+      }
     }
   },
 

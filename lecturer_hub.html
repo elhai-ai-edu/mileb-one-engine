@@ -170,6 +170,19 @@
       flex-direction: column;
       gap: 8px;
     }
+    .semester-group { display: flex; flex-direction: column; gap: 8px; }
+    .semester-label {
+      font-size: 11px; font-weight: 800; text-transform: uppercase;
+      letter-spacing: 1px; color: #94a3b8; padding: 4px 0 2px;
+    }
+    .courses-archive-link {
+      display: block; margin-top: 6px;
+      font-size: 12px; color: #6366f1; text-decoration: none;
+      padding: 7px 12px; border-radius: 10px;
+      background: #eef2ff; border: 1px solid #c7d2fe;
+      text-align: center;
+    }
+    .courses-archive-link:hover { background: #e0e7ff; }
     .course-preview-item {
       display: flex;
       align-items: center;
@@ -342,19 +355,14 @@
 
       <div class="block-body">
 
-        <!-- Main CTA -->
-        <a href="/my_courses.html" class="courses-cta">
-          <div class="courses-cta-left">
-            <div class="courses-cta-title">כל הקורסים שלי</div>
-            <div class="courses-cta-sub" id="courses-count-label">טוען...</div>
-          </div>
-          <div class="courses-cta-arrow">←</div>
-        </a>
-
-        <!-- Recent courses preview — populated by JS -->
-        <div class="course-preview-list" id="recent-courses-list">
-          <!-- populated dynamically -->
+        <!-- Active courses — populated by JS, grouped by semester -->
+        <div id="courses-by-semester">
+          <div class="course-preview-meta" style="padding:8px 0;color:#94a3b8;">טוען...</div>
         </div>
+
+        <a href="/my_courses.html" class="courses-archive-link" id="archive-link" style="display:none;">
+          ארכיון קורסים קודמים ←
+        </a>
 
       </div>
     </div>
@@ -466,29 +474,54 @@ async function bootstrapLecturerHub() {
   loadRecentCourses();
 }
 
-// ─── Load recent courses from config.json ───
+// ─── Load all active courses from config.json, grouped by semester ───
 async function loadRecentCourses() {
-  const list = document.getElementById("recent-courses-list");
-  const countLabel = document.getElementById("courses-count-label");
+  const container = document.getElementById("courses-by-semester");
+  const archiveLink = document.getElementById("archive-link");
   try {
     const res = await fetch("/config.json?ts=" + Date.now());
     if (!res.ok) throw new Error("config fetch failed");
     const config = await res.json();
     const coursesMap = config.my_courses || {};
     const entries = Object.entries(coursesMap);
-    countLabel.textContent = entries.length ? `${entries.length} קורסים פעילים` : "כניסה לרשימת הקורסים";
-    if (!entries.length) return;
-    list.innerHTML = entries.slice(0, 3).map(([id, c]) => `
-      <a href="/smart_class.html?classId=${encodeURIComponent(id)}" class="course-preview-item">
-        <div>
-          <div class="course-preview-name">${escHtml(c.title || c.name || id)}</div>
-          <div class="course-preview-meta">${escHtml(c.subtitle || "")}</div>
-        </div>
-        <div class="course-preview-go">פתח ←</div>
-      </a>
+
+    const active   = entries.filter(([, c]) => !c.status || c.status === "active");
+    const archived = entries.filter(([, c]) => c.status === "archived");
+
+    if (!active.length) {
+      container.innerHTML = '<div class="course-preview-meta" style="color:#94a3b8;">אין קורסים פעילים.</div>';
+      return;
+    }
+
+    // Group active courses by semester
+    const bySemester = {};
+    for (const [id, c] of active) {
+      const sem = c.semester || "ללא סמסטר";
+      if (!bySemester[sem]) bySemester[sem] = [];
+      bySemester[sem].push([id, c]);
+    }
+
+    const semesterLabels = { "2025-A": "סמסטר א׳ 2025", "2025-B": "סמסטר ב׳ 2025",
+                              "2026-A": "סמסטר א׳ 2026", "2026-B": "סמסטר ב׳ 2026" };
+
+    container.innerHTML = Object.entries(bySemester).map(([sem, courses]) => `
+      <div class="semester-group">
+        <div class="semester-label">${escHtml(semesterLabels[sem] || sem)}</div>
+        ${courses.map(([id, c]) => `
+          <a href="/smart_class.html?classId=${encodeURIComponent(id)}" class="course-preview-item">
+            <div>
+              <div class="course-preview-name">${escHtml(c.name || id)}</div>
+              <div class="course-preview-meta">${escHtml(c.description || "")}</div>
+            </div>
+            <div class="course-preview-go">פתח ←</div>
+          </a>
+        `).join("")}
+      </div>
     `).join("");
+
+    if (archived.length) archiveLink.style.display = "";
   } catch {
-    countLabel.textContent = "כניסה לרשימת הקורסים";
+    container.innerHTML = '<div class="course-preview-meta" style="color:#ef4444;">שגיאה בטעינת קורסים.</div>';
   }
 }
 
