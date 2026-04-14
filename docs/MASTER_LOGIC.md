@@ -106,6 +106,7 @@ These are the bot's unbreakable rules, written explicitly in the SP:
 - Clear next step assigned to the **student** (not the bot)
 - Explicit return of responsibility: "הכדור אצלך"
 - Session Continuity Token: `<!-- META: {"lastStage":"X","nextStep":"Y","studentName":"Z","gender":"M/F"} -->`
+- **Process bots only (`processMode: guided` or `gated`):** must also emit `tone` and `emotionalTrajectory` inside `%%SESSION_UPDATE%%` at the end of every response. These are restored into the context block on the next session so the bot does not start cold.
 
 ---
 
@@ -142,10 +143,19 @@ These bots enforce **stage advancement gates**. They:
   "lastStage": "stage_2",
   "nextStep": "stage_3",
   "genderConfirmed": true,
-  "studentName": "אלי"
+  "studentName": "אלי",
+  "tone": "supportive",
+  "emotionalTrajectory": "improving"
 }
 %%END%%
 ```
+
+**Mandatory fields** (all process bots): `lastStage`, `nextStep`
+**Identity fields** (first session only): `studentName`, `gender`, `genderConfirmed`, `openingComplete`
+**Soft context fields** (process bots — guided/gated): `tone`, `emotionalTrajectory`
+
+`tone` values: `supportive` / `challenging` / `neutral` / `encouraging`
+`emotionalTrajectory` values: `improving` / `stable` / `struggling` / `frustrated` / `engaged`
 
 ### 3.4 Skill Bots (`scope: "institution"`)
 Domain-agnostic skill development bots. Loaded from `config.json → branches.skills`.
@@ -439,6 +449,7 @@ Before writing a systemPrompt, verify:
 - [ ] Does Layer 7 include Hebrew level adaptation?
 - [ ] Does Layer 8 include the Session Continuity Token format?
 - [ ] Does the SP include `%%SESSION_UPDATE%%` payload instructions?
+- [ ] For process bots (guided/gated): does `%%SESSION_UPDATE%%` include `tone` and `emotionalTrajectory`?
 - [ ] Does the bot NOT write student work under any condition?
 - [ ] Does the bot NOT evaluate without an explicit rubric?
 - [ ] Does the bot NOT reveal its own mechanism?
@@ -626,7 +637,7 @@ This is the core technical reason why the system can make institutional claims a
 - The bot holds a track. It remembers the starting point, identifies progress, enables reflection over time.
 - Stage tracking active; `CONTEXT_STAGE` maintained via Firebase
 - Session Continuity Token: **mandatory** (`<!-- META: ... -->`)
-- `%%SESSION_UPDATE%%` JSON payload fires on stage transitions
+- `%%SESSION_UPDATE%%` JSON payload fires on stage transitions **and must include `tone` and `emotionalTrajectory` in every response**
 - Soft Stage Lock: prevents stage drift; releases only on genuine behavioral evidence of transition
 - No-Skip enforcement at its strictest
 - Examples: Paraphrase Bot, Gerontology Research Bot, Presentation Bot

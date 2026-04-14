@@ -331,6 +331,18 @@ function buildFullSystemPrompt(engine, botConfig, hebrewLevel = null, contextBlo
   // ─── BOT LAYER ───
   const systemPrompt = botConfig.systemPrompt || DEFAULT_PROMPT;
 
+  // ─── SOFT CONTEXT PROTOCOL LAYER (process bots only) ───
+  // Automatically injected for guided/gated bots so individual SPs do not need
+  // to repeat this instruction. Tells the LLM to emit tone + emotionalTrajectory
+  // in every %%SESSION_UPDATE%%, which are then restored into the next context block.
+  const isProcessBot = ["guided", "gated"].includes(botConfig.processMode);
+  const softContextInstruction = isProcessBot
+    ? `בכל תגובה, כלול בתוך %%SESSION_UPDATE%% את השדות הבאים (בנוסף לשדות המבניים הרגילים):
+"tone": אחד מ: supportive / challenging / neutral / encouraging — תוך שיקוף הטון שהשתמשת בו בתגובה זו.
+"emotionalTrajectory": אחד מ: improving / stable / struggling / frustrated / engaged — תוך שיקוף המצב הרגשי שהסטודנט מפגין.
+שדות אלה משמשים לשחזור ההמשכיות בשיחה הבאה ואינם גלויים לסטודנט.`
+    : "";
+
   // ─── HEBREW LEVEL LAYER ───
   const hebrewInstructions = {
     "he_a1_arabic": "הסטודנט דובר ערבית/צרפתית ברמת עברית A1. השתמש במשפטים קצרים, מילים פשוטות, והימנע ממושגים מורכבים.",
@@ -344,11 +356,12 @@ function buildFullSystemPrompt(engine, botConfig, hebrewLevel = null, contextBlo
     : "";
 
   return [
-    kernel.trim(),        // Constitution layer
-    kernelBlock.trim(),   // Policy layer
-    systemPrompt.trim(),  // Bot layer
-    hebrewBlock,          // Hebrew level layer
-    contextBlock          // Session context layer
+    kernel.trim(),              // Constitution layer
+    kernelBlock.trim(),         // Policy layer
+    systemPrompt.trim(),        // Bot layer
+    softContextInstruction,     // Soft context protocol (process bots only)
+    hebrewBlock,                // Hebrew level layer
+    contextBlock                // Session context layer
   ].filter(Boolean).join("\n\n");
 
 }
@@ -436,6 +449,12 @@ export async function handler(event) {
       if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
       if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
 
+      // ─── RESTORE SOFT CONTEXT (process bots via %%SESSION_UPDATE%%) ───
+      // tone and emotionalTrajectory may be written directly to the session node
+      // by process bots (processMode: guided / gated) through %%SESSION_UPDATE%%.
+      if (sessionCtx.tone)                parts.push(`טון מבוסס: ${sessionCtx.tone}`);
+      if (sessionCtx.emotionalTrajectory) parts.push(`מסלול רגשי: ${sessionCtx.emotionalTrajectory}`);
+
       // ─── RESTORE TOKEN METADATA (MJ-3) ───
       // Soft/structural fields saved from <!-- META: --> in previous turns.
       // Structural fields (lastStage/nextStep/studentName/gender) are injected only
@@ -449,8 +468,8 @@ export async function handler(event) {
         if (meta.nextStep    && !sessionCtx.nextStep)    parts.push(`הצעד הבא: ${meta.nextStep}`);
         if (meta.studentName && !sessionCtx.studentName) parts.push(`שם הסטודנט: ${meta.studentName}`);
         if (meta.gender      && !sessionCtx.gender)      parts.push(`פנייה: ${meta.gender}`);
-        if (meta.tone)               parts.push(`טון מבוסס: ${meta.tone}`);
-        if (meta.emotionalTrajectory) parts.push(`מסלול רגשי: ${meta.emotionalTrajectory}`);
+        if (meta.tone               && !sessionCtx.tone)                parts.push(`טון מבוסס: ${meta.tone}`);
+        if (meta.emotionalTrajectory && !sessionCtx.emotionalTrajectory) parts.push(`מסלול רגשי: ${meta.emotionalTrajectory}`);
         if (meta.form)               parts.push(`סגנון שיחה: ${meta.form}`);
       }
 
