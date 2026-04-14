@@ -107,6 +107,66 @@
       display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
 
+    /* ─── Bookshelf panel ─── */
+    .resource-toolbar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .resource-toolbar select {
+      flex: 1;
+      min-width: 180px;
+      padding: 8px 10px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 13px;
+      background: #fff;
+      color: #1f2937;
+    }
+    .resource-count {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .resource-list { display: grid; gap: 10px; }
+    .resource-card {
+      background: #f8fafc;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .resource-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .resource-title { font-size: 13px; font-weight: 700; color: #111827; line-height: 1.35; }
+    .resource-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .resource-open {
+      font-size: 12px;
+      color: #4f46e5;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 5px 10px;
+      text-decoration: none;
+      background: #eef2ff;
+      white-space: nowrap;
+    }
+    .resource-open:hover { background: #e0e7ff; }
+    .resource-empty {
+      font-size: 12px;
+      color: #64748b;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 12px;
+    }
+
     /* ─── Lifecycle panel ─── */
     .lifecycle-row { display: flex; flex-direction: column; gap: 10px; }
     .lifecycle-field label {
@@ -167,6 +227,16 @@
       <div class="panel" id="units-panel" style="display:none;">
         <div class="panel-title">📋 יחידות הקורס</div>
         <div class="unit-list" id="unit-list"></div>
+      </div>
+
+      <!-- Bookshelf resources -->
+      <div class="panel" id="bookshelf-panel" style="display:none;">
+        <div class="panel-title">📚 מדף ספרים ומשאבים</div>
+        <div class="resource-toolbar">
+          <select id="resource-unit-filter"></select>
+          <span class="resource-count" id="resource-count">0 משאבים</span>
+        </div>
+        <div class="resource-list" id="resource-list"></div>
       </div>
 
     </div>
@@ -246,6 +316,7 @@ const LEVEL_LABELS = {
 
 let currentCourse = null;
 let db = null;
+let bookshelfUnits = [];
 
 // ─── Init Firebase for writes ───
 window.addEventListener("load", () => {
@@ -292,6 +363,9 @@ async function loadPage() {
       document.getElementById("units-panel").style.display = "";
     }
 
+    // Render course bookshelf resources
+    await loadBookshelfResources();
+
     // Student waiting lobby link
     document.getElementById("student-link").href = `/waiting_lobby.html?courseId=${encodeURIComponent(classId)}`;
 
@@ -317,6 +391,102 @@ async function loadPage() {
   } catch (e) {
     showError("שגיאה בטעינת הקורס: " + e.message);
   }
+}
+
+async function loadBookshelfResources() {
+  try {
+    const metadataPayload = await fetch(`/.netlify/functions/classroom?action=course_metadata&courseId=${encodeURIComponent(classId)}`).then(r => r.json());
+    const metadata = metadataPayload?.metadata || null;
+    bookshelfUnits = normalizeBookshelfUnits(metadata);
+    renderBookshelfPanel();
+  } catch {
+    bookshelfUnits = [];
+    renderBookshelfPanel();
+  }
+}
+
+function normalizeBookshelfUnits(metadata) {
+  const units = Array.isArray(metadata?.units) ? metadata.units : [];
+  return units.map((unit, unitIndex) => {
+    const unitId = String(unit?.unitId || unit?.id || `unit_${String(unitIndex + 1).padStart(2, "0")}`).trim();
+    const name = String(unit?.name || unit?.title || unit?.label || `יחידה ${unitIndex + 1}`).trim();
+    const rawItems =
+      (Array.isArray(unit?.resources) && unit.resources) ||
+      (Array.isArray(unit?.items) && unit.items) ||
+      (Array.isArray(unit?.modules) && unit.modules) ||
+      [];
+
+    const resources = rawItems.map((item, itemIndex) => {
+      const title = String(item?.title || item?.name || item?.label || `משאב ${itemIndex + 1}`).trim();
+      const url = String(item?.url || item?.link || item?.href || item?.externalUrl || item?.resourceUrl || "").trim();
+      const kind = String(item?.kind || item?.type || item?.modname || "resource").trim().toLowerCase();
+      return {
+        id: String(item?.id || `${unitId}_res_${String(itemIndex + 1).padStart(2, "0")}`),
+        title: title || `משאב ${itemIndex + 1}`,
+        url: url || "",
+        kind,
+        unitId,
+        unitName: name
+      };
+    }).filter(item => item.title);
+
+    return { unitId, name, resources };
+  }).filter(unit => Array.isArray(unit.resources) && unit.resources.length);
+}
+
+function renderBookshelfPanel() {
+  const panel = document.getElementById("bookshelf-panel");
+  const filter = document.getElementById("resource-unit-filter");
+  const list = document.getElementById("resource-list");
+  const count = document.getElementById("resource-count");
+
+  if (!panel || !filter || !list || !count) return;
+
+  if (!bookshelfUnits.length) {
+    panel.style.display = "";
+    filter.innerHTML = '<option value="all">כל היחידות</option>';
+    count.textContent = "0 משאבים";
+    list.innerHTML = '<div class="resource-empty">עדיין לא נטענו משאבים לקורס זה. ניתן להמשיך להשתמש בקישור הסטודנטים או לייבא metadata לקורס.</div>';
+    return;
+  }
+
+  panel.style.display = "";
+  const currentValue = filter.value || "all";
+  filter.innerHTML = [
+    '<option value="all">כל היחידות</option>',
+    ...bookshelfUnits.map(unit => `<option value="${escHtml(unit.unitId)}">${escHtml(unit.name)}</option>`)
+  ].join("");
+  filter.value = bookshelfUnits.some(unit => unit.unitId === currentValue) ? currentValue : "all";
+
+  filter.onchange = () => renderBookshelfPanel();
+
+  const selected = filter.value;
+  const visibleUnits = selected === "all"
+    ? bookshelfUnits
+    : bookshelfUnits.filter(unit => unit.unitId === selected);
+  const resources = visibleUnits.flatMap(unit => unit.resources || []);
+
+  count.textContent = `${resources.length} משאבים`;
+  list.innerHTML = resources.length
+    ? resources.map(renderResourceCard).join("")
+    : '<div class="resource-empty">אין משאבים זמינים לסינון שנבחר.</div>';
+}
+
+function renderResourceCard(resource) {
+  const kindLabel = String(resource?.kind || "resource").toUpperCase();
+  const openBtn = resource?.url
+    ? `<a class="resource-open" href="${escHtml(resource.url)}" target="_blank" rel="noopener">פתח</a>`
+    : '<span class="resource-open" style="opacity:.55;cursor:default;">ללא קישור</span>';
+  return `
+    <div class="resource-card">
+      <div class="resource-row">
+        <div>
+          <div class="resource-title">${escHtml(kindLabel)} · ${escHtml(resource.title)}</div>
+          <div class="resource-meta">${escHtml(resource.unitName || resource.unitId || "יחידה")}</div>
+        </div>
+        ${openBtn}
+      </div>
+    </div>`;
 }
 
 function renderBotLaunchers(course) {
