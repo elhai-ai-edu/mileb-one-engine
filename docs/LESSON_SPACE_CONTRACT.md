@@ -289,6 +289,19 @@ Contains:
 - disciplinary prompt or skill task
 - relevant activity UI
 
+#### Activity Block Definition
+
+Every task inside the Activity Layer must be structured as an Activity Block with four required fields:
+
+- **Goal** — what the student is expected to accomplish in this stage
+- **Instruction** — what the student is asked to do, as a clear and bounded directive
+- **Time** — expected duration or time budget for this stage
+- **Expected output** — what the student should produce or be able to articulate by the end
+
+A stage that contains only a link or a resource without these four fields is not an Activity Block. It is a content deposit.
+
+The distinction matters: a content deposit does not constitute learning design.
+
 ### 3. Output Layer
 
 Visible evidence area.
@@ -333,6 +346,61 @@ Contains possible bot modes:
 - gatekeeper bot
 - skill support bot
 - open inquiry bot
+
+## Per-Stage ICAP Design Check
+
+This is a design-time principle, not a runtime gate.
+
+When planning or reviewing any stage inside Lesson Space, apply the following check:
+
+What cognitive mode does this stage require of the student?
+
+- **Passive** — the student receives content without a required response
+- **Active** — the student performs an action such as clicking, highlighting, or answering a closed question
+- **Constructive** — the student generates an artifact, articulation, or reasoning chain that goes beyond the given material
+- **Interactive** — the student engages with a peer, the class, or a bot in a way that requires mutual adjustment of understanding
+
+A stage that remains at Passive or Active level is not necessarily wrong, but it should be intentional.
+
+A lesson in which every stage stays at Passive or Active level is almost certainly under-designed.
+
+The minimum viable standard for a meaningful learning stage is Constructive.
+
+This check is performed by the lecturer or instructional designer when building or reviewing a lesson, not by the runtime system.
+
+## Delivery Mode Contract
+
+Lesson Space is designed to operate across three delivery contexts using the same underlying structure.
+
+### Mode 1: Physical Classroom
+
+The shared screen displays the lesson structure and current Activity Block.
+
+Student work may be verbal, on paper, in small groups, or on personal devices.
+
+The Presence Layer is implicit (everyone is physically present).
+
+The Output Layer may surface digital artifacts if students submit from devices, or remain offline for in-room activities.
+
+### Mode 2: Synchronous Online (Zoom or equivalent)
+
+The lesson structure and Activity Block are the shared visual anchor for all participants.
+
+The Communication Layer becomes primary: class chat, breakout rooms, and shared documents replace physical co-presence.
+
+The Output Layer collects and displays student work in real time.
+
+The Presence Layer shows who is connected and active.
+
+### Mode 3: Hybrid
+
+Lesson Space serves as the shared digital classroom space for both in-room and remote participants simultaneously.
+
+The lesson structure visible on the shared screen must be identical to what remote participants see on their devices.
+
+This makes Lesson Space the common reference point rather than a separate in-room and online experience.
+
+The three modes are not separate products. They are rendering contexts for the same lesson structure. The Activity Block, stage rail, and output surfaces remain architecturally identical across all three.
 
 ## Bot Rules Inside Lesson Space
 
