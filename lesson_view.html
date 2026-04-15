@@ -100,33 +100,22 @@
       position: relative;
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
-    #botMenuToggle {
-      font-size: 13px; padding: 3px 8px; flex-shrink: 0;
-      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
-      color: #1d4ed8; cursor: pointer;
+    #botTabsBar {
+      display: none;
+      flex-wrap: wrap; gap: 6px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #f8fbff, #eef4ff);
     }
-    #botMenuToggle:hover { background: #dbeafe; }
-    #botMenuDropdown {
-      position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
-      background: #fff; border: 1px solid var(--line);
-      border-top: none; border-radius: 0 0 12px 12px;
-      box-shadow: 0 8px 24px rgba(15,23,42,0.12);
-      overflow: hidden;
+    #botTabsBar.visible { display: flex; }
+    .bot-tab {
+      font-size: 13px; padding: 6px 14px;
+      border-radius: 20px; border: 1px solid #bfdbfe;
+      background: #fff; color: #1e40af;
+      cursor: pointer; font-weight: 600;
     }
-    .bot-menu-item {
-      display: block; width: 100%; text-align: right;
-      padding: 10px 16px; font-size: 13px; font-weight: 600;
-      background: none; border: none; border-bottom: 1px solid #f1f5f9;
-      color: #1e3a8a; cursor: pointer;
-    }
-    .bot-menu-item:last-child { border-bottom: none; }
-    .bot-menu-item:hover { background: #eff6ff; }
-    .bot-menu-item.active { background: #dbeafe; color: #1d4ed8; }
-    .bot-menu-separator {
-      font-size: 10px; font-weight: 700; color: var(--muted);
-      padding: 6px 16px 2px; text-transform: uppercase; letter-spacing: .05em;
-      background: #f8fafc;
-    }
+    .bot-tab:hover { background: #eff6ff; }
+    .bot-tab.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
     .panel-body {
       padding: 16px;
       display: grid;
@@ -733,11 +722,7 @@
       </section>
 
       <aside class="panel chat-shell">
-        <div class="panel-head">
-          <span id="activeBotName">Chat</span>
-          <button id="botMenuToggle" style="display:none;" onclick="toggleBotMenu()" title="החלף בוט">⚙️ בוטים</button>
-          <div id="botMenuDropdown" style="display:none;"></div>
-        </div>
+        <div id="botTabsBar"></div>
         <iframe id="chatFrame" class="chat-frame" title="lesson-chat"></iframe>
       </aside>
     </main>
@@ -1039,7 +1024,6 @@
     }
 
     let _activeBotType = null;
-    let _botMenuOpen = false;
     let _fetchedCourseConfig = null; // populated by renderBotMenu, used as fallback
 
     function setChatFrame(courseId, botType) {
@@ -1061,26 +1045,12 @@
       _activeBotType = botType;
       const courseId = lessonData?.courseId || courseIdFromUrl;
       setChatFrame(courseId, botType);
-      document.getElementById("activeBotName").textContent = label;
-      // mark active in menu
-      document.querySelectorAll(".bot-menu-item").forEach(el => {
+      // mark active tab
+      document.querySelectorAll(".bot-tab").forEach(el => {
         el.classList.toggle("active", el.dataset.botType === botType);
       });
-      closeBotMenu();
       renderSkillContextBanner(); // re-evaluate skill banner for new bot
       renderProjectStepper();    // re-evaluate project stepper for new bot
-    }
-
-    function toggleBotMenu() {
-      _botMenuOpen ? closeBotMenu() : openBotMenu();
-    }
-    function openBotMenu() {
-      _botMenuOpen = true;
-      document.getElementById("botMenuDropdown").style.display = "";
-    }
-    function closeBotMenu() {
-      _botMenuOpen = false;
-      document.getElementById("botMenuDropdown").style.display = "none";
     }
 
     async function renderBotMenu() {
@@ -1116,39 +1086,27 @@
         items.push({ botType: bot.botType, label: bot.name, group: "universal" });
       }
 
-      if (items.length <= 1) return; // single bot — no menu needed
+      const bar = document.getElementById("botTabsBar");
+      bar.innerHTML = "";
 
-      const dropdown = document.getElementById("botMenuDropdown");
-      dropdown.innerHTML = "";
-      let lastGroup = null;
       for (const item of items) {
-        if (item.group !== lastGroup) {
-          lastGroup = item.group;
-          if (item.group === "universal") {
-            const sep = document.createElement("div");
-            sep.className = "bot-menu-separator";
-            sep.textContent = "כלים כלליים";
-            dropdown.appendChild(sep);
-          }
-        }
         const btn = document.createElement("button");
-        btn.className = "bot-menu-item";
+        btn.className = "bot-tab";
         btn.dataset.botType = item.botType;
         btn.textContent = item.label;
-        if (item.botType === _activeBotType) btn.classList.add("active");
+        const isActive = item.botType === (_activeBotType || lessonData?.botType);
+        if (isActive) btn.classList.add("active");
         btn.onclick = () => switchBot(item.botType, item.label);
-        dropdown.appendChild(btn);
+        bar.appendChild(btn);
       }
 
-      // Set initial label from the main/first bot
-      const mainBot = items.find(i => i.botType === lessonData?.botType) || items[0];
-      if (mainBot) document.getElementById("activeBotName").textContent = mainBot.label;
-      document.getElementById("botMenuToggle").style.display = "";
+      if (items.length > 0) bar.classList.add("visible");
 
-      // Close menu when clicking outside
-      document.addEventListener("click", e => {
-        if (_botMenuOpen && !e.target.closest(".panel-head")) closeBotMenu();
-      }, { capture: true });
+      // Activate default bot if not already set
+      if (!_activeBotType) {
+        const defaultBot = items.find(i => i.botType === lessonData?.botType) || items[0];
+        if (defaultBot) switchBot(defaultBot.botType, defaultBot.label);
+      }
     }
 
     function buildResourceCard(resource) {
