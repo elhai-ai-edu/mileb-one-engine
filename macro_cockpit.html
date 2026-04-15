@@ -996,6 +996,44 @@
       <input type="text" id="template-name-input" placeholder="שם התבנית" class="lp-input" style="margin:0;flex:1;">
       <button class="btn btn-green" onclick="saveTemplate()" style="font-size:12px;padding:7px 14px;white-space:nowrap;flex-shrink:0;">💾 שמור</button>
     </div>
+
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0;">
+
+    <!-- ─── Course Units ─── -->
+    <h2 style="margin-bottom:6px;">📋 יחידות הקורס</h2>
+    <p class="panel-sub" style="margin-bottom:12px;">מבנה הקורס לפי יחידות לימוד — מוגדר ב-config.json</p>
+    <div id="macro-unit-list" style="display:grid;gap:6px;">
+      <div style="font-size:13px;color:#94a3b8;">טוען...</div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0;">
+
+    <!-- ─── Bookshelf ─── -->
+    <h2 style="margin-bottom:6px;">📚 מדף ספרים ומשאבים</h2>
+    <p class="panel-sub" style="margin-bottom:12px;">משאבים ממופה מ-Moodle לפי יחידות</p>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <select id="macro-resource-unit-filter" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1f2937;"></select>
+      <span id="macro-resource-count" style="font-size:12px;color:#64748b;font-weight:600;">0 משאבים</span>
+    </div>
+    <div id="macro-resource-list" style="display:grid;gap:10px;"></div>
+
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0;">
+
+    <!-- ─── Lifecycle ─── -->
+    <h2 style="margin-bottom:6px;">📅 מחזור חיי הכיתה</h2>
+    <p class="panel-sub" style="margin-bottom:12px;">תאריכי נעילה ומחיקת נתונים לקורס</p>
+    <div style="display:grid;gap:10px;">
+      <div>
+        <label style="display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:4px;">תאריך נעילה (lockDate)</label>
+        <input type="date" id="macro-lock-date" style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+      </div>
+      <div>
+        <label style="display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:4px;">תאריך מחיקת נתונים (retentionDate)</label>
+        <input type="date" id="macro-retention-date" style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+      </div>
+      <button onclick="macroSaveLifecycle()" style="width:100%;padding:9px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600;">שמור</button>
+      <div id="macro-lifecycle-msg" style="font-size:12px;min-height:16px;"></div>
+    </div>
   </div>
 
   <div class="panel" data-tab-panel="syllabus">
@@ -1881,6 +1919,137 @@ fetch('/config.json').then(r => r.json()).then(config => {
     syncFromSelector('botSelect');
   }
 }).catch(e => console.error("Config load error:", e));
+
+// ─── Course management (units, bookshelf, lifecycle) ───────────────────────
+// Loaded when courseId is present via URL param (passed from smart_class)
+
+let macroCourseId = presetCourseId || cockpitParams.get("classId") || "";
+let macroBookshelfUnits = [];
+
+if (macroCourseId) {
+  loadMacroCourseManagement(macroCourseId);
+}
+
+async function loadMacroCourseManagement(courseId) {
+  await loadMacroCourseUnits(courseId);
+  await loadMacroBookshelf(courseId);
+  await loadMacroLifecycle(courseId);
+}
+
+async function loadMacroCourseUnits(courseId) {
+  const container = document.getElementById("macro-unit-list");
+  if (!container) return;
+  try {
+    const config = await fetch("/config.json?ts=" + Date.now()).then(r => r.json());
+    const course = config.my_courses?.[courseId];
+    const units = course?.course_units?.semester_a?.units || [];
+    if (!units.length) {
+      container.innerHTML = '<div style="font-size:13px;color:#94a3b8;">לא הוגדרו יחידות לקורס זה.</div>';
+      return;
+    }
+    container.innerHTML = units.map(u => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:#f8fafc;font-size:13px;color:#374151;">
+        <div style="width:24px;height:24px;border-radius:50%;background:#e0e7ff;color:#6366f1;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${u.id}</div>
+        <span>${macroEscHtml(u.label || u.name || "יחידה")}</span>
+      </div>`).join("");
+  } catch {
+    container.innerHTML = '<div style="font-size:13px;color:#ef4444;">שגיאה בטעינת יחידות.</div>';
+  }
+}
+
+async function loadMacroBookshelf(courseId) {
+  try {
+    const payload = await fetch(`/.netlify/functions/classroom?action=course_metadata&courseId=${encodeURIComponent(courseId)}`).then(r => r.json());
+    macroBookshelfUnits = macroNormalizeBookshelfUnits(payload?.metadata || null);
+    macroRenderBookshelf();
+  } catch {
+    macroBookshelfUnits = [];
+    macroRenderBookshelf();
+  }
+}
+
+function macroNormalizeBookshelfUnits(metadata) {
+  const units = Array.isArray(metadata?.units) ? metadata.units : [];
+  return units.map((unit, ui) => {
+    const unitId = String(unit?.unitId || unit?.id || `unit_${String(ui+1).padStart(2,"0")}`).trim();
+    const name = String(unit?.name || unit?.title || unit?.label || `יחידה ${ui+1}`).trim();
+    const rawItems = (Array.isArray(unit?.resources) && unit.resources) || (Array.isArray(unit?.items) && unit.items) || (Array.isArray(unit?.modules) && unit.modules) || [];
+    const resources = rawItems.map((item, ii) => ({
+      id: String(item?.id || `${unitId}_res_${String(ii+1).padStart(2,"0")}`),
+      title: String(item?.title || item?.name || item?.label || `משאב ${ii+1}`).trim(),
+      url: String(item?.url || item?.link || item?.href || item?.externalUrl || item?.resourceUrl || "").trim(),
+      kind: String(item?.kind || item?.type || item?.modname || "resource").trim().toLowerCase(),
+      unitId, unitName: name
+    })).filter(r => r.title);
+    return { unitId, name, resources };
+  }).filter(u => u.resources.length);
+}
+
+function macroRenderBookshelf() {
+  const filter = document.getElementById("macro-resource-unit-filter");
+  const list   = document.getElementById("macro-resource-list");
+  const count  = document.getElementById("macro-resource-count");
+  if (!filter || !list || !count) return;
+
+  if (!macroBookshelfUnits.length) {
+    filter.innerHTML = '<option value="all">כל היחידות</option>';
+    count.textContent = "0 משאבים";
+    list.innerHTML = '<div style="font-size:12px;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;">עדיין לא נטענו משאבים — ייבא Moodle JSON מהטאב הבא.</div>';
+    return;
+  }
+  const cur = filter.value || "all";
+  filter.innerHTML = ['<option value="all">כל היחידות</option>', ...macroBookshelfUnits.map(u => `<option value="${macroEscHtml(u.unitId)}">${macroEscHtml(u.name)}</option>`)].join("");
+  filter.value = macroBookshelfUnits.some(u => u.unitId === cur) ? cur : "all";
+  filter.onchange = macroRenderBookshelf;
+  const visible = filter.value === "all" ? macroBookshelfUnits : macroBookshelfUnits.filter(u => u.unitId === filter.value);
+  const resources = visible.flatMap(u => u.resources);
+  count.textContent = `${resources.length} משאבים`;
+  list.innerHTML = resources.length
+    ? resources.map(r => `<div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+        <div><div style="font-size:13px;font-weight:700;color:#111827;">${macroEscHtml(r.kind.toUpperCase())} · ${macroEscHtml(r.title)}</div><div style="font-size:11px;color:#64748b;margin-top:2px;">${macroEscHtml(r.unitName)}</div></div>
+        ${r.url ? `<a href="${macroEscHtml(r.url)}" target="_blank" style="font-size:12px;color:#4f46e5;border:1px solid #c7d2fe;border-radius:8px;padding:5px 10px;text-decoration:none;background:#eef2ff;white-space:nowrap;">פתח</a>` : '<span style="font-size:12px;color:#94a3b8;">ללא קישור</span>'}
+      </div>`).join("")
+    : '<div style="font-size:12px;color:#64748b;">אין משאבים לסינון שנבחר.</div>';
+}
+
+async function loadMacroLifecycle(courseId) {
+  const dbUrl = window.MILED_FIREBASE_CONFIG?.databaseURL;
+  if (!dbUrl) return;
+  try {
+    const snap = await fetch(`${dbUrl}/classes/${encodeURIComponent(courseId)}.json`).then(r => r.json());
+    if (snap?.lockDate)      document.getElementById("macro-lock-date").value      = snap.lockDate;
+    if (snap?.retentionDate) document.getElementById("macro-retention-date").value = snap.retentionDate;
+  } catch { /* non-fatal */ }
+}
+
+async function macroSaveLifecycle() {
+  const msgEl = document.getElementById("macro-lifecycle-msg");
+  const lockDate      = document.getElementById("macro-lock-date").value;
+  const retentionDate = document.getElementById("macro-retention-date").value;
+  const db = getRealtimeDb();
+  if (!db || !macroCourseId) {
+    msgEl.style.color = "#ef4444";
+    msgEl.textContent = "Firebase לא מחובר או לא צוין קורס.";
+    return;
+  }
+  msgEl.style.color = "#6366f1";
+  msgEl.textContent = "שומר...";
+  try {
+    const updates = {};
+    if (lockDate)      updates.lockDate = lockDate;
+    if (retentionDate) updates.retentionDate = retentionDate;
+    await db.ref(`classes/${macroCourseId}`).update(updates);
+    msgEl.style.color = "#16a34a";
+    msgEl.textContent = "✅ נשמר.";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
+  } catch (e) {
+    msgEl.style.color = "#ef4444";
+    msgEl.textContent = e.message;
+  }
+}
+
+function macroEscHtml(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+// ───────────────────────────────────────────────────────────────────────────
 
 function getSelectedTeachingContext() {
   const liveSel = document.getElementById('botSelect');
