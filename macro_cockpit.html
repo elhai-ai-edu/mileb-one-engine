@@ -695,7 +695,7 @@
   width: 100%;
   box-sizing: border-box;
 }
-.classroom-grid { margin-top: 20px; }
+.classroom-grid { margin-top: 20px; grid-template-columns: 1fr; }
 .panel { display: none; margin-top: 20px; }
 .panel.active { display: block !important; }
 .cockpit-tab-btn {
@@ -871,6 +871,41 @@
   font-size: 20px;
   cursor: pointer;
 }
+
+/* ─── Units Manager (interactive) ─── */
+.units-layout { display: grid; grid-template-columns: 1fr 3fr 1fr; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .units-layout { grid-template-columns: 1fr; } }
+.units-card {
+  background: #fff; border: 1px solid #dbe3ef; border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.06); padding: 16px;
+}
+.units-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.units-toggle-btn {
+  border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 9px;
+  background: #fff; cursor: pointer; font-weight: 700; font-family: inherit;
+  font-size: 13px; transition: background .15s, border-color .15s;
+}
+.units-toggle-btn.active { border-color: #93c5fd; background: #eff6ff; color: #1e3a8a; }
+.units-pill {
+  display: inline-block; border-radius: 999px; padding: 3px 10px;
+  font-size: 12px; font-weight: 700; color: #1e3a8a; background: #e0e7ff; margin-bottom: 12px;
+}
+.units-table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #dbe3ef; border-radius: 12px; overflow: hidden; }
+.units-table th, .units-table td {
+  padding: 9px 8px; border-bottom: 1px solid #e5eaf2;
+  vertical-align: middle; text-align: right; font-size: 13px;
+}
+.units-table thead th { background: #f8fbff; color: #334155; font-weight: 800; }
+.units-table tr:last-child td { border-bottom: 0; }
+.units-table input[type="text"] {
+  width: 100%; border: 1px solid #cbd5e1; border-radius: 8px;
+  padding: 7px 9px; font-size: 13px; font-family: inherit; background: #fff;
+  color: #0f172a; box-sizing: border-box;
+}
+.units-table input[type="text"]:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.1); }
+.unit-row-status { font-size: 11px; color: #94a3b8; min-width: 54px; }
+.unit-row-status.ok { color: #166534; }
+.unit-row-status.err { color: #b91c1c; }
 </style>
 <title>MilEd.One — Macro Cockpit</title>
 
@@ -999,11 +1034,42 @@
 
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0;">
 
-    <!-- ─── Course Units ─── -->
+    <!-- ─── Course Units (interactive) ─── -->
     <h2 style="margin-bottom:6px;">📋 יחידות הקורס</h2>
-    <p class="panel-sub" style="margin-bottom:12px;">מבנה הקורס לפי יחידות לימוד — מוגדר ב-config.json</p>
-    <div id="macro-unit-list" style="display:grid;gap:6px;">
-      <div style="font-size:13px;color:#94a3b8;">טוען...</div>
+    <p class="panel-sub" style="margin-bottom:14px;">עריכה בשדה הנושא שומרת אוטומטית — blur/change</p>
+    <div class="units-layout">
+      <div class="units-card">
+        <div class="units-pill">תצורה</div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;">מבנה יחידות</div>
+        <div class="units-toggle">
+          <button class="units-toggle-btn active" id="macroModeSessionBtn" type="button" onclick="macroSetUnitsMode('Session')">Academic Sessions (1–14)</button>
+          <button class="units-toggle-btn" id="macroModeTopicBtn" type="button" onclick="macroSetUnitsMode('Topic')">Flexible Topics (עד 50)</button>
+        </div>
+        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">שנה מצב כדי לעבור בין 14 מפגשים מסודרים לנושאים גמישים עד 50.</p>
+      </div>
+
+      <div class="units-card">
+        <div class="table-wrap" style="overflow-x:auto;">
+          <table class="units-table">
+            <thead>
+              <tr>
+                <th style="width:96px;">Unit ID</th>
+                <th style="width:110px;">Type</th>
+                <th>Topic Name</th>
+                <th style="width:64px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="macro-units-tbody">
+              <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">טוען...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="units-card">
+        <div class="units-pill">הסבר</div>
+        <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">כפתור Edit ביחידה יפתח קוקפיט בקונטקסט מלא: courseId + unitId. כך מישימות, missionData ו-entranceTickets נמשכות מהיחידה הנכונה.</p>
+      </div>
     </div>
 
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:22px 0;">
@@ -1936,24 +2002,74 @@ async function loadMacroCourseManagement(courseId) {
   await loadMacroLifecycle(courseId);
 }
 
+let macroUnitsMap = {};
+let macroUnitsMode = "Session";
+
+function macroToSessionUnitId(i) { return `session_${String(i).padStart(2,"0")}`; }
+function macroToTopicUnitId(i)   { return `topic_${String(i).padStart(2,"0")}`; }
+
 async function loadMacroCourseUnits(courseId) {
-  const container = document.getElementById("macro-unit-list");
-  if (!container) return;
+  const tbody = document.getElementById("macro-units-tbody");
+  if (!tbody) return;
   try {
-    const config = await fetch("/config.json?ts=" + Date.now()).then(r => r.json());
-    const course = config.my_courses?.[courseId];
-    const units = course?.course_units?.semester_a?.units || [];
-    if (!units.length) {
-      container.innerHTML = '<div style="font-size:13px;color:#94a3b8;">לא הוגדרו יחידות לקורס זה.</div>';
-      return;
+    const res = await fetch(`/.netlify/functions/classroom?action=units_list&userId=${encodeURIComponent(facultyId)}&courseId=${encodeURIComponent(courseId)}`);
+    macroUnitsMap = res.ok ? ((await res.json())?.units || {}) : {};
+  } catch { macroUnitsMap = {}; }
+  macroRenderUnits();
+}
+
+function macroSetUnitsMode(mode) {
+  macroUnitsMode = mode;
+  document.getElementById("macroModeSessionBtn")?.classList.toggle("active", mode === "Session");
+  document.getElementById("macroModeTopicBtn")?.classList.toggle("active", mode === "Topic");
+  macroRenderUnits();
+}
+
+function macroRenderUnits() {
+  const tbody = document.getElementById("macro-units-tbody");
+  if (!tbody) return;
+  if (!macroCourseId) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">בחר קורס דרך ה-URL (courseId=...)</td></tr>`;
+    return;
+  }
+  const total = macroUnitsMode === "Session" ? 14 : 50;
+  const unitIds = Array.from({ length: total }, (_, i) =>
+    macroUnitsMode === "Session" ? macroToSessionUnitId(i + 1) : macroToTopicUnitId(i + 1)
+  );
+  tbody.innerHTML = unitIds.map(unitId => {
+    const row = macroUnitsMap[unitId] || {};
+    const topicName = macroEscHtml(row.topicName || "");
+    return `<tr data-unit-id="${unitId}">
+      <td><strong>${unitId}</strong></td>
+      <td style="color:#475569;">${macroUnitsMode}</td>
+      <td><input type="text" data-role="topic" value="${topicName}" placeholder="הזן נושא" /></td>
+      <td><span class="unit-row-status" data-role="status">מוכן</span></td>
+    </tr>`;
+  }).join("");
+  tbody.querySelectorAll("input[data-role='topic']").forEach(input => {
+    input.addEventListener("change", () => macroAutoSaveUnitRow(input.closest("tr")));
+    input.addEventListener("blur",   () => macroAutoSaveUnitRow(input.closest("tr")));
+  });
+}
+
+async function macroAutoSaveUnitRow(row) {
+  if (!row || !macroCourseId) return;
+  const unitId    = row.getAttribute("data-unit-id");
+  const topicInput = row.querySelector("input[data-role='topic']");
+  const statusEl  = row.querySelector("[data-role='status']");
+  const topicName = topicInput?.value?.trim() || "";
+  if (!unitId) return;
+  if (statusEl) { statusEl.textContent = "שומר..."; statusEl.className = "unit-row-status"; }
+  try {
+    const res = await callClassroom({ action: "unit_upsert", userId: facultyId, courseId: macroCourseId, unitId, structureType: macroUnitsMode, topicName });
+    if (!res?.ok) throw new Error("not ok");
+    macroUnitsMap[unitId] = { ...(macroUnitsMap[unitId] || {}), topicName, structureType: macroUnitsMode };
+    if (statusEl) {
+      statusEl.textContent = "נשמר"; statusEl.className = "unit-row-status ok";
+      setTimeout(() => { statusEl.textContent = "מוכן"; statusEl.className = "unit-row-status"; }, 1400);
     }
-    container.innerHTML = units.map(u => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:#f8fafc;font-size:13px;color:#374151;">
-        <div style="width:24px;height:24px;border-radius:50%;background:#e0e7ff;color:#6366f1;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${u.id}</div>
-        <span>${macroEscHtml(u.label || u.name || "יחידה")}</span>
-      </div>`).join("");
   } catch {
-    container.innerHTML = '<div style="font-size:13px;color:#ef4444;">שגיאה בטעינת יחידות.</div>';
+    if (statusEl) { statusEl.textContent = "שגיאה"; statusEl.className = "unit-row-status err"; }
   }
 }
 
