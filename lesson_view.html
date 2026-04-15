@@ -215,6 +215,17 @@
     .hero-copy { max-width: 62ch; }
     .hero-copy h1 { margin: 0 0 6px; font-size: 1.45rem; }
     .hero-copy p { margin: 0; color: var(--muted); line-height: 1.65; }
+    /* ─── Project stage tabs ─── */
+    .stage-tab {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1.5px solid #cbd5e1; background: #f8fafc; color: #475569;
+      cursor: pointer; white-space: nowrap; font-family: inherit;
+      transition: all .15s;
+    }
+    .stage-tab:hover { border-color: #818cf8; background: #eef2ff; color: #3730a3; }
+    .stage-tab.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .stage-tab.completed { background: #dcfce7; border-color: #86efac; color: #15803d; }
+
     #sprintStepper {
       display: none;
       padding: 10px 14px 4px;
@@ -679,6 +690,11 @@
             <button class="mini-btn" id="refreshBtn">רענן</button>
           </div>
         </div>
+        <!-- ─── Project Stages Stepper ─── -->
+        <div id="projectStepperWrap" style="display:none;padding:14px 18px 6px;border-top:1px solid var(--line);">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-bottom:10px;">📋 שלבי הפרויקט</div>
+          <div id="projectStepper" style="display:flex;align-items:center;gap:0;flex-wrap:wrap;gap:6px;"></div>
+        </div>
         <!-- ─── Sprint Stepper ─── -->
         <div id="sprintStepper"></div>
 
@@ -1052,6 +1068,7 @@
       });
       closeBotMenu();
       renderSkillContextBanner(); // re-evaluate skill banner for new bot
+      renderProjectStepper();    // re-evaluate project stepper for new bot
     }
 
     function toggleBotMenu() {
@@ -1076,7 +1093,8 @@
       const course = config?.my_courses?.[courseId];
       if (!course) return;
       _fetchedCourseConfig = course;
-      renderHeaderBadges(); // re-run now that we have config fallback
+      renderHeaderBadges();    // re-run now that we have config fallback
+      renderProjectStepper();  // show/hide project stepper based on config + active bot
 
       const items = [];
       // Course-specific bots
@@ -1198,6 +1216,45 @@
       if (normalized.includes("physical")) return "physical";
       if (normalized.includes("plenary")) return "plenary";
       return "ai";
+    }
+
+    function renderProjectStepper() {
+      const stages = lessonData?.projectStages
+        || _fetchedCourseConfig?.course_units?.semester_a?.project?.stages
+        || [];
+      const wrap = document.getElementById("projectStepperWrap");
+      const container = document.getElementById("projectStepper");
+      if (!wrap || !container) return;
+      if (!stages.length) { wrap.style.display = "none"; return; }
+
+      // Only show when active bot is project/research type
+      const activeBot = _activeBotType || lessonData?.botType || "";
+      const isProjectBot = activeBot.includes("research") || activeBot.includes("project") || activeBot.includes("final");
+      if (!isProjectBot) { wrap.style.display = "none"; return; }
+
+      wrap.style.display = "";
+      const current = Number(lessonData?.currentStep) || 1;
+      container.innerHTML = "";
+      stages.forEach((stage, idx) => {
+        const stageId = Number(stage.id);
+        const btn = document.createElement("button");
+        btn.className = "stage-tab" +
+          (stageId === current ? " active" : stageId < current ? " completed" : "");
+        btn.textContent = `${stageId}. ${stage.label}`;
+        btn.onclick = () => selectProjectStage(stageId);
+        container.appendChild(btn);
+      });
+    }
+
+    async function selectProjectStage(stepId) {
+      if (role !== "student") return;
+      lessonData.currentStep = stepId;
+      renderProjectStepper();
+      await callClassroom("POST", {
+        action: "set_step",
+        sessionId, studentId, studentName,
+        step: stepId
+      });
     }
 
     function findActiveSprint() {

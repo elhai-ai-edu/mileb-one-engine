@@ -632,7 +632,9 @@ export async function handler(event){
         pacing: pacingSummary,
         activeTask: session.active_task || null,
         broadcast: session.broadcast || null,
-        broadcastedAt: session.broadcastedAt || null
+        broadcastedAt: session.broadcastedAt || null,
+        currentStep: session.currentStep || 1,
+        projectStages: courseConfig?.course_units?.semester_a?.project?.stages || []
       });
     }
 
