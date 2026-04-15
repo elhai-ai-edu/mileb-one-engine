@@ -1482,7 +1482,7 @@
 // ─────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────
-const facultyId = sessionStorage.getItem("facultyId") || "f_" + Math.random().toString(36).slice(2,8);
+const facultyId = sessionStorage.getItem("facultyId") || "f_" + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => b.toString(16).padStart(2,"0")).join("");
 sessionStorage.setItem("facultyId", facultyId);
 const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
 const cockpitParams = new URLSearchParams(location.search);
@@ -2388,7 +2388,7 @@ async function openSession() {
     pushedSteps = [];
 
     // Session ID must exist before student redirect signal is emitted.
-    sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    sessionId  = "ses_" + Date.now() + "_" + Array.from(crypto.getRandomValues(new Uint8Array(4)), b => b.toString(16).padStart(2,"0")).join("");
     studentURL = studentURL.replace('SESSION_ID', sessionId);
 
     const res = await callClassroom({
