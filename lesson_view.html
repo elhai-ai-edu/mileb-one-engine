@@ -451,23 +451,18 @@
       border-top: 2px solid var(--line);
       display: flex; flex-direction: column;
     }
-    .comm-panel-head {
-      font-weight: 800; font-size: 0.95rem; color: #0369a1;
-      padding: 14px 18px 10px;
-      display: flex; align-items: center; gap: 6px;
-      border-bottom: 1px solid var(--line);
-    }
-    /* Stream of bubbles */
+    /* Stream of bubbles — hidden when empty */
     .comm-stream {
-      flex: 1; overflow-y: auto;
-      padding: 14px 18px;
+      overflow-y: auto;
+      padding: 0 18px;
       display: flex; flex-direction: column; gap: 10px;
-      min-height: 80px; max-height: 320px;
+      max-height: 260px;
+      height: 0; /* collapsed when empty */
+      transition: height 0.2s;
     }
-    .comm-stream:empty::before {
-      content: 'אין הודעות עדיין';
-      font-size: 12px; color: var(--muted);
-      text-align: center; padding-top: 10px;
+    .comm-stream.has-messages {
+      height: auto; padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
     }
     /* Bubble base */
     .waf-msg {
@@ -478,14 +473,14 @@
     }
     .waf-msg-text { font-size: 14px; color: #0f172a; }
     .waf-msg-meta { font-size: 11px; }
-    /* Lecturer → student: right side (RTL = right), blue */
+    /* Lecturer message: align end (right in RTL), blue */
     .waf-msg:not(.waf-msg-student) {
       background: #f0f9ff; border: 1.5px solid #bae6fd;
       align-self: flex-end;
       border-bottom-right-radius: 4px;
     }
     .waf-msg:not(.waf-msg-student) .waf-msg-meta { color: #0369a1; }
-    /* Student → lecturer: left side, green */
+    /* Student message: align start (left in RTL), green */
     .waf-msg-student {
       background: #f0fdf4; border: 1.5px solid #bbf7d0;
       align-self: flex-start;
@@ -495,9 +490,12 @@
 
     /* Input area */
     .comm-input {
-      border-top: 1px solid var(--line);
       padding: 14px 18px;
       display: grid; gap: 10px;
+    }
+    .write-panel-head {
+      font-weight: 800; font-size: 1rem; color: #1e3a8a;
+      display: flex; align-items: center; gap: 8px;
     }
     .write-zone {
       position: relative;
@@ -689,12 +687,11 @@
           <iframe id="presentationFrame" class="presentation-frame" title="presentation-stage"></iframe>
           <div id="sprintList" class="sprint-list"></div>
         </div>
-        <!-- ─── Writing Zone ─── -->
         <!-- ─── Communication Panel (WAF + write, unified) ─── -->
         <div class="comm-panel" id="writePanel">
-          <div class="comm-panel-head">💬 תקשורת עם המרצה</div>
           <div class="comm-stream" id="wafMessages"></div>
           <div class="comm-input">
+            <div class="write-panel-head">✍️ אזור עבודה</div>
             <div id="unlockFlash" class="unlock-flash">🎉 השלב נפתח — כעת תוכל להמשיך!</div>
             <div class="write-zone">
               <div id="writeLockOverlay" class="write-lock-overlay">🔒 השלב נעול — המרצה יפתח אותו בקרוב</div>
@@ -2188,6 +2185,7 @@
         `;
         container.appendChild(msgEl);
       });
+      if (sorted.some(s => s.content)) container.classList.add("has-messages");
     }
 
     function startWafListener() {
@@ -2202,9 +2200,15 @@
       });
     }
 
-    function appendWafMessage(reply) {
+    function _appendToStream(msgEl) {
       const container = document.getElementById("wafMessages");
       if (!container) return;
+      container.classList.add("has-messages");
+      container.appendChild(msgEl);
+      msgEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function appendWafMessage(reply) {
       const text = String(reply?.text || "").trim();
       if (!text) return;
       const time = reply?.ts ? new Date(reply.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
@@ -2214,13 +2218,11 @@
         <div class="waf-msg-text">${escapeHtml(text)}</div>
         <div class="waf-msg-meta">מהמרצה${time ? ` · ${time}` : ""}</div>
       `;
-      container.appendChild(msgEl);
-      msgEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      _appendToStream(msgEl);
     }
 
     function appendStudentBubble(text, type = "message") {
-      const container = document.getElementById("wafMessages");
-      if (!container || !text) return;
+      if (!text) return;
       const time = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
       const tag = type === "submission" ? " · הגשה" : "";
       const msgEl = document.createElement("div");
@@ -2229,8 +2231,7 @@
         <div class="waf-msg-text">${escapeHtml(text)}</div>
         <div class="waf-msg-meta">שלחת · ${time}${tag}</div>
       `;
-      container.appendChild(msgEl);
-      msgEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      _appendToStream(msgEl);
     }
 
     function stopWafListener() {
