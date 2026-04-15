@@ -1012,6 +1012,8 @@
       <div id="activeSessionControls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
         <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
         <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל - כולם פנימה! 🔓</button>
+        <button class="btn btn-outline" id="sendToLobbyBtn" onclick="sendStudentsToLobby()" style="font-size:12px;padding:7px 14px;background:#fff7ed;color:#9a3412;border-color:#fdba74;">🚪 שלח לחדר המתנה</button>
+        <button class="btn btn-green" id="returnFromLobbyBtn" onclick="returnStudentsFromLobby()" style="font-size:12px;padding:7px 14px;display:none;">▶ החזר לשיעור</button>
         <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
         <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן הוראה</button>
       </div>
@@ -2197,6 +2199,37 @@ async function openAllEntryPolicy() {
   } finally {
     openAllInFlight = false;
   }
+}
+
+// ─────────────────────────────────────────
+// LOBBY MODE
+// ─────────────────────────────────────────
+async function sendStudentsToLobby() {
+  if (!sessionId) return;
+  const btn = document.getElementById('sendToLobbyBtn');
+  const retBtn = document.getElementById('returnFromLobbyBtn');
+  if (btn) btn.disabled = true;
+  try {
+    await callClassroom({ action: 'session_state_update', sessionId, facultyId, lobbyMode: true, doorStatus: 'closed' });
+    if (btn) { btn.style.display = 'none'; btn.disabled = false; }
+    if (retBtn) retBtn.style.display = '';
+    const badge = document.getElementById('sessionBadge');
+    if (badge) badge.textContent = '🚪 כיתה בחדר המתנה';
+  } catch { if (btn) btn.disabled = false; }
+}
+
+async function returnStudentsFromLobby() {
+  if (!sessionId) return;
+  const retBtn = document.getElementById('returnFromLobbyBtn');
+  const sendBtn = document.getElementById('sendToLobbyBtn');
+  if (retBtn) retBtn.disabled = true;
+  try {
+    await callClassroom({ action: 'session_state_update', sessionId, facultyId, lobbyMode: false, doorStatus: 'open' });
+    if (retBtn) { retBtn.style.display = 'none'; retBtn.disabled = false; }
+    if (sendBtn) sendBtn.style.display = '';
+    const badge = document.getElementById('sessionBadge');
+    if (badge) badge.textContent = '✅ שיעור פעיל';
+  } catch { if (retBtn) retBtn.disabled = false; }
 }
 
 // ─────────────────────────────────────────

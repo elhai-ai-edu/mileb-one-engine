@@ -500,7 +500,15 @@
       <button class="recall-ack-btn" onclick="ackRecall()">חזרתי ✓</button>
     </div>
 
-    <main class="layout">
+    <!-- ─── Waiting Screen (shown before session opens) ─── -->
+    <div id="waitingScreen" style="display:none;padding:60px 20px;text-align:center;max-width:560px;margin:0 auto;">
+      <div style="font-size:56px;margin-bottom:16px;">⏳</div>
+      <div style="font-size:1.4rem;font-weight:800;color:#1e3a8a;margin-bottom:8px;" id="waitingTitle">ממתינים לפתיחת השיעור</div>
+      <div style="font-size:14px;color:#475569;line-height:1.65;margin-bottom:24px;" id="waitingSubtitle">המרצה יפתח את השיעור בקרוב. הדף יתעדכן אוטומטית.</div>
+      <div style="width:40px;height:40px;border-radius:50%;border:4px solid #dbeafe;border-top-color:#1d4ed8;animation:openBtnSpin .9s linear infinite;margin:0 auto;"></div>
+    </div>
+
+    <main id="lessonMain" class="layout">
       <aside class="panel">
         <div class="panel-head">Bookshelf</div>
         <div class="panel-body">
@@ -1286,6 +1294,18 @@
       document.getElementById("roleChip").textContent = role === "lecturer" ? "Lecturer View" : "Student View";
       const writePanel = document.getElementById("writePanel");
       if (writePanel) writePanel.style.display = role === "lecturer" ? "none" : "";
+      // Show waiting screen if session not yet open for students
+      if (role === "student") {
+        const doorStatus = String(lessonData?.state?.door_status || "auto").toLowerCase();
+        const sessionActive = !!lessonData?.active;
+        const showWaiting = !sessionActive || doorStatus === "closed";
+        document.getElementById("waitingScreen").style.display = showWaiting ? "" : "none";
+        document.getElementById("lessonMain").style.display = showWaiting ? "none" : "";
+        if (showWaiting) {
+          const courseName = lessonData?.courseName || lessonData?.courseId || "";
+          if (courseName) document.getElementById("waitingTitle").textContent = `ממתינים לפתיחת השיעור — ${courseName}`;
+        }
+      }
 
       const activeSprint = findActiveSprint();
       if (activeSprint) {
@@ -1388,9 +1408,26 @@
         if (live.active_task !== undefined) lessonData.activeTask = live.active_task;
         if (live.state) lessonData.state = { ...lessonData.state, ...live.state };
         if (broadcastChanged) renderBroadcast();
+        // Show/hide waiting screen based on live door state
+        if (role === "student") {
+          const liveDoor = String(live.state?.door_status || "auto").toLowerCase();
+          const liveActive = !!live.active;
+          const stillWaiting = !liveActive || liveDoor === "closed";
+          const waitingScreen = document.getElementById("waitingScreen");
+          const lessonMain = document.getElementById("lessonMain");
+          if (waitingScreen && lessonMain) {
+            waitingScreen.style.display = stillWaiting ? "" : "none";
+            lessonMain.style.display = stillWaiting ? "none" : "";
+          }
+        }
         if (role === "student") {
           checkRecall(live);
           checkLockState(live);
+          // Lecturer sent students to waiting lobby mid-session
+          if (live.state?.lobby_mode === true) {
+            const lobbyUrl = `/waiting_lobby.html?courseId=${encodeURIComponent(lessonData?.courseId || courseIdFromUrl)}&unitId=${encodeURIComponent(lessonData?.lessonId || unitIdFromUrl)}&sessionId=${encodeURIComponent(sessionId)}&mid_session=1`;
+            location.replace(lobbyUrl);
+          }
         }
       });
     }

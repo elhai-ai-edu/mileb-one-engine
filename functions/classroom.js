@@ -1620,6 +1620,7 @@ export async function handler(event){
     if(body.currentUnit !== undefined) updates.current_unit = normalizeUnitId(body.currentUnit, normalizeUnitId(session.unitId));
     if(body.activeSprint !== undefined) updates.active_sprint = String(body.activeSprint || "").trim() || null;
     if(body.doorStatus !== undefined) updates.door_status = String(body.doorStatus || "auto").trim().toLowerCase();
+    if(body.lobbyMode !== undefined) updates.lobby_mode = !!body.lobbyMode;
     if(body.clearPushedResource) updates.pushed_resource = null;
 
     await sessionRef.child("state").update(updates);
