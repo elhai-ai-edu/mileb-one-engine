@@ -1005,11 +1005,11 @@
       }
     }
 
-    function buildWaitingLobbyUrl() {
+    function buildWaitingLobbyUrl({ omitSessionId = false } = {}) {
       const query = new URLSearchParams();
       if (courseIdFromUrl) query.set("courseId", courseIdFromUrl);
       if (unitIdFromUrl) query.set("unitId", unitIdFromUrl);
-      if (sessionId) query.set("sessionId", sessionId);
+      if (sessionId && !omitSessionId) query.set("sessionId", sessionId);
       return `/waiting_lobby.html?${query.toString()}`;
     }
 
@@ -1683,6 +1683,18 @@
       const payloadQs = `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}` +
         (role === "student" && studentId ? `&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}` : "");
       lessonData = await callClassroom("GET", null, payloadQs);
+
+      // If session is gone or closed, redirect student to lobby to discover the current active session
+      if (role === "student" && courseIdFromUrl) {
+        const sessionGone = lessonData?.error || !lessonData?.active;
+        if (sessionGone) {
+          clearInterval(refreshTimer);
+          clearInterval(heartbeatTimer);
+          location.replace(buildWaitingLobbyUrl({ omitSessionId: true }));
+          return;
+        }
+      }
+
       syncLessonUrlContext();
       const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
       const primaryUnitName = selectedUnits[0]?.name || lessonData?.lessonId || "יחידה פעילה";
