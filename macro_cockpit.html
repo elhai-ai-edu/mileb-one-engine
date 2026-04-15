@@ -1557,6 +1557,13 @@ let atsCurrentJournalId = null;
 let atsCandidates = [];
 let atsSelectedIdx = null;
 
+function atsResolveFacultyId() {
+  const fid = (typeof facultyId !== 'undefined' && facultyId) ? facultyId : sessionStorage.getItem('facultyId');
+  if (!fid) throw new Error('לא זוהה מרצה פעיל — יש להתחבר מחדש');
+  return fid;
+}
+
+// Switch to step 3 also renders the approved list
 function atsGoStep(n) {
   [1, 2, 3].forEach(i => {
     const panel = document.getElementById(`ats-panel-${i}`);
@@ -1567,6 +1574,7 @@ function atsGoStep(n) {
     btn.style.background = active ? '#6366f1' : '#f1f5f9';
     btn.style.color       = active ? '#fff'    : '#64748b';
   });
+  if (n === 3) atsRenderApprovedList();
 }
 
 // ── Step 1: Parse ────────────────────────────────────────────────────────────
@@ -1584,8 +1592,8 @@ async function atsParse() {
   statusEl.textContent = '⏳ מנתח...';
   parseBtn.disabled = true;
 
-  // facultyId comes from the outer STATE block
-  const fid = (typeof facultyId !== 'undefined') ? facultyId : sessionStorage.getItem('facultyId') || 'f_unknown';
+  let fid;
+  try { fid = atsResolveFacultyId(); } catch (e) { statusEl.textContent = `⚠️ ${e.message}`; parseBtn.disabled = false; return; }
 
   try {
     const res = await fetch('/api/journal/parse', {
@@ -1718,7 +1726,8 @@ async function atsSaveReview() {
   statusEl.textContent = '⏳ שומר...';
   btn.disabled = true;
 
-  const fid = (typeof facultyId !== 'undefined') ? facultyId : sessionStorage.getItem('facultyId') || 'f_unknown';
+  let fid;
+  try { fid = atsResolveFacultyId(); } catch (e) { statusEl.textContent = `⚠️ ${e.message}`; btn.disabled = false; return; }
 
   try {
     const res = await fetch('/api/journal/review', {
@@ -1775,7 +1784,8 @@ async function atsApproveToBank() {
   statusEl.textContent = '⏳ שומר לבנק...';
   btn.disabled = true;
 
-  const fid      = (typeof facultyId !== 'undefined') ? facultyId : sessionStorage.getItem('facultyId') || 'f_unknown';
+  let fid;
+  try { fid = atsResolveFacultyId(); } catch (e) { statusEl.textContent = `⚠️ ${e.message}`; btn.disabled = false; return; }
   const courseId = document.getElementById('ats-courseId').value.trim() || 'uncategorized';
 
   try {
@@ -1794,13 +1804,6 @@ async function atsApproveToBank() {
     btn.disabled = false;
   }
 }
-
-// Switch to step 3 also renders the approved list
-const _origAtsGoStep = atsGoStep;
-window.atsGoStep = function(n) {
-  _origAtsGoStep(n);
-  if (n === 3) atsRenderApprovedList();
-};
 </script>
 
 </body>

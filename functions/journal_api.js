@@ -25,7 +25,7 @@
  *   config.json → system.activity_translation — feature flags
  */
 
-import crypto from "crypto";
+import { randomBytes } from "node:crypto";
 import { getDatabase } from "firebase-admin/database";
 import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
@@ -293,7 +293,7 @@ function ruleBasedParse(rawText, metadata) {
 }
 
 function generateId(prefix = "j") {
-  return `${prefix}_${Date.now()}_${crypto.randomBytes(3).toString("hex")}`;
+  return `${prefix}_${Date.now()}_${randomBytes(3).toString("hex")}`;
 }
 
 function getDB() {
