@@ -97,6 +97,35 @@
       background: linear-gradient(180deg, #f8fbff, #eef4ff);
       font-weight: 800;
       color: #1e3a8a;
+      position: relative;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    #botMenuToggle {
+      font-size: 13px; padding: 3px 8px; flex-shrink: 0;
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+      color: #1d4ed8; cursor: pointer;
+    }
+    #botMenuToggle:hover { background: #dbeafe; }
+    #botMenuDropdown {
+      position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+      background: #fff; border: 1px solid var(--line);
+      border-top: none; border-radius: 0 0 12px 12px;
+      box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+      overflow: hidden;
+    }
+    .bot-menu-item {
+      display: block; width: 100%; text-align: right;
+      padding: 10px 16px; font-size: 13px; font-weight: 600;
+      background: none; border: none; border-bottom: 1px solid #f1f5f9;
+      color: #1e3a8a; cursor: pointer;
+    }
+    .bot-menu-item:last-child { border-bottom: none; }
+    .bot-menu-item:hover { background: #eff6ff; }
+    .bot-menu-item.active { background: #dbeafe; color: #1d4ed8; }
+    .bot-menu-separator {
+      font-size: 10px; font-weight: 700; color: var(--muted);
+      padding: 6px 16px 2px; text-transform: uppercase; letter-spacing: .05em;
+      background: #f8fafc;
     }
     .panel-body {
       padding: 16px;
@@ -186,6 +215,83 @@
     .hero-copy { max-width: 62ch; }
     .hero-copy h1 { margin: 0 0 6px; font-size: 1.45rem; }
     .hero-copy p { margin: 0; color: var(--muted); line-height: 1.65; }
+    #sprintStepper {
+      display: none;
+      padding: 10px 14px 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    #sprintStepper.visible { display: flex; align-items: center; gap: 0; }
+    .sprint-step {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      cursor: pointer; flex-shrink: 0; min-width: 40px;
+    }
+    .sprint-step-bubble {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 2px solid #cbd5e1; background: #f8fafc;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #64748b;
+      transition: all .2s;
+    }
+    .sprint-step:hover .sprint-step-bubble { border-color: #93c5fd; background: #eff6ff; color: #1d4ed8; }
+    .sprint-step.active .sprint-step-bubble {
+      background: #1d4ed8; border-color: #1d4ed8; color: #fff;
+      box-shadow: 0 4px 12px rgba(29,78,216,.35);
+    }
+    .sprint-step.completed .sprint-step-bubble {
+      background: #dcfce7; border-color: #86efac; color: #15803d;
+    }
+    .sprint-step-label {
+      font-size: 10px; font-weight: 700; color: #64748b;
+      max-width: 64px; text-align: center; line-height: 1.25;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sprint-step.active .sprint-step-label { color: #1d4ed8; }
+    .sprint-step.completed .sprint-step-label { color: #15803d; }
+    .sprint-step-connector {
+      flex: 1; height: 2px; background: #e2e8f0;
+      min-width: 12px; max-width: 40px; margin-bottom: 18px;
+      transition: background .2s;
+    }
+    .sprint-step-connector.completed { background: #86efac; }
+
+    /* ─── Team Role Assignment Overlay ─── */
+    #teamRoleOverlay {
+      display: none; position: fixed; inset: 0; z-index: 90000;
+      background: rgba(15,23,42,.55); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    #teamRoleOverlay.visible { display: flex; }
+    .team-role-modal {
+      background: #fff; border-radius: 24px; padding: 32px 28px;
+      max-width: 420px; width: 90%; box-shadow: 0 32px 80px rgba(15,23,42,.22);
+      text-align: center;
+    }
+    .team-role-title { font-size: 1.3rem; font-weight: 900; color: #0f172a; margin-bottom: 6px; }
+    .team-role-sub   { font-size: 14px; color: #475569; margin-bottom: 22px; }
+    .role-cards-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 8px; }
+    .role-card {
+      padding: 12px 20px; border-radius: 14px; border: 2px solid #dbeafe;
+      background: #eff6ff; color: #1e3a8a; font-size: 14px; font-weight: 800;
+      cursor: pointer; transition: all .18s;
+    }
+    .role-card:hover { background: #dbeafe; border-color: #93c5fd; transform: translateY(-2px); }
+    .role-card--disabled { opacity: .45; cursor: not-allowed; background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; }
+    .role-card-tag { display: block; font-size: 10px; font-weight: 600; color: #64748b; margin-top: 4px; }
+    /* Roulette wheel */
+    .wheel-wrap { position: relative; width: 180px; height: 180px; margin: 0 auto 16px; }
+    .spin-wheel {
+      width: 180px; height: 180px; border-radius: 50%;
+      border: 4px solid #e2e8f0; box-shadow: 0 8px 24px rgba(15,23,42,.15);
+    }
+    .wheel-pointer {
+      position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+      font-size: 22px; color: #1d4ed8; z-index: 2; text-shadow: 0 2px 4px rgba(0,0,0,.15);
+    }
+    .wheel-result { min-height: 36px; font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+    .wheel-win { color: #15803d; font-size: 1.3rem; }
+    .wheel-btns { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+
     .active-sprint-box {
       border: 1px solid #dbeafe;
       background: #fff;
@@ -434,6 +540,23 @@
     }
     .waf-msg-text { font-size: 14px; color: #0f172a; line-height: 1.55; }
     .waf-msg-meta { font-size: 11px; color: var(--muted); }
+    .waf-msg-student {
+      background: #f0fdf4; border-color: #bbf7d0;
+    }
+    .waf-msg-student .waf-msg-meta { color: #166534; }
+
+    #skillContextBanner {
+      display: none;
+      background: #eff6ff; border-bottom: 1px solid #bfdbfe;
+      padding: 8px 20px; font-size: 13px; color: #1e40af;
+      gap: 8px; align-items: center; flex-wrap: wrap;
+    }
+    #skillContextBanner.visible { display: flex; }
+    #skillWeightBadge {
+      display: none;
+      font-size: 11px; font-weight: 700;
+      padding: 2px 9px; border-radius: 20px;
+    }
 
     #broadcastBanner {
       display: none;
@@ -489,10 +612,19 @@
         <button id="previewExitBtn" class="preview-exit-btn" type="button">חזרה לתצוגה הרגילה</button>
         <div class="chip" id="doorChip">Door: --</div>
         <div class="chip" id="sessionChip">sessionId: --</div>
+        <div class="chip" id="hebrewLevelChip" style="display:none;background:#f0fdf4;color:#166534;border-color:#bbf7d0;"></div>
+        <div class="chip" id="teamRoleChip"    style="display:none;background:#faf5ff;color:#6b21a8;border-color:#d8b4fe;"></div>
       </div>
     </header>
 
     <div id="broadcastBanner" role="alert" aria-live="polite"></div>
+
+    <!-- ─── Skill Context Banner ─── -->
+    <div id="skillContextBanner" role="note">
+      🎓 <strong>למידה משולבת מיומנויות:</strong>
+      <span id="skillContextLabel"></span>
+      <span id="skillWeightBadge"></span>
+    </div>
 
     <!-- ─── Recall Alert ─── -->
     <div id="recallAlert" role="alert" aria-live="assertive">
@@ -532,6 +664,9 @@
             <button class="mini-btn" id="refreshBtn">רענן</button>
           </div>
         </div>
+        <!-- ─── Sprint Stepper ─── -->
+        <div id="sprintStepper"></div>
+
         <div class="stage-display">
           <div id="activeSprintBox" class="active-sprint-box"></div>
           <iframe id="presentationFrame" class="presentation-frame" title="presentation-stage"></iframe>
@@ -570,10 +705,32 @@
       </section>
 
       <aside class="panel chat-shell">
-        <div class="panel-head">Chat</div>
+        <div class="panel-head">
+          <span id="activeBotName">Chat</span>
+          <button id="botMenuToggle" style="display:none;" onclick="toggleBotMenu()" title="החלף בוט">⚙️ בוטים</button>
+          <div id="botMenuDropdown" style="display:none;"></div>
+        </div>
         <iframe id="chatFrame" class="chat-frame" title="lesson-chat"></iframe>
       </aside>
     </main>
+  </div>
+
+  <!-- ─── Team Role Assignment Overlay ─── -->
+  <div id="teamRoleOverlay">
+    <div class="team-role-modal">
+      <div class="team-role-title">🎭 הגדרת תפקיד בצוות</div>
+      <div class="team-role-sub" id="teamRoleSub">בחר את תפקידך לפרויקט זה</div>
+      <div id="teamRoleBody"></div>
+    </div>
+  </div>
+
+  <!-- ─── Welcome Transition (plays when door opens) ─── -->
+  <div id="welcomeTransition" style="display:none;position:fixed;inset:0;z-index:100000;background:linear-gradient(140deg,#e0f2fe,#f0fdf4);align-items:center;justify-content:center;">
+    <div id="welcomeCard" style="text-align:center;padding:26px 22px;background:#fff;border:1px solid #bae6fd;border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,0.14);opacity:0;transform:translateY(12px) scale(.98);transition:all .55s ease;">
+      <div style="font-size:40px;line-height:1;margin-bottom:8px;">🎉</div>
+      <div style="font-size:26px;font-weight:800;color:#0f172a;">ברוכים הבאים לשיעור</div>
+      <div style="font-size:14px;color:#334155;margin-top:8px;" id="welcomeSubtitle">הדלת נפתחה — נכנסים לשיעור</div>
+    </div>
   </div>
 
   <div id="pushedModal" class="modal">
@@ -616,9 +773,74 @@
     let sessionFirebaseRef = null;
     let wafFirebaseRef = null;
     let currentRecallId = null;
+    let wasWaiting = null; // tracks door state across Firebase events for welcome transition
     let studentAvatarDataUrl = localStorage.getItem("miled_student_avatar") || null;
     let writeMicRecorder = null;
     let writeMicChunks = [];
+
+    const _BOT_PILLAR = {
+      learning_skills_full: "academic", academic_writing: "academic", research_skills: "academic",
+      employability_skills_full: "career",
+      diag_1: "resilience", support: "resilience",
+      presentation: "social"
+    };
+    const _PILLAR_LABEL = {
+      academic: "למידה וחשיבה", resilience: "ניהול וחוסן",
+      social: "תקשורת וחברה", tools: "כלים וטכנולוגיה", career: "מוכנות לקריירה"
+    };
+
+    function renderHeaderBadges() {
+      // Hebrew level chip (from API)
+      const hl = lessonData?.hebrewLevel || "";
+      const hlChip = document.getElementById("hebrewLevelChip");
+      if (hlChip && hl) {
+        hlChip.textContent = `עברית: ${hl}`;
+        hlChip.style.display = "";
+      }
+      // Team role chip (saved from workspace team-role assignment)
+      const teamRoleKey = `teamRole_${lessonData?.courseId || courseIdFromUrl}`;
+      const teamRole = sessionStorage.getItem(teamRoleKey) || "";
+      const trChip = document.getElementById("teamRoleChip");
+      if (trChip && teamRole) {
+        trChip.textContent = `תפקיד: ${teamRole}`;
+        trChip.style.display = "";
+      }
+    }
+
+    function renderSkillContextBanner() {
+      const urlCtx = params.get("skillContext");
+      const botType = lessonData?.botType || "";
+      const pillar  = urlCtx || _BOT_PILLAR[botType] || null;
+      const label   = pillar ? (_PILLAR_LABEL[pillar] || pillar) : null;
+      const banner  = document.getElementById("skillContextBanner");
+      if (!banner) return;
+      if (!label) { banner.classList.remove("visible"); return; }
+
+      document.getElementById("skillContextLabel").textContent = label;
+
+      // Skill weight badge — from URL override or syllabus mapping count
+      const urlWeight   = params.get("skillWeight");
+      const syllabus    = JSON.parse(localStorage.getItem("miled_syllabus") || "[]");
+      const mappedCount = syllabus.filter(r => r.pillar === pillar).length;
+      let weightText, weightStyle;
+      if (urlWeight === "high" || mappedCount >= 3) {
+        weightText  = "ערך מיומנות: השפעה גבוהה ⬆";
+        weightStyle = "background:#dcfce7;color:#15803d;";
+      } else if (urlWeight === "medium" || mappedCount >= 1) {
+        weightText  = "ערך מיומנות: השפעה בינונית";
+        weightStyle = "background:#fef9c3;color:#854d0e;";
+      } else {
+        weightText  = "ערך מיומנות: השפעה בסיסית";
+        weightStyle = "background:#f1f5f9;color:#475569;";
+      }
+      const wb = document.getElementById("skillWeightBadge");
+      if (wb) {
+        wb.textContent  = weightText;
+        wb.style.cssText = `display:inline-block;${weightStyle}`;
+      }
+
+      banner.classList.add("visible");
+    }
 
     async function bootstrapLessonAccess() {
       const access = await lessonViewAccessReady;
@@ -787,13 +1009,100 @@
       }
     }
 
+    let _activeBotType = null;
+    let _botMenuOpen = false;
+
     function setChatFrame(courseId, botType) {
       const chatFrame = document.getElementById("chatFrame");
       const query = new URLSearchParams();
       if (courseId) query.set("classId", courseId);
-      if (!courseId && botType) query.set("botType", botType);
+      if (botType) query.set("botType", botType);
       query.set("sessionId", sessionId);
       chatFrame.src = `/chat.html?${query.toString()}`;
+    }
+
+    function switchBot(botType, label) {
+      _activeBotType = botType;
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      setChatFrame(courseId, botType);
+      document.getElementById("activeBotName").textContent = label;
+      // mark active in menu
+      document.querySelectorAll(".bot-menu-item").forEach(el => {
+        el.classList.toggle("active", el.dataset.botType === botType);
+      });
+      closeBotMenu();
+      renderSkillContextBanner(); // re-evaluate skill banner for new bot
+    }
+
+    function toggleBotMenu() {
+      _botMenuOpen ? closeBotMenu() : openBotMenu();
+    }
+    function openBotMenu() {
+      _botMenuOpen = true;
+      document.getElementById("botMenuDropdown").style.display = "";
+    }
+    function closeBotMenu() {
+      _botMenuOpen = false;
+      document.getElementById("botMenuDropdown").style.display = "none";
+    }
+
+    async function renderBotMenu() {
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (!courseId) return;
+      let config;
+      try {
+        config = await fetch(`/config.json?ts=${Date.now()}`).then(r => r.json());
+      } catch { return; }
+      const course = config?.my_courses?.[courseId];
+      if (!course) return;
+
+      const items = [];
+      // Course-specific bots
+      for (const [key, bot] of Object.entries(course.bots || {})) {
+        const botType = bot.botType || bot;
+        const label   = bot.label || (key === "main" ? "🏫 בוט הקורס" : key);
+        items.push({ botType, label, group: "course" });
+      }
+      // Universal bots linked to this course
+      for (const key of (course.universal_bots || [])) {
+        const bot = config?.universal?.items?.[key];
+        if (!bot) continue;
+        items.push({ botType: bot.botType, label: bot.name, group: "universal" });
+      }
+
+      if (items.length <= 1) return; // single bot — no menu needed
+
+      const dropdown = document.getElementById("botMenuDropdown");
+      dropdown.innerHTML = "";
+      let lastGroup = null;
+      for (const item of items) {
+        if (item.group !== lastGroup) {
+          lastGroup = item.group;
+          if (item.group === "universal") {
+            const sep = document.createElement("div");
+            sep.className = "bot-menu-separator";
+            sep.textContent = "כלים כלליים";
+            dropdown.appendChild(sep);
+          }
+        }
+        const btn = document.createElement("button");
+        btn.className = "bot-menu-item";
+        btn.dataset.botType = item.botType;
+        btn.textContent = item.label;
+        if (item.botType === _activeBotType) btn.classList.add("active");
+        btn.onclick = () => switchBot(item.botType, item.label);
+        dropdown.appendChild(btn);
+      }
+
+      // Set initial label from the main/first bot
+      const mainBot = items.find(i => i.botType === lessonData?.botType) || items[0];
+      if (mainBot) document.getElementById("activeBotName").textContent = mainBot.label;
+      document.getElementById("botMenuToggle").style.display = "";
+
+      // Close menu when clicking outside
+      document.addEventListener("click", e => {
+        if (_botMenuOpen && !e.target.closest(".panel-head")) closeBotMenu();
+      }, { capture: true });
     }
 
     function buildResourceCard(resource) {
@@ -874,6 +1183,56 @@
       const activeSprintId = String(lessonData?.state?.active_sprint || "").trim();
       if (!sprints.length) return null;
       return sprints.find(item => String(item.id) === activeSprintId) || sprints[0];
+    }
+
+    function renderSprintStepper() {
+      const stepper = document.getElementById("sprintStepper");
+      if (!stepper) return;
+      const sprints = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
+      if (sprints.length < 2) { stepper.classList.remove("visible"); return; }
+
+      const activeId = String(lessonData?.state?.active_sprint || sprints[0]?.id || "").trim();
+      const activeIdx = sprints.findIndex(s => String(s.id) === activeId);
+      const showLabels = sprints.length <= 8;
+
+      stepper.innerHTML = "";
+      sprints.forEach((sprint, idx) => {
+        if (idx > 0) {
+          const conn = document.createElement("div");
+          conn.className = "sprint-step-connector" + (idx <= activeIdx ? " completed" : "");
+          stepper.appendChild(conn);
+        }
+        const isActive    = String(sprint.id) === activeId;
+        const isCompleted = idx < activeIdx;
+        const step = document.createElement("div");
+        step.className = "sprint-step" + (isActive ? " active" : isCompleted ? " completed" : "");
+        step.title = sprint.title || `שלב ${sprint.id}`;
+        step.innerHTML = `
+          <div class="sprint-step-bubble">${isCompleted ? "✓" : escapeHtml(String(sprint.id))}</div>
+          ${showLabels ? `<div class="sprint-step-label">${escapeHtml(sprint.title || String(sprint.id))}</div>` : ""}
+        `;
+        step.onclick = async () => {
+          // Lecturers: activate the sprint; students: scroll to sprint card
+          if (role === "lecturer") {
+            try {
+              await callClassroom("POST", {
+                action: "session_state_update",
+                sessionId,
+                facultyId: resolveFacultyActorId(),
+                activeSprint: String(sprint.id)
+              });
+              lessonData.state = { ...(lessonData.state || {}), active_sprint: String(sprint.id) };
+              renderActiveSprint();
+              renderSprintStepper();
+            } catch(e) { console.warn("sprint activate failed", e); }
+          } else {
+            const card = document.querySelector(`[data-sprint-id="${CSS.escape(String(sprint.id))}"]`);
+            if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        };
+        stepper.appendChild(step);
+      });
+      stepper.classList.add("visible");
     }
 
     function renderActiveSprint() {
@@ -982,7 +1341,7 @@
           ? `<button class="mini-btn" type="button" data-activate-sprint="${escapeHtml(sprint.id)}">הפעל</button>`
           : "";
         return `
-          <div class="sprint-card">
+          <div class="sprint-card" data-sprint-id="${escapeHtml(String(sprint.id))}">
             <div class="resource-row">
               <div>
                 <div class="resource-title">${escapeHtml(sprint.title || sprint.id)}</div>
@@ -1322,6 +1681,7 @@
       renderHeatStrip();
       renderActiveSprint();
       renderSprintList();
+      renderSprintStepper();
       renderPushedModal();
       setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
     }
@@ -1406,8 +1766,13 @@
         lessonData.broadcast = live.broadcast ?? lessonData.broadcast;
         lessonData.broadcastedAt = live.broadcastedAt ?? lessonData.broadcastedAt;
         if (live.active_task !== undefined) lessonData.activeTask = live.active_task;
+        const prevActiveSprint = lessonData.state?.active_sprint;
         if (live.state) lessonData.state = { ...lessonData.state, ...live.state };
         if (broadcastChanged) renderBroadcast();
+        if (live.state?.active_sprint !== undefined && live.state.active_sprint !== prevActiveSprint) {
+          renderActiveSprint();
+          renderSprintStepper();
+        }
         // Show/hide waiting screen based on live door state
         if (role === "student") {
           const liveDoor = String(live.state?.door_status || "auto").toLowerCase();
@@ -1419,6 +1784,9 @@
             waitingScreen.style.display = stillWaiting ? "" : "none";
             lessonMain.style.display = stillWaiting ? "none" : "";
           }
+          // Play welcome animation the first time the door opens
+          if (wasWaiting === true && !stillWaiting) showWelcomeTransition();
+          wasWaiting = stillWaiting;
         }
         if (role === "student") {
           checkRecall(live);
@@ -1602,6 +1970,203 @@
     }
 
     // ─── WAF Stream (lecturer replies) ────────────────────────────────────
+    // ─── Team Role Assignment ──────────────────────────────────────────────
+    const WHEEL_COLORS = ["#6c5ce7","#00b894","#fd79a8","#fdcb6e","#e17055","#74b9ff","#a29bfe","#55efc4"];
+    let _wheelAngle = 0;
+    let _wheelFinal = null;
+
+    function initRoleAssignment() {
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (!courseId || role !== "student") return;
+
+      // Already assigned this session — chip already set by renderHeaderBadges
+      const existing = sessionStorage.getItem(`teamRole_${courseId}`);
+      if (existing) return;
+
+      // Config: prefer lessonData, fall back to URL params
+      const cfg = lessonData?.roleAssignment || _roleAssignmentFromUrl();
+      if (!cfg || !cfg.mode) return;
+
+      // Auto-assign preset immediately
+      if (cfg.mode === "assigned" && cfg.preset) {
+        _commitRole(cfg.preset, courseId);
+        return;
+      }
+
+      // Build UI
+      const body = document.getElementById("teamRoleBody");
+      const sub  = document.getElementById("teamRoleSub");
+      if (cfg.mode === "roulette") {
+        sub.textContent = "סובב את הגלגל כדי לקבל תפקיד";
+        body.innerHTML  = _buildRouletteUI();
+        window._rouletteRoles   = cfg.roles;
+        window._roleCourseId    = courseId;
+        setTimeout(() => _initWheel(cfg.roles), 0);
+      } else {
+        const isRotation = cfg.mode === "rotation";
+        sub.textContent = isRotation ? "בחר תפקיד (כל תפקיד פעם אחת בסבב)" : "בחר את תפקידך";
+        body.innerHTML  = _buildChoiceUI(cfg.roles, isRotation, courseId);
+        window._roleCourseId = courseId;
+      }
+      document.getElementById("teamRoleOverlay").classList.add("visible");
+    }
+
+    function _roleAssignmentFromUrl() {
+      const mode  = params.get("roleMode");
+      const roles = params.get("roles");
+      const preset = params.get("role");
+      if (!mode) return null;
+      return {
+        mode,
+        roles: roles ? roles.split(",").map(r => r.trim()).filter(Boolean) : [],
+        preset: preset || null
+      };
+    }
+
+    function _buildChoiceUI(roles, isRotation, courseId) {
+      const histKey = `miled_rotation_${courseId}`;
+      let history   = isRotation ? JSON.parse(localStorage.getItem(histKey) || "[]") : [];
+      if (isRotation && roles.every(r => history.includes(r))) {
+        localStorage.removeItem(histKey); history = [];
+      }
+      const claimedKey = `miled_fw_${sessionId}`;
+      const claimed    = !isRotation ? JSON.parse(sessionStorage.getItem(claimedKey) || "[]") : [];
+
+      const cards = roles.map(r => {
+        const used = isRotation ? history.includes(r) : claimed.includes(r);
+        const tag  = used ? (isRotation ? "כבר שיחקת" : "נתפס") : "";
+        const safe = r.replace(/'/g, "\\'");
+        return `<button class="role-card${used ? " role-card--disabled" : ""}"
+          ${used ? "disabled" : `onclick="_pickRole('${safe}',${isRotation})"`}>
+          <span>${r}</span>${tag ? `<span class="role-card-tag">${tag}</span>` : ""}
+        </button>`;
+      }).join("");
+      return `<div class="role-cards-grid">${cards}</div>`;
+    }
+
+    function _buildRouletteUI() {
+      return `
+        <div class="wheel-wrap">
+          <div class="wheel-pointer">▼</div>
+          <div id="spinWheel" class="spin-wheel"></div>
+        </div>
+        <div id="wheelResult" class="wheel-result"></div>
+        <div class="wheel-btns">
+          <button id="spinBtn" class="mini-btn" onclick="_doSpin()">🎰 סובב!</button>
+          <button id="confirmSpinBtn" class="mini-btn" style="display:none;" onclick="_confirmSpin()">✅ קבל תפקיד</button>
+        </div>`;
+    }
+
+    function _initWheel(roles) {
+      const wheel = document.getElementById("spinWheel");
+      if (!wheel || !roles.length) return;
+      const n   = roles.length;
+      const seg = roles.map((r, i) => {
+        const s = i * (360 / n), e = (i + 1) * (360 / n);
+        return `${WHEEL_COLORS[i % WHEEL_COLORS.length]} ${s}deg ${e}deg`;
+      }).join(", ");
+      wheel.style.background = `conic-gradient(from 0deg, ${seg})`;
+    }
+
+    function _doSpin() {
+      const roles = window._rouletteRoles || [];
+      if (!roles.length) return;
+      const n = roles.length, seg = 360 / n;
+      const idx = Math.floor(Math.random() * n);
+      const targetMod  = (360 - (idx * seg + seg / 2) + 360) % 360;
+      const currentMod = ((_wheelAngle % 360) + 360) % 360;
+      let delta = targetMod - currentMod;
+      if (delta <= 0) delta += 360;
+      delta += 360 * 5;
+      _wheelAngle += delta;
+      _wheelFinal  = roles[idx];
+      const wheel = document.getElementById("spinWheel");
+      wheel.style.transition = "transform 4s cubic-bezier(.17,.67,.12,.99)";
+      wheel.style.transform  = `rotate(${_wheelAngle}deg)`;
+      const spinBtn = document.getElementById("spinBtn");
+      spinBtn.disabled = true; spinBtn.textContent = "מסתובב...";
+      setTimeout(() => {
+        document.getElementById("wheelResult").innerHTML = `<div class="wheel-win">🎉 ${escapeHtml(_wheelFinal)}</div>`;
+        document.getElementById("confirmSpinBtn").style.display = "";
+        spinBtn.disabled = false; spinBtn.textContent = "🔄 סובב שוב";
+      }, 4200);
+    }
+
+    function _confirmSpin() {
+      if (_wheelFinal) _pickRole(_wheelFinal, false);
+    }
+
+    function _pickRole(role, isRotation) {
+      const courseId = window._roleCourseId || lessonData?.courseId || courseIdFromUrl;
+      if (isRotation) {
+        const key  = `miled_rotation_${courseId}`;
+        const hist = JSON.parse(localStorage.getItem(key) || "[]");
+        hist.push(role); localStorage.setItem(key, JSON.stringify(hist));
+      } else if (!isRotation) {
+        const key     = `miled_fw_${sessionId}`;
+        const claimed = JSON.parse(sessionStorage.getItem(key) || "[]");
+        claimed.push(role); sessionStorage.setItem(key, JSON.stringify(claimed));
+      }
+      _commitRole(role, courseId);
+    }
+
+    function _commitRole(role, courseId) {
+      sessionStorage.setItem(`teamRole_${courseId}`, role);
+      // Update chip
+      const chip = document.getElementById("teamRoleChip");
+      if (chip) { chip.textContent = `תפקיד: ${role}`; chip.style.display = ""; }
+      // Close overlay
+      document.getElementById("teamRoleOverlay").classList.remove("visible");
+    }
+
+    async function showWelcomeTransition() {
+      const overlay = document.getElementById("welcomeTransition");
+      const card = document.getElementById("welcomeCard");
+      if (!overlay || !card) return;
+      const courseName = lessonData?.courseName || lessonData?.courseId || "";
+      if (courseName) {
+        const sub = document.getElementById("welcomeSubtitle");
+        if (sub) sub.textContent = `${courseName} — ברוכים הבאים!`;
+      }
+      overlay.style.display = "flex";
+      requestAnimationFrame(() => {
+        card.style.opacity = "1";
+        card.style.transform = "translateY(0) scale(1)";
+      });
+      await new Promise(r => setTimeout(r, 1400));
+      card.style.opacity = "0";
+      card.style.transform = "translateY(-8px) scale(.98)";
+      await new Promise(r => setTimeout(r, 380));
+      overlay.style.display = "none";
+    }
+
+    function hydrateStudentHistory(steps = []) {
+      if (!Array.isArray(steps) || !steps.length) return;
+      const container = document.getElementById("wafMessages");
+      const panel = document.getElementById("wafPanel");
+      if (!container || !panel) return;
+      const sorted = [...steps].sort((a, b) =>
+        (Number(a.ts || a.submittedAt) || 0) - (Number(b.ts || b.submittedAt) || 0)
+      );
+      sorted.forEach(step => {
+        const text = String(step.content || "").trim();
+        if (!text) return;
+        const ts = step.ts || step.submittedAt;
+        const time = ts
+          ? new Date(ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
+          : "";
+        const tag = step.tag && step.tag !== "general" ? ` · ${step.tag}` : "";
+        const msgEl = document.createElement("div");
+        msgEl.className = "waf-msg waf-msg-student";
+        msgEl.innerHTML = `
+          <div class="waf-msg-text">${escapeHtml(text)}</div>
+          <div class="waf-msg-meta">שלחת${time ? ` · ${time}` : ""}${tag}</div>
+        `;
+        container.appendChild(msgEl);
+      });
+      panel.classList.add("has-messages");
+    }
+
     function startWafListener() {
       if (!sessionId || !studentId || role === "lecturer") return;
       const db = getRealtimeDb();
@@ -1650,6 +2215,11 @@
       initControls();
       applyStudentAvatar(studentAvatarDataUrl);
       await refreshLesson();
+      hydrateStudentHistory(lessonData?.studentSteps || []);
+      renderHeaderBadges();
+      initRoleAssignment();
+      renderSkillContextBanner();
+      renderBotMenu();
       startSessionListener();
       startWafListener();
       refreshTimer = setInterval(refreshLesson, 6000);

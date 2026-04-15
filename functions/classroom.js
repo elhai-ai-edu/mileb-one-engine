@@ -601,6 +601,8 @@ export async function handler(event){
         courseName: lessonBundle.courseName,
         lessonId,
         botType: session.botType || null,
+        hebrewLevel: courseConfig?.hebrew_level || null,
+        roleAssignment: courseConfig?.roleAssignment || null,
         facultyId: session.facultyId || null,
         active: !!session.active,
         state: {

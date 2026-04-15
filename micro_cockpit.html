@@ -2108,6 +2108,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     if (liveSel) liveSel.value = presetCourseId;
     if (prepSel) prepSel.value = presetCourseId;
     syncFromSelector('botSelect');
+    tryResumeSession(presetCourseId, presetUnitId);
   }
 }).catch(e => console.error("Config load error:", e));
 
@@ -2204,32 +2205,64 @@ async function openAllEntryPolicy() {
 // ─────────────────────────────────────────
 // LOBBY MODE
 // ─────────────────────────────────────────
+function syncLobbyButtons(inLobby) {
+  const sendBtn = document.getElementById('sendToLobbyBtn');
+  const retBtn  = document.getElementById('returnFromLobbyBtn');
+  const badge   = document.getElementById('sessionBadge');
+  if (!sendBtn || !retBtn) return;
+  sendBtn.style.display = inLobby ? 'none' : '';
+  retBtn.style.display  = inLobby ? ''     : 'none';
+  if (badge) badge.textContent = inLobby ? '🚪 כיתה בחדר המתנה' : '✅ שיעור פעיל';
+}
+
 async function sendStudentsToLobby() {
   if (!sessionId) return;
   const btn = document.getElementById('sendToLobbyBtn');
-  const retBtn = document.getElementById('returnFromLobbyBtn');
   if (btn) btn.disabled = true;
   try {
     await callClassroom({ action: 'session_state_update', sessionId, facultyId, lobbyMode: true, doorStatus: 'closed' });
-    if (btn) { btn.style.display = 'none'; btn.disabled = false; }
-    if (retBtn) retBtn.style.display = '';
-    const badge = document.getElementById('sessionBadge');
-    if (badge) badge.textContent = '🚪 כיתה בחדר המתנה';
+    syncLobbyButtons(true);
   } catch { if (btn) btn.disabled = false; }
 }
 
 async function returnStudentsFromLobby() {
   if (!sessionId) return;
   const retBtn = document.getElementById('returnFromLobbyBtn');
-  const sendBtn = document.getElementById('sendToLobbyBtn');
   if (retBtn) retBtn.disabled = true;
   try {
     await callClassroom({ action: 'session_state_update', sessionId, facultyId, lobbyMode: false, doorStatus: 'open' });
-    if (retBtn) { retBtn.style.display = 'none'; retBtn.disabled = false; }
-    if (sendBtn) sendBtn.style.display = '';
-    const badge = document.getElementById('sessionBadge');
-    if (badge) badge.textContent = '✅ שיעור פעיל';
+    syncLobbyButtons(false);
   } catch { if (retBtn) retBtn.disabled = false; }
+}
+
+async function tryResumeSession(classId, unitId) {
+  const db = getRealtimeDb();
+  if (!db || !classId) return;
+  try {
+    const snap = await db.ref(`${ACTIVE_SESSIONS_NODE}/${classId}_${unitId}`).once('value');
+    const active = snap.val();
+    if (!active || active.status !== 'active' || !active.sessionId) return;
+
+    sessionId       = active.sessionId;
+    currentLessonId = classId;
+    currentUnitId   = unitId;
+
+    const studentURL = `${location.origin}/waiting_lobby.html?courseId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(unitId)}&sessionId=${encodeURIComponent(sessionId)}`;
+    document.getElementById('sessionInfo').style.display = 'block';
+    document.getElementById('sessionIdDisplay').innerHTML =
+      `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
+    setSessionControls(true);
+    loadTemplates(classId);
+    setOpenAllGateState(false);
+    renderDJBooth();
+    startPolling();
+
+    // Sync lobby button state from Firebase
+    const stateSnap = await db.ref(`sessions/${sessionId}/state`).once('value');
+    syncLobbyButtons(!!(stateSnap.val()?.lobby_mode));
+  } catch (e) {
+    console.warn('[tryResumeSession] could not restore session:', e);
+  }
 }
 
 // ─────────────────────────────────────────
