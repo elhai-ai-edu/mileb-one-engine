@@ -1714,14 +1714,14 @@
     }
 
     async function sendHeartbeat() {
+      if (role !== "student") return;
       const activeSprint = findActiveSprint();
-      if (role !== "student" || !activeSprint) return;
       const response = await callClassroom("POST", {
         action: "pacing_update",
         sessionId,
         studentId,
         studentName,
-        currentSprint: activeSprint.id,
+        currentSprint: activeSprint?.id || null,
         eventType: "heartbeat"
       });
       currentGuidance = response?.pacing?.guidance ? {
@@ -2229,6 +2229,7 @@
       startSessionListener();
       startWafListener();
       refreshTimer = setInterval(refreshLesson, 6000);
+      sendHeartbeat(); // immediate — registers student in session.students right away
       heartbeatTimer = setInterval(sendHeartbeat, 30000);
       window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); });
     }
