@@ -1646,7 +1646,9 @@
 
     async function refreshLesson() {
       if (!sessionId) return;
-      lessonData = await callClassroom("GET", null, `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}`);
+      const payloadQs = `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}` +
+        (role === "student" && studentId ? `&studentId=${encodeURIComponent(studentId)}` : "");
+      lessonData = await callClassroom("GET", null, payloadQs);
       syncLessonUrlContext();
       const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
       const primaryUnitName = selectedUnits[0]?.name || lessonData?.lessonId || "יחידה פעילה";
