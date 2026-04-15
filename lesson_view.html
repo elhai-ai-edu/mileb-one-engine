@@ -1092,7 +1092,13 @@
       } catch { return; }
       const course = config?.my_courses?.[courseId];
       if (!course) return;
-      _fetchedCourseConfig = course;
+      // Resolve template inheritance so course_units is available client-side
+      const template = course.templateId ? (config?.course_catalog?.[course.templateId] || {}) : {};
+      _fetchedCourseConfig = {
+        ...template,
+        ...course,
+        course_units: course.course_units ?? template.course_units
+      };
       renderHeaderBadges();    // re-run now that we have config fallback
       renderProjectStepper();  // show/hide project stepper based on config + active bot
 
@@ -1226,11 +1232,6 @@
       const container = document.getElementById("projectStepper");
       if (!wrap || !container) return;
       if (!stages.length) { wrap.style.display = "none"; return; }
-
-      // Only show when active bot is project/research type
-      const activeBot = _activeBotType || lessonData?.botType || "";
-      const isProjectBot = activeBot.includes("research") || activeBot.includes("project") || activeBot.includes("final");
-      if (!isProjectBot) { wrap.style.display = "none"; return; }
 
       wrap.style.display = "";
       const current = Number(lessonData?.currentStep) || 1;
