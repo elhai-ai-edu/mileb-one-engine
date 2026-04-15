@@ -100,33 +100,22 @@
       position: relative;
       display: flex; align-items: center; justify-content: space-between; gap: 8px;
     }
-    #botMenuToggle {
-      font-size: 13px; padding: 3px 8px; flex-shrink: 0;
-      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
-      color: #1d4ed8; cursor: pointer;
+    #botTabsBar {
+      display: none;
+      flex-wrap: wrap; gap: 6px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #f8fbff, #eef4ff);
     }
-    #botMenuToggle:hover { background: #dbeafe; }
-    #botMenuDropdown {
-      position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
-      background: #fff; border: 1px solid var(--line);
-      border-top: none; border-radius: 0 0 12px 12px;
-      box-shadow: 0 8px 24px rgba(15,23,42,0.12);
-      overflow: hidden;
+    #botTabsBar.visible { display: flex; }
+    .bot-tab {
+      font-size: 13px; padding: 6px 14px;
+      border-radius: 20px; border: 1px solid #bfdbfe;
+      background: #fff; color: #1e40af;
+      cursor: pointer; font-weight: 600;
     }
-    .bot-menu-item {
-      display: block; width: 100%; text-align: right;
-      padding: 10px 16px; font-size: 13px; font-weight: 600;
-      background: none; border: none; border-bottom: 1px solid #f1f5f9;
-      color: #1e3a8a; cursor: pointer;
-    }
-    .bot-menu-item:last-child { border-bottom: none; }
-    .bot-menu-item:hover { background: #eff6ff; }
-    .bot-menu-item.active { background: #dbeafe; color: #1d4ed8; }
-    .bot-menu-separator {
-      font-size: 10px; font-weight: 700; color: var(--muted);
-      padding: 6px 16px 2px; text-transform: uppercase; letter-spacing: .05em;
-      background: #f8fafc;
-    }
+    .bot-tab:hover { background: #eff6ff; }
+    .bot-tab.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
     .panel-body {
       padding: 16px;
       display: grid;
@@ -215,6 +204,17 @@
     .hero-copy { max-width: 62ch; }
     .hero-copy h1 { margin: 0 0 6px; font-size: 1.45rem; }
     .hero-copy p { margin: 0; color: var(--muted); line-height: 1.65; }
+    /* ─── Project stage tabs ─── */
+    .stage-tab {
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      border: 1.5px solid #cbd5e1; background: #f8fafc; color: #475569;
+      cursor: pointer; white-space: nowrap; font-family: inherit;
+      transition: all .15s;
+    }
+    .stage-tab:hover { border-color: #818cf8; background: #eef2ff; color: #3730a3; }
+    .stage-tab.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .stage-tab.completed { background: #dcfce7; border-color: #86efac; color: #15803d; }
+
     #sprintStepper {
       display: none;
       padding: 10px 14px 4px;
@@ -446,12 +446,52 @@
     }
     .recall-ack-btn:hover { background: #fee2e2; }
 
-    /* ─── Writing Zone ─── */
-    .write-panel {
+    /* ─── Communication Panel (unified WAF + write) ─── */
+    .comm-panel {
       border-top: 2px solid var(--line);
-      padding: 18px;
-      display: grid;
-      gap: 12px;
+      display: flex; flex-direction: column;
+    }
+    /* Stream of bubbles — always visible */
+    .comm-stream {
+      overflow-y: auto;
+      padding: 12px 18px;
+      display: flex; flex-direction: column; gap: 10px;
+      max-height: 260px;
+      min-height: 48px;
+      border-bottom: 1px solid var(--line);
+    }
+    .comm-stream-empty {
+      font-size: 12px; color: var(--muted);
+      align-self: center; margin: auto;
+    }
+    /* Bubble base */
+    .waf-msg {
+      max-width: 82%;
+      border-radius: 16px; padding: 9px 13px;
+      display: grid; gap: 3px;
+      line-height: 1.5;
+    }
+    .waf-msg-text { font-size: 14px; color: #0f172a; }
+    .waf-msg-meta { font-size: 11px; }
+    /* Lecturer message: align end (right in RTL), blue */
+    .waf-msg:not(.waf-msg-student) {
+      background: #f0f9ff; border: 1.5px solid #bae6fd;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .waf-msg:not(.waf-msg-student) .waf-msg-meta { color: #0369a1; }
+    /* Student message: align start (left in RTL), green */
+    .waf-msg-student {
+      background: #f0fdf4; border: 1.5px solid #bbf7d0;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .waf-msg-student .waf-msg-meta { color: #166534; }
+
+    /* Input area */
+    .comm-input {
+      padding: 14px 18px;
+      display: grid; gap: 10px;
     }
     .write-panel-head {
       font-weight: 800; font-size: 1rem; color: #1e3a8a;
@@ -519,31 +559,6 @@
     }
     #writeStatus.ok { color: #166534; }
     #writeStatus.err { color: #dc2626; }
-
-    /* ─── WAF Stream (מסרים מהמרצה) ─── */
-    .waf-panel {
-      border-top: 2px solid var(--line);
-      padding: 18px;
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .waf-panel.has-messages { display: flex; }
-    .waf-panel-head {
-      font-weight: 800; color: #0369a1; font-size: 0.95rem;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .waf-msg {
-      background: #f0f9ff; border: 1.5px solid #bae6fd;
-      border-radius: 14px; padding: 10px 14px;
-      display: grid; gap: 4px;
-    }
-    .waf-msg-text { font-size: 14px; color: #0f172a; line-height: 1.55; }
-    .waf-msg-meta { font-size: 11px; color: var(--muted); }
-    .waf-msg-student {
-      background: #f0fdf4; border-color: #bbf7d0;
-    }
-    .waf-msg-student .waf-msg-meta { color: #166534; }
 
     #skillContextBanner {
       display: none;
@@ -664,6 +679,11 @@
             <button class="mini-btn" id="refreshBtn">רענן</button>
           </div>
         </div>
+        <!-- ─── Project Stages Stepper ─── -->
+        <div id="projectStepperWrap" style="display:none;padding:14px 18px 6px;border-top:1px solid var(--line);">
+          <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.4px;margin-bottom:10px;">📋 שלבי הפרויקט</div>
+          <div id="projectStepper" style="display:flex;align-items:center;gap:0;flex-wrap:wrap;gap:6px;"></div>
+        </div>
         <!-- ─── Sprint Stepper ─── -->
         <div id="sprintStepper"></div>
 
@@ -672,44 +692,39 @@
           <iframe id="presentationFrame" class="presentation-frame" title="presentation-stage"></iframe>
           <div id="sprintList" class="sprint-list"></div>
         </div>
-        <!-- ─── Writing Zone ─── -->
-        <div class="write-panel" id="writePanel">
-          <div class="write-panel-head">✍️ אזור עבודה</div>
-          <div id="unlockFlash" class="unlock-flash">🎉 השלב נפתח — כעת תוכל להמשיך!</div>
-          <div class="write-zone">
-            <div id="writeLockOverlay" class="write-lock-overlay">🔒 השלב נעול — המרצה יפתח אותו בקרוב</div>
-            <textarea id="studentText" placeholder="כתוב כאן את העבודה שלך..." rows="5"></textarea>
+        <!-- ─── Communication Panel (WAF + write, unified) ─── -->
+        <div class="comm-panel" id="writePanel">
+          <div class="comm-stream" id="wafMessages">
+            <span class="comm-stream-empty" id="wafEmptyHint">ממתין להודעות מהמרצה...</span>
           </div>
-          <div class="write-action-row">
-            <div class="student-avatar-wrap">
-              <button class="student-avatar-btn" id="studentAvatarBtn" title="עדכן תמונת פרופיל" onclick="document.getElementById('studentAvatarInput').click()">
-                <img id="studentAvatarPreview" alt="avatar" style="display:none;">
-                <span id="studentAvatarFallback">🙂</span>
-              </button>
-              <input type="file" id="studentAvatarInput" accept="image/*" style="display:none;" onchange="handleStudentAvatarUpload(event)">
+          <div class="comm-input">
+            <div class="write-panel-head">✍️ אזור עבודה</div>
+            <div id="unlockFlash" class="unlock-flash">🎉 השלב נפתח — כעת תוכל להמשיך!</div>
+            <div class="write-zone">
+              <div id="writeLockOverlay" class="write-lock-overlay">🔒 השלב נעול — המרצה יפתח אותו בקרוב</div>
+              <textarea id="studentText" placeholder="כתוב מסר או עבודה למרצה..." rows="3"></textarea>
             </div>
-            <button class="action-btn msg" onclick="sendStudentMessage()" id="sendMsgBtn">💬 שלח מסר</button>
-            <button class="action-btn submit" onclick="submitStudentWork()" id="submitWorkBtn">📄 הגש עבודה</button>
-            <button class="write-mic-btn" id="writeMicBtn" onclick="toggleWriteMic()" title="הקלט הודעה קולית">🎙️</button>
-            <input type="file" id="writeFileInput" accept="*/*" style="display:none;" onchange="handleWriteFileUpload(event)">
-            <button class="action-btn ghost mini-btn" onclick="document.getElementById('writeFileInput').click()" title="צרף קובץ" style="padding:8px 10px;">📎</button>
-            <span id="writeStatus"></span>
+            <div class="write-action-row">
+              <div class="student-avatar-wrap">
+                <button class="student-avatar-btn" id="studentAvatarBtn" title="עדכן תמונת פרופיל" onclick="document.getElementById('studentAvatarInput').click()">
+                  <img id="studentAvatarPreview" alt="avatar" style="display:none;">
+                  <span id="studentAvatarFallback">🙂</span>
+                </button>
+                <input type="file" id="studentAvatarInput" accept="image/*" style="display:none;" onchange="handleStudentAvatarUpload(event)">
+              </div>
+              <button class="action-btn msg" onclick="sendStudentMessage()" id="sendMsgBtn">💬 שלח מסר</button>
+              <button class="action-btn submit" onclick="submitStudentWork()" id="submitWorkBtn">📄 הגש עבודה</button>
+              <button class="write-mic-btn" id="writeMicBtn" onclick="toggleWriteMic()" title="הקלט הודעה קולית">🎙️</button>
+              <input type="file" id="writeFileInput" accept="*/*" style="display:none;" onchange="handleWriteFileUpload(event)">
+              <button class="action-btn ghost mini-btn" onclick="document.getElementById('writeFileInput').click()" title="צרף קובץ" style="padding:8px 10px;">📎</button>
+              <span id="writeStatus"></span>
+            </div>
           </div>
-        </div>
-
-        <!-- ─── WAF Stream (מסרים מהמרצה) ─── -->
-        <div class="waf-panel" id="wafPanel">
-          <div class="waf-panel-head">💬 מסרים מהמרצה</div>
-          <div id="wafMessages"></div>
         </div>
       </section>
 
       <aside class="panel chat-shell">
-        <div class="panel-head">
-          <span id="activeBotName">Chat</span>
-          <button id="botMenuToggle" style="display:none;" onclick="toggleBotMenu()" title="החלף בוט">⚙️ בוטים</button>
-          <div id="botMenuDropdown" style="display:none;"></div>
-        </div>
+        <div id="botTabsBar"></div>
         <iframe id="chatFrame" class="chat-frame" title="lesson-chat"></iframe>
       </aside>
     </main>
@@ -769,6 +784,7 @@
     let heartbeatTimer = null;
     let lastPushedSignature = null;
     let lastBroadcastTs = null;
+    let dismissedBroadcastTs = null;
     let currentGuidance = null;
     let sessionFirebaseRef = null;
     let wafFirebaseRef = null;
@@ -790,8 +806,8 @@
     };
 
     function renderHeaderBadges() {
-      // Hebrew level chip (from API)
-      const hl = lessonData?.hebrewLevel || "";
+      // Hebrew level chip — from API or config.json fallback
+      const hl = lessonData?.hebrewLevel || _fetchedCourseConfig?.hebrew_level || "";
       const hlChip = document.getElementById("hebrewLevelChip");
       if (hlChip && hl) {
         hlChip.textContent = `עברית: ${hl}`;
@@ -989,11 +1005,11 @@
       }
     }
 
-    function buildWaitingLobbyUrl() {
+    function buildWaitingLobbyUrl({ omitSessionId = false } = {}) {
       const query = new URLSearchParams();
       if (courseIdFromUrl) query.set("courseId", courseIdFromUrl);
       if (unitIdFromUrl) query.set("unitId", unitIdFromUrl);
-      if (sessionId) query.set("sessionId", sessionId);
+      if (sessionId && !omitSessionId) query.set("sessionId", sessionId);
       return `/waiting_lobby.html?${query.toString()}`;
     }
 
@@ -1010,7 +1026,7 @@
     }
 
     let _activeBotType = null;
-    let _botMenuOpen = false;
+    let _fetchedCourseConfig = null; // populated by renderBotMenu, used as fallback
 
     function setChatFrame(courseId, botType) {
       const chatFrame = document.getElementById("chatFrame");
@@ -1031,25 +1047,12 @@
       _activeBotType = botType;
       const courseId = lessonData?.courseId || courseIdFromUrl;
       setChatFrame(courseId, botType);
-      document.getElementById("activeBotName").textContent = label;
-      // mark active in menu
-      document.querySelectorAll(".bot-menu-item").forEach(el => {
+      // mark active tab
+      document.querySelectorAll(".bot-tab").forEach(el => {
         el.classList.toggle("active", el.dataset.botType === botType);
       });
-      closeBotMenu();
       renderSkillContextBanner(); // re-evaluate skill banner for new bot
-    }
-
-    function toggleBotMenu() {
-      _botMenuOpen ? closeBotMenu() : openBotMenu();
-    }
-    function openBotMenu() {
-      _botMenuOpen = true;
-      document.getElementById("botMenuDropdown").style.display = "";
-    }
-    function closeBotMenu() {
-      _botMenuOpen = false;
-      document.getElementById("botMenuDropdown").style.display = "none";
+      renderProjectStepper();    // re-evaluate project stepper for new bot
     }
 
     async function renderBotMenu() {
@@ -1061,6 +1064,15 @@
       } catch { return; }
       const course = config?.my_courses?.[courseId];
       if (!course) return;
+      // Resolve template inheritance so course_units is available client-side
+      const template = course.templateId ? (config?.course_catalog?.[course.templateId] || {}) : {};
+      _fetchedCourseConfig = {
+        ...template,
+        ...course,
+        course_units: course.course_units ?? template.course_units
+      };
+      renderHeaderBadges();    // re-run now that we have config fallback
+      renderProjectStepper();  // show/hide project stepper based on config + active bot
 
       const items = [];
       // Course-specific bots
@@ -1076,39 +1088,27 @@
         items.push({ botType: bot.botType, label: bot.name, group: "universal" });
       }
 
-      if (items.length <= 1) return; // single bot — no menu needed
+      const bar = document.getElementById("botTabsBar");
+      bar.innerHTML = "";
 
-      const dropdown = document.getElementById("botMenuDropdown");
-      dropdown.innerHTML = "";
-      let lastGroup = null;
       for (const item of items) {
-        if (item.group !== lastGroup) {
-          lastGroup = item.group;
-          if (item.group === "universal") {
-            const sep = document.createElement("div");
-            sep.className = "bot-menu-separator";
-            sep.textContent = "כלים כלליים";
-            dropdown.appendChild(sep);
-          }
-        }
         const btn = document.createElement("button");
-        btn.className = "bot-menu-item";
+        btn.className = "bot-tab";
         btn.dataset.botType = item.botType;
         btn.textContent = item.label;
-        if (item.botType === _activeBotType) btn.classList.add("active");
+        const isActive = item.botType === (_activeBotType || lessonData?.botType);
+        if (isActive) btn.classList.add("active");
         btn.onclick = () => switchBot(item.botType, item.label);
-        dropdown.appendChild(btn);
+        bar.appendChild(btn);
       }
 
-      // Set initial label from the main/first bot
-      const mainBot = items.find(i => i.botType === lessonData?.botType) || items[0];
-      if (mainBot) document.getElementById("activeBotName").textContent = mainBot.label;
-      document.getElementById("botMenuToggle").style.display = "";
+      if (items.length > 0) bar.classList.add("visible");
 
-      // Close menu when clicking outside
-      document.addEventListener("click", e => {
-        if (_botMenuOpen && !e.target.closest(".panel-head")) closeBotMenu();
-      }, { capture: true });
+      // Activate default bot if not already set
+      if (!_activeBotType) {
+        const defaultBot = items.find(i => i.botType === lessonData?.botType) || items[0];
+        if (defaultBot) switchBot(defaultBot.botType, defaultBot.label);
+      }
     }
 
     function buildResourceCard(resource) {
@@ -1182,6 +1182,40 @@
       if (normalized.includes("physical")) return "physical";
       if (normalized.includes("plenary")) return "plenary";
       return "ai";
+    }
+
+    function renderProjectStepper() {
+      const stages = lessonData?.projectStages
+        || _fetchedCourseConfig?.course_units?.semester_a?.project?.stages
+        || [];
+      const wrap = document.getElementById("projectStepperWrap");
+      const container = document.getElementById("projectStepper");
+      if (!wrap || !container) return;
+      if (!stages.length) { wrap.style.display = "none"; return; }
+
+      wrap.style.display = "";
+      const current = Number(lessonData?.currentStep) || 1;
+      container.innerHTML = "";
+      stages.forEach((stage, idx) => {
+        const stageId = Number(stage.id);
+        const btn = document.createElement("button");
+        btn.className = "stage-tab" +
+          (stageId === current ? " active" : stageId < current ? " completed" : "");
+        btn.textContent = `${stageId}. ${stage.label}`;
+        btn.onclick = () => selectProjectStage(stageId);
+        container.appendChild(btn);
+      });
+    }
+
+    async function selectProjectStage(stepId) {
+      if (role !== "student") return;
+      lessonData.currentStep = stepId;
+      renderProjectStepper();
+      await callClassroom("POST", {
+        action: "set_step",
+        sessionId, studentId, studentName,
+        step: stepId
+      });
     }
 
     function findActiveSprint() {
@@ -1646,7 +1680,21 @@
 
     async function refreshLesson() {
       if (!sessionId) return;
-      lessonData = await callClassroom("GET", null, `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}`);
+      const payloadQs = `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}` +
+        (role === "student" && studentId ? `&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}` : "");
+      lessonData = await callClassroom("GET", null, payloadQs);
+
+      // If session is gone or closed, redirect student to lobby to discover the current active session
+      if (role === "student" && courseIdFromUrl) {
+        const sessionGone = lessonData?.error || !lessonData?.active;
+        if (sessionGone) {
+          clearInterval(refreshTimer);
+          clearInterval(heartbeatTimer);
+          location.replace(buildWaitingLobbyUrl({ omitSessionId: true }));
+          return;
+        }
+      }
+
       syncLessonUrlContext();
       const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
       const primaryUnitName = selectedUnits[0]?.name || lessonData?.lessonId || "יחידה פעילה";
@@ -1692,15 +1740,20 @@
       setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
     }
 
+    function dismissBroadcast() {
+      const banner = document.getElementById("broadcastBanner");
+      if (banner) banner.style.display = "none";
+      dismissedBroadcastTs = lessonData?.broadcastedAt || null;
+    }
+
     function renderBroadcast() {
       const banner = document.getElementById("broadcastBanner");
       if (!banner) return;
       const text = String(lessonData?.broadcast || "").trim();
       const ts = lessonData?.broadcastedAt || null;
-      if (!text) {
-        banner.style.display = "none";
-        return;
-      }
+      if (!text) { banner.style.display = "none"; return; }
+      // Don't re-show a broadcast the student already dismissed
+      if (ts && ts === dismissedBroadcastTs) return;
       const isNew = ts && ts !== lastBroadcastTs;
       if (isNew) {
         lastBroadcastTs = ts;
@@ -1710,7 +1763,11 @@
       }
       const timeLabel = ts ? new Date(ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
       banner.style.display = "block";
-      banner.innerHTML = `📡 <span>${escapeHtml(text)}</span>${timeLabel ? `<span style="font-weight:400;margin-inline-start:8px;opacity:0.85;">${timeLabel}</span>` : ""}<button class="broadcast-dismiss" onclick="document.getElementById('broadcastBanner').style.display='none'" title="סגור">✕</button>`;
+      banner.innerHTML = `
+        <div style="font-size:11px;font-weight:700;opacity:0.8;margin-bottom:4px;letter-spacing:.3px;">📡 הודעה מהמרצה לכל הכיתה${timeLabel ? ` · ${timeLabel}` : ""}</div>
+        <div style="font-size:15px;">${escapeHtml(text)}</div>
+        <button class="broadcast-dismiss" onclick="dismissBroadcast()" title="סגור">✕</button>
+      `;
     }
 
     async function sendHeartbeat() {
@@ -1855,6 +1912,7 @@
         if (!res?.ok) throw new Error(res?.error || "שגיאה");
         document.getElementById("studentText").value = "";
         setWriteStatus("✓ מסר נשלח", "ok");
+        appendStudentBubble(text, "message");
       } catch (e) { setWriteStatus(e.message, "err"); }
     }
 
@@ -1873,6 +1931,7 @@
         if (!res?.ok) throw new Error(res?.error || "שגיאה");
         document.getElementById("studentText").value = "";
         setWriteStatus("✓ עבודה הוגשה", "ok");
+        appendStudentBubble(text, "submission");
       } catch (e) { setWriteStatus(e.message, "err"); }
     }
 
@@ -2149,8 +2208,7 @@
     function hydrateStudentHistory(steps = []) {
       if (!Array.isArray(steps) || !steps.length) return;
       const container = document.getElementById("wafMessages");
-      const panel = document.getElementById("wafPanel");
-      if (!container || !panel) return;
+      if (!container) return;
       const sorted = [...steps].sort((a, b) =>
         (Number(a.ts || a.submittedAt) || 0) - (Number(b.ts || b.submittedAt) || 0)
       );
@@ -2170,7 +2228,10 @@
         `;
         container.appendChild(msgEl);
       });
-      panel.classList.add("has-messages");
+      if (sorted.some(s => s.content)) {
+        const hint = document.getElementById("wafEmptyHint");
+        if (hint) hint.remove();
+      }
     }
 
     function startWafListener() {
@@ -2185,22 +2246,43 @@
       });
     }
 
-    function appendWafMessage(reply) {
+    function _appendToStream(msgEl) {
       const container = document.getElementById("wafMessages");
-      const panel = document.getElementById("wafPanel");
-      if (!container || !panel) return;
-      const text = String(reply?.text || "").trim();
-      if (!text) return;
+      if (!container) return;
+      // Remove placeholder on first real message
+      const hint = document.getElementById("wafEmptyHint");
+      if (hint) hint.remove();
+      container.appendChild(msgEl);
+      msgEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function appendWafMessage(reply) {
+      const raw = String(reply?.text || "").trim();
+      if (!raw) return;
       const time = reply?.ts ? new Date(reply.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
       const msgEl = document.createElement("div");
       msgEl.className = "waf-msg";
+      const contentHtml = raw.startsWith("data:audio/")
+        ? `<audio controls style="width:100%;max-width:280px;margin:2px 0;"><source src="${raw}"></audio>`
+        : `<div class="waf-msg-text">${escapeHtml(raw)}</div>`;
       msgEl.innerHTML = `
-        <div class="waf-msg-text">${escapeHtml(text)}</div>
+        ${contentHtml}
         <div class="waf-msg-meta">מהמרצה${time ? ` · ${time}` : ""}</div>
       `;
-      container.appendChild(msgEl);
-      panel.classList.add("has-messages");
-      msgEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      _appendToStream(msgEl);
+    }
+
+    function appendStudentBubble(text, type = "message") {
+      if (!text) return;
+      const time = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+      const tag = type === "submission" ? " · הגשה" : "";
+      const msgEl = document.createElement("div");
+      msgEl.className = "waf-msg waf-msg-student";
+      msgEl.innerHTML = `
+        <div class="waf-msg-text">${escapeHtml(text)}</div>
+        <div class="waf-msg-meta">שלחת · ${time}${tag}</div>
+      `;
+      _appendToStream(msgEl);
     }
 
     function stopWafListener() {

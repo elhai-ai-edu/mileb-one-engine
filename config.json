@@ -371,7 +371,6 @@
       "status": "active",
       "bots": {
         "main": { "botType": "course_hebrew_advanced_companion", "label": "🤖 בוט הקורס" },
-        "research": { "botType": "course_qualitative_research", "label": "🔎 בוט מחקר" },
         "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
       }
     },
