@@ -781,6 +781,7 @@
     let heartbeatTimer = null;
     let lastPushedSignature = null;
     let lastBroadcastTs = null;
+    let dismissedBroadcastTs = null;
     let currentGuidance = null;
     let sessionFirebaseRef = null;
     let wafFirebaseRef = null;
@@ -1706,15 +1707,20 @@
       setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
     }
 
+    function dismissBroadcast() {
+      const banner = document.getElementById("broadcastBanner");
+      if (banner) banner.style.display = "none";
+      dismissedBroadcastTs = lessonData?.broadcastedAt || null;
+    }
+
     function renderBroadcast() {
       const banner = document.getElementById("broadcastBanner");
       if (!banner) return;
       const text = String(lessonData?.broadcast || "").trim();
       const ts = lessonData?.broadcastedAt || null;
-      if (!text) {
-        banner.style.display = "none";
-        return;
-      }
+      if (!text) { banner.style.display = "none"; return; }
+      // Don't re-show a broadcast the student already dismissed
+      if (ts && ts === dismissedBroadcastTs) return;
       const isNew = ts && ts !== lastBroadcastTs;
       if (isNew) {
         lastBroadcastTs = ts;
@@ -1724,7 +1730,11 @@
       }
       const timeLabel = ts ? new Date(ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
       banner.style.display = "block";
-      banner.innerHTML = `📡 <span>${escapeHtml(text)}</span>${timeLabel ? `<span style="font-weight:400;margin-inline-start:8px;opacity:0.85;">${timeLabel}</span>` : ""}<button class="broadcast-dismiss" onclick="document.getElementById('broadcastBanner').style.display='none'" title="סגור">✕</button>`;
+      banner.innerHTML = `
+        <div style="font-size:11px;font-weight:700;opacity:0.8;margin-bottom:4px;letter-spacing:.3px;">📡 הודעה מהמרצה לכל הכיתה${timeLabel ? ` · ${timeLabel}` : ""}</div>
+        <div style="font-size:15px;">${escapeHtml(text)}</div>
+        <button class="broadcast-dismiss" onclick="dismissBroadcast()" title="סגור">✕</button>
+      `;
     }
 
     async function sendHeartbeat() {
