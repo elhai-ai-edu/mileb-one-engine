@@ -381,9 +381,12 @@ activity_templates/{facultyId}/{templateId}
 {
   "ok": true,
   "count": 12,
+  "total": 35,
   "activities": [ ... ]
 }
 ```
+
+> `count` = מספר תוצאות שהוחזרו (לאחר `limit`). `total` = מספר תוצאות לפני `limit` — מאפשר ל-UI לזהות שיש תוצאות נוספות.
 
 ---
 
@@ -427,8 +430,8 @@ activity_templates/{facultyId}/{templateId}
 הטקסט מפוצל לסגמנטים לפי:
 - **Numbered lists**: `1.`, `2)`, `3.`
 - **Bullet points**: `-`, `•`, `*`, `–`
-- **Hebrew task markers**: `משימה:`, `פעילות:`, `שלב:`, `תרגיל:`
-- **Length cap**: סגמנט > 300 תווים מפוצל לחדש
+- **Hebrew task markers**: `משימה:`, `פעילות:`, `שלב:`, `תרגיל:`, `חלק:`, `פעולה:`, `נושא:`
+- **Length cap**: סגמנט > 500 תווים מפוצל לחדש
 
 אם אין delimiter ברור — כל הטקסט מטופל כסגמנט יחיד.
 
@@ -529,11 +532,15 @@ activity_templates/{facultyId}/{templateId}
 ### שלב 3: Confidence Score
 
 ```
-confidence = min(0.4 + (typeMatches + deliveryMatches) × 0.08, 0.95)
+typeScore    = min(typeMatches × 0.2, 0.6)
+deliveryScore = min(deliveryMatches × 0.15, 0.3)
+stageScore   = stageLabel ≠ "unclassified" ? 0.1 : 0
+confidence   = min(0.25 + typeScore + deliveryScore + stageScore, 0.95)
 ```
 
-- טווח: `0.40` (ללא keyword) עד `0.95` (ריבוי keywords)
+- טווח: `0.25` (ללא keyword + unclassified) עד `0.95` (ריבוי keywords + stage מזוהה)
 - מוצג ב-UI כ-"🎯 N%"
+- `confidenceBreakdown: { typeScore, deliveryScore, stageScore }` מצורף לכל candidate לשקיפות
 
 ---
 
@@ -628,7 +635,7 @@ reflection_support, diagnostic_support
 
 ---
 
-### `reviewStatus` (4 ערכים)
+### `reviewStatus` (5 ערכים)
 
 | ערך | משמעות |
 |-----|---------|
@@ -636,6 +643,15 @@ reflection_support, diagnostic_support
 | `approved` | אושר כמות שהוא |
 | `approved_with_edits` | אושר לאחר עריכות |
 | `rejected` | נדחה |
+
+#### Journal `status` — מצב היומן (שדה נפרד מ-`reviewStatus`)
+
+| ערך | משמעות |
+|-----|---------|
+| `parsed` | עובד — כל ה-candidates עדיין `pending_review` |
+| `reviewed` | לפחות activity אחד קיבל החלטה (approved/rejected) |
+| `partially_approved` | חלק מה-candidates נשמרו לבנק, חלק עדיין ממתינים |
+| `approved` | כל ה-candidates קיבלו החלטה סופית ולפחות חלק נשמרו לבנק |
 
 ---
 
@@ -855,9 +871,8 @@ lesson_view רק מציג:
 - Template generation (`activity_templates/...`)
 - LLM enrichment (`use_llm_enrichment: true`)
 - Auto skill mapping מלא
-- micro_cockpit integration (activity picker)
 - lesson_view rendering של currentActivity
-- classroom.js `currentActivity` field
+- classroom.js `currentActivity` field (הגדרה ב-session payload — UI picker ממומש, handler עתידי)
 
 ---
 
@@ -880,6 +895,27 @@ lesson_view רק מציג:
 | גרסה | תאריך | שינוי |
 |------|-------|-------|
 | v1.0 | 2026-04-15 | MVP implementation — 7 endpoints, rule-based parser, macro_cockpit ATS tab |
+| v1.1 | 2026-04-15 | 15 bug-fixes & improvements — ראה פירוט להלן |
+
+### v1.1 — פירוט שינויים
+
+| ID | תחום | שינוי |
+|----|------|-------|
+| FIX-01 | אבטחה | `activityId` בשלב ה-parsing משתמש ב-`generateId("cand")` (randomBytes) במקום `Date.now()+idx` |
+| FIX-02 | תקינות | `handleFetchReview` — URLSearchParams בנויה נכון מ-`queryStringParameters`; מונעת encoding שגוי |
+| FIX-03 | אבטחה | `handleParse` — guard על `rawText.length > 20000` (400 Bad Request) |
+| FIX-04 | אבטחה | `sanitizeRawText()` — מסירה HTML comments, `[SYSTEM...]`, "ignore previous instructions", `<|token|>` לפני parsing |
+| FIX-05 | State machine | `handleSaveReview` — status נשאר `"parsed"` כשכל ה-activities ב-`pending_review` |
+| FIX-06 | State machine | `handleApprove` — הוסף `"partially_approved"` כ-journal status כאשר חלק מ-candidates עדיין pending |
+| FIX-07 | סקלביליות | `handleQueryBank` — courseId query משתמש ב-`orderByChild("createdAt").limitToLast(200)`; בלי courseId מוגבל ל-10 courses |
+| FIX-08 | parser | Confidence score מחושב ב-3 ממדים (`typeScore`, `deliveryScore`, `stageScore`); `confidenceBreakdown` מצורף ל-candidate |
+| FIX-09 | parser | HEBREW_TASK regex הורחב: `חלק`, `פעולה`, `נושא` |
+| FIX-10 | parser | `deriveTitle` — מסירה מספרים ו-bullets מתחילת הכותרת |
+| FIX-11 | parser | Length cap הועלה מ-300 ל-500 תווים |
+| FIX-12 | ולידציה | `sourceType` — ולידציה כנגד enum `{manual_paste, text_upload}`; ערכים לא תקינים → `"manual_paste"` |
+| FIX-13 | UI | Activity Picker ב-`micro_cockpit.html` — מאפשר בחירת activity מהבנק לפני פתיחת שיעור; נשלח כ-`currentActivity` ב-session payload |
+| FIX-14 | API | `handleQueryBank` response — הוסף `total` (לפני limit) לצד `count` (לאחר limit) |
+| FIX-15 | תיעוד | ATS_CONTRACT_V1.md עודכן: v1.1 changelog, `partially_approved` בטבלת statuses, תיאור confidence חדש, segment cap מעודכן |
 
 ---
 

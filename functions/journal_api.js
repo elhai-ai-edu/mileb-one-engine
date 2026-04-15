@@ -85,6 +85,8 @@ const REVIEW_STATUSES = new Set([
   "pending_review", "approved", "approved_with_edits", "rejected"
 ]);
 
+const VALID_SOURCE_TYPES = new Set(["manual_paste", "text_upload"]);
+
 // ─── Rule-based parser ───────────────────────────────────────────────────────
 
 /**
@@ -187,7 +189,7 @@ function splitIntoSegments(rawText) {
 
   const NUMBERED = /^[\d]+[.)]\s+/;
   const BULLET   = /^[-•*–]\s+/;
-  const HEBREW_TASK = /^(משימה|פעילות|שלב|תרגיל|שלב\s+\d+)[:\s]/i;
+  const HEBREW_TASK = /^(משימה|פעילות|שלב|תרגיל|חלק|פעולה|נושא|שלב\s+[א-ת\d]+)[:\s]/i;
 
   for (const line of lines) {
     if (NUMBERED.test(line) || BULLET.test(line) || HEBREW_TASK.test(line)) {
@@ -200,7 +202,7 @@ function splitIntoSegments(rawText) {
     } else {
       // append continuation
       const joined = current.join(" ").length;
-      if (joined < 300) {
+      if (joined < 500) {
         current.push(line);
       } else {
         segments.push(current.join(" "));
@@ -224,7 +226,12 @@ function splitIntoSegments(rawText) {
  * Derive a human-readable title from a segment (first 60 chars, cleaned up).
  */
 function deriveTitle(segment) {
-  return segment.replace(/\s+/g, " ").slice(0, 60).trim();
+  return segment
+    .replace(/^[\d]+[.)]\s+/, "")
+    .replace(/^[-•*–]\s+/, "")
+    .replace(/\s+/g, " ")
+    .slice(0, 60)
+    .trim();
 }
 
 /**
@@ -243,12 +250,25 @@ function extractLessonSummary(rawText, metadata) {
 }
 
 /**
+ * Strip prompt-injection patterns from raw journal text before parsing.
+ * Prevents malicious instructions from leaking into the candidate `instructions` field.
+ */
+function sanitizeRawText(text) {
+  return text
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/\[SYSTEM[^\]]*\]/gi, "")
+    .replace(/ignore\s+(all\s+)?previous\s+instructions?/gi, "")
+    .replace(/<\|[\w]+\|>/g, "");
+}
+
+/**
  * Main rule-based parser — converts a raw journal text into activity candidates.
  * Returns { lessonSummary, candidates[] }
  */
 function ruleBasedParse(rawText, metadata) {
-  const lessonSummary = extractLessonSummary(rawText, metadata);
-  const segments = splitIntoSegments(rawText);
+  const sanitized = sanitizeRawText(rawText);
+  const lessonSummary = extractLessonSummary(sanitized, metadata);
+  const segments = splitIntoSegments(sanitized);
 
   const candidates = segments.map((seg, idx) => {
     const primaryType  = detectFromKeywordMap(seg, TYPE_KEYWORD_MAP, "writing");
@@ -264,12 +284,14 @@ function ruleBasedParse(rawText, metadata) {
     // Simple delivery fallback
     const deliveryMode = deliveryModes.length > 0 ? deliveryModes : ["text_entry"];
 
-    // Confidence heuristic: high keyword density → higher confidence
-    const matchCount = allTypes.length + deliveryModes.length;
-    const confidence = Math.min(0.4 + matchCount * 0.08, 0.95);
+    // Confidence heuristic — 3-dimensional score
+    const typeScore  = Math.min(allTypes.length * 0.2, 0.6);
+    const delScore   = Math.min(deliveryModes.length * 0.15, 0.3);
+    const stageScore = stage !== "unclassified" ? 0.1 : 0;
+    const confidence = parseFloat(Math.min(0.25 + typeScore + delScore + stageScore, 0.95).toFixed(2));
 
     return {
-      activityId:         `cand_${Date.now()}_${idx}`,
+      activityId:         generateId("cand"),
       title:              deriveTitle(seg),
       primaryType,
       secondaryTypes,
@@ -283,8 +305,9 @@ function ruleBasedParse(rawText, metadata) {
       skillTags:          [],          // populated during enrichment
       difficultyHint:     "medium",
       estimatedMinutes:   null,
-      confidence:         parseFloat(confidence.toFixed(2)),
+      confidence:         confidence,
       reviewStatus:       "pending_review",
+      confidenceBreakdown: { typeScore, deliveryScore: delScore, stageScore },
       activitySourceSpan: { fromText: seg }
     };
   });
@@ -363,6 +386,14 @@ async function handleParse(event) {
     };
   }
 
+  if (rawText.length > 20000) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ error: "rawText exceeds 20,000 character limit" })
+    };
+  }
+
   const db = getDB();
   const journalId = generateId("j");
   const now = new Date().toISOString();
@@ -378,7 +409,7 @@ async function handleParse(event) {
     lessonTitle:  lessonTitle || null,
     lessonMode:   lessonMode  || null,
     rawText,
-    sourceType:   sourceType  || "manual_paste",
+    sourceType:   VALID_SOURCE_TYPES.has(sourceType) ? sourceType : "manual_paste",
     status:       "parsed",
     createdAt:    now,
     updatedAt:    now
@@ -418,12 +449,9 @@ async function handleParse(event) {
 }
 
 async function handleFetchReview(event) {
-  const params = new URLSearchParams(event.rawQuery || event.queryStringParameters
-    ? Object.entries(event.queryStringParameters || {}).map(([k, v]) => `${k}=${v}`).join("&")
-    : "");
-
-  const facultyId = params.get("facultyId") || event.queryStringParameters?.facultyId;
-  const journalId = params.get("journalId") || event.queryStringParameters?.journalId;
+  const params = new URLSearchParams(event.queryStringParameters || {});
+  const facultyId = params.get("facultyId");
+  const journalId = params.get("journalId");
 
   if (!facultyId || !journalId) {
     return {
@@ -529,7 +557,8 @@ async function handleSaveReview(event) {
     };
   }
   updates[`faculty_journals/${facultyId}/${journalId}/review`] = reviewRecord;
-  updates[`faculty_journals/${facultyId}/${journalId}/status`]  = "reviewed";
+  const hasAnyDecision = approved.length > 0 || rejected.length > 0;
+  updates[`faculty_journals/${facultyId}/${journalId}/status`]  = hasAnyDecision ? "reviewed" : "parsed";
   updates[`faculty_journals/${facultyId}/${journalId}/updatedAt`] = now;
 
   try {
@@ -590,6 +619,15 @@ async function handleApprove(event) {
   const now = new Date().toISOString();
   const saved = [];
 
+  // Fetch all existing candidates to determine the correct final journal status
+  let existingCandidates = {};
+  try {
+    const candSnap = await db.ref(`faculty_journals/${facultyId}/${journalId}/activity_candidates`).get();
+    if (candSnap.exists()) existingCandidates = candSnap.val();
+  } catch (e) {
+    console.warn("JOURNAL APPROVE: Could not fetch existing candidates:", e.message);
+  }
+
   const updates = {};
   for (const act of activities) {
     const effectiveCourseId = act.courseId || courseId || "uncategorized";
@@ -618,7 +656,16 @@ async function handleApprove(event) {
     saved.push(activityId);
   }
 
-  updates[`faculty_journals/${facultyId}/${journalId}/status`]    = "approved";
+  // Determine final journal status: "approved" only when no candidates remain pending_review
+  const incomingStatusMap = Object.fromEntries(activities.map(a => [a.activityId, a.reviewStatus]));
+  const mergedStatuses = {
+    ...Object.fromEntries(Object.entries(existingCandidates).map(([id, c]) => [id, c.reviewStatus || "pending_review"])),
+    ...incomingStatusMap
+  };
+  const hasAnyPending = Object.values(mergedStatuses).some(s => s === "pending_review");
+  const journalStatus = hasAnyPending ? "partially_approved" : "approved";
+
+  updates[`faculty_journals/${facultyId}/${journalId}/status`]    = journalStatus;
   updates[`faculty_journals/${facultyId}/${journalId}/updatedAt`] = now;
 
   try {
@@ -655,30 +702,32 @@ async function handleQueryBank(event) {
   const maxResults = Math.min(parseInt(limit || "50", 10), 200);
 
   try {
-    let ref;
-    if (courseId) {
-      ref = db.ref(`activity_bank/${facultyId}/${courseId}`);
-    } else {
-      ref = db.ref(`activity_bank/${facultyId}`);
-    }
-
-    const snap = await ref.get();
-    if (!snap.exists()) {
-      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, activities: [] }) };
-    }
-
-    const raw = snap.val();
     let activities = [];
 
     if (courseId) {
-      // Flat list of activities for this course
-      activities = Object.values(raw).filter(Boolean);
-    } else {
-      // Nested by courseId — flatten
-      for (const cId of Object.keys(raw)) {
-        const courseActivities = Object.values(raw[cId] || {}).filter(Boolean);
-        activities.push(...courseActivities);
+      // Efficient: use orderByChild+limitToLast to cap the read at 200 records max
+      const snap = await db.ref(`activity_bank/${facultyId}/${courseId}`)
+        .orderByChild("createdAt")
+        .limitToLast(200)
+        .get();
+      if (snap.exists()) {
+        activities = Object.values(snap.val()).filter(Boolean);
       }
+    } else {
+      // Nested by courseId — fetch all but cap to 10 most recent course buckets
+      const facultySnap = await db.ref(`activity_bank/${facultyId}`).get();
+      if (facultySnap.exists()) {
+        const raw = facultySnap.val();
+        // Sort course keys descending (lexicographic ≈ recency for typical IDs) and take last 10
+        const courseIds = Object.keys(raw).sort().slice(-10);
+        for (const cId of courseIds) {
+          activities.push(...Object.values(raw[cId] || {}).filter(Boolean));
+        }
+      }
+    }
+
+    if (!activities.length) {
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, count: 0, total: 0, activities: [] }) };
     }
 
     // Apply filters
@@ -692,12 +741,13 @@ async function handleQueryBank(event) {
 
     // Sort by createdAt desc
     activities.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+    const totalBeforeLimit = activities.length;
     activities = activities.slice(0, maxResults);
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ ok: true, count: activities.length, activities })
+      body: JSON.stringify({ ok: true, count: activities.length, total: totalBeforeLimit, activities })
     };
   } catch (e) {
     console.error("ACTIVITY BANK QUERY: Firebase error:", e.message);
