@@ -579,6 +579,19 @@ export async function handler(event){
       const session = sessionSnap.val() || null;
       if(!session) return err("session not found");
 
+      // Write student presence so lecturer dashboard sees them immediately
+      const payloadStudentId = String(event.queryStringParameters?.studentId || "").trim();
+      const payloadStudentName = String(event.queryStringParameters?.studentName || "").trim();
+      if(payloadStudentId){
+        const now = Date.now();
+        const presenceUpdate = { lastSeen: now, presence: "online" };
+        if(payloadStudentName) presenceUpdate.name = payloadStudentName;
+        await Promise.all([
+          db.ref(`sessions/${sessionId}/students/${payloadStudentId}`).update(presenceUpdate),
+          db.ref(`sessions/${sessionId}/answers/${payloadStudentId}/lastSeen`).set(now)
+        ]);
+      }
+
       const courseId = session.courseId || session.classId || null;
       const state = session.state || {
         current_unit: normalizeUnitId(session.unitId),

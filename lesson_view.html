@@ -1647,7 +1647,7 @@
     async function refreshLesson() {
       if (!sessionId) return;
       const payloadQs = `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}` +
-        (role === "student" && studentId ? `&studentId=${encodeURIComponent(studentId)}` : "");
+        (role === "student" && studentId ? `&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}` : "");
       lessonData = await callClassroom("GET", null, payloadQs);
       syncLessonUrlContext();
       const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
