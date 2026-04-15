@@ -15,6 +15,18 @@
 </head>
 
 <body>
+<script>
+  // When embedded as iframe inside lesson_view, hide page chrome
+  if (window.self !== window.top) {
+    document.documentElement.classList.add('embedded');
+  }
+</script>
+<style>
+  html.embedded .sidebar,
+  html.embedded .topbar { display: none !important; }
+  html.embedded .main { margin: 0 !important; padding: 0 !important; }
+  html.embedded .container { height: 100vh !important; border-radius: 0 !important; box-shadow: none !important; }
+</style>
 
 <div class="sidebar">
 
