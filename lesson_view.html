@@ -1014,12 +1014,15 @@
 
     function setChatFrame(courseId, botType) {
       const chatFrame = document.getElementById("chatFrame");
+      // Always use the active bot (user may have switched); fall back to lessonData bot
+      const effectiveBotType = _activeBotType || botType;
       const query = new URLSearchParams();
       if (courseId) query.set("classId", courseId);
-      if (botType) query.set("botType", botType);
+      if (effectiveBotType) query.set("botType", effectiveBotType);
       query.set("sessionId", sessionId);
       const newSrc = `/chat.html?${query.toString()}`;
-      if (chatFrame.src === newSrc || chatFrame.getAttribute("data-loaded-src") === newSrc) return;
+      // Compare against stored src (chatFrame.src is absolute, newSrc is relative)
+      if (chatFrame.getAttribute("data-loaded-src") === newSrc) return;
       chatFrame.setAttribute("data-loaded-src", newSrc);
       chatFrame.src = newSrc;
     }
