@@ -189,7 +189,7 @@ function splitIntoSegments(rawText) {
 
   const NUMBERED = /^[\d]+[.)]\s+/;
   const BULLET   = /^[-•*–]\s+/;
-  const HEBREW_TASK = /^(משימה|פעילות|שלב|תרגיל|חלק|פעולה|נושא|שלב\s+[א-ת\d]+)[:\s]/i;
+  const HEBREW_TASK = /^(משימה|פעילות|תרגיל|חלק|פעולה|נושא|שלב\s+[א-ת\d]+|שלב)[:\s]/i;
 
   for (const line of lines) {
     if (NUMBERED.test(line) || BULLET.test(line) || HEBREW_TASK.test(line)) {
@@ -255,7 +255,8 @@ function extractLessonSummary(rawText, metadata) {
  */
 function sanitizeRawText(text) {
   return text
-    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<!--/g, "")
+    .replace(/-->/g, "")
     .replace(/\[SYSTEM[^\]]*\]/gi, "")
     .replace(/ignore\s+(all\s+)?previous\s+instructions?/gi, "")
     .replace(/<\|[\w]+\|>/g, "");
@@ -558,6 +559,8 @@ async function handleSaveReview(event) {
   }
   updates[`faculty_journals/${facultyId}/${journalId}/review`] = reviewRecord;
   const hasAnyDecision = approved.length > 0 || rejected.length > 0;
+  // "partially_approved" / "approved" are set by handleApprove (bank-save step), not here.
+  // This step only transitions between "parsed" (no decisions yet) and "reviewed" (at least one decision).
   updates[`faculty_journals/${facultyId}/${journalId}/status`]  = hasAnyDecision ? "reviewed" : "parsed";
   updates[`faculty_journals/${facultyId}/${journalId}/updatedAt`] = now;
 
