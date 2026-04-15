@@ -339,6 +339,7 @@
     const unitId = String(params.get("unitId") || "unit_01").trim() || "unit_01";
     let waitingSessionId = String(params.get("sessionId") || "").trim();
     const isMidSession = params.get("mid_session") === "1";
+    let skipLobbyUI = false;
     const sessionUser = window.MiledAccess?.getSessionUser?.() || null;
     const canonicalRole = sessionUser?.canonicalRole || window.MiledAccess?.normalizeRole?.(sessionUser?.role) || "";
     const isStudentPreview = !!window.MiledAccess?.isStudentPreviewEnabled?.(canonicalRole);
@@ -657,10 +658,39 @@
     }
 
     async function refreshLessonState() {
-      if (!waitingSessionId) return;
+      if (!waitingSessionId) {
+        // No sessionId yet — try to discover one
+        if (courseId) {
+          try {
+            const disc = await callClassroom("GET", null, `?action=pre_session&classId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}&studentId=${encodeURIComponent(studentId)}&sessionId=`);
+            const discovered = String(disc?.activeSessionId || "").trim();
+            if (discovered) {
+              waitingSessionId = discovered;
+              updateSessionLine();
+            } else {
+              if (skipLobbyUI) {
+                const msg = document.getElementById("passthrough-msg");
+                if (msg) msg.textContent = "ממתינים שהמרצה יפתח שיעור...";
+              }
+              return;
+            }
+          } catch { return; }
+        } else { return; }
+      }
+
       const data = await callClassroom("GET", null, `?action=lesson_payload&sessionId=${encodeURIComponent(waitingSessionId)}`);
       const doorStatus = String(data?.state?.door_status || "auto").toLowerCase();
       const lobbyMode = !!data?.state?.lobby_mode;
+
+      // Pass-through mode (no waiting_lobby UI): redirect as soon as session is open
+      if (skipLobbyUI && !lobbyMode && (doorStatus === "open" || doorStatus === "auto")) {
+        const dest = new URLSearchParams();
+        if (courseId)         dest.set("courseId", courseId);
+        if (unitId)           dest.set("unitId", unitId);
+        if (waitingSessionId) dest.set("sessionId", waitingSessionId);
+        location.replace(`/lesson_view.html?${dest.toString()}`);
+        return;
+      }
 
       // Mid-session: if lecturer cleared lobby_mode → return to lesson_view immediately
       if (isMidSession && !lobbyMode && doorStatus !== "closed") {
@@ -701,15 +731,20 @@
           const cfg = await fetch(`/config.json?ts=${Date.now()}`).then(r => r.json());
           const course = cfg?.my_courses?.[courseId];
           if (course && !course.waiting_lobby) {
-            // Course doesn't use waiting lobby — go directly to lesson_view
-            const dest = new URLSearchParams();
-            if (courseId)        dest.set("courseId", courseId);
-            if (unitId)          dest.set("unitId", unitId);
-            if (waitingSessionId) dest.set("sessionId", waitingSessionId);
-            location.replace(`/lesson_view.html?${dest.toString()}`);
-            return;
+            // Course doesn't use waiting lobby UI — run silently as session-discovery pass-through
+            skipLobbyUI = true;
+            document.querySelector('.shell, body > div, main')?.style && (document.body.style.background = 'none');
+            // Hide all lobby content, show only a minimal spinner
+            document.querySelectorAll('section, aside, .hero, .lobby-grid, .waiting-col, header').forEach(el => { el.style.display = 'none'; });
+            document.body.insertAdjacentHTML('beforeend', `
+              <div id="passthrough-screen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;font-family:Assistant,sans-serif;direction:rtl;">
+                <div style="font-size:48px;">⏳</div>
+                <div style="font-size:1.3rem;font-weight:800;color:#1e3a8a;" id="passthrough-msg">מחפשים שיעור פעיל...</div>
+                <div style="width:36px;height:36px;border-radius:50%;border:4px solid #dbeafe;border-top-color:#1d4ed8;animation:spin .9s linear infinite;"></div>
+                <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+              </div>`);
           }
-        } catch { /* non-fatal — proceed with lobby */ }
+        } catch { /* non-fatal — proceed with full lobby */ }
       }
 
       // ── Mid-session lobby: simpler UI, no entrance ticket ───────────────
@@ -733,11 +768,10 @@
       initManualEnter();
       renderMemoryBoard();
       await loadConfigTitle();
-      await loadPreSession();
-      await upsertAttendeePresence();
-      if (waitingSessionId) {
-        await refreshLessonState();
-      }
+      if (!skipLobbyUI) await loadPreSession();
+      if (!skipLobbyUI) await upsertAttendeePresence();
+      // Always run state check (discovers sessionId if missing)
+      await refreshLessonState();
       startLessonStatePolling();
       if (attendeeHeartbeatTimer) clearInterval(attendeeHeartbeatTimer);
       attendeeHeartbeatTimer = setInterval(() => {
