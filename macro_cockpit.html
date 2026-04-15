@@ -958,6 +958,7 @@
 <div id="cockpit-nav">
   <button class="cockpit-tab-btn active" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>חיבור קורס-מיומנויות</span></button>
   <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>תכנון ראשי</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="ats" onclick="switchCockpitTab('ats', this)"><span>📓 תרגום יומן הוראה</span></button>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {
@@ -1249,6 +1250,202 @@
   </div>
 
 
+  <!-- ─────────────────────────────────────────────────────────────────────
+       ATS PANEL — Activity Translation System (תרגום יומן הוראה)
+       Contract v1 · UI Host: macro_cockpit · Data: Firebase activity_bank
+       ───────────────────────────────────────────────────────────────────── -->
+  <div class="panel" data-tab-panel="ats" style="padding-bottom:32px;">
+    <h2>📓 תרגום יומן הוראה</h2>
+    <p class="panel-sub">המר יומן הוראה לפעילויות מובנות · שמור לבנק הפעילויות · הפעל דרך מיקרו-קוקפיט</p>
+
+    <!-- Step indicator -->
+    <div id="ats-steps" style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;">
+      <button class="ats-step-btn active" data-step="1" onclick="atsGoStep(1)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#6366f1;color:#fff;border:none;cursor:pointer;font-family:inherit;">1 — הזנת יומן</button>
+      <button class="ats-step-btn" data-step="2" onclick="atsGoStep(2)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:none;cursor:pointer;font-family:inherit;border-right:1px solid #e2e8f0;">2 — בדיקה ואישור</button>
+      <button class="ats-step-btn" data-step="3" onclick="atsGoStep(3)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:none;cursor:pointer;font-family:inherit;border-right:1px solid #e2e8f0;">3 — שמירה לבנק</button>
+    </div>
+
+    <!-- ── Step 1: Journal Input ── -->
+    <div id="ats-panel-1">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+        <div class="field" style="margin:0;">
+          <label>מספר קורס / מזהה קורס</label>
+          <input id="ats-courseId" type="text" class="lp-input" placeholder="לדוג׳: hebrew_advanced_01" style="margin:0;">
+        </div>
+        <div class="field" style="margin:0;">
+          <label>תאריך שיעור</label>
+          <input id="ats-lessonDate" type="date" class="lp-input" style="margin:0;">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+        <div class="field" style="margin:0;">
+          <label>כותרת שיעור</label>
+          <input id="ats-lessonTitle" type="text" class="lp-input" placeholder="לדוג׳: חשיבה ביקורתית — שיעור 3" style="margin:0;">
+        </div>
+        <div class="field" style="margin:0;">
+          <label>מצב הוראה</label>
+          <select id="ats-lessonMode" class="lp-input" style="margin:0;">
+            <option value="frontal">פרונטלי</option>
+            <option value="zoom">זום</option>
+            <option value="hybrid">היברידי</option>
+            <option value="asynchronous">אסינכרוני</option>
+            <option value="in_class_digital">בכיתה דיגיטלי</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>טקסט יומן ההוראה <span style="font-weight:400;color:#94a3b8;">(הדבק את היומן כאן)</span></label>
+        <textarea id="ats-rawText" class="lp-textarea" rows="10"
+          placeholder="לדוג׳:&#10;1. קריאה של הטקסט — 10 דקות&#10;2. כתוב תמצית קצרה בזוגות&#10;3. הקלט את התמצית ושתף בפדלט"
+          style="min-height:180px;"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-blue" onclick="atsParse()" id="ats-parse-btn" style="font-size:13px;padding:9px 20px;">🔍 נתח יומן</button>
+        <span id="ats-parse-status" style="font-size:12px;color:#64748b;"></span>
+      </div>
+    </div>
+
+    <!-- ── Step 2: Review Panel ── -->
+    <div id="ats-panel-2" style="display:none;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start;">
+
+        <!-- Left: Raw journal text -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">טקסט מקורי</div>
+          <div id="ats-raw-display"
+            style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;
+                   font-size:12px;color:#334155;max-height:520px;overflow-y:auto;white-space:pre-wrap;line-height:1.6;"></div>
+        </div>
+
+        <!-- Center: Candidate list -->
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;">פעילויות שחולצו</div>
+            <span id="ats-cand-count" style="font-size:11px;color:#94a3b8;"></span>
+          </div>
+          <div id="ats-candidates-list" style="display:flex;flex-direction:column;gap:6px;max-height:520px;overflow-y:auto;"></div>
+        </div>
+
+        <!-- Right: Activity editor -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">עריכת פעילות</div>
+          <div id="ats-editor-empty" style="color:#94a3b8;font-size:12px;text-align:center;padding:40px 0;">בחר פעילות מהרשימה לעריכה</div>
+          <div id="ats-editor-form" style="display:none;">
+            <div class="field" style="margin-bottom:8px;">
+              <label style="font-size:11px;">כותרת</label>
+              <input id="ats-ed-title" type="text" class="lp-input" style="margin:0;font-size:12px;">
+            </div>
+            <div class="field" style="margin-bottom:8px;">
+              <label style="font-size:11px;">Type ראשי</label>
+              <select id="ats-ed-primaryType" class="lp-input" style="margin:0;font-size:12px;">
+                <option value="reading">reading — קריאה</option>
+                <option value="writing">writing — כתיבה</option>
+                <option value="speaking">speaking — דיבור</option>
+                <option value="listening">listening — האזנה</option>
+                <option value="discussion">discussion — דיון</option>
+                <option value="analysis">analysis — ניתוח</option>
+                <option value="classification">classification — מיון</option>
+                <option value="summarization">summarization — סיכום</option>
+                <option value="paraphrasing">paraphrasing — ניסוח מחדש</option>
+                <option value="question_answering">question_answering — מענה</option>
+                <option value="problem_solving">problem_solving — פתרון בעיה</option>
+                <option value="reflection">reflection — רפלקציה</option>
+                <option value="presentation">presentation — הצגה</option>
+                <option value="research">research — מחקר</option>
+                <option value="ai_interaction">ai_interaction — עבודה עם AI</option>
+                <option value="peer_response">peer_response — תגובה לעמית</option>
+                <option value="collaborative_work">collaborative_work — עבודה שיתופית</option>
+                <option value="submission">submission — הגשה</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:8px;">
+              <label style="font-size:11px;">שלב</label>
+              <select id="ats-ed-stageLabel" class="lp-input" style="margin:0;font-size:12px;">
+                <option value="opening">פתיחה</option>
+                <option value="knowledge_building">בניית ידע</option>
+                <option value="guided_practice">תרגול מונחה</option>
+                <option value="independent_practice">תרגול עצמאי</option>
+                <option value="discussion">דיון</option>
+                <option value="reflection">רפלקציה</option>
+                <option value="closure">סיכום</option>
+                <option value="homework">עבודת בית</option>
+                <option value="unclassified">לא סווג (זמני)</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:8px;">
+              <label style="font-size:11px;">הוראות</label>
+              <textarea id="ats-ed-instructions" class="lp-textarea" rows="3" style="margin:0;font-size:12px;min-height:60px;"></textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+              <div class="field" style="margin:0;">
+                <label style="font-size:11px;">שיתוף</label>
+                <select id="ats-ed-collaborationMode" class="lp-input" style="margin:0;font-size:12px;">
+                  <option value="individual">יחיד</option>
+                  <option value="pair">זוגות</option>
+                  <option value="small_group">קבוצה קטנה</option>
+                  <option value="whole_class">מליאה</option>
+                  <option value="teacher_student">מורה-תלמיד</option>
+                  <option value="asynchronous_individual">אסינכרוני</option>
+                </select>
+              </div>
+              <div class="field" style="margin:0;">
+                <label style="font-size:11px;">דקות משוערות</label>
+                <input id="ats-ed-minutes" type="number" class="lp-input" min="1" max="180" placeholder="10" style="margin:0;font-size:12px;">
+              </div>
+            </div>
+            <div class="field" style="margin-bottom:8px;">
+              <label style="font-size:11px;">מצב בוט</label>
+              <select id="ats-ed-botMode" class="lp-input" style="margin:0;font-size:12px;">
+                <option value="none">אין</option>
+                <option value="course_support">תמיכת קורס</option>
+                <option value="task_support">תמיכת משימה</option>
+                <option value="gatekeeper">שוער</option>
+                <option value="research_support">מחקר</option>
+                <option value="writing_support">כתיבה</option>
+                <option value="paraphrase_support">ניסוח מחדש</option>
+                <option value="presentation_support">פרזנטציה</option>
+                <option value="reflection_support">רפלקציה</option>
+                <option value="diagnostic_support">אבחון</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:8px;">
+              <label style="font-size:11px;">הערות בדיקה</label>
+              <input id="ats-ed-reviewNotes" type="text" class="lp-input" placeholder="הערה אופציונלית" style="margin:0;font-size:12px;">
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+              <button onclick="atsEditorApprove()" class="btn btn-green" style="font-size:11px;padding:6px 12px;">✓ אשר</button>
+              <button onclick="atsEditorApproveWithEdits()" class="btn btn-blue" style="font-size:11px;padding:6px 12px;">✎ אשר עם עריכות</button>
+              <button onclick="atsEditorReject()" style="font-size:11px;padding:6px 12px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;cursor:pointer;font-family:inherit;">✕ מחק</button>
+            </div>
+            <button onclick="atsEditorSave()" class="btn btn-outline" style="width:100%;font-size:12px;padding:7px;">💾 שמור שינויים</button>
+          </div>
+        </div>
+
+      </div><!-- end review grid -->
+
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0;">
+        <button onclick="atsSaveReview()" class="btn btn-blue" id="ats-save-review-btn" style="font-size:13px;padding:9px 20px;">💾 שמור בדיקה</button>
+        <button onclick="atsGoStep(3)" class="btn btn-green" style="font-size:13px;padding:9px 20px;">← המשך לשמירה בבנק</button>
+        <span id="ats-review-status" style="font-size:12px;color:#64748b;"></span>
+      </div>
+    </div>
+
+    <!-- ── Step 3: Save to Bank ── -->
+    <div id="ats-panel-3" style="display:none;">
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:700;color:#065f46;margin-bottom:6px;">✅ פעילויות מאושרות לשמירה</div>
+        <div id="ats-approved-summary" style="font-size:13px;color:#047857;"></div>
+      </div>
+      <div id="ats-approved-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button onclick="atsApproveToBank()" class="btn btn-green" id="ats-bank-btn" style="font-size:13px;padding:9px 22px;">📥 שמור לבנק הפעילויות</button>
+        <button onclick="atsGoStep(2)" class="btn btn-outline" style="font-size:13px;padding:9px 16px;">← חזרה לבדיקה</button>
+        <span id="ats-bank-status" style="font-size:12px;color:#64748b;"></span>
+      </div>
+    </div>
+  </div><!-- end ats panel -->
+
+
   <!-- RIGHT: Live view (legacy hidden in Macro mode) -->
   <div class="panel" data-tab-panel="live_legacy">
     <div class="live-header">
@@ -1351,6 +1548,259 @@
 
 <script>
 /* כל הקוד JS שלך נשאר בדיוק כפי שהוא */
+</script>
+
+<!-- ─── ATS Script — Activity Translation System ─── -->
+<script>
+// ── ATS state ──────────────────────────────────────────────────────────────
+let atsCurrentJournalId = null;
+let atsCandidates = [];
+let atsSelectedIdx = null;
+
+function atsGoStep(n) {
+  [1, 2, 3].forEach(i => {
+    const panel = document.getElementById(`ats-panel-${i}`);
+    if (panel) panel.style.display = (i === n) ? '' : 'none';
+  });
+  document.querySelectorAll('.ats-step-btn').forEach(btn => {
+    const active = parseInt(btn.dataset.step) === n;
+    btn.style.background = active ? '#6366f1' : '#f1f5f9';
+    btn.style.color       = active ? '#fff'    : '#64748b';
+  });
+}
+
+// ── Step 1: Parse ────────────────────────────────────────────────────────────
+async function atsParse() {
+  const rawText     = document.getElementById('ats-rawText').value.trim();
+  const courseId    = document.getElementById('ats-courseId').value.trim();
+  const lessonDate  = document.getElementById('ats-lessonDate').value;
+  const lessonTitle = document.getElementById('ats-lessonTitle').value.trim();
+  const lessonMode  = document.getElementById('ats-lessonMode').value;
+  const statusEl    = document.getElementById('ats-parse-status');
+  const parseBtn    = document.getElementById('ats-parse-btn');
+
+  if (!rawText) { statusEl.textContent = '⚠️ יש להדביק טקסט יומן לפני הניתוח'; return; }
+
+  statusEl.textContent = '⏳ מנתח...';
+  parseBtn.disabled = true;
+
+  // facultyId comes from the outer STATE block
+  const fid = (typeof facultyId !== 'undefined') ? facultyId : sessionStorage.getItem('facultyId') || 'f_unknown';
+
+  try {
+    const res = await fetch('/api/journal/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ facultyId: fid, courseId, lessonDate, lessonTitle, lessonMode, rawText, sourceType: 'manual_paste' })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'שגיאת ניתוח');
+
+    atsCurrentJournalId = data.journalId;
+    atsCandidates = data.candidates || [];
+    atsRenderReviewPanel(rawText, data.lessonSummary);
+    statusEl.textContent = `✅ זוהו ${atsCandidates.length} פעילויות`;
+    atsGoStep(2);
+  } catch (e) {
+    statusEl.textContent = `❌ שגיאה: ${e.message}`;
+  } finally {
+    parseBtn.disabled = false;
+  }
+}
+
+// ── Step 2: Review ────────────────────────────────────────────────────────────
+function atsRenderReviewPanel(rawText, lessonSummary) {
+  const rawDisplay = document.getElementById('ats-raw-display');
+  if (rawDisplay) rawDisplay.textContent = rawText;
+
+  const countEl = document.getElementById('ats-cand-count');
+  if (countEl) countEl.textContent = `${atsCandidates.length} פעילויות`;
+
+  atsRenderCandidateList();
+  atsSelectedIdx = null;
+  document.getElementById('ats-editor-empty').style.display = '';
+  document.getElementById('ats-editor-form').style.display = 'none';
+}
+
+const REVIEW_STATUS_LABELS = {
+  pending_review: { label: '⏳ ממתין', bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
+  approved:       { label: '✓ אושר',  bg: '#f0fdf4', color: '#065f46', border: '#bbf7d0' },
+  approved_with_edits: { label: '✎ אושר עם עריכות', bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe' },
+  rejected:       { label: '✕ נמחק',  bg: '#fef2f2', color: '#991b1b', border: '#fecaca' }
+};
+
+function atsRenderCandidateList() {
+  const list = document.getElementById('ats-candidates-list');
+  if (!list) return;
+  list.innerHTML = '';
+
+  atsCandidates.forEach((cand, idx) => {
+    const rs = REVIEW_STATUS_LABELS[cand.reviewStatus] || REVIEW_STATUS_LABELS.pending_review;
+    const card = document.createElement('div');
+    card.style.cssText = `background:#fff;border:2px solid ${idx === atsSelectedIdx ? '#6366f1' : '#e2e8f0'};border-radius:10px;padding:10px 12px;cursor:pointer;transition:border-color .15s;`;
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div style="font-size:13px;font-weight:700;color:#0f172a;flex:1;">${escapeHtml(cand.title || 'פעילות ללא שם')}</div>
+        <span style="font-size:10px;font-weight:700;background:${rs.bg};color:${rs.color};border:1px solid ${rs.border};border-radius:20px;padding:2px 8px;white-space:nowrap;">${rs.label}</span>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px;">
+        <span style="background:#ede9fe;color:#4f46e5;border-radius:4px;padding:1px 6px;margin-left:4px;">${cand.primaryType || '—'}</span>
+        <span>${cand.stageLabel || '—'}</span>
+        ${cand.estimatedMinutes ? `· ${cand.estimatedMinutes} דק'` : ''}
+        ${cand.confidence ? `· 🎯 ${Math.round(cand.confidence * 100)}%` : ''}
+      </div>`;
+    card.addEventListener('click', () => atsSelectCandidate(idx));
+    list.appendChild(card);
+  });
+}
+
+function atsSelectCandidate(idx) {
+  atsSelectedIdx = idx;
+  atsRenderCandidateList();
+  const cand = atsCandidates[idx];
+  if (!cand) return;
+
+  document.getElementById('ats-editor-empty').style.display = 'none';
+  document.getElementById('ats-editor-form').style.display = '';
+
+  document.getElementById('ats-ed-title').value             = cand.title || '';
+  document.getElementById('ats-ed-primaryType').value       = cand.primaryType || 'writing';
+  document.getElementById('ats-ed-stageLabel').value        = cand.stageLabel || 'unclassified';
+  document.getElementById('ats-ed-instructions').value      = cand.instructions || '';
+  document.getElementById('ats-ed-collaborationMode').value = cand.collaborationMode || 'individual';
+  document.getElementById('ats-ed-minutes').value           = cand.estimatedMinutes || '';
+  document.getElementById('ats-ed-botMode').value           = cand.botMode || 'none';
+  document.getElementById('ats-ed-reviewNotes').value       = cand.reviewNotes || '';
+}
+
+function atsEditorSave() {
+  if (atsSelectedIdx === null) return;
+  const cand = atsCandidates[atsSelectedIdx];
+  cand.title             = document.getElementById('ats-ed-title').value.trim();
+  cand.primaryType       = document.getElementById('ats-ed-primaryType').value;
+  cand.stageLabel        = document.getElementById('ats-ed-stageLabel').value;
+  cand.instructions      = document.getElementById('ats-ed-instructions').value.trim();
+  cand.collaborationMode = document.getElementById('ats-ed-collaborationMode').value;
+  cand.estimatedMinutes  = parseInt(document.getElementById('ats-ed-minutes').value) || null;
+  cand.botMode           = document.getElementById('ats-ed-botMode').value;
+  cand.reviewNotes       = document.getElementById('ats-ed-reviewNotes').value.trim();
+  atsRenderCandidateList();
+}
+
+function atsEditorApprove() {
+  if (atsSelectedIdx === null) return;
+  atsEditorSave();
+  atsCandidates[atsSelectedIdx].reviewStatus = 'approved';
+  atsRenderCandidateList();
+}
+
+function atsEditorApproveWithEdits() {
+  if (atsSelectedIdx === null) return;
+  atsEditorSave();
+  atsCandidates[atsSelectedIdx].reviewStatus = 'approved_with_edits';
+  atsRenderCandidateList();
+}
+
+function atsEditorReject() {
+  if (atsSelectedIdx === null) return;
+  atsCandidates[atsSelectedIdx].reviewStatus = 'rejected';
+  atsSelectedIdx = null;
+  document.getElementById('ats-editor-empty').style.display = '';
+  document.getElementById('ats-editor-form').style.display = 'none';
+  atsRenderCandidateList();
+}
+
+async function atsSaveReview() {
+  const statusEl = document.getElementById('ats-review-status');
+  const btn      = document.getElementById('ats-save-review-btn');
+  if (!atsCurrentJournalId) { statusEl.textContent = '⚠️ אין יומן פעיל'; return; }
+
+  statusEl.textContent = '⏳ שומר...';
+  btn.disabled = true;
+
+  const fid = (typeof facultyId !== 'undefined') ? facultyId : sessionStorage.getItem('facultyId') || 'f_unknown';
+
+  try {
+    const res = await fetch('/api/journal/review', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ facultyId: fid, journalId: atsCurrentJournalId, activities: atsCandidates })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'שגיאת שמירה');
+    statusEl.textContent = `✅ נשמר — ${data.approvedCount} מאושרות, ${data.rejectedCount} נמחקו`;
+  } catch (e) {
+    statusEl.textContent = `❌ ${e.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Step 3: Save to Bank ─────────────────────────────────────────────────────
+function atsRenderApprovedList() {
+  const approved = atsCandidates.filter(c => ['approved', 'approved_with_edits'].includes(c.reviewStatus));
+  const summaryEl = document.getElementById('ats-approved-summary');
+  const listEl    = document.getElementById('ats-approved-list');
+  if (summaryEl) summaryEl.textContent = `${approved.length} פעילויות יישמרו לבנק. ${atsCandidates.length - approved.length} פעילויות לא נכללות.`;
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  approved.forEach(cand => {
+    const item = document.createElement('div');
+    item.style.cssText = 'background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;';
+    item.innerHTML = `
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#0f172a;">${escapeHtml(cand.title || 'פעילות')}</div>
+        <div style="font-size:11px;color:#64748b;margin-top:2px;">${cand.primaryType} · ${cand.stageLabel} ${cand.estimatedMinutes ? '· ' + cand.estimatedMinutes + ' דק׳' : ''}</div>
+      </div>
+      <span style="font-size:10px;font-weight:700;background:#f0fdf4;color:#065f46;border:1px solid #bbf7d0;border-radius:20px;padding:2px 8px;">✓ מאושר</span>`;
+    listEl.appendChild(item);
+  });
+}
+
+async function atsApproveToBank() {
+  const statusEl = document.getElementById('ats-bank-status');
+  const btn      = document.getElementById('ats-bank-btn');
+  if (!atsCurrentJournalId) { statusEl.textContent = '⚠️ אין יומן פעיל'; return; }
+
+  const approved = atsCandidates.filter(c => ['approved', 'approved_with_edits'].includes(c.reviewStatus));
+  if (approved.length === 0) { statusEl.textContent = '⚠️ אין פעילויות מאושרות לשמירה'; return; }
+
+  // Check none are unclassified
+  const unclassified = approved.filter(c => !c.stageLabel || c.stageLabel === 'unclassified');
+  if (unclassified.length > 0) {
+    statusEl.textContent = `⚠️ ${unclassified.length} פעילויות עדיין "לא סווג" — יש לסווג שלב לפני שמירה`;
+    return;
+  }
+
+  statusEl.textContent = '⏳ שומר לבנק...';
+  btn.disabled = true;
+
+  const fid      = (typeof facultyId !== 'undefined') ? facultyId : sessionStorage.getItem('facultyId') || 'f_unknown';
+  const courseId = document.getElementById('ats-courseId').value.trim() || 'uncategorized';
+
+  try {
+    const res = await fetch('/api/journal/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ facultyId: fid, journalId: atsCurrentJournalId, courseId, activities: approved })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'שגיאת שמירה');
+    statusEl.textContent = `✅ ${data.savedCount} פעילויות נשמרו לבנק!`;
+    btn.textContent = '✅ נשמר';
+    btn.style.background = '#10b981';
+  } catch (e) {
+    statusEl.textContent = `❌ ${e.message}`;
+    btn.disabled = false;
+  }
+}
+
+// Switch to step 3 also renders the approved list
+const _origAtsGoStep = atsGoStep;
+window.atsGoStep = function(n) {
+  _origAtsGoStep(n);
+  if (n === 3) atsRenderApprovedList();
+};
 </script>
 
 </body>
