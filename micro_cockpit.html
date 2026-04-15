@@ -1006,6 +1006,11 @@
       <select id="botSelect"><option value="">טוען...</option></select>
     </div>
 
+    <div class="field" id="startingBotField" style="display:none;">
+      <label>בוט פתיחה לשיעור</label>
+      <select id="startingBotSelect"></select>
+    </div>
+
     <div id="sessionControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
       <a href="macro_cockpit.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ תכנון ראשי</a>
@@ -2082,6 +2087,22 @@ fetch('/config.json').then(r => r.json()).then(config => {
     if (currentLessonId) {
       loadTemplates(currentLessonId);
       loadCourseMetadataWorkspace(currentLessonId);
+      // Populate starting-bot selector for this course
+      const sbField = document.getElementById('startingBotField');
+      const sbSel   = document.getElementById('startingBotSelect');
+      const courseBots = CONFIG?.my_courses?.[currentLessonId]?.bots || {};
+      if (sbField && sbSel && Object.keys(courseBots).length > 1) {
+        sbSel.innerHTML = '';
+        for (const [key, bot] of Object.entries(courseBots)) {
+          const opt = document.createElement('option');
+          opt.value = bot.botType || bot;
+          opt.textContent = bot.label || key;
+          sbSel.appendChild(opt);
+        }
+        sbField.style.display = '';
+      } else if (sbField) {
+        sbField.style.display = 'none';
+      }
     } else {
       const tplSel = document.getElementById("template-select");
       if (tplSel) tplSel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
@@ -2090,6 +2111,8 @@ fetch('/config.json').then(r => r.json()).then(config => {
       sprintDrafts = [];
       renderImportedUnits();
       renderSprintDrafts();
+      const sbField = document.getElementById('startingBotField');
+      if (sbField) sbField.style.display = 'none';
     }
 
     const playlistLessonInput = document.getElementById("playlistLessonId");
@@ -2282,7 +2305,8 @@ async function openSession() {
     let botType, classId, studentURL;
     if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
       classId  = selectedClassId;
-      botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
+      const pickedBot = document.getElementById('startingBotSelect')?.value;
+      botType  = pickedBot || CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
       studentURL = `${location.origin}/waiting_lobby.html?courseId=${classId}&unitId=${encodeURIComponent(unitId)}&sessionId=SESSION_ID`;
       console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}_${unitId}`);
     } else {
