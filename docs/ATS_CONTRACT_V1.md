@@ -359,14 +359,14 @@ activity_templates/{facultyId}/{templateId}
 
 ### `GET /api/activity-bank?facultyId=...&courseId=...&primaryType=...`
 
-שאילתא על הבנק. כל הפרמטרים (מלבד `facultyId`) הם אופציונליים.
+שאילתא על הבנק. `facultyId` ו-`courseId` הם חובה ב-MVP. שאר הפרמטרים אופציונליים.
 
 **Query params:**
 
 | פרמטר | תיאור |
 |--------|-------|
 | `facultyId` | **חובה** |
-| `courseId` | סינון לקורס ספציפי |
+| `courseId` | **חובה** (MVP — שאילתא ללא courseId אינה נתמכת) |
 | `primaryType` | סינון לפי סוג פעילות |
 | `stageLabel` | סינון לפי שלב |
 | `collaborationMode` | סינון לפי שיתוף |
