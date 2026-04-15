@@ -1,7 +1,7 @@
 # Activity Translation System (ATS)
 ## Implementation Contract v1 — MilEd.One
 
-> **גרסה:** v1.0 · **תאריך:** 2026-04-15 · **סטטוס:** Implemented (MVP)
+> **גרסה:** v1.1 · **תאריך:** 2026-04-15 · **סטטוס:** MVP Partial Implementation
 
 ---
 
@@ -865,6 +865,7 @@ lesson_view רק מציג:
 | Firebase journal paths | Firebase | ✅ (on deploy) |
 | Firebase activity_bank | Firebase | ✅ (on deploy) |
 | 3-step review UI | `macro_cockpit.html` | ✅ Implemented |
+| Activity picker ב-micro_cockpit | `micro_cockpit.html` | ⚠️ Partial — UI + session payload בלבד |
 
 ### ❌ לא כלול ב-MVP (עתידי)
 
@@ -872,7 +873,7 @@ lesson_view רק מציג:
 - LLM enrichment (`use_llm_enrichment: true`)
 - Auto skill mapping מלא
 - lesson_view rendering של currentActivity
-- classroom.js `currentActivity` field (הגדרה ב-session payload — UI picker ממומש, handler עתידי)
+- classroom.js `currentActivity` handler — currentActivity עובר ב-session payload אך אינו מוצג עדיין ב-lesson_view
 
 ---
 

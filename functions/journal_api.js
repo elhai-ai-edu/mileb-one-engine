@@ -252,11 +252,26 @@ function extractLessonSummary(rawText, metadata) {
 /**
  * Strip prompt-injection patterns from raw journal text before parsing.
  * Prevents malicious instructions from leaking into the candidate `instructions` field.
+ *
+ * HTML comments are removed in full (delimiters + content) using a safe linear scan
+ * rather than a backtracking regex, so there is no ReDoS risk even on crafted input.
+ * rawText is capped at 20 000 chars by handleParse(), so worst-case O(n²) is fine.
  */
 function sanitizeRawText(text) {
-  return text
-    .replace(/<!--/g, "")
-    .replace(/-->/g, "")
+  // Remove complete HTML comment blocks including their content
+  let result = text;
+  let start = result.indexOf("<!--");
+  while (start !== -1) {
+    const end = result.indexOf("-->", start + 4);
+    if (end === -1) {
+      // Unclosed comment — discard everything from the opening marker onward
+      result = result.slice(0, start);
+      break;
+    }
+    result = result.slice(0, start) + result.slice(end + 3);
+    start = result.indexOf("<!--");
+  }
+  return result
     .replace(/\[SYSTEM[^\]]*\]/gi, "")
     .replace(/ignore\s+(all\s+)?previous\s+instructions?/gi, "")
     .replace(/<\|[\w]+\|>/g, "");
@@ -335,14 +350,35 @@ function validateActivity(act, requireBankReady = false) {
   if (!act.primaryType || !ACTIVITY_TYPES.has(act.primaryType))
     errors.push(`primaryType must be one of: ${[...ACTIVITY_TYPES].join(", ")}`);
 
-  if (act.secondaryTypes && !Array.isArray(act.secondaryTypes))
-    errors.push("secondaryTypes must be an array");
+  if (act.secondaryTypes !== undefined) {
+    if (!Array.isArray(act.secondaryTypes)) {
+      errors.push("secondaryTypes must be an array");
+    } else {
+      const bad = act.secondaryTypes.filter(t => !ACTIVITY_TYPES.has(t));
+      if (bad.length > 0)
+        errors.push(`secondaryTypes contains invalid values: ${bad.join(", ")}`);
+    }
+  }
 
-  if (act.deliveryMode && !Array.isArray(act.deliveryMode))
-    errors.push("deliveryMode must be an array");
+  if (act.deliveryMode !== undefined) {
+    if (!Array.isArray(act.deliveryMode)) {
+      errors.push("deliveryMode must be an array");
+    } else {
+      const bad = act.deliveryMode.filter(m => !DELIVERY_MODES.has(m));
+      if (bad.length > 0)
+        errors.push(`deliveryMode contains invalid values: ${bad.join(", ")}`);
+    }
+  }
 
-  if (act.expectedOutput && !Array.isArray(act.expectedOutput))
-    errors.push("expectedOutput must be an array");
+  if (act.expectedOutput !== undefined) {
+    if (!Array.isArray(act.expectedOutput)) {
+      errors.push("expectedOutput must be an array");
+    } else {
+      const bad = act.expectedOutput.filter(o => !EXPECTED_OUTPUTS.has(o));
+      if (bad.length > 0)
+        errors.push(`expectedOutput contains invalid values: ${bad.join(", ")}`);
+    }
+  }
 
   if (act.collaborationMode && !COLLABORATION_MODES.has(act.collaborationMode))
     errors.push(`collaborationMode must be one of: ${[...COLLABORATION_MODES].join(", ")}`);
@@ -355,6 +391,14 @@ function validateActivity(act, requireBankReady = false) {
 
   if (act.difficultyHint && !DIFFICULTY_HINTS.has(act.difficultyHint))
     errors.push(`difficultyHint must be one of: low, medium, high`);
+
+  // Always validate stageLabel and reviewStatus when provided,
+  // so partially-invalid records never reach Firebase at the review-save step.
+  if (act.stageLabel && !STAGE_LABELS.has(act.stageLabel))
+    errors.push(`stageLabel must be one of: ${[...STAGE_LABELS].join(", ")}`);
+
+  if (act.reviewStatus && !REVIEW_STATUSES.has(act.reviewStatus))
+    errors.push(`reviewStatus must be one of: ${[...REVIEW_STATUSES].join(", ")}`);
 
   if (requireBankReady) {
     if (!act.stageLabel || !STAGE_LABELS.has(act.stageLabel) || act.stageLabel === "unclassified")
@@ -693,11 +737,11 @@ async function handleQueryBank(event) {
     reviewStatus, limit
   } = qsp;
 
-  if (!facultyId) {
+  if (!facultyId || !courseId) {
     return {
       statusCode: 400,
       headers,
-      body: JSON.stringify({ error: "facultyId is required" })
+      body: JSON.stringify({ error: "facultyId and courseId are required" })
     };
   }
 
@@ -707,26 +751,12 @@ async function handleQueryBank(event) {
   try {
     let activities = [];
 
-    if (courseId) {
-      // Efficient: use orderByChild+limitToLast to cap the read at 200 records max
-      const snap = await db.ref(`activity_bank/${facultyId}/${courseId}`)
-        .orderByChild("createdAt")
-        .limitToLast(200)
-        .get();
-      if (snap.exists()) {
-        activities = Object.values(snap.val()).filter(Boolean);
-      }
-    } else {
-      // Nested by courseId — fetch all but cap to 10 most recent course buckets
-      const facultySnap = await db.ref(`activity_bank/${facultyId}`).get();
-      if (facultySnap.exists()) {
-        const raw = facultySnap.val();
-        // Sort course keys descending (lexicographic ≈ recency for typical IDs) and take last 10
-        const courseIds = Object.keys(raw).sort().slice(-10);
-        for (const cId of courseIds) {
-          activities.push(...Object.values(raw[cId] || {}).filter(Boolean));
-        }
-      }
+    const snap = await db.ref(`activity_bank/${facultyId}/${courseId}`)
+      .orderByChild("createdAt")
+      .limitToLast(200)
+      .get();
+    if (snap.exists()) {
+      activities = Object.values(snap.val()).filter(Boolean);
     }
 
     if (!activities.length) {
