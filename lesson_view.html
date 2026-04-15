@@ -803,8 +803,8 @@
     };
 
     function renderHeaderBadges() {
-      // Hebrew level chip (from API)
-      const hl = lessonData?.hebrewLevel || "";
+      // Hebrew level chip — from API or config.json fallback
+      const hl = lessonData?.hebrewLevel || _fetchedCourseConfig?.hebrew_level || "";
       const hlChip = document.getElementById("hebrewLevelChip");
       if (hlChip && hl) {
         hlChip.textContent = `עברית: ${hl}`;
@@ -1024,6 +1024,7 @@
 
     let _activeBotType = null;
     let _botMenuOpen = false;
+    let _fetchedCourseConfig = null; // populated by renderBotMenu, used as fallback
 
     function setChatFrame(courseId, botType) {
       const chatFrame = document.getElementById("chatFrame");
@@ -1074,6 +1075,8 @@
       } catch { return; }
       const course = config?.my_courses?.[courseId];
       if (!course) return;
+      _fetchedCourseConfig = course;
+      renderHeaderBadges(); // re-run now that we have config fallback
 
       const items = [];
       // Course-specific bots
