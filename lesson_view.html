@@ -306,6 +306,135 @@
       .chat-shell, .stage { min-height: auto; }
       .chat-frame, .presentation-frame { min-height: 540px; }
     }
+    /* ─── Recall Alert ─── */
+    #recallAlert {
+      display: none;
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #fff;
+      padding: 14px 20px;
+      font-size: 15px;
+      font-weight: 800;
+      text-align: center;
+      direction: rtl;
+      position: sticky;
+      top: 0;
+      z-index: 201;
+      border-radius: 16px;
+      margin-bottom: 4px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      box-shadow: 0 4px 16px rgba(220,38,38,0.4);
+      animation: recallPulse 1.4s ease infinite;
+    }
+    #recallAlert.visible { display: flex; }
+    @keyframes recallPulse {
+      0%,100% { box-shadow: 0 4px 16px rgba(220,38,38,0.4); }
+      50%      { box-shadow: 0 4px 28px rgba(220,38,38,0.72); }
+    }
+    .recall-ack-btn {
+      background: #fff; color: #b91c1c; border: none;
+      border-radius: 10px; padding: 7px 16px;
+      font-weight: 800; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .recall-ack-btn:hover { background: #fee2e2; }
+
+    /* ─── Writing Zone ─── */
+    .write-panel {
+      border-top: 2px solid var(--line);
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .write-panel-head {
+      font-weight: 800; font-size: 1rem; color: #1e3a8a;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .write-zone {
+      position: relative;
+    }
+    .write-lock-overlay {
+      display: none;
+      position: absolute; inset: 0;
+      background: rgba(248,250,252,0.92);
+      border-radius: 14px;
+      align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; color: #475569;
+      z-index: 2;
+      border: 2px dashed #cbd5e1;
+      gap: 8px;
+    }
+    .write-lock-overlay.visible { display: flex; }
+    .unlock-flash {
+      display: none;
+      background: #ecfdf5; border: 1.5px solid #86efac;
+      border-radius: 12px; padding: 10px 14px;
+      color: #166534; font-weight: 700; font-size: 14px;
+      text-align: center;
+    }
+    .unlock-flash.visible { display: block; }
+    .write-action-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .student-avatar-wrap {
+      position: relative; flex-shrink: 0;
+    }
+    .student-avatar-btn {
+      width: 38px; height: 38px; border-radius: 50%;
+      border: 2px solid #bfdbfe; background: #eff6ff;
+      cursor: pointer; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .student-avatar-btn img { width: 100%; height: 100%; object-fit: cover; }
+    .action-btn.msg {
+      background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe;
+    }
+    .action-btn.submit {
+      background: linear-gradient(135deg, #166534, #15803d);
+      color: #fff; border-color: #166534;
+    }
+    .write-mic-btn {
+      border: 1px solid #cbd5e1; border-radius: 10px;
+      background: #f8fafc; color: #334155;
+      padding: 8px 11px; font-size: 17px; cursor: pointer; line-height: 1;
+    }
+    .write-mic-btn.recording {
+      background: #fee2e2; border-color: #fca5a5; color: #b91c1c;
+      animation: pulse-red 1.5s infinite;
+    }
+    @keyframes pulse-red {
+      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.6); }
+      50%      { box-shadow: 0 0 0 8px rgba(239,68,68,.15); }
+    }
+    #writeStatus {
+      font-size: 12px; color: var(--muted); min-height: 16px; flex: 1;
+    }
+    #writeStatus.ok { color: #166534; }
+    #writeStatus.err { color: #dc2626; }
+
+    /* ─── WAF Stream (מסרים מהמרצה) ─── */
+    .waf-panel {
+      border-top: 2px solid var(--line);
+      padding: 18px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .waf-panel.has-messages { display: flex; }
+    .waf-panel-head {
+      font-weight: 800; color: #0369a1; font-size: 0.95rem;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .waf-msg {
+      background: #f0f9ff; border: 1.5px solid #bae6fd;
+      border-radius: 14px; padding: 10px 14px;
+      display: grid; gap: 4px;
+    }
+    .waf-msg-text { font-size: 14px; color: #0f172a; line-height: 1.55; }
+    .waf-msg-meta { font-size: 11px; color: var(--muted); }
+
     #broadcastBanner {
       display: none;
       background: #1d4ed8;
@@ -365,6 +494,12 @@
 
     <div id="broadcastBanner" role="alert" aria-live="polite"></div>
 
+    <!-- ─── Recall Alert ─── -->
+    <div id="recallAlert" role="alert" aria-live="assertive">
+      <span>🚨 המרצה קורא לכולם חזרה לשיעור!</span>
+      <button class="recall-ack-btn" onclick="ackRecall()">חזרתי ✓</button>
+    </div>
+
     <main class="layout">
       <aside class="panel">
         <div class="panel-head">Bookshelf</div>
@@ -393,6 +528,36 @@
           <div id="activeSprintBox" class="active-sprint-box"></div>
           <iframe id="presentationFrame" class="presentation-frame" title="presentation-stage"></iframe>
           <div id="sprintList" class="sprint-list"></div>
+        </div>
+        <!-- ─── Writing Zone ─── -->
+        <div class="write-panel" id="writePanel">
+          <div class="write-panel-head">✍️ אזור עבודה</div>
+          <div id="unlockFlash" class="unlock-flash">🎉 השלב נפתח — כעת תוכל להמשיך!</div>
+          <div class="write-zone">
+            <div id="writeLockOverlay" class="write-lock-overlay">🔒 השלב נעול — המרצה יפתח אותו בקרוב</div>
+            <textarea id="studentText" placeholder="כתוב כאן את העבודה שלך..." rows="5"></textarea>
+          </div>
+          <div class="write-action-row">
+            <div class="student-avatar-wrap">
+              <button class="student-avatar-btn" id="studentAvatarBtn" title="עדכן תמונת פרופיל" onclick="document.getElementById('studentAvatarInput').click()">
+                <img id="studentAvatarPreview" alt="avatar" style="display:none;">
+                <span id="studentAvatarFallback">🙂</span>
+              </button>
+              <input type="file" id="studentAvatarInput" accept="image/*" style="display:none;" onchange="handleStudentAvatarUpload(event)">
+            </div>
+            <button class="action-btn msg" onclick="sendStudentMessage()" id="sendMsgBtn">💬 שלח מסר</button>
+            <button class="action-btn submit" onclick="submitStudentWork()" id="submitWorkBtn">📄 הגש עבודה</button>
+            <button class="write-mic-btn" id="writeMicBtn" onclick="toggleWriteMic()" title="הקלט הודעה קולית">🎙️</button>
+            <input type="file" id="writeFileInput" accept="*/*" style="display:none;" onchange="handleWriteFileUpload(event)">
+            <button class="action-btn ghost mini-btn" onclick="document.getElementById('writeFileInput').click()" title="צרף קובץ" style="padding:8px 10px;">📎</button>
+            <span id="writeStatus"></span>
+          </div>
+        </div>
+
+        <!-- ─── WAF Stream (מסרים מהמרצה) ─── -->
+        <div class="waf-panel" id="wafPanel">
+          <div class="waf-panel-head">💬 מסרים מהמרצה</div>
+          <div id="wafMessages"></div>
         </div>
       </section>
 
@@ -441,6 +606,11 @@
     let lastBroadcastTs = null;
     let currentGuidance = null;
     let sessionFirebaseRef = null;
+    let wafFirebaseRef = null;
+    let currentRecallId = null;
+    let studentAvatarDataUrl = localStorage.getItem("miled_student_avatar") || null;
+    let writeMicRecorder = null;
+    let writeMicChunks = [];
 
     async function bootstrapLessonAccess() {
       const access = await lessonViewAccessReady;
@@ -1114,6 +1284,8 @@
       document.getElementById("sessionChip").textContent = `sessionId: ${sessionId}`;
       document.getElementById("doorChip").textContent = `Door: ${String(lessonData?.state?.door_status || "auto").toUpperCase()}`;
       document.getElementById("roleChip").textContent = role === "lecturer" ? "Lecturer View" : "Student View";
+      const writePanel = document.getElementById("writePanel");
+      if (writePanel) writePanel.style.display = role === "lecturer" ? "none" : "";
 
       const activeSprint = findActiveSprint();
       if (activeSprint) {
@@ -1216,6 +1388,10 @@
         if (live.active_task !== undefined) lessonData.activeTask = live.active_task;
         if (live.state) lessonData.state = { ...lessonData.state, ...live.state };
         if (broadcastChanged) renderBroadcast();
+        if (role === "student") {
+          checkRecall(live);
+          checkLockState(live);
+        }
       });
     }
 
@@ -1224,6 +1400,203 @@
         sessionFirebaseRef.off();
         sessionFirebaseRef = null;
       }
+    }
+
+    // ─── Student Avatar ────────────────────────────────────────────────────
+    function applyStudentAvatar(dataUrl) {
+      studentAvatarDataUrl = dataUrl;
+      localStorage.setItem("miled_student_avatar", dataUrl || "");
+      const img = document.getElementById("studentAvatarPreview");
+      const fallback = document.getElementById("studentAvatarFallback");
+      if (img && fallback) {
+        if (dataUrl) { img.src = dataUrl; img.style.display = "block"; fallback.style.display = "none"; }
+        else { img.style.display = "none"; fallback.style.display = "inline"; }
+      }
+    }
+    function handleStudentAvatarUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onloadend = () => applyStudentAvatar(String(reader.result || ""));
+      reader.readAsDataURL(file);
+    }
+
+    // ─── Write Status ──────────────────────────────────────────────────────
+    function setWriteStatus(msg, type = "") {
+      const el = document.getElementById("writeStatus");
+      if (!el) return;
+      el.textContent = msg;
+      el.className = type;
+      if (type === "ok") setTimeout(() => { el.textContent = ""; el.className = ""; }, 2500);
+    }
+
+    // ─── Send Message / Submit Work ───────────────────────────────────────
+    async function sendStudentMessage() {
+      const text = String(document.getElementById("studentText")?.value || "").trim();
+      if (!text || !sessionId) return setWriteStatus("אנא כתוב מסר לפני שליחה.", "err");
+      setWriteStatus("שולח...");
+      try {
+        const res = await callClassroom("POST", {
+          action: "submit", sessionId, studentId, studentName,
+          content: text, type: "message", tag: "general",
+          avatar: studentAvatarDataUrl || null
+        });
+        if (!res?.ok) throw new Error(res?.error || "שגיאה");
+        document.getElementById("studentText").value = "";
+        setWriteStatus("✓ מסר נשלח", "ok");
+      } catch (e) { setWriteStatus(e.message, "err"); }
+    }
+
+    async function submitStudentWork() {
+      const text = String(document.getElementById("studentText")?.value || "").trim();
+      if (!text || !sessionId) return setWriteStatus("אנא כתוב עבודה לפני הגשה.", "err");
+      setWriteStatus("מגיש...");
+      try {
+        const activeSprint = findActiveSprint();
+        const res = await callClassroom("POST", {
+          action: "submit", sessionId, studentId, studentName,
+          content: text, type: "submission",
+          step: activeSprint ? Number(String(activeSprint.id).replace(/\D/g,"")) || 1 : 1,
+          tag: "task", avatar: studentAvatarDataUrl || null
+        });
+        if (!res?.ok) throw new Error(res?.error || "שגיאה");
+        document.getElementById("studentText").value = "";
+        setWriteStatus("✓ עבודה הוגשה", "ok");
+      } catch (e) { setWriteStatus(e.message, "err"); }
+    }
+
+    // ─── File Attachment ───────────────────────────────────────────────────
+    async function handleWriteFileUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file || !sessionId) return;
+      setWriteStatus("מעלה קובץ...");
+      try {
+        const reader = new FileReader();
+        const dataUrl = await new Promise(resolve => {
+          reader.onloadend = () => resolve(String(reader.result || ""));
+          reader.readAsDataURL(file);
+        });
+        const res = await callClassroom("POST", {
+          action: "submit", sessionId, studentId, studentName,
+          content: `[קובץ: ${file.name}]\n${dataUrl}`, type: "message",
+          tag: "general", avatar: studentAvatarDataUrl || null
+        });
+        if (!res?.ok) throw new Error(res?.error || "שגיאה");
+        setWriteStatus("✓ קובץ נשלח", "ok");
+      } catch (e) { setWriteStatus(e.message, "err"); }
+      event.target.value = "";
+    }
+
+    // ─── Mic Recording ────────────────────────────────────────────────────
+    async function toggleWriteMic() {
+      const btn = document.getElementById("writeMicBtn");
+      if (writeMicRecorder && writeMicRecorder.state === "recording") {
+        writeMicRecorder.stop();
+        btn.classList.remove("recording");
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        writeMicChunks = [];
+        writeMicRecorder = new MediaRecorder(stream);
+        writeMicRecorder.ondataavailable = e => writeMicChunks.push(e.data);
+        writeMicRecorder.onstop = async () => {
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(writeMicChunks, { type: "audio/webm" });
+          const reader = new FileReader();
+          const dataUrl = await new Promise(resolve => {
+            reader.onloadend = () => resolve(String(reader.result || ""));
+            reader.readAsDataURL(blob);
+          });
+          setWriteStatus("שולח אודיו...");
+          try {
+            const res = await callClassroom("POST", {
+              action: "submit", sessionId, studentId, studentName,
+              content: dataUrl, type: "audio", tag: "general",
+              avatar: studentAvatarDataUrl || null
+            });
+            setWriteStatus(res?.ok ? "✓ אודיו נשלח" : "שגיאה בשליחה", res?.ok ? "ok" : "err");
+          } catch { setWriteStatus("שגיאה בשליחה", "err"); }
+        };
+        writeMicRecorder.start();
+        btn.classList.add("recording");
+        setWriteStatus("🔴 מקליט...");
+      } catch { setWriteStatus("לא ניתן לגשת למיקרופון", "err"); }
+    }
+
+    // ─── Recall Alert ────────────────────────────────────────────────────
+    function checkRecall(live) {
+      if (!live?.recall_all) return;
+      const recall = live.recall_all;
+      const recallId = recall.recallId || recall.ts || "";
+      if (!recallId || recallId === currentRecallId) return;
+      // Only show if student hasn't acknowledged this recall yet
+      const acks = recall.acks || {};
+      if (acks[studentId]) return;
+      currentRecallId = recallId;
+      document.getElementById("recallAlert").classList.add("visible");
+    }
+
+    async function ackRecall() {
+      document.getElementById("recallAlert").classList.remove("visible");
+      if (!sessionId || !currentRecallId) return;
+      try {
+        await callClassroom("POST", {
+          action: "recall_ack", sessionId, studentId, recallId: currentRecallId
+        });
+      } catch { /* non-fatal */ }
+    }
+
+    // ─── Lock / Unlock State ──────────────────────────────────────────────
+    function checkLockState(live) {
+      const overlay = document.getElementById("writeLockOverlay");
+      const flash = document.getElementById("unlockFlash");
+      if (!overlay) return;
+      const lockedSteps = live?.lockedSteps || [];
+      const isLocked = Array.isArray(lockedSteps) && lockedSteps.includes(studentId);
+      overlay.classList.toggle("visible", isLocked);
+
+      // Flash "unlocked" if was locked and now isn't
+      if (!isLocked && overlay.dataset.wasLocked === "true") {
+        flash.classList.add("visible");
+        setTimeout(() => flash.classList.remove("visible"), 3500);
+      }
+      overlay.dataset.wasLocked = isLocked ? "true" : "false";
+    }
+
+    // ─── WAF Stream (lecturer replies) ────────────────────────────────────
+    function startWafListener() {
+      if (!sessionId || !studentId || role === "lecturer") return;
+      const db = getRealtimeDb();
+      if (!db) return;
+      wafFirebaseRef = db.ref(`sessions/${sessionId}/students/${studentId}/lecturer_replies`);
+      wafFirebaseRef.on("child_added", snap => {
+        const reply = snap.val();
+        if (!reply) return;
+        appendWafMessage(reply);
+      });
+    }
+
+    function appendWafMessage(reply) {
+      const container = document.getElementById("wafMessages");
+      const panel = document.getElementById("wafPanel");
+      if (!container || !panel) return;
+      const text = String(reply?.text || "").trim();
+      if (!text) return;
+      const time = reply?.ts ? new Date(reply.ts).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
+      const msgEl = document.createElement("div");
+      msgEl.className = "waf-msg";
+      msgEl.innerHTML = `
+        <div class="waf-msg-text">${escapeHtml(text)}</div>
+        <div class="waf-msg-meta">מהמרצה${time ? ` · ${time}` : ""}</div>
+      `;
+      container.appendChild(msgEl);
+      panel.classList.add("has-messages");
+      msgEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    function stopWafListener() {
+      if (wafFirebaseRef) { wafFirebaseRef.off(); wafFirebaseRef = null; }
     }
 
     async function init() {
@@ -1238,11 +1611,13 @@
         return;
       }
       initControls();
+      applyStudentAvatar(studentAvatarDataUrl);
       await refreshLesson();
       startSessionListener();
+      startWafListener();
       refreshTimer = setInterval(refreshLesson, 6000);
       heartbeatTimer = setInterval(sendHeartbeat, 30000);
-      window.addEventListener("beforeunload", stopSessionListener);
+      window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); });
     }
 
     init();
