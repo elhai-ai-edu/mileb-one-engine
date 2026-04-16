@@ -634,15 +634,41 @@
 
     <div id="broadcastBanner" role="alert" aria-live="polite"></div>
 
-    <!-- ─── Speaker Focus Banner ─── -->
-    <div id="speakerFocusBanner" role="status" aria-live="polite"
-         style="display:none;padding:10px 18px;border-radius:14px;
-                background:linear-gradient(120deg,#eff6ff,#f0fdf4);
-                border:1.5px solid #93c5fd;color:#1e3a8a;
-                font-size:14px;font-weight:700;
-                display:flex;align-items:center;gap:10px;">
-      <span style="font-size:18px;">🗣️</span>
-      <span id="speakerFocusLabel">דובר ראשי:</span>
+    <!-- ─── Speaker Stage (draggable overlay) ─── -->
+    <div id="speakerStage" role="status" aria-live="polite"
+         style="display:none;position:fixed;bottom:20px;left:20px;z-index:900;
+                background:rgba(255,255,255,0.96);border:1.5px solid #bfdbfe;
+                border-radius:20px;box-shadow:0 6px 28px rgba(30,58,138,0.18);
+                padding:10px 14px 8px 14px;cursor:grab;touch-action:none;
+                user-select:none;max-width:90vw;">
+      <!-- minimize toggle -->
+      <button id="speakerStageMinBtn" onclick="toggleSpeakerStageMinimize()"
+              title="מזעור / הרחבה"
+              style="position:absolute;top:5px;left:8px;z-index:1;
+                     width:22px;height:22px;border:none;background:transparent;
+                     cursor:pointer;font-size:15px;line-height:1;padding:0;
+                     color:#64748b;display:flex;align-items:center;justify-content:center;">−</button>
+      <!-- peer + central row -->
+      <div id="ssPeersRow" style="display:flex;align-items:center;gap:8px;padding-top:6px;">
+        <div id="ssPeersLeft"  style="display:flex;gap:6px;align-items:center;"></div>
+        <!-- central speaker bubble -->
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div id="ssCentral"
+               style="width:72px;height:72px;border-radius:50%;
+                      background:#eff6ff;border:3px solid #3b82f6;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:30px;overflow:hidden;position:relative;flex-shrink:0;">
+            <span id="ssCentralEmoji">🗣️</span>
+            <img id="ssCentralImg" alt=""
+                 style="display:none;width:100%;height:100%;object-fit:cover;
+                        position:absolute;inset:0;">
+          </div>
+          <div id="ssLabel"
+               style="font-size:11px;font-weight:700;color:#1e3a8a;
+                      text-align:center;max-width:90px;word-break:break-word;"></div>
+        </div>
+        <div id="ssPeersRight" style="display:flex;gap:6px;align-items:center;"></div>
+      </div>
     </div>
 
     <!-- ─── Live Meeting Card ─── -->
@@ -1835,16 +1861,150 @@
       if (hintEl) hintEl.style.display = (!showJoin && !showRec && isLive) ? "" : "none";
     }
 
+    let _speakerStageDragInit = false;
+    const PEER_ONLINE_THRESHOLD_MS = 30000;
+    const MAX_PEER_BUBBLES = 6;
+
     function renderSpeakerFocusBanner(speakerFocus) {
-      const banner = document.getElementById("speakerFocusBanner");
-      const label  = document.getElementById("speakerFocusLabel");
-      if (!banner) return;
+      const stage = document.getElementById("speakerStage");
+      if (!stage) return;
       if (!speakerFocus?.label) {
-        banner.style.display = "none";
+        stage.style.display = "none";
         return;
       }
-      banner.style.display = "";
-      if (label) label.textContent = speakerFocus.label;
+      stage.style.display = "";
+
+      // Restore saved position / minimized state
+      try {
+        const pos = JSON.parse(localStorage.getItem("miled_speaker_stage_pos") || "{}");
+        if (pos.left) stage.style.left = pos.left;
+        if (pos.top)  { stage.style.top = pos.top; stage.style.bottom = "auto"; }
+        else          { stage.style.top = "auto"; stage.style.bottom = "20px"; }
+        const peersRow = document.getElementById("ssPeersRow");
+        const minBtn   = document.getElementById("speakerStageMinBtn");
+        if (pos.minimized) {
+          if (peersRow) peersRow.style.display = "none";
+          if (minBtn)   minBtn.textContent = "+";
+        } else {
+          if (peersRow) peersRow.style.display = "flex";
+          if (minBtn)   minBtn.textContent = "−";
+        }
+      } catch (_) {}
+
+      // ── Central bubble ──────────────────────────────────────────────
+      const label      = speakerFocus.label;
+      const labelLower = label.toLowerCase();
+      const students   = Array.isArray(lessonData?.students) ? lessonData.students : [];
+      // Match by label starting with student name (handles "Name — context" labels)
+      const speakerStu = students.find(
+        s => s.name && labelLower.startsWith(s.name.toLowerCase())
+      );
+
+      const centralEmoji = document.getElementById("ssCentralEmoji");
+      const centralImg   = document.getElementById("ssCentralImg");
+      const ssLabel      = document.getElementById("ssLabel");
+
+      if (speakerStu?.avatar) {
+        if (centralImg)   { centralImg.src = speakerStu.avatar; centralImg.style.display = ""; }
+        if (centralEmoji) centralEmoji.style.display = "none";
+      } else {
+        if (centralImg)   centralImg.style.display = "none";
+        if (centralEmoji) centralEmoji.style.display = "";
+      }
+      if (ssLabel) ssLabel.textContent = label;
+
+      // ── Peer bubbles ─────────────────────────────────────────────────
+      const now   = Date.now();
+      const peers = students.filter(s => {
+        if (speakerStu && s.studentId === speakerStu.studentId) return false;
+        return s.presence === "online" || (now - (s.lastSeen || 0) < PEER_ONLINE_THRESHOLD_MS);
+      }).slice(0, MAX_PEER_BUBBLES);
+
+      const half       = Math.ceil(peers.length / 2);
+      const leftPeers  = peers.slice(0, half);
+      const rightPeers = peers.slice(half);
+
+      function buildPeerBubble(s) {
+        const wrap = document.createElement("div");
+        wrap.title = s.name || "";
+        wrap.style.cssText = "width:36px;height:36px;border-radius:50%;background:#f1f5f9;" +
+          "border:2px solid #bfdbfe;display:flex;align-items:center;justify-content:center;" +
+          "font-size:14px;overflow:hidden;position:relative;flex-shrink:0;";
+        if (s.avatar) {
+          const img = document.createElement("img");
+          img.src = s.avatar;
+          img.alt = s.name || "";
+          img.style.cssText = "width:100%;height:100%;object-fit:cover;position:absolute;inset:0;";
+          wrap.appendChild(img);
+        } else {
+          wrap.textContent = "👤";
+        }
+        return wrap;
+      }
+
+      const leftEl  = document.getElementById("ssPeersLeft");
+      const rightEl = document.getElementById("ssPeersRight");
+      if (leftEl)  { leftEl.innerHTML  = ""; leftPeers.forEach(s  => leftEl.appendChild(buildPeerBubble(s))); }
+      if (rightEl) { rightEl.innerHTML = ""; rightPeers.forEach(s => rightEl.appendChild(buildPeerBubble(s))); }
+
+      initSpeakerStageDrag();
+    }
+
+    function toggleSpeakerStageMinimize() {
+      const peersRow = document.getElementById("ssPeersRow");
+      const minBtn   = document.getElementById("speakerStageMinBtn");
+      if (!peersRow) return;
+      const nowMinimized = peersRow.style.display !== "none";
+      peersRow.style.display = nowMinimized ? "none" : "flex";
+      if (minBtn) minBtn.textContent = nowMinimized ? "+" : "−";
+      try {
+        const pos = JSON.parse(localStorage.getItem("miled_speaker_stage_pos") || "{}");
+        pos.minimized = nowMinimized;
+        localStorage.setItem("miled_speaker_stage_pos", JSON.stringify(pos));
+      } catch (_) {}
+    }
+
+    function initSpeakerStageDrag() {
+      if (_speakerStageDragInit) return;
+      _speakerStageDragInit = true;
+      const el = document.getElementById("speakerStage");
+      if (!el) return;
+      let dragging = false;
+      let startX;
+      let startY;
+      let startLeft;
+      let startTop;
+      el.addEventListener("pointerdown", e => {
+        if (e.target.closest("button")) return;
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = el.getBoundingClientRect();
+        startLeft = rect.left;
+        startTop  = rect.top;
+        el.setPointerCapture(e.pointerId);
+        el.style.cursor = "grabbing";
+      });
+      el.addEventListener("pointermove", e => {
+        if (!dragging) return;
+        const maxLeft = window.innerWidth  - el.offsetWidth  - 8;
+        const maxTop  = window.innerHeight - el.offsetHeight - 8;
+        el.style.left   = Math.max(8, Math.min(maxLeft, startLeft + (e.clientX - startX))) + "px";
+        el.style.top    = Math.max(8, Math.min(maxTop,  startTop  + (e.clientY - startY))) + "px";
+        el.style.bottom = "auto";
+      });
+      el.addEventListener("pointerup", () => {
+        if (!dragging) return;
+        dragging = false;
+        el.style.cursor = "grab";
+        try {
+          const pos = JSON.parse(localStorage.getItem("miled_speaker_stage_pos") || "{}");
+          pos.left   = el.style.left;
+          pos.top    = el.style.top;
+          pos.bottom = el.style.bottom;
+          localStorage.setItem("miled_speaker_stage_pos", JSON.stringify(pos));
+        } catch (_) {}
+      });
     }
 
     function dismissBroadcast() {
@@ -1981,6 +2141,30 @@
               prev.title !== next.title) {
             renderLiveMeetingBar(lessonData.liveMeeting);
           }
+        }
+        // Speaker focus: patch students list (for avatar lookups) and re-render
+        // the Speaker Stage whenever the faculty changes who's speaking.
+        if (live.students) {
+          const existingMap = new Map((lessonData.students || []).map(s => [s.studentId, s]));
+          Object.entries(live.students).forEach(([sid, sData]) => {
+            const prev = existingMap.get(sid) || { studentId: sid };
+            existingMap.set(sid, {
+              ...prev,
+              name:     sData.name     || prev.name     || null,
+              avatar:   sData.avatar   || prev.avatar   || null,
+              presence: sData.presence || prev.presence || "offline",
+              lastSeen: sData.lastSeen || prev.lastSeen || null
+            });
+          });
+          lessonData.students = [...existingMap.values()];
+        }
+        const prevSpeakerLabel = lessonData.speakerFocus?.label;
+        if (live.speakerFocus !== undefined) lessonData.speakerFocus = live.speakerFocus;
+        if (live.speakerFocus !== undefined && live.speakerFocus?.label !== prevSpeakerLabel) {
+          renderSpeakerFocusBanner(lessonData.speakerFocus);
+        } else if (live.students && lessonData.speakerFocus?.label) {
+          // Students list changed while speaker stage is open — refresh peer bubbles
+          renderSpeakerFocusBanner(lessonData.speakerFocus);
         }
       });
     }
