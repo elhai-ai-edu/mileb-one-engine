@@ -951,7 +951,7 @@
       <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
   </div>
-  <a href="/micro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">← עבור למיקרו</a>
+  <a id="toMicroCockpitBtn" href="/micro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">← עבור למיקרו</a>
   <a href="/cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
 </div>
 
@@ -973,6 +973,8 @@
   <div class="panel" data-tab-panel="prep">
     <h2>📚 לוח שיעורים</h2>
     <p class="panel-sub">הגדר שלבי שיעור לפני הכיתה — שמור לשימוש חוזר</p>
+
+    <div id="activeCourseIndicator" style="display:none;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;font-weight:600;margin-bottom:10px;"></div>
 
     <div class="field">
       <label>בחר בוט / קורס</label>
@@ -1819,6 +1821,14 @@ const cockpitParams = new URLSearchParams(location.search);
 const presetCourseId = cockpitParams.get("courseId") || "";
 const presetUnitId = cockpitParams.get("unitId") || "unit_01";
 
+// ── Preserve courseId context in cross-cockpit navigation link ──
+(function() {
+  if (!presetCourseId) return;
+  const qs = `?courseId=${encodeURIComponent(presetCourseId)}&unitId=${encodeURIComponent(presetUnitId)}`;
+  const btn = document.getElementById('toMicroCockpitBtn');
+  if (btn) btn.href = `/micro_cockpit.html${qs}`;
+})();
+
 let sessionId   = null;
 let pollTimer   = null;
 let currentBot  = null;
@@ -2350,13 +2360,37 @@ fetch('/config.json').then(r => r.json()).then(config => {
   CONFIG = config;
   const liveSel = document.getElementById('botSelect');
   const prepSel = document.getElementById('botSelectPrep');
+  const courses = config.my_courses || {};
+  const lockToPresetCourse = !!presetCourseId && !!courses[presetCourseId];
+
   [liveSel, prepSel].forEach(sel => {
-    if (sel) sel.innerHTML = '<option value="">— בחר קורס או כלי —</option>';
+    if (!sel) return;
+    sel.innerHTML = lockToPresetCourse ? '' : '<option value="">— בחר קורס או כלי —</option>';
+    if (lockToPresetCourse) sel.disabled = true;
   });
 
+  if (lockToPresetCourse) {
+    const presetCourseName = courses[presetCourseId]?.name || presetCourseId;
+    [liveSel, prepSel].forEach(sel => {
+      if (!sel) return;
+      const opt = document.createElement('option');
+      opt.value = presetCourseId;
+      opt.dataset.type = 'course';
+      opt.textContent = presetCourseName;
+      sel.appendChild(opt);
+      sel.value = presetCourseId;
+      const field = sel.closest('.field');
+      if (field) field.style.display = 'none';
+    });
+    const indicator = document.getElementById('activeCourseIndicator');
+    if (indicator) {
+      indicator.textContent = `📚 קורס פעיל: ${presetCourseName}`;
+      indicator.style.display = '';
+    }
+  }
+
   // ── Real courses from my_courses (same source as students.html + waiting_lobby.html) ──
-  const courses = config.my_courses || {};
-  if (Object.keys(courses).length) {
+  if (!lockToPresetCourse && Object.keys(courses).length) {
     for (const [courseId, course] of Object.entries(courses)) {
       [liveSel, prepSel].forEach(sel => {
         if (!sel) return;
@@ -2377,7 +2411,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
   // ── Faculty tools ──
   const facultyItems = config.branches?.faculty?.items || {};
-  if (Object.keys(facultyItems).length) {
+  if (!lockToPresetCourse && Object.keys(facultyItems).length) {
     for (const [id, bot] of Object.entries(facultyItems)) {
       [liveSel, prepSel].forEach(sel => {
         if (!sel) return;
