@@ -260,6 +260,28 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 #lessonScreen[data-mode="project"] .topbar-system-label  { display: none; }
 #lessonScreen[data-mode="project"] .topbar-stars         { display: none; }
 
+/* ── Group mode visibility rules ── */
+#lessonScreen[data-mode="group"]  .panel-bookshelf        { display: none; }
+#lessonScreen[data-mode="group"]  .panel-project-stages   { display: none; }
+#lessonScreen[data-mode="group"]  .panel-group-members    { display: flex; }
+#lessonScreen[data-mode="group"]  .l-layout               { grid-template-columns: 220px 1fr 300px; }
+#lessonScreen[data-mode="group"]  .activity-focus-area    { display: none; }
+#lessonScreen[data-mode="group"]  .group-task-area        { display: flex; }
+#lessonScreen[data-mode="group"]  .submission-panel       { display: none; }
+#lessonScreen[data-mode="group"]  .waf-section            { display: none; }
+#lessonScreen[data-mode="group"]  .context-rail           { display: none !important; }
+#lessonScreen[data-mode="group"]  .project-work-head      { display: none !important; }
+#lessonScreen[data-mode="group"]  .sprint-stepper         { display: none !important; }
+#lessonScreen[data-mode="group"]  .project-guidance       { display: none !important; }
+#lessonScreen[data-mode="group"]  .bot-tabs               { display: none; }
+#lessonScreen[data-mode="group"]  .bot-activity-ctx       { display: none; }
+#lessonScreen[data-mode="group"]  .project-bot-direct     { display: none !important; }
+#lessonScreen[data-mode="group"]  .group-bot-direct       { display: flex; }
+#lessonScreen[data-mode="group"]  .chat-panel             { display: flex !important; }
+#lessonScreen[data-mode="group"]  .bot-bubble             { display: none !important; }
+#lessonScreen[data-mode="group"]  .topbar-system-label    { display: none; }
+#lessonScreen[data-mode="group"]  .topbar-stars           { display: none; }
+
 /* Banners */
 #broadcastBanner {
   background: linear-gradient(90deg,#fff5f5,#fee2e2);
@@ -544,6 +566,138 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 /* WAF send — secondary style */
 .sub-btn.secondary { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; box-shadow: none; }
 .sub-btn.icon      { background: #f1f5f9; border: 1px solid var(--line); padding: 9px 12px; }
+
+/* ════ Layer 1 — Peer Insight Panel ════ */
+.peer-insight-panel {
+  margin: 0; padding: 14px 18px; border-top: 1px solid var(--line);
+  background: linear-gradient(180deg,#fffbeb,#fefce8); flex-shrink: 0;
+}
+.peer-insight-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.peer-insight-title { font-size: 14px; font-weight: 800; color: #92400e; }
+.peer-count-badge {
+  font-size: 11px; padding: 2px 9px; border-radius: 999px;
+  background: #fde68a; color: #92400e; font-weight: 700;
+}
+.peer-examples { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.peer-example {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #fff; border: 1px solid #fde68a;
+  border-radius: 10px; padding: 10px 12px;
+}
+.peer-avatar-sm {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#fbbf24,#f59e0b);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff;
+}
+.peer-example-text { font-size: 13px; color: var(--navy); line-height: 1.5; }
+.peer-compare-prompt {
+  font-size: 13px; font-weight: 700; color: #92400e;
+  background: #fef9c3; border-right: 3px solid #fbbf24;
+  padding: 8px 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px;
+}
+
+/* ════ Layer 2 — Peer Review Panel ════ */
+.peer-review-panel {
+  padding: 14px 18px; border-top: 1px solid var(--line); flex-shrink: 0;
+}
+.peer-answer-card {
+  background: #f8fafc; border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px; margin: 8px 0 12px;
+}
+.peer-answer-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .3px; }
+.peer-answer-text  { font-size: 13px; color: var(--navy); line-height: 1.6; }
+
+/* ════ Layer 3 — Group Mode ════ */
+:root { --emerald: #059669; --emerald-dark: #065f46; --emerald-light: #d1fae5; }
+
+/* Group members left panel */
+.panel-group-members { flex-direction: column; display: none; }
+.group-members-list  { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.group-member {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: #f8fafc; transition: background .15s;
+}
+.group-member.typing { background: #f0fdf4; border-color: #bbf7d0; }
+.gm-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#34d399,#059669);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff;
+}
+.gm-info { flex: 1; min-width: 0; }
+.gm-name { font-size: 13px; font-weight: 700; color: var(--navy); }
+.gm-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.gm-status {
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  background: #d1d5db;
+}
+.gm-status.online  { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
+.gm-status.writing { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; animation: statusPulse 1s infinite; }
+@keyframes statusPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* Group task center area */
+.group-task-area {
+  flex-direction: column; overflow-y: auto; display: none;
+}
+.group-task-head {
+  padding: 14px 20px 10px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#ecfdf5,#d1fae5);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.group-task-title { font-size: 15px; font-weight: 800; color: var(--emerald-dark); }
+.group-timer {
+  font-size: 18px; font-weight: 800; color: var(--emerald);
+  font-variant-numeric: tabular-nums; letter-spacing: .5px;
+}
+.group-timer.urgent { color: #dc2626; animation: timerPulse 1s infinite; }
+@keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.group-task-card {
+  margin: 14px 20px 0; padding: 14px 16px;
+  background: #fff; border: 1.5px solid #6ee7b7; border-radius: 12px;
+  flex-shrink: 0;
+}
+.group-task-label { font-size: 11px; font-weight: 800; color: var(--emerald); margin-bottom: 6px; letter-spacing: .3px; }
+.group-task-text  { font-size: 13px; color: var(--navy); line-height: 1.6; }
+.group-roles {
+  display: flex; gap: 8px; padding: 10px 20px 4px; flex-wrap: wrap; flex-shrink: 0;
+}
+.role-chip {
+  font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px;
+  background: #ecfdf5; border: 1px solid #6ee7b7; color: var(--emerald-dark);
+}
+.group-workspace {
+  margin: 10px 20px 14px; padding: 14px;
+  background: #fff; border: 1.5px solid #a7f3d0; border-radius: 12px;
+  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+}
+.group-workspace-head {
+  font-size: 13px; font-weight: 800; color: var(--emerald-dark); margin-bottom: 2px;
+}
+.group-typing-indicator {
+  font-size: 12px; color: var(--emerald); font-style: italic; min-height: 16px;
+}
+
+/* Group bot panel header */
+.group-bot-direct {
+  padding: 12px 14px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#ecfdf5,#d1fae5);
+  align-items: center; gap: 10px; flex-shrink: 0; display: none;
+}
+.group-bot-icon {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#34d399,#059669);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.group-bot-name { font-size: 14px; font-weight: 800; color: var(--emerald-dark); }
+.group-bot-sub  { font-size: 11px; color: var(--emerald); }
+#lessonScreen[data-mode="group"] .chat-send { background: linear-gradient(135deg,#34d399,#059669); }
 
 /* ── Chat Panel ── */
 .chat-panel { display: flex; flex-direction: column; }
@@ -947,8 +1101,66 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       </div>
     </aside>
 
+    <!-- LEFT: Group Members (group mode) -->
+    <aside class="panel panel-group-members">
+      <div class="panel-head">👥 קבוצה שלי</div>
+      <div class="group-members-list">
+        <div class="group-member typing" id="gmYarin">
+          <div class="gm-avatar">י</div>
+          <div class="gm-info"><div class="gm-name">ירין כ.</div><div class="gm-role">⌨️ כותב/ת כרגע</div></div>
+          <div class="gm-status writing"></div>
+        </div>
+        <div class="group-member" id="gmNoor">
+          <div class="gm-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+          <div class="gm-info"><div class="gm-name">נור מ.</div><div class="gm-role">🔍 מחקר</div></div>
+          <div class="gm-status online"></div>
+        </div>
+        <div class="group-member" id="gmAmir">
+          <div class="gm-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+          <div class="gm-info"><div class="gm-name">אמיר ש.</div><div class="gm-role">🎤 מציג/ה</div></div>
+          <div class="gm-status online"></div>
+        </div>
+        <div class="group-member" style="border-color:#6ee7b7;background:#f0fdf4;">
+          <div class="gm-avatar" style="background:linear-gradient(135deg,#059669,#065f46);">את</div>
+          <div class="gm-info"><div class="gm-name">את עצמך</div><div class="gm-role">📋 מנסח/ת</div></div>
+          <div class="gm-status online" style="box-shadow:0 0 0 2px #6ee7b7;background:#059669;"></div>
+        </div>
+      </div>
+      <div style="padding:12px;border-top:1px solid var(--line);">
+        <button class="sub-btn secondary" style="width:100%;font-size:12px;" onclick="exitGroupMode()">← חזרה למליאה</button>
+      </div>
+    </aside>
+
     <!-- CENTER: Work Area -->
     <section class="panel" style="overflow-y:auto;">
+
+      <!-- Layer 3: Group Task Area (group mode) -->
+      <div class="group-task-area" id="groupTaskArea">
+        <div class="group-task-head">
+          <div class="group-task-title">משימת צוות — השוואת גישות ניתוח</div>
+          <div class="group-timer" id="groupTimer">⏱ 10:00</div>
+        </div>
+        <div class="group-task-card">
+          <div class="group-task-label">מה הקבוצה צריכה לעשות</div>
+          <div class="group-task-text">
+            השוו בין שתי גישות לניתוח פסקת הפתיחה: <strong>גישה רטורית</strong> (פנייה לרגש ושכנוע) לעומת <strong>גישה תוכנית</strong> (מה הפסקה אומרת). גבשו עמדה קבוצתית אחת ונמקו בשלושה משפטים.
+          </div>
+        </div>
+        <div class="group-roles">
+          <div class="role-chip">⌨️ מנסח/ת: ירין</div>
+          <div class="role-chip">🔍 מחקר: נור</div>
+          <div class="role-chip">🎤 מציג/ה: אמיר</div>
+          <div class="role-chip" style="background:#ecfdf5;border-color:#059669;color:#065f46;">📋 את: ריכוז</div>
+        </div>
+        <div class="group-workspace">
+          <div class="group-workspace-head">📝 מרחב כתיבה משותף</div>
+          <div class="group-typing-indicator" id="groupTypingIndicator">ירין כותב/ת...</div>
+          <textarea class="sub-ta" id="groupTa" placeholder="כתבו כאן את התוצר הקבוצתי — כל חברי הקבוצה רואים את הכתיבה..." style="min-height:90px;" oninput="onGroupType()"></textarea>
+          <div class="sub-actions">
+            <button class="sub-btn primary" onclick="submitGroupWork()" style="background:linear-gradient(135deg,#34d399,#059669);">הגישו תשובת קבוצה</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Context Rail — Lesson Stages -->
       <div class="context-rail" id="contextRail">
@@ -1063,6 +1275,26 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
       </div><!-- /activity-focus-area -->
 
+      <!-- Layer 1: Peer Insight Panel (visible when activity is active) -->
+      <div class="peer-insight-panel" id="peerInsightPanel" style="display:none">
+        <div class="peer-insight-head">
+          <span class="peer-insight-title">👥 מבט מהכיתה</span>
+          <span class="peer-count-badge">4 תגובות</span>
+        </div>
+        <div class="peer-examples">
+          <div class="peer-example">
+            <div class="peer-avatar-sm">א</div>
+            <div class="peer-example-text">"הטענה המרכזית היא שהמחבר מנסה לשכנע שהבעיה קיימת לפני שהוא מציע פתרון — האסטרטגיה היא לבנות מחויבות רגשית תחילה."</div>
+          </div>
+          <div class="peer-example">
+            <div class="peer-avatar-sm">ב</div>
+            <div class="peer-example-text">"אפשר לקרוא את הפסקה גם כפנייה רטורית מהסוף — הטענה מופיעה רק לאחר שהקורא כבר מזדהה עם הבעיה."</div>
+          </div>
+        </div>
+        <div class="peer-compare-prompt">💬 מה דומה ומה שונה בין שתי הגישות הללו?</div>
+        <button class="sub-btn secondary" style="font-size:12px;padding:7px 14px;" onclick="startPeerCompare()">השווה לתשובה שלך ←</button>
+      </div>
+
       <!-- Submission Panel — FIRST -->
       <div class="submission-panel">
         <div class="sub-panel-head">📄 הגשת הפעילות</div>
@@ -1072,6 +1304,21 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
           <button class="sub-btn primary" onclick="sendSubmit()">📄 הגש פעילות</button>
           <button class="sub-btn record"  onclick="startRecord(this)">🎙️ הקליטו</button>
           <button class="sub-btn upload"  onclick="triggerUpload()">📎 העלו קובץ</button>
+        </div>
+      </div>
+
+      <!-- Layer 2: Peer Review Panel (shown after submission) -->
+      <div class="peer-review-panel" id="peerReviewPanel" style="display:none">
+        <div class="sub-panel-head">📊 הערכת עמיתים</div>
+        <div class="sub-hint">קראו את התשובה הבאה וכתבו מה עובד בה ומה היית משפרים</div>
+        <div class="peer-answer-card">
+          <div class="peer-answer-label">תשובה אנונימית מהכיתה</div>
+          <div class="peer-answer-text">"הטענה המרכזית בפסקה היא שהמחבר מציב שאלה רטורית כדי למשוך את הקורא. הוא משתמש בשפה רגשית לצד נתונים כדי לבסס את הטיעון. לדעתי, האסטרטגיה הרטורית כאן היא שכנוע דרך פאתוס — פנייה לרגש לפני פנייה לשכל."</div>
+        </div>
+        <textarea class="sub-ta" id="peerFeedbackTa" placeholder="מה עובד טוב? מה אפשר לשפר?"></textarea>
+        <div class="sub-actions">
+          <button class="sub-btn primary" onclick="sendPeerReview()">שלח משוב</button>
+          <button class="sub-btn secondary" onclick="skipPeerReview()">דלג</button>
         </div>
       </div>
 
@@ -1106,6 +1353,15 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       <!-- Bot Activity Context Line -->
       <div class="bot-activity-ctx" id="botActivityCtx">
         ליווי למשימה: <strong id="botActivityLabel">ניתוח פסקת פתיחה</strong>
+      </div>
+
+      <!-- Group Bot Header (group mode) -->
+      <div class="group-bot-direct">
+        <div class="group-bot-icon">👥</div>
+        <div>
+          <div class="group-bot-name">בוט קבוצתי</div>
+          <div class="group-bot-sub">מלווה את הדיון הקבוצתי</div>
+        </div>
       </div>
 
       <!-- Project Bot Header (project mode) -->
@@ -1188,6 +1444,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <button class="demo-btn teal"   onclick="showLessonActivity()">▶ הפעל פעילות</button>
   <div class="sep"></div>
   <button class="demo-btn indigo" onclick="demoEnterProject()">📁 מצב פרויקט</button>
+  <button class="demo-btn" style="background:#059669;color:#fff;" onclick="demoEnterGroup()">👥 מצב צוות</button>
   <div class="sep"></div>
   <button class="demo-btn red"    onclick="toggleRecall()">🚨 Recall</button>
   <button class="demo-btn amber"  onclick="toggleBroadcast()">📡 Broadcast</button>
@@ -1227,6 +1484,10 @@ function demoEnterProject() {
   showLesson();
   enterProjectMode();
 }
+function demoEnterGroup() {
+  showLesson();
+  enterGroupMode();
+}
 
 /* ════════════════ Activity State ════════════════ */
 // 'empty' = ממתין להנחיה | 'active' = פעילות פתוחה
@@ -1237,20 +1498,26 @@ function setActivityState(state) {
   const subTa    = document.getElementById('writeTa');
   const botLabel = document.getElementById('botActivityLabel');
 
-  const subPanel  = document.querySelector('.submission-panel');
+  const subPanel    = document.querySelector('.submission-panel');
+  const insightPanel = document.getElementById('peerInsightPanel');
+  const reviewPanel  = document.getElementById('peerReviewPanel');
 
   if (state === 'empty') {
-    emptyEl.style.display  = 'flex';
-    cardEl.style.display   = 'none';
-    subPanel.style.display = 'none';
+    emptyEl.style.display       = 'flex';
+    cardEl.style.display        = 'none';
+    subPanel.style.display      = 'none';
+    insightPanel.style.display  = 'none';
+    reviewPanel.style.display   = 'none';
     botLabel.textContent  = 'שאלות חופשיות';
     document.getElementById('bubbleText').textContent  = 'שאל שאלה חופשית';
     document.getElementById('botFloatCtx').textContent = 'שאלות חופשיות — אין פעילות פעילה';
     _inActivityMode = false;
   } else {
-    emptyEl.style.display  = 'none';
-    cardEl.style.display   = 'block';
-    subPanel.style.display = 'block';
+    emptyEl.style.display       = 'none';
+    cardEl.style.display        = 'block';
+    subPanel.style.display      = 'block';
+    insightPanel.style.display  = 'block';
+    reviewPanel.style.display   = 'none';
     subHint.textContent   = 'כתוב כאן את תשובתך לפעילות: ניתוח פסקת פתיחה';
     subTa.placeholder     = 'כתוב כאן את תשובתך לפעילות הנוכחית...';
     botLabel.textContent  = 'ניתוח פסקת פתיחה';
@@ -1478,10 +1745,108 @@ function sendSubmit() {
   const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   d.innerHTML = `<div class="waf-msg-text">${text}</div><div class="waf-msg-meta">הגשה · ${now} ✓</div>`;
   stream.appendChild(d); stream.scrollTop = stream.scrollHeight; ta.value = '';
-  // Flash submit button
+  // Transition to peer review after short delay
   const btn = event.target;
   btn.textContent = '✅ הוגש!'; btn.style.background = '#16a34a';
-  setTimeout(()=>{ btn.textContent = '📄 הגש פעילות'; btn.style.background = ''; }, 2000);
+  setTimeout(() => {
+    document.querySelector('.submission-panel').style.display = 'none';
+    document.getElementById('peerReviewPanel').style.display = 'block';
+  }, 1400);
+}
+
+/* ════════════════ Layer 1 — Peer Insight ════════════════ */
+function startPeerCompare() {
+  const ta = document.getElementById('writeTa');
+  ta.focus();
+  ta.placeholder = 'השווה את תשובתך לגישות שמעלה — מה דומה? מה שונה?';
+  ta.style.borderColor = '#fbbf24';
+  setTimeout(() => ta.style.borderColor = '', 2500);
+}
+
+/* ════════════════ Layer 2 — Peer Review ════════════════ */
+function sendPeerReview() {
+  const ta = document.getElementById('peerFeedbackTa');
+  if (!ta.value.trim()) { ta.style.borderColor='#ef4444'; return; }
+  ta.style.borderColor = '';
+  const panel = document.getElementById('peerReviewPanel');
+  panel.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;padding:20px;gap:8px;text-align:center;">
+      <div style="font-size:28px;">✅</div>
+      <div style="font-size:15px;font-weight:800;color:#16a34a;">המשוב נשלח!</div>
+      <div style="font-size:13px;color:var(--muted);">תודה — המשוב שלך עוזר לעמית/ה להשתפר.</div>
+    </div>`;
+}
+function skipPeerReview() {
+  document.getElementById('peerReviewPanel').style.display = 'none';
+}
+
+/* ════════════════ Layer 3 — Group Mode ════════════════ */
+let _groupTimer = null;
+let _groupSeconds = 600;
+
+function enterGroupMode() {
+  exitProjectMode();
+  document.getElementById('lessonScreen').dataset.mode = 'group';
+  _groupSeconds = 600;
+  startGroupTimer();
+  loadGroupBotChat();
+  // Simulate peer typing after 3s
+  setTimeout(() => {
+    document.getElementById('groupTypingIndicator').textContent = 'ירין כותב/ת...';
+    setTimeout(() => {
+      document.getElementById('groupTypingIndicator').textContent = '';
+      const ta = document.getElementById('groupTa');
+      ta.value = 'לפי הגישה הרטורית, הפסקה מתחילה בפנייה רגשית ';
+    }, 3500);
+  }, 3000);
+}
+
+function exitGroupMode() {
+  stopGroupTimer();
+  document.getElementById('lessonScreen').dataset.mode = 'lesson';
+  setActivityState('active');
+}
+
+function startGroupTimer() {
+  stopGroupTimer();
+  updateTimerDisplay();
+  _groupTimer = setInterval(() => {
+    _groupSeconds--;
+    if (_groupSeconds <= 0) { stopGroupTimer(); _groupSeconds = 0; }
+    updateTimerDisplay();
+  }, 1000);
+}
+function stopGroupTimer() { clearInterval(_groupTimer); _groupTimer = null; }
+function updateTimerDisplay() {
+  const el = document.getElementById('groupTimer');
+  if (!el) return;
+  const m = Math.floor(_groupSeconds / 60).toString().padStart(2,'0');
+  const s = (_groupSeconds % 60).toString().padStart(2,'0');
+  el.textContent = `⏱ ${m}:${s}`;
+  el.classList.toggle('urgent', _groupSeconds <= 60);
+}
+function onGroupType() {
+  document.getElementById('groupTypingIndicator').textContent = '';
+}
+function submitGroupWork() {
+  const ta = document.getElementById('groupTa');
+  if (!ta.value.trim()) { ta.style.borderColor='#ef4444'; return; }
+  stopGroupTimer();
+  document.querySelector('.group-workspace').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;padding:16px;gap:8px;text-align:center;">
+      <div style="font-size:28px;">🎉</div>
+      <div style="font-size:15px;font-weight:800;color:#065f46;">תשובת הקבוצה הוגשה!</div>
+      <div style="font-size:13px;color:var(--muted);">המרצה יקבל את תשובתכם בקרוב.</div>
+      <button class="sub-btn secondary" onclick="exitGroupMode()" style="margin-top:6px;font-size:12px;">← חזרה למליאה</button>
+    </div>`;
+}
+
+function loadGroupBotChat() {
+  const cw = document.getElementById('chatWindow');
+  cw.innerHTML = `<div class="chat-bubble bot" style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:#6ee7b7;">
+    שלום קבוצה! 👋 אני כאן לעזור לכם לגבש עמדה משותפת.<br>
+    <strong>שאלה מנחה:</strong> מה ההבדל המהותי בין הגישה הרטורית לגישה התוכנית?
+  </div>`;
 }
 
 /* ════════════════ Waiting Room ════════════════ */
