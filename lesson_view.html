@@ -1075,18 +1075,32 @@
       renderProjectStepper();  // show/hide project stepper based on config + active bot
 
       const items = [];
+      const seenBotTypes = new Set();
+      const resolvedCourse = _fetchedCourseConfig || course;
+      const pushItem = ({ botType, label, group }) => {
+        if (!botType || seenBotTypes.has(botType)) return;
+        seenBotTypes.add(botType);
+        items.push({ botType, label, group });
+      };
+
       // Course-specific bots
-      for (const [key, bot] of Object.entries(course.bots || {})) {
+      for (const [key, bot] of Object.entries(resolvedCourse?.bots || {})) {
         const botType = bot.botType || bot;
         const label   = bot.label || (key === "main" ? "🏫 בוט הקורס" : key);
-        items.push({ botType, label, group: "course" });
+        pushItem({ botType, label, group: "course" });
       }
       // Universal bots linked to this course
-      for (const key of (course.universal_bots || [])) {
+      for (const key of (resolvedCourse?.universal_bots || [])) {
         const bot = config?.universal?.items?.[key];
         if (!bot) continue;
-        items.push({ botType: bot.botType, label: bot.name, group: "universal" });
+        pushItem({ botType: bot.botType, label: bot.name, group: "universal" });
       }
+      // Ensure the active session bot is always reachable (even if missing in course mapping)
+      pushItem({
+        botType: lessonData?.botType,
+        label: "🤖 בוט פעיל",
+        group: "session"
+      });
 
       const bar = document.getElementById("botTabsBar");
       bar.innerHTML = "";
@@ -1102,7 +1116,7 @@
         bar.appendChild(btn);
       }
 
-      if (items.length > 0) bar.classList.add("visible");
+      bar.classList.toggle("visible", items.length > 0);
 
       // Activate default bot if not already set
       if (!_activeBotType) {
@@ -1197,11 +1211,11 @@
       const current = Number(lessonData?.currentStep) || 1;
       container.innerHTML = "";
       stages.forEach((stage, idx) => {
-        const stageId = Number(stage.id);
+        const stageId = Number(stage?.id || (idx + 1));
         const btn = document.createElement("button");
         btn.className = "stage-tab" +
           (stageId === current ? " active" : stageId < current ? " completed" : "");
-        btn.textContent = `${stageId}. ${stage.label}`;
+        btn.textContent = `${stageId}. ${stage?.label || `שלב ${stageId}`}`;
         btn.onclick = () => selectProjectStage(stageId);
         container.appendChild(btn);
       });
@@ -1736,6 +1750,7 @@
       renderActiveSprint();
       renderSprintList();
       renderSprintStepper();
+      renderProjectStepper();
       renderPushedModal();
       setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
     }
