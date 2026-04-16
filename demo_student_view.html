@@ -63,9 +63,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 }
 .w-logo  { color: #fff; font-size: 18px; font-weight: 800; }
 .w-title-wrap { display: flex; align-items: center; gap: 10px; }
-.w-welcome { color: rgba(255,255,255,.55); font-size: 13px; font-weight: 600; letter-spacing: .3px; }
-.w-stars   { color: rgba(255,255,255,.3); font-size: 11px; letter-spacing: 2px; }
-.w-title   { color: #fff; font-size: 19px; font-weight: 800; letter-spacing: -.3px; }
+.w-welcome { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -.2px; }
+.w-stars   { color: rgba(255,255,255,.35); font-size: 11px; letter-spacing: 2px; }
+.w-title   { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -.2px; }
 .w-badge {
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
   border-radius: 999px; padding: 4px 14px; color: #e2e8f0; font-size: 12px; font-weight: 600;
@@ -250,12 +250,12 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
 /* Banners */
 #broadcastBanner {
-  background: linear-gradient(90deg,#eff6ff,#dbeafe);
-  border-bottom: 2px solid #bfdbfe; padding: 10px 20px;
+  background: linear-gradient(90deg,#fff5f5,#fee2e2);
+  border-bottom: 2px solid #fca5a5; padding: 10px 20px;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
 }
-.broadcast-label { font-size: 11px; font-weight: 800; color: #1d4ed8; letter-spacing: .4px; }
-.broadcast-text  { font-size: 14px; color: #1e3a8a; font-weight: 600; flex: 1; }
+.broadcast-label { font-size: 11px; font-weight: 800; color: #dc2626; letter-spacing: .4px; }
+.broadcast-text  { font-size: 14px; color: #7f1d1d; font-weight: 600; flex: 1; }
 .broadcast-x { background: none; border: none; color: #64748b; cursor: pointer; font-size: 18px; }
 #recallBanner {
   display: none; background: #fef2f2; border-bottom: 2px solid #fecaca;
@@ -340,11 +340,11 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   background: #f8fafc; flex-shrink: 0;
 }
 .ctx-rail-label {
-  font-size: 11px; color: var(--muted); font-weight: 700;
-  text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px;
+  font-size: 13px; color: var(--navy); font-weight: 800;
+  letter-spacing: -.1px; margin-bottom: 9px; text-align: center;
 }
 .ctx-stages {
-  display: flex; align-items: center; gap: 0;
+  display: flex; align-items: center; gap: 0; justify-content: center;
 }
 .ctx-stage {
   display: flex; align-items: center; gap: 0;
@@ -501,7 +501,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   background: #f8fafc; min-height: 72px;
 }
 .sub-ta:focus { outline: none; border-color: #93c5fd; background: #fff; }
-.sub-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.sub-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; justify-content: flex-end; }
 .sub-btn {
   padding: 10px 20px; border-radius: 12px; border: none; cursor: pointer;
   font-family: inherit; font-size: 13px; font-weight: 800;
@@ -799,9 +799,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <div class="l-topbar" style="position:relative;">
     <div class="l-logo">MilEd.One</div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;pointer-events:none;white-space:nowrap;">
-      <span style="color:rgba(255,255,255,.55);font-size:13px;font-weight:600;letter-spacing:.3px;">מרחב למידה כיתתי</span>
-      <span style="color:rgba(255,255,255,.3);font-size:11px;letter-spacing:2px;">✦✦✦✦✦</span>
-      <span style="color:#fff;font-size:19px;font-weight:800;letter-spacing:-.3px;">עברית מתקדמים א׳ — אופטיקה</span>
+      <span style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;">מרחב למידה כיתתי</span>
+      <span style="color:rgba(255,255,255,.35);font-size:11px;letter-spacing:2px;">✦✦✦✦✦</span>
+      <span style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;">עברית מתקדמים א׳ — אופטיקה</span>
     </div>
     <div class="l-chips">
       <span class="chip chip-default">👁️ סטודנט</span>
@@ -977,14 +977,10 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
         <!-- Activity Card -->
         <div class="activity-card" id="activityCard" style="display:none">
           <div class="activity-card-header">
-            <div style="width:100%;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span style="font-size:16px;font-weight:800;color:#1e3a8a;">משימה לביצוע</span>
-              <span style="color:#93c5fd;font-size:15px;">←</span>
-              <span style="font-size:16px;font-weight:800;color:var(--navy);" id="activityTitle">ניתוח פסקת פתיחה</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;">
-              <span class="activity-type-badge" id="activityTypeBadge">ניתוח טקסט</span>
-              <div class="activity-goal" id="activityGoal">זיהוי הטענה המרכזית והאסטרטגיה הרטורית</div>
+            <div style="width:100%;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <span style="font-size:16px;font-weight:900;color:#1e3a8a;letter-spacing:-.2px;">משימה לביצוע</span>
+              <span style="color:#93c5fd;font-size:14px;">←</span>
+              <span style="font-size:15px;font-weight:400;color:#334155;" id="activityTitle">ניתוח פסקת פתיחה</span>
             </div>
           </div>
           <div class="activity-blocks">
@@ -1177,7 +1173,6 @@ function setActivityState(state) {
   const subHint  = document.getElementById('subHint');
   const subTa    = document.getElementById('writeTa');
   const botLabel = document.getElementById('botActivityLabel');
-  const ctxLabel = document.getElementById('ctxCurrentLabel');
 
   const subPanel  = document.querySelector('.submission-panel');
 
@@ -1188,10 +1183,6 @@ function setActivityState(state) {
     botLabel.textContent  = 'שאלות חופשיות';
     document.getElementById('bubbleText').textContent  = 'שאל שאלה חופשית';
     document.getElementById('botFloatCtx').textContent = 'שאלות חופשיות — אין פעילות פעילה';
-    ctxLabel.textContent  = 'ממתין';
-    ctxLabel.style.background   = '#fef9c3';
-    ctxLabel.style.borderColor  = '#fde68a';
-    ctxLabel.style.color        = '#92400e';
     _inActivityMode = false;
   } else {
     emptyEl.style.display  = 'none';
@@ -1202,10 +1193,6 @@ function setActivityState(state) {
     botLabel.textContent  = 'ניתוח פסקת פתיחה';
     document.getElementById('bubbleText').textContent  = 'צריך עזרה בניתוח?';
     document.getElementById('botFloatCtx').textContent = 'ליווי למשימה: ניתוח פסקת פתיחה';
-    ctxLabel.textContent  = 'ניתוח טקסט';
-    ctxLabel.style.background   = '#eff6ff';
-    ctxLabel.style.borderColor  = '#bfdbfe';
-    ctxLabel.style.color        = '#1d4ed8';
     _inActivityMode = true;
   }
 }
