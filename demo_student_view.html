@@ -465,14 +465,24 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   background: #f8fafc; min-height: 72px;
 }
 .sub-ta:focus { outline: none; border-color: #93c5fd; background: #fff; }
-.sub-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.sub-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .sub-btn {
-  padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 700; transition: opacity .15s;
+  padding: 10px 20px; border-radius: 12px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; gap: 7px;
+  transition: transform .12s, box-shadow .12s, opacity .12s;
+  box-shadow: 0 2px 6px rgba(0,0,0,.10);
 }
-.sub-btn:hover { opacity: .85; }
-.sub-btn.primary   { background: #1d4ed8; color: #fff; }
-.sub-btn.secondary { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.sub-btn:hover  { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,.14); }
+.sub-btn:active { transform: translateY(0);    box-shadow: 0 2px 4px rgba(0,0,0,.10); }
+/* Submit — deep blue */
+.sub-btn.primary   { background: linear-gradient(135deg,#1d4ed8,#2563eb); color: #fff; }
+/* Record — coral/red */
+.sub-btn.record    { background: linear-gradient(135deg,#e11d48,#f43f5e); color: #fff; }
+/* Upload — teal */
+.sub-btn.upload    { background: linear-gradient(135deg,#0d9488,#14b8a6); color: #fff; }
+/* WAF send — secondary style */
+.sub-btn.secondary { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; box-shadow: none; }
 .sub-btn.icon      { background: #f1f5f9; border: 1px solid var(--line); padding: 9px 12px; }
 
 /* ── Chat Panel ── */
@@ -797,8 +807,8 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
         <textarea class="sub-ta" id="writeTa" placeholder="כתוב כאן את תשובתך לפעילות הנוכחית..."></textarea>
         <div class="sub-actions">
           <button class="sub-btn primary" onclick="sendSubmit()">📄 הגש פעילות</button>
-          <button class="sub-btn icon" title="הקלטה קולית">🎙️</button>
-          <button class="sub-btn icon" title="צרף קובץ">📎</button>
+          <button class="sub-btn record"  onclick="startRecord(this)">🎙️ הקליטו</button>
+          <button class="sub-btn upload"  onclick="triggerUpload()">📎 העלו קובץ</button>
         </div>
       </div>
 
@@ -1064,6 +1074,31 @@ function sendChat() {
 function handleChatKey(e) { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
 
 /* ════════════════ WAF / Submit ════════════════ */
+function startRecord(btn) {
+  const orig = btn.innerHTML;
+  btn.innerHTML = '⏺️ מקליט...';
+  btn.style.background = 'linear-gradient(135deg,#9f1239,#be123c)';
+  setTimeout(() => {
+    btn.innerHTML = '✅ הוקלט';
+    btn.style.background = 'linear-gradient(135deg,#166534,#16a34a)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 1800);
+  }, 2000);
+}
+function triggerUpload() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.style.display = 'none';
+  inp.onchange = () => {
+    const name = inp.files[0]?.name;
+    if (name) {
+      const stream = document.getElementById('commStream');
+      const d = document.createElement('div'); d.className = 'waf-msg student';
+      const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+      d.innerHTML = `<div class="waf-msg-text">📎 ${name}</div><div class="waf-msg-meta">קובץ מצורף · ${now}</div>`;
+      stream.appendChild(d); stream.scrollTop = stream.scrollHeight;
+    }
+  };
+  document.body.appendChild(inp); inp.click(); document.body.removeChild(inp);
+}
 function sendMsg() {
   const inp = document.getElementById('msgInput');
   const text = inp.value.trim(); if (!text) return;
