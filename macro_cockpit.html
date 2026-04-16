@@ -1049,6 +1049,7 @@ body { background: var(--bg) !important; }
 
 <div id="cockpit-nav">
   <button class="cockpit-tab-btn active" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>חיבור קורס-מיומנויות</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="moodle" onclick="switchCockpitTab('moodle', this)"><span>טעינת יחידות הקורס מMOODLE</span></button>
   <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>תכנון ראשי</span></button>
   <button class="cockpit-tab-btn" data-tab-target="ats" onclick="switchCockpitTab('ats', this)"><span>📓 תרגום יומן הוראה</span></button>
 </div>
@@ -1207,37 +1208,7 @@ body { background: var(--bg) !important; }
     <div class="mc-section-head">🎓 למידה משולבת מיומנויות<span class="mc-sub">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</span></div>
     <div class="mc-section-body">
 
-    <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:12px;">
-      <div>
-        <div style="font-size:15px;font-weight:800;color:#0f172a;">Moodle Sync</div>
-        <div style="font-size:12px;color:#64748b;margin-top:4px;">הדבק JSON מסקרייפר Moodle. המערכת תנקה כותרות, תמפה יחידות ומשאבים, ותכין Bookshelf לשיעור.</div>
-      </div>
-      <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...] }]} ' style="margin:0;"></textarea>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-blue" type="button" onclick="importMoodleJson()" style="font-size:12px;padding:7px 14px;">יבא Moodle JSON</button>
-        <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()" style="font-size:12px;padding:7px 14px;">טען מטא-דאטה קיים</button>
-        <span id="moodleImportStatus" style="font-size:12px;color:#475569;"></span>
-      </div>
-
-      <div style="display:grid;gap:8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <div style="font-size:14px;font-weight:700;color:#0f172a;">Playlist Manager</div>
-          <div id="playlistSelectionCount" style="font-size:12px;color:#64748b;">0 יחידות נבחרו</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
-          <div class="field" style="margin:0;flex:1;min-width:180px;">
-            <label>Lesson ID יעד</label>
-            <input id="playlistLessonId" type="text" value="unit_01" class="lp-input" style="margin:0;">
-          </div>
-          <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
-          <span id="playlistStatus" style="font-size:12px;color:#475569;"></span>
-        </div>
-        <div id="moodleUnitsList" style="display:grid;gap:8px;">
-          <div class="thread-empty">טרם יובא JSON</div>
-        </div>
-      </div>
-
-      <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:10px;">
+    <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
         <div>
           <div style="font-size:14px;font-weight:700;color:#0f172a;">Hybrid Sprint Engine</div>
           <div style="font-size:12px;color:#64748b;margin-top:4px;">הגדר סבבים מסוג AI, תחנה פיזית או מליאה. תחנה פיזית יכולה לדרוש Proof of Work לפני מעבר.</div>
@@ -1277,7 +1248,6 @@ body { background: var(--bg) !important; }
         <div id="sprintDraftList" style="display:grid;gap:8px;">
           <div class="thread-empty">טרם הוגדרו ספרינטים</div>
         </div>
-      </div>
     </div>
 
     <!-- ─── Balance Weight Editor (v8.5) ─── -->
@@ -1347,6 +1317,44 @@ body { background: var(--bg) !important; }
       <p id="pillar-radar-hint" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;">
         הוסף שיוכי סילבוס כדי לראות את המפה
       </p>
+    </div>
+    </div></div>
+  </div>
+
+
+  <div class="panel" data-tab-panel="moodle">
+    <div class="mc-section">
+    <div class="mc-section-head">📥 טעינת יחידות הקורס מMoodle<span class="mc-sub">הדבק JSON מסקרייפר Moodle כדי למפות יחידות ומשאבים לקורס</span></div>
+    <div class="mc-section-body">
+    <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:12px;">
+      <div>
+        <div style="font-size:15px;font-weight:800;color:#0f172a;">Moodle Sync</div>
+        <div style="font-size:12px;color:#64748b;margin-top:4px;">הדבק JSON מסקרייפר Moodle. המערכת תנקה כותרות, תמפה יחידות ומשאבים, ותכין Bookshelf לשיעור.</div>
+      </div>
+      <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...] }]} ' style="margin:0;"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-blue" type="button" onclick="importMoodleJson()" style="font-size:12px;padding:7px 14px;">יבא Moodle JSON</button>
+        <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()" style="font-size:12px;padding:7px 14px;">טען מטא-דאטה קיים</button>
+        <span id="moodleImportStatus" style="font-size:12px;color:#475569;"></span>
+      </div>
+
+      <div style="display:grid;gap:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+          <div style="font-size:14px;font-weight:700;color:#0f172a;">Playlist Manager</div>
+          <div id="playlistSelectionCount" style="font-size:12px;color:#64748b;">0 יחידות נבחרו</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+          <div class="field" style="margin:0;flex:1;min-width:180px;">
+            <label>Lesson ID יעד</label>
+            <input id="playlistLessonId" type="text" value="unit_01" class="lp-input" style="margin:0;">
+          </div>
+          <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
+          <span id="playlistStatus" style="font-size:12px;color:#475569;"></span>
+        </div>
+        <div id="moodleUnitsList" style="display:grid;gap:8px;">
+          <div class="thread-empty">טרם יובא JSON</div>
+        </div>
+      </div>
     </div>
     </div></div>
   </div>
