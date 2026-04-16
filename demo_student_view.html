@@ -48,7 +48,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
    WAITING ROOM
 ════════════════════════════ */
 #waitingScreen {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0c4a6e 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #0ea5e9 60%, #06b6d4 100%);
   min-height: calc(100vh - 52px);
   display: none; flex-direction: column; padding: 0 0 52px;
 }
@@ -200,8 +200,8 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 }
 .project-exit-btn {
   padding: 7px 16px; border-radius: 20px;
-  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
-  color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
   cursor: pointer; display: none; align-items: center; gap: 6px;
 }
 .project-mode-badge {
@@ -640,7 +640,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     <div class="topbar-spacer"></div>
     <div class="project-mode-badge">📁 מצב פרויקט פעיל</div>
     <button class="project-exit-btn" onclick="exitProjectMode()">← חזרה לשיעור</button>
-    <button class="project-enter-btn" onclick="enterProjectMode()">📁 עבודת פרויקט</button>
+    <button class="project-enter-btn" onclick="enterProjectMode()">📁 מעבר לעבודה על פרויקט גמר</button>
   </div>
 
   <!-- Broadcast Banner -->
@@ -946,11 +946,14 @@ function setActivityState(state) {
   const botLabel = document.getElementById('botActivityLabel');
   const ctxLabel = document.getElementById('ctxCurrentLabel');
 
+  const subPanel  = document.querySelector('.submission-panel');
+  const secLabel  = document.getElementById('activitySectionLabel');
+
   if (state === 'empty') {
-    emptyEl.style.display = 'flex';
-    cardEl.style.display  = 'none';
-    subHint.textContent   = 'אין פעילות פתוחה כרגע — ניתן לשלוח שאלה למרצה';
-    subTa.placeholder     = 'שלח שאלה או הערה למרצה...';
+    emptyEl.style.display  = 'flex';
+    cardEl.style.display   = 'none';
+    subPanel.style.display = 'none';
+    if (secLabel) secLabel.style.display = 'none';
     botLabel.textContent  = 'שאלות חופשיות';
     ctxLabel.textContent  = 'ממתין';
     ctxLabel.style.background   = '#fef9c3';
@@ -958,8 +961,10 @@ function setActivityState(state) {
     ctxLabel.style.color        = '#92400e';
     _inActivityMode = false;
   } else {
-    emptyEl.style.display = 'none';
-    cardEl.style.display  = 'block';
+    emptyEl.style.display  = 'none';
+    cardEl.style.display   = 'block';
+    subPanel.style.display = 'block';
+    if (secLabel) secLabel.style.display = 'block';
     subHint.textContent   = 'כתוב כאן את תשובתך לפעילות: ניתוח פסקת פתיחה';
     subTa.placeholder     = 'כתוב כאן את תשובתך לפעילות הנוכחית...';
     botLabel.textContent  = 'ניתוח פסקת פתיחה';
