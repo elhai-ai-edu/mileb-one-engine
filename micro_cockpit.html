@@ -2044,7 +2044,6 @@ fetch('/config.json').then(r => r.json()).then(async (config) => {
     sel.innerHTML = lockToPresetCourse ? '' : '<option value="">— בחר קורס או כלי —</option>';
     if (lockToPresetCourse) {
       sel.disabled = true;
-      sel.setAttribute('aria-disabled', 'true');
     }
   });
 
@@ -2166,7 +2165,11 @@ fetch('/config.json').then(r => r.json()).then(async (config) => {
     if (prepSel) prepSel.value = presetCourseId;
     syncFromSelector('botSelect');
     const resumed = await tryResumeSession(presetCourseId, presetUnitId);
-    if (!resumed) await openSession();
+    if (!resumed) {
+      currentLessonId = presetCourseId;
+      currentUnitId = presetUnitId || currentUnitId || "unit_01";
+      await openSession();
+    }
   }
 }).catch(e => console.error("Config load error:", e));
 
