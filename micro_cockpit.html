@@ -1491,7 +1491,7 @@ const facultyId = sessionStorage.getItem("facultyId") || "f_" + Array.from(crypt
 sessionStorage.setItem("facultyId", facultyId);
 const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
 const cockpitParams = new URLSearchParams(location.search);
-const presetCourseId = cockpitParams.get("courseId") || "";
+const presetCourseId = cockpitParams.get("courseId") || cockpitParams.get("classId") || "";
 const presetUnitId = cockpitParams.get("unitId") || "unit_01";
 
 let sessionId   = null;
@@ -2032,17 +2032,38 @@ function syncCockpitNavOffset() {
 // Only show real courses (my_courses) + faculty tools.
 // branches.courses.items are generic shared bots — not class sessions.
 // ─────────────────────────────────────────
-fetch('/config.json').then(r => r.json()).then(config => {
+fetch('/config.json').then(r => r.json()).then(async (config) => {
   CONFIG = config;
   const liveSel = document.getElementById('botSelect');
   const prepSel = document.getElementById('botSelectPrep');
+  const courses = config.my_courses || {};
+  const lockToPresetCourse = !!presetCourseId && !!courses[presetCourseId];
+
   [liveSel, prepSel].forEach(sel => {
-    if (sel) sel.innerHTML = '<option value="">— בחר קורס או כלי —</option>';
+    if (!sel) return;
+    sel.innerHTML = lockToPresetCourse ? '' : '<option value="">— בחר קורס או כלי —</option>';
+    if (lockToPresetCourse) {
+      sel.disabled = true;
+    }
   });
 
+  if (lockToPresetCourse) {
+    const presetCourseName = courses[presetCourseId]?.name || presetCourseId;
+    [liveSel, prepSel].forEach(sel => {
+      if (!sel) return;
+      const opt = document.createElement('option');
+      opt.value = presetCourseId;
+      opt.dataset.type = 'course';
+      opt.textContent = presetCourseName;
+      sel.appendChild(opt);
+      sel.value = presetCourseId;
+      const field = sel.closest('.field');
+      if (field) field.style.display = 'none';
+    });
+  }
+
   // ── Real courses from my_courses (same source as students.html + waiting_lobby.html) ──
-  const courses = config.my_courses || {};
-  if (Object.keys(courses).length) {
+  if (!lockToPresetCourse && Object.keys(courses).length) {
     for (const [courseId, course] of Object.entries(courses)) {
       [liveSel, prepSel].forEach(sel => {
         if (!sel) return;
@@ -2063,7 +2084,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
   // ── Faculty tools ──
   const facultyItems = config.branches?.faculty?.items || {};
-  if (Object.keys(facultyItems).length) {
+  if (!lockToPresetCourse && Object.keys(facultyItems).length) {
     for (const [id, bot] of Object.entries(facultyItems)) {
       [liveSel, prepSel].forEach(sel => {
         if (!sel) return;
@@ -2139,11 +2160,16 @@ fetch('/config.json').then(r => r.json()).then(config => {
   if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
   if (prepSel) prepSel.addEventListener('change', () => syncFromSelector('botSelectPrep'));
 
-  if (presetCourseId) {
+  if (lockToPresetCourse) {
     if (liveSel) liveSel.value = presetCourseId;
     if (prepSel) prepSel.value = presetCourseId;
     syncFromSelector('botSelect');
-    tryResumeSession(presetCourseId, presetUnitId);
+    const resumed = await tryResumeSession(presetCourseId, presetUnitId);
+    if (!resumed) {
+      currentLessonId = presetCourseId;
+      currentUnitId = presetUnitId || currentUnitId || "unit_01";
+      await openSession();
+    }
   }
 }).catch(e => console.error("Config load error:", e));
 
@@ -2352,11 +2378,11 @@ async function returnStudentsFromLobby() {
 
 async function tryResumeSession(classId, unitId) {
   const db = getRealtimeDb();
-  if (!db || !classId) return;
+  if (!db || !classId) return false;
   try {
     const snap = await db.ref(`${ACTIVE_SESSIONS_NODE}/${classId}_${unitId}`).once('value');
     const active = snap.val();
-    if (!active || active.status !== 'active' || !active.sessionId) return;
+    if (!active || active.status !== 'active' || !active.sessionId) return false;
 
     sessionId       = active.sessionId;
     currentLessonId = classId;
@@ -2375,8 +2401,10 @@ async function tryResumeSession(classId, unitId) {
     // Sync lobby button state from Firebase
     const stateSnap = await db.ref(`sessions/${sessionId}/state`).once('value');
     syncLobbyButtons(!!(stateSnap.val()?.lobby_mode));
+    return true;
   } catch (e) {
     console.warn('[tryResumeSession] could not restore session:', e);
+    return false;
   }
 }
 
