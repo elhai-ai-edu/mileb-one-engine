@@ -1136,13 +1136,17 @@ body { background: var(--bg) !important; }
 </div>
 
 <div id="cockpit-nav">
-  <div class="phase-card active" id="phase-card-course" onclick="switchPhase('course')">
+  <div class="phase-card active" id="phase-card-course" role="button" tabindex="0"
+       onclick="switchPhase('course')"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchPhase('course');}">
     <div class="phase-card-phase">שלב 1</div>
     <div class="phase-card-title">🎓 עיצוב קורס</div>
     <div class="phase-card-meta"><span class="phase-card-progress" id="course-phase-progress">0 / 5 הושלמו</span></div>
   </div>
-  <div class="phase-divider-arrow">&#x2192;</div>
-  <div class="phase-card" id="phase-card-lesson" onclick="switchPhase('lesson')">
+  <div class="phase-divider-arrow" aria-hidden="true">&#x2192;</div>
+  <div class="phase-card" id="phase-card-lesson" role="button" tabindex="0"
+       onclick="switchPhase('lesson')"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchPhase('lesson');}">
     <div class="phase-card-phase">שלב 2</div>
     <div class="phase-card-title">📋 עיצוב שיעור</div>
     <div class="phase-card-meta"><span class="phase-card-status" id="lesson-phase-status-badge">ממתין לעיצוב קורס</span></div>
@@ -1164,21 +1168,26 @@ body { background: var(--bg) !important; }
   <div id="phase-course">
 
     <!-- ── Wizard step navigation ── -->
-    <div class="wizard-nav" id="wizard-nav">
-      <button class="wizard-step-btn active" data-wstep="1" onclick="switchWizardStep(1)">
-        <span class="ws-check" id="ws-check-1">○</span> 1. טעינת יחידות מ-Moodle
+    <div class="wizard-nav" id="wizard-nav" role="tablist" aria-label="שלבי עיצוב הקורס">
+      <button class="wizard-step-btn active" data-wstep="1" onclick="switchWizardStep(1)"
+              role="tab" aria-selected="true" aria-label="שלב 1: טעינת יחידות מ-Moodle, לא הושלם">
+        <span class="ws-check" id="ws-check-1" aria-hidden="true">○</span> 1. טעינת יחידות מ-Moodle
       </button>
-      <button class="wizard-step-btn" data-wstep="2" onclick="switchWizardStep(2)">
-        <span class="ws-check" id="ws-check-2">○</span> 2. יומן הוראה
+      <button class="wizard-step-btn" data-wstep="2" onclick="switchWizardStep(2)"
+              role="tab" aria-selected="false" aria-label="שלב 2: יומן הוראה, לא הושלם">
+        <span class="ws-check" id="ws-check-2" aria-hidden="true">○</span> 2. יומן הוראה
       </button>
-      <button class="wizard-step-btn" data-wstep="3" onclick="switchWizardStep(3)">
-        <span class="ws-check" id="ws-check-3">○</span> 3. חיבור קורס-מיומנויות
+      <button class="wizard-step-btn" data-wstep="3" onclick="switchWizardStep(3)"
+              role="tab" aria-selected="false" aria-label="שלב 3: חיבור קורס-מיומנויות, לא הושלם">
+        <span class="ws-check" id="ws-check-3" aria-hidden="true">○</span> 3. חיבור קורס-מיומנויות
       </button>
-      <button class="wizard-step-btn" data-wstep="4" onclick="switchWizardStep(4)">
-        <span class="ws-check" id="ws-check-4">○</span> 4. יחידות הקורס
+      <button class="wizard-step-btn" data-wstep="4" onclick="switchWizardStep(4)"
+              role="tab" aria-selected="false" aria-label="שלב 4: יחידות הקורס, לא הושלם">
+        <span class="ws-check" id="ws-check-4" aria-hidden="true">○</span> 4. יחידות הקורס
       </button>
-      <button class="wizard-step-btn" data-wstep="5" onclick="switchWizardStep(5)">
-        <span class="ws-check" id="ws-check-5">○</span> 5. מחזור חיי הכיתה
+      <button class="wizard-step-btn" data-wstep="5" onclick="switchWizardStep(5)"
+              role="tab" aria-selected="false" aria-label="שלב 5: מחזור חיי הכיתה, לא הושלם">
+        <span class="ws-check" id="ws-check-5" aria-hidden="true">○</span> 5. מחזור חיי הכיתה
       </button>
     </div>
 
@@ -4693,7 +4702,9 @@ function switchPhase(phase) {
 function switchWizardStep(step) {
   currentWizardStep = step;
   document.querySelectorAll('.wizard-step-btn').forEach(btn => {
-    btn.classList.toggle('active', parseInt(btn.dataset.wstep) === step);
+    const isActive = parseInt(btn.dataset.wstep) === step;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
   for (let i = 1; i <= 5; i++) {
     const panel = document.getElementById('ws-panel-' + i);
@@ -4705,6 +4716,11 @@ function markWizardStepDone(step) {
   courseStepDone[step] = true;
   const check = document.getElementById('ws-check-' + step);
   if (check) { check.textContent = '✓'; check.className = 'ws-check done'; }
+  const btn = document.querySelector(`.wizard-step-btn[data-wstep="${step}"]`);
+  if (btn) {
+    const label = btn.getAttribute('aria-label') || '';
+    btn.setAttribute('aria-label', label.replace(', לא הושלם', ', הושלם'));
+  }
   updateCourseProgress();
 }
 
@@ -4723,9 +4739,9 @@ function updateCourseProgress() {
 function checkLessonGate() {
   const gate = document.getElementById('lesson-gate');
   if (!gate) return;
-  const hasCourse = !!(macroCourseId || currentLessonId);
-  gate.style.display = hasCourse ? 'none' : '';
-  if (!hasCourse) {
+  const hasActiveContext = !!(macroCourseId || currentLessonId);
+  gate.style.display = hasActiveContext ? 'none' : '';
+  if (!hasActiveContext) {
     const missingEl = document.getElementById('lesson-gate-missing');
     if (missingEl) missingEl.textContent = 'עבור לשלב עיצוב הקורס, בחר קורס וטען נתוני ה-Moodle.';
   }
