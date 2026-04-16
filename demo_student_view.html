@@ -683,6 +683,18 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
           <div><div class="res-title">רשימת מושגים — ניתוח טקסט</div><div class="res-meta">מסמך עזר</div></div>
           <button class="res-btn">פתח</button>
         </div>
+      <div class="bookshelf-section">
+        <h3>משימות ממוקדות</h3>
+        <div class="resource-card" onclick="window.open('#','_blank')">
+          <div class="res-icon">📌</div>
+          <div><div class="res-title">לוח פדלט — תגובות לפסקה</div><div class="res-meta">Padlet · שיתופי</div></div>
+          <button class="res-btn">פתח</button>
+        </div>
+        <div class="resource-card" onclick="window.open('#','_blank')">
+          <div class="res-icon">📝</div>
+          <div><div class="res-title">שאלון — מה זיהיתי בפסקה?</div><div class="res-meta">Google Forms</div></div>
+          <button class="res-btn">מלא</button>
+        </div>
       </div>
     </aside>
 
@@ -846,7 +858,6 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       <!-- Bot Tabs (lesson mode) -->
       <div class="bot-tabs">
         <button class="bot-tab active" onclick="switchBot(this,'main')">🤖 בוט הקורס</button>
-        <button class="bot-tab" onclick="switchBot(this,'final')">📝 פרויקט גמר</button>
       </div>
 
       <!-- Bot Activity Context Line -->
