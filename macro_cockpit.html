@@ -1818,10 +1818,10 @@ const facultyId = sessionStorage.getItem("facultyId") || "f_" + Math.random().to
 sessionStorage.setItem("facultyId", facultyId);
 const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
 const cockpitParams = new URLSearchParams(location.search);
-const storedCourseId = sessionStorage.getItem("miled_active_course_id") || "";
-const storedUnitId = sessionStorage.getItem("miled_active_unit_id") || "";
-const presetCourseId = cockpitParams.get("courseId") || cockpitParams.get("classId") || storedCourseId;
-const presetUnitId = cockpitParams.get("unitId") || storedUnitId || "unit_01";
+const fallbackCourseId = sessionStorage.getItem("miled_active_course_id") || "";
+const fallbackUnitId = sessionStorage.getItem("miled_active_unit_id") || "";
+const presetCourseId = cockpitParams.get("courseId") || cockpitParams.get("classId") || fallbackCourseId;
+const presetUnitId = cockpitParams.get("unitId") || fallbackUnitId || "unit_01";
 if (presetCourseId) sessionStorage.setItem("miled_active_course_id", presetCourseId);
 if (presetUnitId) sessionStorage.setItem("miled_active_unit_id", presetUnitId);
 
