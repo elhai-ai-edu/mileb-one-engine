@@ -2393,7 +2393,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     });
     const indicator = document.getElementById('activeCourseIndicator');
     if (indicator) {
-      indicator.textContent = `📚 קורס פעיל: ${presetCourseName}`;
+      indicator.innerHTML = `📚 קורס פעיל: <strong>${presetCourseName}</strong>&nbsp;&nbsp;<button onclick="clearCourseLockUI()" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer;vertical-align:middle;">↩ החלף קורס</button>`;
       indicator.style.display = '';
     }
   }
@@ -2453,9 +2453,12 @@ fetch('/config.json').then(r => r.json()).then(config => {
     currentLessonId = selType === 'course' ? selectedValue : null;
 
     if (currentLessonId) {
-      sessionStorage.setItem("miled_active_course_id", currentLessonId);
+      const courseName = CONFIG?.my_courses?.[currentLessonId]?.name || currentLessonId;
+      applyCourseLockUI(currentLessonId, courseName);
       loadTemplates(currentLessonId);
       loadCourseMetadataWorkspace(currentLessonId);
+      macroCourseId = currentLessonId;
+      loadMacroCourseManagement(currentLessonId);
     } else {
       const tplSel = document.getElementById("template-select");
       if (tplSel) tplSel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
@@ -2479,7 +2482,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
   if (presetCourseId) {
     if (liveSel) liveSel.value = presetCourseId;
     if (prepSel) prepSel.value = presetCourseId;
-    syncFromSelector('botSelect');
+    syncFromSelector('botSelectPrep');
   }
 }).catch(e => console.error("Config load error:", e));
 
@@ -2672,6 +2675,71 @@ function getSelectedTeachingContext() {
   const classId = selType === 'course' ? selectedValue : null;
   return { selectedValue, selectedOpt, selType, classId };
 }
+
+// ─── Course lock UI helpers ───────────────────────────────────────────────────
+function applyCourseLockUI(courseId, courseName) {
+  const label = courseName || courseId;
+  const indicatorHtml = `📚 קורס פעיל: <strong>${label}</strong>&nbsp;&nbsp;<button onclick="clearCourseLockUI()" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer;vertical-align:middle;">↩ החלף קורס</button>`;
+  ['botSelect', 'botSelectPrep'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const field = sel.closest('.field');
+    if (field) field.style.display = 'none';
+  });
+  ['activeCourseIndicatorLive', 'activeCourseIndicatorPrep', 'activeCourseIndicator'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = indicatorHtml;
+    el.style.display = '';
+  });
+  sessionStorage.setItem("miled_active_course_id", courseId);
+  const url = new URL(location.href);
+  url.searchParams.set('courseId', courseId);
+  history.replaceState(null, '', url.toString());
+  const qs = `?courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(currentUnitId || 'unit_01')}`;
+  const toMacro1 = document.getElementById('toMacroCockpitBtn');
+  const toMacro2 = document.getElementById('backToUnitsBtn');
+  const toMicro  = document.getElementById('toMicroCockpitBtn');
+  const roleMicro = document.getElementById('roleMicroCockpitLink');
+  const roleMacro = document.getElementById('roleMacroCockpitLink');
+  if (toMacro1) toMacro1.href = `/macro_cockpit.html${qs}`;
+  if (toMacro2) toMacro2.href = `/macro_cockpit.html${qs}`;
+  if (toMicro)  toMicro.href  = `/micro_cockpit.html${qs}`;
+  if (roleMicro) roleMicro.href = `/micro_cockpit.html${qs}`;
+  if (roleMacro) roleMacro.href = `/macro_cockpit.html${qs}`;
+}
+
+function clearCourseLockUI() {
+  ['botSelect', 'botSelectPrep'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.disabled = false;
+    sel.value = '';
+    const field = sel.closest('.field');
+    if (field) field.style.display = '';
+  });
+  ['activeCourseIndicatorLive', 'activeCourseIndicatorPrep', 'activeCourseIndicator'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  currentLessonId = null;
+  sessionStorage.removeItem("miled_active_course_id");
+  const url = new URL(location.href);
+  url.searchParams.delete('courseId');
+  url.searchParams.delete('classId');
+  history.replaceState(null, '', url.toString());
+  const toMacro1 = document.getElementById('toMacroCockpitBtn');
+  const toMacro2 = document.getElementById('backToUnitsBtn');
+  const toMicro  = document.getElementById('toMicroCockpitBtn');
+  const roleMicro = document.getElementById('roleMicroCockpitLink');
+  const roleMacro = document.getElementById('roleMacroCockpitLink');
+  if (toMacro1) toMacro1.href = '/macro_cockpit.html';
+  if (toMacro2) toMacro2.href = '/macro_cockpit.html';
+  if (toMicro)  toMicro.href  = '/micro_cockpit.html';
+  if (roleMicro) roleMicro.href = '/micro_cockpit.html';
+  if (roleMacro) roleMacro.href = '/macro_cockpit.html';
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 function setOpenSessionBusy(isBusy) {
   const openBtn = document.getElementById('openBtn');
