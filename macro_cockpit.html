@@ -1086,6 +1086,112 @@ body { background: var(--bg) !important; }
 .lesson-gate-icon { font-size: 36px; margin-bottom: 10px; }
 .lesson-gate-title { font-size: 16px; font-weight: 700; color: #9a3412; margin-bottom: 8px; }
 .lesson-gate-missing { font-size: 13px; color: #92400e; margin-bottom: 18px; line-height: 1.6; }
+
+/* ─── Lesson Design Navigator ─── */
+.lesson-design-banner {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid #c7d2fe;
+  background: linear-gradient(135deg, #eef2ff, #f8fafc);
+  display: grid;
+  gap: 8px;
+}
+.lesson-design-banner-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lesson-design-banner-index {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #3730a3;
+}
+.lesson-design-banner-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #1e1b4b;
+}
+.lesson-design-banner-date {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 700;
+}
+.lesson-design-layout {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 14px;
+  align-items: start;
+}
+.lesson-plan-sidebar {
+  border: 1.5px solid #dbeafe;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 12px;
+  position: sticky;
+  top: calc(var(--cockpit-nav-top, 74px) + 16px);
+  max-height: calc(100vh - var(--cockpit-nav-top, 74px) - 26px);
+  overflow-y: auto;
+}
+.lesson-plan-sidebar-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #1e3a8a;
+  margin-bottom: 8px;
+}
+.lesson-plan-list {
+  display: grid;
+  gap: 7px;
+}
+.lesson-plan-item {
+  width: 100%;
+  text-align: right;
+  border: 1.5px solid #dbeafe;
+  border-radius: 10px;
+  background: #fff;
+  padding: 9px 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.lesson-plan-item:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+.lesson-plan-item.active {
+  border-color: #6366f1;
+  background: #eef2ff;
+  box-shadow: 0 0 0 2px rgba(99,102,241,.12);
+}
+.lesson-plan-item-meta {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 2px;
+  font-weight: 700;
+}
+.lesson-plan-item-title {
+  font-size: 13px;
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.5;
+}
+.lesson-plan-item-date {
+  margin-top: 3px;
+  font-size: 11px;
+  color: #475569;
+}
+@media (max-width: 980px) {
+  .lesson-design-layout { grid-template-columns: 1fr; }
+  .lesson-plan-sidebar { position: static; max-height: none; }
+}
 </style>
 <title>MilEd.One — Macro Cockpit</title>
 
@@ -1621,7 +1727,21 @@ body { background: var(--bg) !important; }
       <select id="botSelectPrep"><option value="">טוען...</option></select>
     </div>
 
+    <div id="lessonDesignBanner" class="lesson-design-banner" style="display:none;">
+      <div class="lesson-design-banner-top">
+        <div class="lesson-design-banner-index">📍 <span id="lessonDesignLessonNum">בחר שיעור</span></div>
+        <div class="lesson-design-banner-date">
+          <label for="lessonDesignLessonDate">תאריך (לא חובה)</label>
+          <input id="lessonDesignLessonDate" type="date" class="lp-input" style="margin:0;min-width:160px;">
+        </div>
+      </div>
+      <div id="lessonDesignLessonTitle" class="lesson-design-banner-title">בחר שיעור מהרשימה</div>
+    </div>
+
     </div></div>
+
+    <div class="lesson-design-layout">
+    <div class="lesson-design-main">
 
     <!-- ── Tool 1: Pre-session Missions ── -->
     <div class="mc-section">
@@ -1753,6 +1873,15 @@ body { background: var(--bg) !important; }
 
     <div style="padding:16px 0 24px;text-align:center;">
       <button class="btn btn-outline" onclick="switchPhase('course')">&#x2190; חזרה לעיצוב קורס</button>
+    </div>
+
+    </div>
+    <aside class="lesson-plan-sidebar">
+      <div class="lesson-plan-sidebar-title">🧭 רשימת שיעורים מתוכננת</div>
+      <div id="lessonPlanSidebarList" class="lesson-plan-list">
+        <div class="thread-empty">בחר קורס כדי לראות שיעורים</div>
+      </div>
+    </aside>
     </div>
 
   </div><!-- /phase-lesson -->
@@ -2778,6 +2907,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
       sprintDrafts = [];
       renderImportedUnits();
       renderSprintDrafts();
+      renderLessonDesignNavigator();
     }
 
     const playlistLessonInput = document.getElementById("playlistLessonId");
@@ -2785,6 +2915,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
     fetchWaitingPressureForSelectedCourse();
     loadPreSessionMission();
+    renderLessonDesignNavigator();
   };
 
   if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
@@ -2802,6 +2933,8 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
 let macroCourseId = presetCourseId || cockpitParams.get("classId") || "";
 let macroBookshelfUnits = [];
+const MAX_SESSION_LESSONS = 14;
+const MAX_TOPIC_LESSONS = 50;
 
 if (macroCourseId) {
   loadMacroCourseManagement(macroCourseId);
@@ -2818,6 +2951,137 @@ let macroUnitsMode = "Session";
 
 function macroToSessionUnitId(i) { return `session_${String(i).padStart(2,"0")}`; }
 function macroToTopicUnitId(i)   { return `topic_${String(i).padStart(2,"0")}`; }
+function parseLessonNumber(unitId, fallbackIndex) {
+  const match = String(unitId || "").match(/(\d+)$/);
+  return match ? Number(match[1]) : fallbackIndex + 1;
+}
+function getLessonDateStorageKey(courseId, unitId) {
+  return `miled_lesson_date_${courseId}_${unitId}`;
+}
+function getLessonDateValue(courseId, unitId, row = {}) {
+  if (!courseId || !unitId) return "";
+  const localValue = localStorage.getItem(getLessonDateStorageKey(courseId, unitId)) || "";
+  if (localValue) return localValue;
+  const rowValue = String(row?.lessonDate || row?.date || "").trim();
+  return rowValue ? rowValue.slice(0, 10) : "";
+}
+function setLessonDateValue(courseId, unitId, value) {
+  if (!courseId || !unitId) return;
+  const clean = String(value || "").trim();
+  const key = getLessonDateStorageKey(courseId, unitId);
+  if (clean) localStorage.setItem(key, clean);
+  else localStorage.removeItem(key);
+}
+function inferMacroUnitsModeFromMap() {
+  const keys = Object.keys(macroUnitsMap || {});
+  if (keys.some(key => key.startsWith("topic_"))) return "Topic";
+  if (keys.some(key => key.startsWith("session_"))) return "Session";
+  return macroUnitsMode;
+}
+function buildPlannedLessonItems() {
+  const mode = inferMacroUnitsModeFromMap();
+  const total = mode === "Topic" ? MAX_TOPIC_LESSONS : MAX_SESSION_LESSONS;
+  const unitIds = Array.from({ length: total }, (_, i) => (
+    mode === "Topic" ? macroToTopicUnitId(i + 1) : macroToSessionUnitId(i + 1)
+  ));
+  const courseId = currentCourseForSync();
+  return unitIds.map((unitId, index) => {
+    const row = macroUnitsMap?.[unitId] || {};
+    const lessonNumber = parseLessonNumber(unitId, index);
+    const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
+    const date = getLessonDateValue(courseId, unitId, row);
+    return { unitId, lessonNumber, title, date };
+  });
+}
+function updateLessonDesignBanner() {
+  const banner = document.getElementById("lessonDesignBanner");
+  const numEl = document.getElementById("lessonDesignLessonNum");
+  const titleEl = document.getElementById("lessonDesignLessonTitle");
+  const dateInput = document.getElementById("lessonDesignLessonDate");
+  if (!banner || !numEl || !titleEl || !dateInput) return;
+  const courseId = currentCourseForSync();
+  if (!courseId) {
+    banner.style.display = "none";
+    return;
+  }
+  const lessons = buildPlannedLessonItems();
+  if (!lessons.length) {
+    banner.style.display = "none";
+    return;
+  }
+  const active = lessons.find(item => item.unitId === currentUnitId) || lessons[0];
+  banner.style.display = "";
+  numEl.textContent = `שיעור ${active.lessonNumber}`;
+  titleEl.textContent = active.title;
+  dateInput.value = active.date || "";
+}
+function renderLessonDesignNavigator() {
+  const listEl = document.getElementById("lessonPlanSidebarList");
+  if (!listEl) return;
+  const courseId = currentCourseForSync();
+  if (!courseId) {
+    listEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות שיעורים</div>';
+    updateLessonDesignBanner();
+    return;
+  }
+  const lessons = buildPlannedLessonItems();
+  if (!lessons.length) {
+    listEl.innerHTML = '<div class="thread-empty">טרם הוגדרו שיעורים</div>';
+    updateLessonDesignBanner();
+    return;
+  }
+  if (!lessons.some(item => item.unitId === currentUnitId)) {
+    currentUnitId = lessons[0].unitId;
+    sessionStorage.setItem("miled_active_unit_id", currentUnitId);
+  }
+  const lessonInput = document.getElementById("playlistLessonId");
+  if (lessonInput) lessonInput.value = currentUnitId;
+  listEl.innerHTML = lessons.map(item => `
+    <button type="button" class="lesson-plan-item ${item.unitId === currentUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}">
+      <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
+      <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
+      ${item.date ? `<div class="lesson-plan-item-date">📅 ${escapeHtml(item.date)}</div>` : ''}
+    </button>
+  `).join("");
+  listEl.querySelectorAll("[data-lesson-nav-unit]").forEach(button => {
+    button.addEventListener("click", () => {
+      const unitId = button.getAttribute("data-lesson-nav-unit");
+      if (!unitId) return;
+      selectLessonDesignUnit(unitId, { reloadMetadata: true });
+    });
+  });
+  updateLessonDesignBanner();
+}
+function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
+  if (!unitId) return;
+  currentUnitId = unitId;
+  sessionStorage.setItem("miled_active_unit_id", unitId);
+  const lessonInput = document.getElementById("playlistLessonId");
+  if (lessonInput && lessonInput.value !== unitId) lessonInput.value = unitId;
+  renderLessonDesignNavigator();
+  if (reloadMetadata) loadCourseMetadataWorkspace();
+}
+async function saveLessonDateForCurrentUnit() {
+  const courseId = currentCourseForSync();
+  if (!courseId || !currentUnitId || !facultyId) return;
+  const unitData = macroUnitsMap[currentUnitId] || {};
+  const lessonDate = getLessonDateValue(courseId, currentUnitId, unitData);
+  const res = await callClassroom({
+    action: "unit_upsert",
+    userId: facultyId,
+    courseId,
+    unitId: currentUnitId,
+    topicName: String(unitData.topicName || "").trim(),
+    structureType: String(unitData.structureType || macroUnitsMode || "Session"),
+    lessonDate
+  });
+  if (res?.ok) {
+    macroUnitsMap[currentUnitId] = {
+      ...(macroUnitsMap[currentUnitId] || {}),
+      lessonDate: lessonDate || null
+    };
+  }
+}
 
 async function loadMacroCourseUnits(courseId) {
   const tbody = document.getElementById("macro-units-tbody");
@@ -2843,7 +3107,7 @@ function macroRenderUnits() {
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">בחר קורס דרך ה-URL (courseId=...)</td></tr>`;
     return;
   }
-  const total = macroUnitsMode === "Session" ? 14 : 50;
+  const total = macroUnitsMode === "Session" ? MAX_SESSION_LESSONS : MAX_TOPIC_LESSONS;
   const unitIds = Array.from({ length: total }, (_, i) =>
     macroUnitsMode === "Session" ? macroToSessionUnitId(i + 1) : macroToTopicUnitId(i + 1)
   );
@@ -2861,6 +3125,7 @@ function macroRenderUnits() {
     input.addEventListener("change", () => macroAutoSaveUnitRow(input.closest("tr")));
     input.addEventListener("blur",   () => macroAutoSaveUnitRow(input.closest("tr")));
   });
+  renderLessonDesignNavigator();
 }
 
 async function macroAutoSaveUnitRow(row) {
@@ -2872,13 +3137,15 @@ async function macroAutoSaveUnitRow(row) {
   if (!unitId) return;
   if (statusEl) { statusEl.textContent = "שומר..."; statusEl.className = "unit-row-status"; }
   try {
-    const res = await callClassroom({ action: "unit_upsert", userId: facultyId, courseId: macroCourseId, unitId, structureType: macroUnitsMode, topicName });
+    const lessonDate = getLessonDateValue(macroCourseId, unitId, macroUnitsMap[unitId] || {});
+    const res = await callClassroom({ action: "unit_upsert", userId: facultyId, courseId: macroCourseId, unitId, structureType: macroUnitsMode, topicName, lessonDate });
     if (!res?.ok) throw new Error("not ok");
-    macroUnitsMap[unitId] = { ...(macroUnitsMap[unitId] || {}), topicName, structureType: macroUnitsMode };
+    macroUnitsMap[unitId] = { ...(macroUnitsMap[unitId] || {}), topicName, structureType: macroUnitsMode, lessonDate: lessonDate || null };
     if (statusEl) {
       statusEl.textContent = "נשמר"; statusEl.className = "unit-row-status ok";
       setTimeout(() => { statusEl.textContent = "מוכן"; statusEl.className = "unit-row-status"; }, 1400);
     }
+    renderLessonDesignNavigator();
   } catch {
     if (statusEl) { statusEl.textContent = "שגיאה"; statusEl.className = "unit-row-status err"; }
   }
@@ -3035,7 +3302,9 @@ function clearCourseLockUI() {
   });
   currentLessonId = null;
   macroCourseId = "";
+  currentUnitId = macroToSessionUnitId(1);
   sessionStorage.removeItem("miled_active_course_id");
+  sessionStorage.removeItem("miled_active_unit_id");
   const url = new URL(location.href);
   url.searchParams.delete('courseId');
   url.searchParams.delete('classId');
@@ -3050,6 +3319,9 @@ function clearCourseLockUI() {
   if (toMicro)  toMicro.href  = '/micro_cockpit.html';
   if (roleMicro) roleMicro.href = '/micro_cockpit.html';
   if (roleMacro) roleMacro.href = '/macro_cockpit.html';
+  const lessonInput = document.getElementById("playlistLessonId");
+  if (lessonInput) lessonInput.value = currentUnitId;
+  renderLessonDesignNavigator();
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -3909,6 +4181,7 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     sprintDrafts = [];
     renderImportedUnits();
     renderSprintDrafts();
+    renderLessonDesignNavigator();
     if (statusEl) statusEl.textContent = 'בחר קורס כדי לטעון מטא-דאטה';
     return;
   }
@@ -3922,10 +4195,14 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     selectedPlaylistUnitIds = new Set(Array.isArray(existingPlaylist?.unitIds) ? existingPlaylist.unitIds : []);
     const sprintSet = data?.sprintDefinitions?.[lessonId]?.items || [];
     sprintDrafts = Array.isArray(sprintSet) ? sprintSet : [];
+    currentUnitId = lessonId;
+    sessionStorage.setItem("miled_active_unit_id", currentUnitId);
     renderImportedUnits();
     renderSprintDrafts();
+    renderLessonDesignNavigator();
     if (statusEl) statusEl.textContent = importedMetadataCache ? `נטענו ${importedMetadataCache.unitCount || 0} יחידות מהמטא-דאטה` : 'אין מטא-דאטה לקורס זה';
   } catch (error) {
+    renderLessonDesignNavigator();
     if (statusEl) statusEl.textContent = 'שגיאה בטעינת מטא-דאטה';
   }
 }
@@ -4756,7 +5033,19 @@ loadPreSessionMission();
 renderImportedUnits();
 renderSprintDrafts();
 loadCourseMetadataWorkspace();
-document.getElementById("playlistLessonId")?.addEventListener("change", () => loadCourseMetadataWorkspace());
+renderLessonDesignNavigator();
+document.getElementById("playlistLessonId")?.addEventListener("change", (event) => {
+  const unitId = String(event?.target?.value || "").trim();
+  if (!unitId) return;
+  selectLessonDesignUnit(unitId, { reloadMetadata: true });
+});
+document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (event) => {
+  const courseId = currentCourseForSync();
+  if (!courseId || !currentUnitId) return;
+  setLessonDateValue(courseId, currentUnitId, event?.target?.value || "");
+  saveLessonDateForCurrentUnit().catch(() => {});
+  renderLessonDesignNavigator();
+});
 
 document.addEventListener("click", (event) => {
   const avatarEl = event.target?.closest?.(".thread-msg-avatar");
