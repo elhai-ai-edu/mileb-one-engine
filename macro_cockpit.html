@@ -2933,6 +2933,8 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
 let macroCourseId = presetCourseId || cockpitParams.get("classId") || "";
 let macroBookshelfUnits = [];
+const MAX_SESSION_LESSONS = 14;
+const MAX_TOPIC_LESSONS = 50;
 
 if (macroCourseId) {
   loadMacroCourseManagement(macroCourseId);
@@ -2950,7 +2952,7 @@ let macroUnitsMode = "Session";
 function macroToSessionUnitId(i) { return `session_${String(i).padStart(2,"0")}`; }
 function macroToTopicUnitId(i)   { return `topic_${String(i).padStart(2,"0")}`; }
 function parseLessonNumber(unitId, fallbackIndex) {
-  const match = String(unitId || "").match(/(\d+)/);
+  const match = String(unitId || "").match(/(\d+)$/);
   return match ? Number(match[1]) : fallbackIndex + 1;
 }
 function getLessonDateStorageKey(courseId, unitId) {
@@ -2978,7 +2980,7 @@ function inferMacroUnitsModeFromMap() {
 }
 function buildPlannedLessonItems() {
   const mode = inferMacroUnitsModeFromMap();
-  const total = mode === "Topic" ? 50 : 14;
+  const total = mode === "Topic" ? MAX_TOPIC_LESSONS : MAX_SESSION_LESSONS;
   const unitIds = Array.from({ length: total }, (_, i) => (
     mode === "Topic" ? macroToTopicUnitId(i + 1) : macroToSessionUnitId(i + 1)
   ));
@@ -3030,6 +3032,7 @@ function renderLessonDesignNavigator() {
   }
   if (!lessons.some(item => item.unitId === currentUnitId)) {
     currentUnitId = lessons[0].unitId;
+    sessionStorage.setItem("miled_active_unit_id", currentUnitId);
   }
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = currentUnitId;
@@ -3083,7 +3086,7 @@ function macroRenderUnits() {
     tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">בחר קורס דרך ה-URL (courseId=...)</td></tr>`;
     return;
   }
-  const total = macroUnitsMode === "Session" ? 14 : 50;
+  const total = macroUnitsMode === "Session" ? MAX_SESSION_LESSONS : MAX_TOPIC_LESSONS;
   const unitIds = Array.from({ length: total }, (_, i) =>
     macroUnitsMode === "Session" ? macroToSessionUnitId(i + 1) : macroToTopicUnitId(i + 1)
   );
