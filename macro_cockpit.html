@@ -2393,7 +2393,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     });
     const indicator = document.getElementById('activeCourseIndicator');
     if (indicator) {
-      indicator.innerHTML = `📚 קורס פעיל: <strong>${presetCourseName}</strong>&nbsp;&nbsp;<button onclick="clearCourseLockUI()" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer;vertical-align:middle;">↩ החלף קורס</button>`;
+      indicator.innerHTML = `📚 קורס פעיל: <strong>${escapeHtml(presetCourseName)}</strong>&nbsp;&nbsp;<button onclick="clearCourseLockUI()" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer;vertical-align:middle;">↩ החלף קורס</button>`;
       indicator.style.display = '';
     }
   }
@@ -2678,7 +2678,7 @@ function getSelectedTeachingContext() {
 
 // ─── Course lock UI helpers ───────────────────────────────────────────────────
 function applyCourseLockUI(courseId, courseName) {
-  const label = courseName || courseId;
+  const label = escapeHtml(courseName || courseId);
   const indicatorHtml = `📚 קורס פעיל: <strong>${label}</strong>&nbsp;&nbsp;<button onclick="clearCourseLockUI()" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer;vertical-align:middle;">↩ החלף קורס</button>`;
   ['botSelect', 'botSelectPrep'].forEach(id => {
     const sel = document.getElementById(id);
@@ -2723,6 +2723,7 @@ function clearCourseLockUI() {
     if (el) el.style.display = 'none';
   });
   currentLessonId = null;
+  macroCourseId = "";
   sessionStorage.removeItem("miled_active_course_id");
   const url = new URL(location.href);
   url.searchParams.delete('courseId');
