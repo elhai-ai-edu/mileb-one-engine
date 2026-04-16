@@ -1481,80 +1481,127 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 </div>
 
 <script>
+/* ══════════════════════════════════════════════════════
+   MiledState — Single State Machine for all lesson modes
+   Each state is the single source of truth for:
+   - which screen is active
+   - which data-mode is set (drives all CSS structural rules)
+   - which within-lesson panels are visible
+   - bot bubble text + float panel context
+   CSS data-mode rules handle structural layout/visibility.
+   JS handles only fine-grained panel state within lesson mode.
+══════════════════════════════════════════════════════ */
+const MiledState = {
+  current: 'waiting',
+
+  config: {
+    waiting: {
+      screen: 'waiting',
+    },
+    lesson_empty: {
+      screen: 'lesson', mode: 'lesson',
+      activityEmpty: true,  activityCard: false,
+      submission: false, peerInsight: false, peerReview: false,
+      bubbleText: 'שאל שאלה חופשית',
+      floatCtx:   'שאלות חופשיות — אין פעילות פעילה',
+      botLabel:   'שאלות חופשיות',
+      onEnter() { loadCourseBotChat(); },
+    },
+    lesson_activity: {
+      screen: 'lesson', mode: 'lesson',
+      activityEmpty: false, activityCard: true,
+      submission: true, peerInsight: true, peerReview: false,
+      bubbleText: 'צריך עזרה בניתוח?',
+      floatCtx:   'ליווי למשימה: ניתוח פסקת פתיחה',
+      botLabel:   'ניתוח פסקת פתיחה',
+      onEnter() { loadCourseBotChat(); },
+    },
+    peer_review: {
+      screen: 'lesson', mode: 'lesson',
+      activityEmpty: false, activityCard: false,
+      submission: false, peerInsight: false, peerReview: true,
+      bubbleText: 'עזרה בהערכת עמיתים?',
+      floatCtx:   'הערכת עמיתים — ניתוח פסקת פתיחה',
+      botLabel:   'הערכת עמיתים',
+      onEnter() {},
+    },
+    project: {
+      screen: 'lesson', mode: 'project',
+      onEnter() { loadProjectBotChat(); },
+    },
+    group: {
+      screen: 'lesson', mode: 'group',
+      onEnter() { loadGroupBotChat(); startGroupTimer(); simulateGroupTyping(); },
+    },
+  },
+
+  go(name) {
+    const s = this.config[name];
+    if (!s) return;
+    const prev = this.current;
+    this.current = name;
+
+    // ── Screen ──
+    document.getElementById('waitingScreen').classList.toggle('active', s.screen === 'waiting');
+    document.getElementById('lessonScreen').classList.toggle('active',  s.screen === 'lesson');
+
+    // ── data-mode → drives all CSS structural rules ──
+    if (s.mode) document.getElementById('lessonScreen').dataset.mode = s.mode;
+
+    // ── Within-lesson fine-grained panel visibility ──
+    if (s.activityEmpty !== undefined) {
+      document.getElementById('activityEmpty').style.display    = s.activityEmpty ? 'flex'  : 'none';
+      document.getElementById('activityCard').style.display     = s.activityCard  ? 'block' : 'none';
+      document.querySelector('.submission-panel').style.display  = s.submission    ? 'block' : 'none';
+      document.getElementById('peerInsightPanel').style.display  = s.peerInsight   ? 'block' : 'none';
+      document.getElementById('peerReviewPanel').style.display   = s.peerReview    ? 'block' : 'none';
+    }
+
+    // ── Bot context labels ──
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+    set('botActivityLabel', s.botLabel);
+    set('bubbleText',       s.bubbleText);
+    set('botFloatCtx',      s.floatCtx);
+
+    // ── Cleanup: close float panel when leaving lesson mode ──
+    if (s.mode !== 'lesson' || s.screen !== 'lesson') {
+      document.getElementById('botFloatPanel')?.classList.remove('open');
+      document.getElementById('botFloatOverlay')?.classList.remove('open');
+    }
+
+    // ── Cleanup: stop group timer when leaving group ──
+    if (prev === 'group' && name !== 'group') stopGroupTimer();
+
+    // ── Bot tab reset on entering lesson mode ──
+    if (s.mode === 'lesson') {
+      document.querySelectorAll('.bot-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.bot-tab')[0]?.classList.add('active');
+    }
+
+    // ── onEnter callback ──
+    if (s.onEnter) s.onEnter();
+  },
+
+  bubbleAllowed() {
+    return ['lesson_empty','lesson_activity','peer_review'].includes(this.current);
+  },
+};
+
 /* ════════════════ Demo Controls ════════════════ */
-function showWaiting() {
-  document.getElementById('waitingScreen').classList.add('active');
-  document.getElementById('lessonScreen').classList.remove('active');
-}
-function showLesson() {
-  document.getElementById('waitingScreen').classList.remove('active');
-  document.getElementById('lessonScreen').classList.add('active');
-}
+function showWaiting()        { MiledState.go('waiting'); }
+function showLessonEmpty()    { MiledState.go('lesson_empty'); }
+function showLessonActivity() { MiledState.go('lesson_activity'); }
 function openDoor() {
   const anim = document.getElementById('doorAnim');
   anim.classList.add('visible');
-  setTimeout(() => { anim.classList.remove('visible'); showLessonEmpty(); }, 2200);
+  setTimeout(() => { anim.classList.remove('visible'); MiledState.go('lesson_empty'); }, 2200);
 }
-function showLessonEmpty() {
-  showLesson();
-  exitProjectMode();
-  setActivityState('empty');
-}
-function showLessonActivity() {
-  showLesson();
-  exitProjectMode();
-  setActivityState('active');
-}
+function demoEnterProject()   { MiledState.go('project'); }
+function demoEnterGroup()     { MiledState.go('group'); }
 function toggleRecall()    { document.getElementById('recallBanner').classList.toggle('visible'); }
 function toggleBroadcast() {
   const b = document.getElementById('broadcastBanner');
   b.style.display = b.style.display === 'none' ? 'flex' : 'none';
-}
-function demoEnterProject() {
-  showLesson();
-  enterProjectMode();
-}
-function demoEnterGroup() {
-  showLesson();
-  enterGroupMode();
-}
-
-/* ════════════════ Activity State ════════════════ */
-// 'empty' = ממתין להנחיה | 'active' = פעילות פתוחה
-function setActivityState(state) {
-  const emptyEl  = document.getElementById('activityEmpty');
-  const cardEl   = document.getElementById('activityCard');
-  const subHint  = document.getElementById('subHint');
-  const subTa    = document.getElementById('writeTa');
-  const botLabel = document.getElementById('botActivityLabel');
-
-  const subPanel    = document.querySelector('.submission-panel');
-  const insightPanel = document.getElementById('peerInsightPanel');
-  const reviewPanel  = document.getElementById('peerReviewPanel');
-
-  if (state === 'empty') {
-    emptyEl.style.display       = 'flex';
-    cardEl.style.display        = 'none';
-    subPanel.style.display      = 'none';
-    insightPanel.style.display  = 'none';
-    reviewPanel.style.display   = 'none';
-    botLabel.textContent  = 'שאלות חופשיות';
-    document.getElementById('bubbleText').textContent  = 'שאל שאלה חופשית';
-    document.getElementById('botFloatCtx').textContent = 'שאלות חופשיות — אין פעילות פעילה';
-    _inActivityMode = false;
-  } else {
-    emptyEl.style.display       = 'none';
-    cardEl.style.display        = 'block';
-    subPanel.style.display      = 'block';
-    insightPanel.style.display  = 'block';
-    reviewPanel.style.display   = 'none';
-    subHint.textContent   = 'כתוב כאן את תשובתך לפעילות: ניתוח פסקת פתיחה';
-    subTa.placeholder     = 'כתוב כאן את תשובתך לפעילות הנוכחית...';
-    botLabel.textContent  = 'ניתוח פסקת פתיחה';
-    document.getElementById('bubbleText').textContent  = 'צריך עזרה בניתוח?';
-    document.getElementById('botFloatCtx').textContent = 'ליווי למשימה: ניתוח פסקת פתיחה';
-    _inActivityMode = true;
-  }
 }
 
 /* ════════════════ Project Mode ════════════════ */
@@ -1568,9 +1615,7 @@ function openBotFloat() {
 function closeBotFloat() {
   document.getElementById('botFloatPanel').classList.remove('open');
   document.getElementById('botFloatOverlay').classList.remove('open');
-  // Restore bubble only in lesson mode
-  const mode = document.getElementById('lessonScreen')?.dataset?.mode;
-  if (mode === 'lesson') {
+  if (MiledState.bubbleAllowed()) {
     document.getElementById('botBubble').style.display = 'flex';
   }
 }
@@ -1587,17 +1632,8 @@ function sendFloatChat() {
   }, 700);
 }
 
-function enterProjectMode() {
-  closeBotFloat();
-  document.getElementById('lessonScreen').dataset.mode = 'project';
-  loadProjectBotChat();
-}
-function exitProjectMode() {
-  document.getElementById('lessonScreen').dataset.mode = 'lesson';
-  loadCourseBotChat();
-  document.querySelectorAll('.bot-tab').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.bot-tab')[0]?.classList.add('active');
-}
+function enterProjectMode() { MiledState.go('project'); }
+function exitProjectMode()  { MiledState.go('lesson_empty'); }
 
 const stageLabels = ['','בחירת בעיה','ניסיונות קודמים וסיבות לאי הצלחה','מקורות מידע ובחינת מהימנות','שתי אלטרנטיבות — יתרונות/חסרונות','בחירת פתרון ונימוקים','כתיבת המסמך המסכם','הצגה בפני הקהל'];
 
@@ -1642,20 +1678,16 @@ function selectSprint(n) {
 }
 
 /* ════════════════ Bot Switching ════════════════ */
-let _inProjectMode   = false;
-let _inActivityMode  = true;
 let replyIdx = 0;
 
 function switchBot(btn, type) {
   document.querySelectorAll('.bot-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  _inProjectMode = (type === 'final');
   replyIdx = 0;
   if (type === 'main') loadCourseBotChat();
   else                 loadProjectBotChat();
 }
 function loadCourseBotChat() {
-  _inProjectMode = false;
   document.getElementById('chatWindow').innerHTML = `
     <div class="chat-bubble bot">
       שלום! אני כאן לעזור לך עם <strong>ניתוח פסקת הפתיחה</strong> 📚<br>
@@ -1663,7 +1695,6 @@ function loadCourseBotChat() {
     </div>`;
 }
 function loadProjectBotChat() {
-  _inProjectMode = true;
   replyIdx = 0;
   document.getElementById('chatWindow').innerHTML = `
     <div class="chat-bubble bot project-style">
@@ -1700,8 +1731,9 @@ function sendChat() {
   cw.appendChild(u); input.value = ''; cw.scrollTop = cw.scrollHeight;
   setTimeout(() => {
     const b = document.createElement('div');
-    b.className = 'chat-bubble bot' + (_inProjectMode ? ' project-style' : '');
-    const replies = _inProjectMode ? repliesProject : repliesGeneral;
+    const isProject = MiledState.current === 'project';
+    b.className = 'chat-bubble bot' + (isProject ? ' project-style' : '');
+    const replies = isProject ? repliesProject : repliesGeneral;
     b.textContent = replies[replyIdx % replies.length]; replyIdx++;
     cw.appendChild(b); cw.scrollTop = cw.scrollHeight;
   }, 700);
@@ -1778,10 +1810,7 @@ function sendSubmit() {
   // Transition to peer review after short delay
   const btn = event.target;
   btn.textContent = '✅ הוגש!'; btn.style.background = '#16a34a';
-  setTimeout(() => {
-    document.querySelector('.submission-panel').style.display = 'none';
-    document.getElementById('peerReviewPanel').style.display = 'block';
-  }, 1400);
+  setTimeout(() => MiledState.go('peer_review'), 1400);
 }
 
 /* ════════════════ Layer 1 — Peer Insight ════════════════ */
@@ -1806,39 +1835,31 @@ function sendPeerReview() {
       <div style="font-size:13px;color:var(--muted);">תודה — המשוב שלך עוזר לעמית/ה להשתפר.</div>
     </div>`;
 }
-function skipPeerReview() {
-  document.getElementById('peerReviewPanel').style.display = 'none';
-}
+function skipPeerReview() { MiledState.go('lesson_empty'); }
 
 /* ════════════════ Layer 3 — Group Mode ════════════════ */
 let _groupTimer = null;
 let _groupSeconds = 600;
 
-function enterGroupMode() {
-  exitProjectMode();
-  document.getElementById('lessonScreen').dataset.mode = 'group';
-  _groupSeconds = 600;
-  startGroupTimer();
-  loadGroupBotChat();
-  // Simulate peer typing after 3s
+function simulateGroupTyping() {
   setTimeout(() => {
-    document.getElementById('groupTypingIndicator').textContent = 'ירין כותב/ת...';
+    const indicator = document.getElementById('groupTypingIndicator');
+    if (!indicator) return;
+    indicator.textContent = 'ירין כותב/ת...';
     setTimeout(() => {
-      document.getElementById('groupTypingIndicator').textContent = '';
+      indicator.textContent = '';
       const ta = document.getElementById('groupTa');
-      ta.value = 'לפי הגישה הרטורית, הפסקה מתחילה בפנייה רגשית ';
+      if (ta && !ta.value) ta.value = 'לפי הגישה הרטורית, הפסקה מתחילה בפנייה רגשית ';
     }, 3500);
   }, 3000);
 }
 
-function exitGroupMode() {
-  stopGroupTimer();
-  document.getElementById('lessonScreen').dataset.mode = 'lesson';
-  setActivityState('active');
-}
+function enterGroupMode() { MiledState.go('group'); }
+function exitGroupMode()  { MiledState.go('lesson_activity'); }
 
 function startGroupTimer() {
   stopGroupTimer();
+  _groupSeconds = 600;
   updateTimerDisplay();
   _groupTimer = setInterval(() => {
     _groupSeconds--;
