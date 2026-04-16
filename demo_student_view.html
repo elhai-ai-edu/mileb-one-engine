@@ -632,29 +632,56 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
 /* ════ Layer 2 — Peer Review Panel ════ */
 .peer-review-panel {
-  padding: 14px 18px; border-top: 1px solid var(--line); flex-shrink: 0;
+  padding: 14px 18px; border-top: 2px solid #bfdbfe; flex-shrink: 0;
+  background: linear-gradient(180deg,#f0f7ff,#fff);
 }
 .peer-answer-card {
   background: #f8fafc; border: 1px solid var(--line);
-  border-radius: 10px; padding: 12px 14px; margin: 8px 0 12px;
+  border-radius: 10px; padding: 12px 14px; margin: 8px 0 14px;
 }
 .peer-answer-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .3px; }
 .peer-answer-text  { font-size: 13px; color: var(--navy); line-height: 1.6; }
 
-/* Activity rubric */
-.peer-rubric { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 10px; }
-.rubric-item { display: flex; flex-direction: column; gap: 5px; }
+/* Rubric — 4-level verbal scale */
+.peer-rubric { display: flex; flex-direction: column; gap: 12px; margin: 4px 0 14px; }
+.rubric-item { display: flex; flex-direction: column; gap: 6px; }
 .rubric-q    { font-size: 13px; font-weight: 700; color: var(--navy); }
-.rubric-pills { display: flex; gap: 6px; flex-wrap: wrap; }
-.rubric-pill {
-  font-size: 12px; font-weight: 700; padding: 5px 13px; border-radius: 999px;
-  border: 1.5px solid var(--line); background: #f8fafc; color: var(--muted);
+.rubric-scale { display: flex; gap: 4px; }
+.rubric-scale-pill {
+  flex: 1; font-size: 11px; font-weight: 700; padding: 6px 4px;
+  border-radius: 8px; border: 1.5px solid var(--line);
+  background: #f8fafc; color: var(--muted);
   cursor: pointer; transition: all .14s; font-family: inherit;
+  text-align: center; line-height: 1.3;
 }
-.rubric-pill:hover { border-color: #93c5fd; background: #eff6ff; color: var(--blue); }
-.rubric-pill.sel[data-val="yes"]     { background: #f0fdf4; border-color: #86efac; color: #15803d; }
-.rubric-pill.sel[data-val="partial"] { background: #fefce8; border-color: #fde047; color: #854d0e; }
-.rubric-pill.sel[data-val="no"]      { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+.rubric-scale-pill:hover { border-color: #93c5fd; background: #eff6ff; color: var(--blue); }
+.rubric-scale-pill.sel[data-level="1"] { background: #fef2f2; border-color: #fca5a5; color: #dc2626; font-weight: 800; }
+.rubric-scale-pill.sel[data-level="2"] { background: #fefce8; border-color: #fde047; color: #854d0e; font-weight: 800; }
+.rubric-scale-pill.sel[data-level="3"] { background: #ecfdf5; border-color: #86efac; color: #15803d; font-weight: 800; }
+.rubric-scale-pill.sel[data-level="4"] { background: #f0fdf4; border-color: #4ade80; color: #15803d; font-weight: 900; box-shadow: 0 0 0 2px #bbf7d0; }
+
+/* Emoji bank */
+.emoji-bank-label { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 6px; }
+.emoji-bank { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.emoji-item {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1.5px solid var(--line); background: #f8fafc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; cursor: pointer; transition: all .12s; font-family: inherit;
+}
+.emoji-item:hover { background: #eff6ff; border-color: #93c5fd; transform: scale(1.15); }
+.emoji-item.sel   { background: #eff6ff; border-color: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; transform: scale(1.12); }
+
+/* Submission success banner */
+.sub-submitted-banner {
+  display: none; align-items: center; gap: 12px;
+  padding: 10px 14px; background: #f0fdf4; border: 1.5px solid #86efac;
+  border-radius: 10px; margin-top: 8px;
+}
+.submission-panel.submitted .sub-ta              { display: none; }
+.submission-panel.submitted .sub-actions         { display: none; }
+.submission-panel.submitted .sub-hint            { display: none; }
+.submission-panel.submitted .sub-submitted-banner { display: flex; }
 
 /* ════ Layer 3 — Group Mode ════ */
 :root { --emerald: #059669; --emerald-dark: #065f46; --emerald-light: #d1fae5; }
@@ -1394,43 +1421,83 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
           <button class="sub-btn record"  onclick="startRecord(this)">🎙️ הקליטו</button>
           <button class="sub-btn upload"  onclick="triggerUpload()">📎 העלו קובץ</button>
         </div>
+        <!-- Success banner (shown after submit) -->
+        <div class="sub-submitted-banner">
+          <div style="font-size:22px;">✅</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#15803d;">הפעילות הוגשה!</div>
+            <div style="font-size:12px;color:var(--muted);">עכשיו העריכו תשובת עמית למטה ↓</div>
+          </div>
+        </div>
       </div>
 
-      <!-- Layer 2: Peer Review Panel (shown after submission) -->
+      <!-- Layer 2: Peer Review Panel (revealed inline after submission) -->
       <div class="peer-review-panel" id="peerReviewPanel" style="display:none">
         <div class="sub-panel-head">📊 הערכת עמיתים — ניתוח טקסט</div>
-        <div class="sub-hint">קראו את התשובה הבאה והשתמשו בקריטריונים להערכה</div>
+        <div class="sub-hint">קראו את התשובה הבאה והעריכו אותה לפי הקריטריונים</div>
+
         <div class="peer-answer-card">
           <div class="peer-answer-label">תשובה אנונימית מהכיתה</div>
           <div class="peer-answer-text">"הטענה המרכזית בפסקה היא שהמחבר מציב שאלה רטורית כדי למשוך את הקורא. הוא משתמש בשפה רגשית לצד נתונים כדי לבסס את הטיעון. לדעתי, האסטרטגיה הרטורית כאן היא שכנוע דרך פאתוס — פנייה לרגש לפני פנייה לשכל."</div>
         </div>
+
+        <!-- 4-level verbal scale per criterion -->
         <div class="peer-rubric">
           <div class="rubric-item">
-            <div class="rubric-q">האם הטענה המרכזית זוהתה?</div>
-            <div class="rubric-pills">
-              <button class="rubric-pill" data-group="q1" data-val="yes"     onclick="selectRubric(this)">✅ כן</button>
-              <button class="rubric-pill" data-group="q1" data-val="partial" onclick="selectRubric(this)">⚠️ חלקית</button>
-              <button class="rubric-pill" data-group="q1" data-val="no"      onclick="selectRubric(this)">❌ לא</button>
+            <div class="rubric-q">עד כמה הטענה המרכזית זוהתה?</div>
+            <div class="rubric-scale">
+              <button class="rubric-scale-pill" data-group="q1" data-level="1" onclick="selectRubric(this)">כלל לא</button>
+              <button class="rubric-scale-pill" data-group="q1" data-level="2" onclick="selectRubric(this)">במידה מועטה</button>
+              <button class="rubric-scale-pill" data-group="q1" data-level="3" onclick="selectRubric(this)">ברובה</button>
+              <button class="rubric-scale-pill" data-group="q1" data-level="4" onclick="selectRubric(this)">בהחלט ✓</button>
             </div>
           </div>
           <div class="rubric-item">
-            <div class="rubric-q">האם ההסבר מבוסס על הטקסט?</div>
-            <div class="rubric-pills">
-              <button class="rubric-pill" data-group="q2" data-val="yes"     onclick="selectRubric(this)">✅ כן</button>
-              <button class="rubric-pill" data-group="q2" data-val="partial" onclick="selectRubric(this)">⚠️ חלקית</button>
-              <button class="rubric-pill" data-group="q2" data-val="no"      onclick="selectRubric(this)">❌ לא</button>
+            <div class="rubric-q">עד כמה ההסבר מבוסס על הטקסט?</div>
+            <div class="rubric-scale">
+              <button class="rubric-scale-pill" data-group="q2" data-level="1" onclick="selectRubric(this)">כלל לא</button>
+              <button class="rubric-scale-pill" data-group="q2" data-level="2" onclick="selectRubric(this)">במידה מועטה</button>
+              <button class="rubric-scale-pill" data-group="q2" data-level="3" onclick="selectRubric(this)">ברובה</button>
+              <button class="rubric-scale-pill" data-group="q2" data-level="4" onclick="selectRubric(this)">בהחלט ✓</button>
             </div>
           </div>
           <div class="rubric-item">
-            <div class="rubric-q">האם נעשה שימוש במושגים מקצועיים?</div>
-            <div class="rubric-pills">
-              <button class="rubric-pill" data-group="q3" data-val="yes"     onclick="selectRubric(this)">✅ כן</button>
-              <button class="rubric-pill" data-group="q3" data-val="partial" onclick="selectRubric(this)">⚠️ חלקית</button>
-              <button class="rubric-pill" data-group="q3" data-val="no"      onclick="selectRubric(this)">❌ לא</button>
+            <div class="rubric-q">עד כמה נעשה שימוש במושגים מקצועיים?</div>
+            <div class="rubric-scale">
+              <button class="rubric-scale-pill" data-group="q3" data-level="1" onclick="selectRubric(this)">כלל לא</button>
+              <button class="rubric-scale-pill" data-group="q3" data-level="2" onclick="selectRubric(this)">במידה מועטה</button>
+              <button class="rubric-scale-pill" data-group="q3" data-level="3" onclick="selectRubric(this)">ברובה</button>
+              <button class="rubric-scale-pill" data-group="q3" data-level="4" onclick="selectRubric(this)">בהחלט ✓</button>
             </div>
           </div>
         </div>
-        <textarea class="sub-ta" id="peerFeedbackTa" placeholder="הערה כללית (רשות) — ניתן להוסיף פרט..."></textarea>
+
+        <!-- Emoji bank (20 elements) -->
+        <div class="emoji-bank-label">🎨 צרפו אלמנט לתגובה (בחרו אחד)</div>
+        <div class="emoji-bank" id="emojiBank">
+          <button class="emoji-item" onclick="selectEmoji(this)">💡</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🌟</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">✅</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🎯</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">👏</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">💪</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🌱</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">✨</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🎉</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">👍</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🔍</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🤔</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">💬</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🧐</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🔑</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">⚠️</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">❓</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">📝</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🔄</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">📚</button>
+        </div>
+
+        <textarea class="sub-ta" id="peerFeedbackTa" placeholder="הערה (רשות) — הוסיפו פרט או נימוק..."></textarea>
         <div class="sub-actions">
           <button class="sub-btn primary" onclick="sendPeerReview()">שלח משוב</button>
           <button class="sub-btn secondary" onclick="skipPeerReview()">דלג</button>
@@ -1599,16 +1666,20 @@ const MiledState = {
       bubbleText: 'צריך עזרה בניתוח?',
       floatCtx:   'ליווי למשימה: ניתוח פסקת פתיחה',
       botLabel:   'ניתוח פסקת פתיחה',
-      onEnter() { loadCourseBotChat(); },
-    },
-    peer_review: {
-      screen: 'lesson', mode: 'lesson',
-      activityEmpty: false, activityCard: false,
-      submission: false, peerInsight: false, peerReview: true,
-      bubbleText: 'עזרה בהערכת עמיתים?',
-      floatCtx:   'הערכת עמיתים — ניתוח פסקת פתיחה',
-      botLabel:   'הערכת עמיתים',
-      onEnter() {},
+      onEnter() {
+        // Reset submission panel to fresh state
+        document.querySelector('.submission-panel')?.classList.remove('submitted');
+        const wta = document.getElementById('writeTa');
+        if (wta) wta.value = '';
+        // Hide peer review, reset rubric + emoji
+        const pr = document.getElementById('peerReviewPanel');
+        if (pr) pr.style.display = 'none';
+        document.querySelectorAll('.rubric-scale-pill').forEach(b => b.classList.remove('sel'));
+        document.querySelectorAll('.emoji-item').forEach(b => b.classList.remove('sel'));
+        const pft = document.getElementById('peerFeedbackTa');
+        if (pft) pft.value = '';
+        loadCourseBotChat();
+      },
     },
     project: {
       screen: 'lesson', mode: 'project',
@@ -1668,7 +1739,7 @@ const MiledState = {
   },
 
   bubbleAllowed() {
-    return ['lesson_empty','lesson_activity','peer_review'].includes(this.current);
+    return ['lesson_empty','lesson_activity'].includes(this.current);
   },
 };
 
@@ -1892,10 +1963,14 @@ function sendSubmit() {
   const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
   d.innerHTML = `<div class="waf-msg-text">${text}</div><div class="waf-msg-meta">הגשה · ${now} ✓</div>`;
   stream.appendChild(d); stream.scrollTop = stream.scrollHeight; ta.value = '';
-  // Transition to peer review after short delay
   const btn = event.target;
   btn.textContent = '✅ הוגש!'; btn.style.background = '#16a34a';
-  setTimeout(() => MiledState.go('peer_review'), 1400);
+  setTimeout(() => {
+    document.querySelector('.submission-panel').classList.add('submitted');
+    const pr = document.getElementById('peerReviewPanel');
+    pr.style.display = 'block';
+    pr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 1400);
 }
 
 /* ════════════════ Layer 1 — Peer Insight ════════════════ */
@@ -1910,17 +1985,21 @@ function startPeerCompare() {
 /* ════════════════ Layer 2 — Peer Review ════════════════ */
 function selectRubric(btn) {
   const group = btn.dataset.group;
-  document.querySelectorAll(`.rubric-pill[data-group="${group}"]`).forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll(`.rubric-scale-pill[data-group="${group}"]`).forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
+function selectEmoji(btn) {
+  document.querySelectorAll('.emoji-item').forEach(b => b.classList.remove('sel'));
   btn.classList.add('sel');
 }
 
 function sendPeerReview() {
-  // Require at least one rubric item answered
-  const groups = ['q1','q2','q3'];
-  const answered = groups.filter(g => document.querySelector(`.rubric-pill.sel[data-group="${g}"]`));
+  // Require at least one rubric criterion answered
+  const answered = ['q1','q2','q3'].filter(g => document.querySelector(`.rubric-scale-pill.sel[data-group="${g}"]`));
   if (answered.length === 0) {
     document.querySelector('.peer-rubric').style.outline = '2px solid #ef4444';
-    setTimeout(() => document.querySelector('.peer-rubric').style.outline = '', 1500);
+    setTimeout(() => document.querySelector('.peer-rubric').style.outline = '', 1600);
     return;
   }
   const panel = document.getElementById('peerReviewPanel');
@@ -1931,7 +2010,9 @@ function sendPeerReview() {
       <div style="font-size:13px;color:var(--muted);">תודה — המשוב שלך עוזר לעמית/ה להשתפר.</div>
     </div>`;
 }
-function skipPeerReview() { MiledState.go('lesson_empty'); }
+function skipPeerReview() {
+  document.getElementById('peerReviewPanel').style.display = 'none';
+}
 
 /* ════════════════ Layer 3 — Group Mode ════════════════ */
 let _groupTimer = null;
