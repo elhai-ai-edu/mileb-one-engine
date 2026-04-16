@@ -62,9 +62,10 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   padding: 12px 28px; display: flex; align-items: center; justify-content: space-between;
 }
 .w-logo  { color: #fff; font-size: 18px; font-weight: 800; }
-.w-title-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-.w-welcome { color: rgba(255,255,255,.65); font-size: 12px; font-weight: 500; letter-spacing: .5px; }
-.w-title { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+.w-title-wrap { display: flex; align-items: center; gap: 10px; }
+.w-welcome { color: rgba(255,255,255,.55); font-size: 13px; font-weight: 600; letter-spacing: .3px; }
+.w-stars   { color: rgba(255,255,255,.3); font-size: 11px; letter-spacing: 2px; }
+.w-title   { color: #fff; font-size: 19px; font-weight: 800; letter-spacing: -.3px; }
 .w-badge {
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
   border-radius: 999px; padding: 4px 14px; color: #e2e8f0; font-size: 12px; font-weight: 600;
@@ -333,19 +334,41 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
    CENTER COLUMN — Activity-focused
 ══════════════════════════════════════ */
 
-/* 1. Context Rail */
+/* 1. Context Rail — Lesson Stages */
 .context-rail {
-  padding: 9px 20px; border-bottom: 1px solid var(--line);
-  background: #f8fafc; display: flex; align-items: center; gap: 6px;
+  padding: 10px 20px 10px; border-bottom: 1px solid var(--line);
+  background: #f8fafc; flex-shrink: 0;
+}
+.ctx-rail-label {
+  font-size: 11px; color: var(--muted); font-weight: 700;
+  text-transform: uppercase; letter-spacing: .6px; margin-bottom: 8px;
+}
+.ctx-stages {
+  display: flex; align-items: center; gap: 0;
+}
+.ctx-stage {
+  display: flex; align-items: center; gap: 0;
   flex-shrink: 0;
 }
-.ctx-crumb { font-size: 12px; color: var(--muted); font-weight: 600; }
-.ctx-sep   { font-size: 12px; color: #cbd5e1; }
-.ctx-current {
-  font-size: 12px; font-weight: 800; color: var(--blue);
-  background: #eff6ff; border: 1px solid #bfdbfe;
-  padding: 2px 8px; border-radius: 999px;
+.ctx-stage-box {
+  font-size: 12px; font-weight: 700; padding: 4px 14px;
+  border: 1.5px solid #cbd5e1; border-radius: 8px;
+  background: #fff; color: var(--muted);
+  cursor: default; white-space: nowrap;
+  transition: all .15s;
 }
+.ctx-stage-box.done  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+.ctx-stage-box.active {
+  background: linear-gradient(135deg,#eff6ff,#dbeafe);
+  border-color: #93c5fd; color: var(--blue); font-weight: 800;
+  box-shadow: 0 2px 8px rgba(29,78,216,.12);
+}
+.ctx-stage-connector {
+  width: 22px; height: 2px;
+  background: linear-gradient(90deg, #cbd5e1, #e2e8f0);
+  flex-shrink: 0;
+}
+.ctx-stage.done + .ctx-stage > .ctx-stage-connector { background: linear-gradient(90deg,#86efac,#cbd5e1); }
 
 /* 2. Activity Focus Area */
 .activity-focus-area { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
@@ -709,6 +732,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     <div class="w-logo">MilEd.One</div>
     <div class="w-title-wrap">
       <span class="w-welcome">ברוכים הבאים 👋</span>
+      <span class="w-stars">✦✦✦✦✦</span>
       <span class="w-title">עברית מתקדמים א׳ — אופטיקה</span>
     </div>
     <div class="w-badge">⏳ ממתין לפתיחת שיעור</div>
@@ -774,9 +798,10 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <!-- Topbar -->
   <div class="l-topbar" style="position:relative;">
     <div class="l-logo">MilEd.One</div>
-    <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;white-space:nowrap;">
-      <div style="color:#fff;font-size:19px;font-weight:800;letter-spacing:-.3px;">עברית מתקדמים א׳ — אופטיקה</div>
-      <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:500;letter-spacing:.4px;">מרחב למידה כיתתי</div>
+    <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;pointer-events:none;white-space:nowrap;">
+      <span style="color:rgba(255,255,255,.55);font-size:13px;font-weight:600;letter-spacing:.3px;">מרחב למידה כיתתי</span>
+      <span style="color:rgba(255,255,255,.3);font-size:11px;letter-spacing:2px;">✦✦✦✦✦</span>
+      <span style="color:#fff;font-size:19px;font-weight:800;letter-spacing:-.3px;">עברית מתקדמים א׳ — אופטיקה</span>
     </div>
     <div class="l-chips">
       <span class="chip chip-default">👁️ סטודנט</span>
@@ -868,13 +893,30 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     <!-- CENTER: Work Area -->
     <section class="panel" style="overflow-y:auto;">
 
-      <!-- Context Rail (lesson mode) -->
+      <!-- Context Rail — Lesson Stages -->
       <div class="context-rail" id="contextRail">
-        <span class="ctx-crumb">יחידה 1</span>
-        <span class="ctx-sep">›</span>
-        <span class="ctx-crumb">שלב 2</span>
-        <span class="ctx-sep">›</span>
-        <span class="ctx-current" id="ctxCurrentLabel">ניתוח טקסט</span>
+        <div class="ctx-rail-label">שלבים מתוכננים של השיעור</div>
+        <div class="ctx-stages">
+          <div class="ctx-stage">
+            <div class="ctx-stage-box done">חימום מוחי ✓</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box done">כרטיס כניסה ✓</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box active" id="ctxCurrentLabel">ניתוח פסקת פתיחה</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box">דיון כיתתי</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box">סיכום ורפלקציה</div>
+          </div>
+        </div>
       </div>
 
       <!-- Project mode header -->
