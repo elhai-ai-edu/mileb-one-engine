@@ -730,50 +730,50 @@
 #cockpit-nav {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  padding: 18px 24px;
-  background: #1e3a8a !important;
-  color: white !important;
-  border-bottom: 4px solid #1e40af;
-  box-shadow: 0 8px 24px rgba(15,23,42,0.35);
-  margin-top: 10px;
-  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 14px;
+  background: linear-gradient(180deg, #f8fbff, #eef4ff);
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(30, 64, 175, 0.12);
+  margin: 10px 12px 14px;
   position: sticky;
-  top: var(--cockpit-nav-top, 74px);
+  top: calc(var(--cockpit-nav-top, 74px) + 6px);
   z-index: 9999 !important;
   align-items: center;
-  width: 100%;
-  box-sizing: border-box;
 }
 .classroom-grid { margin-top: 20px; }
 .panel { display: none; margin-top: 20px; }
 .panel.active { display: block !important; }
 .cockpit-tab-btn {
   appearance: none;
-  border: 2.5px solid rgba(255,255,255,0.7);
-  background: rgba(255,255,255,0.12);
-  color: #ffffff;
-  border-radius: 10px;
-  padding: 12px 28px;
-  font-size: 17px;
+  border: 1px solid #bfdbfe;
+  background: #ffffff;
+  color: #1e40af;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
-  letter-spacing: 0.3px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
-  min-width: 130px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+  min-width: 152px;
   text-align: center;
 }
 .cockpit-tab-btn:hover {
-  background: rgba(255,255,255,0.25);
-  border-color: #ffffff;
+  background: #eff6ff;
+  border-color: #93c5fd;
 }
 .cockpit-tab-btn.active {
-  background: #ffffff !important;
-  border-color: #ffffff !important;
-  color: #1e3a8a !important;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+  color: #ffffff !important;
+  box-shadow: 0 6px 18px rgba(29, 78, 216, 0.28);
   font-weight: 800;
+}
+.cockpit-tab-btn:active {
+  transform: scale(0.98);
 }
 [data-tab-panel] { display: none; }
 [data-tab-panel].active { display: block; }
@@ -971,9 +971,9 @@
 </div>
 
 <div id="cockpit-nav">
-  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>לפני השיעור (Prep)</span></button>
-  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>בתוך השיעור (Live)</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>לאחר השיעור (Post)</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>📚 לפני השיעור</span></button>
+  <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>🎛️ בתוך השיעור</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>📓 לאחר השיעור</span></button>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {
