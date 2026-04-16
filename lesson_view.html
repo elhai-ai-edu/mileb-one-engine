@@ -634,6 +634,42 @@
 
     <div id="broadcastBanner" role="alert" aria-live="polite"></div>
 
+    <!-- ─── Speaker Focus Banner ─── -->
+    <div id="speakerFocusBanner" role="status" aria-live="polite"
+         style="display:none;padding:10px 18px;border-radius:14px;
+                background:linear-gradient(120deg,#eff6ff,#f0fdf4);
+                border:1.5px solid #93c5fd;color:#1e3a8a;
+                font-size:14px;font-weight:700;
+                display:flex;align-items:center;gap:10px;">
+      <span style="font-size:18px;">🗣️</span>
+      <span id="speakerFocusLabel">דובר ראשי:</span>
+    </div>
+
+    <!-- ─── Live Meeting Card ─── -->
+    <div id="liveMeetingBar" style="display:none;padding:12px 18px;border-radius:14px;
+         background:linear-gradient(120deg,#f8fbff,#eff6ff);
+         border:1.5px solid #bfdbfe;
+         display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:20px;">🎥</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:800;color:#1e3a8a;" id="liveMeetingBarTitle">שיעור חי</div>
+        <div style="font-size:12px;color:#475569;" id="liveMeetingBarStatus"></div>
+      </div>
+      <a id="liveMeetingBarJoinBtn" href="#" target="_blank" rel="noopener noreferrer"
+         style="display:none;padding:8px 16px;border-radius:10px;
+                background:linear-gradient(135deg,#1d4ed8,#0f766e);
+                color:#fff;font-size:13px;font-weight:700;
+                text-decoration:none;white-space:nowrap;">
+        📹 הצטרף לזום
+      </a>
+      <a id="liveMeetingBarRecordingBtn" href="#" target="_blank" rel="noopener noreferrer"
+         style="display:none;padding:8px 16px;border-radius:10px;
+                background:#f0fdf4;color:#065f46;border:1px solid #86efac;
+                font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
+        🎞️ הקלטה
+      </a>
+    </div>
+
     <!-- ─── Skill Context Banner ─── -->
     <div id="skillContextBanner" role="note">
       🎓 <strong>למידה משולבת מיומנויות:</strong>
@@ -1752,7 +1788,53 @@
       renderSprintStepper();
       renderProjectStepper();
       renderPushedModal();
+      renderLiveMeetingBar(lessonData?.liveMeeting || null);
+      renderSpeakerFocusBanner(lessonData?.speakerFocus || null);
       setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
+    }
+
+    function renderLiveMeetingBar(liveMeeting) {
+      const bar = document.getElementById("liveMeetingBar");
+      if (!bar) return;
+      if (!liveMeeting || (!liveMeeting.joinUrl && !liveMeeting.recordingUrl)) {
+        bar.style.display = "none";
+        return;
+      }
+      bar.style.display = "";
+
+      const titleEl  = document.getElementById("liveMeetingBarTitle");
+      const statusEl = document.getElementById("liveMeetingBarStatus");
+      const joinBtn  = document.getElementById("liveMeetingBarJoinBtn");
+      const recBtn   = document.getElementById("liveMeetingBarRecordingBtn");
+
+      if (titleEl) titleEl.textContent = liveMeeting.title || "שיעור חי";
+
+      const statusLabels = { scheduled: "📅 מתוכנן", live: "🔴 חי עכשיו", ended: "✅ הסתיים" };
+      if (statusEl) statusEl.textContent = statusLabels[liveMeeting.status] || liveMeeting.status || "";
+
+      if (joinBtn) {
+        const showJoin = liveMeeting.joinUrl && liveMeeting.status !== "ended";
+        joinBtn.style.display = showJoin ? "" : "none";
+        if (showJoin) joinBtn.href = liveMeeting.joinUrl;
+      }
+
+      if (recBtn) {
+        const showRec = !!liveMeeting.recordingUrl;
+        recBtn.style.display = showRec ? "" : "none";
+        if (showRec) recBtn.href = liveMeeting.recordingUrl;
+      }
+    }
+
+    function renderSpeakerFocusBanner(speakerFocus) {
+      const banner = document.getElementById("speakerFocusBanner");
+      const label  = document.getElementById("speakerFocusLabel");
+      if (!banner) return;
+      if (!speakerFocus?.label) {
+        banner.style.display = "none";
+        return;
+      }
+      banner.style.display = "";
+      if (label) label.textContent = speakerFocus.label;
     }
 
     function dismissBroadcast() {

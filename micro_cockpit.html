@@ -1528,6 +1528,88 @@
     </div><!-- /.mc-card-body -->
     </div><!-- /.mc-card student status -->
 
+    <!-- ─── Live Meeting (Moodle Zoom) Panel ─── -->
+    <div class="mc-card">
+    <div class="mc-card-head">🎥 מפגש חי (Moodle Zoom) <span class="mc-sub">ניהול קישורי שיעור חי והקלטה</span></div>
+    <div class="mc-card-body">
+
+    <div style="display:grid;gap:12px;padding:14px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;">
+      <!-- Source + Status row -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div class="field" style="margin:0;">
+          <label>מקור המפגש</label>
+          <select id="meetingSourceSelect" class="lp-input" style="margin:0;">
+            <option value="manual">Manual — קישור ידני</option>
+            <option value="moodle_zoom">Moodle Zoom Plugin</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0;">
+          <label>סטטוס מפגש</label>
+          <select id="meetingStatusSelect" class="lp-input" style="margin:0;">
+            <option value="scheduled">📅 מתוכנן</option>
+            <option value="live">🔴 חי עכשיו</option>
+            <option value="ended">✅ הסתיים</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div class="field" style="margin:0;">
+        <label>כותרת המפגש (לתצוגת הסטודנטים)</label>
+        <input id="meetingTitleInput" type="text" class="lp-input" style="margin:0;" placeholder="לדוג׳: שיעור 5 — ניתוח מקורות">
+      </div>
+
+      <!-- Join URL -->
+      <div class="field" style="margin:0;">
+        <label>קישור הצטרפות לזום (joinUrl)</label>
+        <input id="meetingJoinUrlInput" type="url" class="lp-input" style="margin:0;" placeholder="https://zoom.us/j/...">
+      </div>
+
+      <!-- Moodle Activity ID (optional) -->
+      <div class="field" style="margin:0;">
+        <label>מזהה פעילות Moodle (אופציונלי)</label>
+        <input id="meetingMoodleIdInput" type="text" class="lp-input" style="margin:0;" placeholder="Activity ID מ-Moodle">
+      </div>
+
+      <!-- Save + Join buttons -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <button class="btn btn-blue" type="button" onclick="saveMeetingInfo()" style="font-size:12px;padding:7px 14px;">💾 שמור פרטי מפגש</button>
+        <button class="btn btn-green" type="button" id="meetingJoinHostBtn" onclick="joinMeetingAsHost()" style="font-size:12px;padding:7px 14px;" disabled>🎙️ כניסה כמנחה</button>
+        <span id="meetingInfoStatus" style="font-size:12px;color:#475569;"></span>
+      </div>
+
+      <!-- Recording section -->
+      <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:8px;">
+        <div style="font-size:13px;font-weight:700;color:#0f172a;">🎞️ הקלטת שיעור (לאחר סיום)</div>
+        <div class="field" style="margin:0;">
+          <label>קישור להקלטה (recordingUrl)</label>
+          <input id="meetingRecordingUrlInput" type="url" class="lp-input" style="margin:0;" placeholder="https://zoom.us/rec/...">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-outline" type="button" onclick="publishRecordingUrl()" style="font-size:12px;padding:7px 14px;">📤 פרסם הקלטה לסטודנטים</button>
+          <span id="meetingRecordingStatus" style="font-size:12px;color:#475569;"></span>
+        </div>
+      </div>
+
+      <!-- Speaker Focus section -->
+      <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:8px;">
+        <div style="font-size:13px;font-weight:700;color:#0f172a;">🗣️ דובר ראשי (Speaker Focus)</div>
+        <div style="font-size:12px;color:#64748b;">סמן את הדובר הראשי עכשיו — הסטודנטים יראו באנר חי בתצוגת השיעור.</div>
+        <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;">
+          <div class="field" style="margin:0;">
+            <label>שם/תיאור הדובר</label>
+            <input id="speakerFocusInput" type="text" class="lp-input" style="margin:0;" placeholder="לדוג׳: מריאם — שיתוף חוויה">
+          </div>
+          <button class="btn btn-blue" type="button" onclick="setSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">📢 הגדר</button>
+          <button class="btn btn-outline" type="button" onclick="clearSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">✕ נקה</button>
+        </div>
+        <div id="speakerFocusStatus" style="font-size:12px;color:#475569;"></div>
+      </div>
+    </div>
+
+    </div><!-- /.mc-card-body -->
+    </div><!-- /.mc-card live meeting -->
+
     <div id="studentGrid" class="student-grid">
       <div class="empty-state">
         <div class="empty-state-icon">📭</div>
@@ -3299,6 +3381,153 @@ async function callClassroom(body) {
     body: JSON.stringify(body),
   });
   return res.json();
+}
+
+// ─────────────────────────────────────────
+// LIVE MEETING (MOODLE ZOOM) PANEL
+// ─────────────────────────────────────────
+
+function getMeetingCourseId() {
+  const ctx = getSelectedTeachingContext();
+  return currentLessonId || ctx?.classId;
+}
+
+async function loadMeetingInfo() {
+  const courseId = getMeetingCourseId();
+  if (!courseId) return;
+  try {
+    await fetch(`/.netlify/functions/classroom?action=course_metadata&courseId=${encodeURIComponent(courseId)}`);
+    // course_metadata doesn't return liveMeeting — read it from the courses node via a separate fetch
+    const lmRes = await fetch(`/.netlify/functions/classroom?action=meeting_info&courseId=${encodeURIComponent(courseId)}`);
+    // Fall back gracefully if the dedicated endpoint isn't available
+    if (!lmRes.ok) {
+      console.warn('loadMeetingInfo: meeting_info returned', lmRes.status);
+      return;
+    }
+    const lmData = await lmRes.json();
+    applyMeetingInfoToPanel(lmData?.liveMeeting || null);
+  } catch (loadErr) {
+    console.warn('loadMeetingInfo error:', loadErr);
+  }
+}
+
+function applyMeetingInfoToPanel(liveMeeting) {
+  if (!liveMeeting) return;
+  const sourceEl = document.getElementById('meetingSourceSelect');
+  const statusEl = document.getElementById('meetingStatusSelect');
+  const titleEl  = document.getElementById('meetingTitleInput');
+  const joinEl   = document.getElementById('meetingJoinUrlInput');
+  const moodleEl = document.getElementById('meetingMoodleIdInput');
+  const recEl    = document.getElementById('meetingRecordingUrlInput');
+  if (sourceEl && liveMeeting.source) sourceEl.value = liveMeeting.source;
+  if (statusEl && liveMeeting.status) statusEl.value = liveMeeting.status;
+  if (titleEl)  titleEl.value  = liveMeeting.title || '';
+  if (joinEl)   joinEl.value   = liveMeeting.joinUrl || '';
+  if (moodleEl) moodleEl.value = liveMeeting.moodleActivityId || '';
+  if (recEl)    recEl.value    = liveMeeting.recordingUrl || '';
+  // Enable join-as-host button if joinUrl is present
+  const joinHostBtn = document.getElementById('meetingJoinHostBtn');
+  if (joinHostBtn) joinHostBtn.disabled = !liveMeeting.joinUrl;
+}
+
+async function saveMeetingInfo() {
+  const courseId = getMeetingCourseId();
+  if (!courseId) { alert('בחר קורס תחילה'); return; }
+
+  const source   = document.getElementById('meetingSourceSelect')?.value || 'manual';
+  const status   = document.getElementById('meetingStatusSelect')?.value || 'scheduled';
+  const title    = document.getElementById('meetingTitleInput')?.value.trim() || '';
+  const joinUrl  = document.getElementById('meetingJoinUrlInput')?.value.trim() || '';
+  const moodleId = document.getElementById('meetingMoodleIdInput')?.value.trim() || '';
+
+  const statusEl = document.getElementById('meetingInfoStatus');
+  if (statusEl) statusEl.textContent = 'שומר...';
+
+  const res = await callClassroom({
+    action: 'meeting_save',
+    courseId,
+    classId: courseId,
+    facultyId,
+    source,
+    status,
+    title,
+    joinUrl,
+    moodleActivityId: moodleId
+  });
+
+  if (statusEl) {
+    if (res?.ok) {
+      const t = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      statusEl.textContent = `✅ נשמר ב-${t}`;
+      const joinHostBtn = document.getElementById('meetingJoinHostBtn');
+      if (joinHostBtn) joinHostBtn.disabled = !joinUrl;
+    } else {
+      statusEl.textContent = `שגיאה: ${res?.error || 'לא ידוע'}`;
+    }
+  }
+}
+
+function joinMeetingAsHost() {
+  const joinUrl = document.getElementById('meetingJoinUrlInput')?.value.trim();
+  if (!joinUrl) { alert('הכנס קישור הצטרפות תחילה'); return; }
+  window.open(joinUrl, '_blank', 'noopener,noreferrer');
+}
+
+async function publishRecordingUrl() {
+  const courseId = getMeetingCourseId();
+  if (!courseId) { alert('בחר קורס תחילה'); return; }
+
+  const recordingUrl = document.getElementById('meetingRecordingUrlInput')?.value.trim() || '';
+  const statusEl = document.getElementById('meetingRecordingStatus');
+  if (statusEl) statusEl.textContent = 'מפרסם...';
+
+  const res = await callClassroom({
+    action: 'meeting_recording_save',
+    courseId,
+    classId: courseId,
+    facultyId,
+    recordingUrl
+  });
+
+  if (statusEl) {
+    if (res?.ok) {
+      const t = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      statusEl.textContent = recordingUrl
+        ? `✅ ההקלטה פורסמה לסטודנטים ב-${t}`
+        : `✅ ההקלטה הוסרה ב-${t}`;
+    } else {
+      statusEl.textContent = `שגיאה: ${res?.error || 'לא ידוע'}`;
+    }
+  }
+}
+
+async function setSpeakerFocus() {
+  if (!sessionId) { alert('פתח שיעור תחילה'); return; }
+  const label = document.getElementById('speakerFocusInput')?.value.trim();
+  if (!label) { alert('הכנס שם/תיאור הדובר'); return; }
+  const statusEl = document.getElementById('speakerFocusStatus');
+  if (statusEl) statusEl.textContent = 'מגדיר...';
+  const res = await callClassroom({ action: 'speaker_focus_set', sessionId, facultyId, label });
+  if (statusEl) {
+    if (res?.ok) {
+      const t = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      statusEl.textContent = `🗣️ דובר ראשי: ${label} (עודכן ב-${t})`;
+    } else {
+      statusEl.textContent = `שגיאה: ${res?.error || 'לא ידוע'}`;
+    }
+  }
+}
+
+async function clearSpeakerFocus() {
+  if (!sessionId) { alert('פתח שיעור תחילה'); return; }
+  const statusEl = document.getElementById('speakerFocusStatus');
+  if (statusEl) statusEl.textContent = 'מנקה...';
+  const res = await callClassroom({ action: 'speaker_focus_set', sessionId, facultyId, label: '' });
+  if (statusEl) {
+    statusEl.textContent = res?.ok ? '✅ Speaker Focus נוקה' : `שגיאה: ${res?.error || 'לא ידוע'}`;
+  }
+  const inputEl = document.getElementById('speakerFocusInput');
+  if (inputEl) inputEl.value = '';
 }
 
 async function callGatekeeping(body) {
