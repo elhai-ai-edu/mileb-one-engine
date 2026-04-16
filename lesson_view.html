@@ -1802,7 +1802,7 @@
       // faculty hasn't published the link yet).
       const hasUrl = !!(liveMeeting?.joinUrl || liveMeeting?.recordingUrl);
       const isLive = liveMeeting?.status === "live";
-      if (!liveMeeting || (!hasUrl && !isLive)) {
+      if (!liveMeeting || !(hasUrl || isLive)) {
         bar.style.display = "none";
         return;
       }
@@ -1970,9 +1970,17 @@
         // Live-meeting: patch snapshot and re-render bar instantly when the
         // faculty saves meeting info mid-session (avoids waiting for the 6 s poll).
         if (live.liveMeetingSnapshot !== undefined) {
-          const prev = JSON.stringify(lessonData.liveMeeting);
-          lessonData.liveMeeting = live.liveMeetingSnapshot;
-          if (JSON.stringify(lessonData.liveMeeting) !== prev) renderLiveMeetingBar(lessonData.liveMeeting);
+          const prev = lessonData.liveMeeting;
+          const next = live.liveMeetingSnapshot;
+          lessonData.liveMeeting = next;
+          // Re-render only when the fields that affect the bar have changed
+          if (!prev || !next ||
+              prev.status !== next.status ||
+              prev.joinUrl !== next.joinUrl ||
+              prev.recordingUrl !== next.recordingUrl ||
+              prev.title !== next.title) {
+            renderLiveMeetingBar(lessonData.liveMeeting);
+          }
         }
       });
     }

@@ -348,6 +348,18 @@ function getUnitPath(userId, courseId, unitId) {
   return `users/${userId}/courses/${courseId}/units/${unitId}`;
 }
 
+// Returns a Set of sessionIds that are currently active for a given courseId.
+// Reads from both the top-level sessionId and per-unit sessionIds stored in
+// active_sessions/{courseId}.
+async function collectActiveSessionIds(db, courseId) {
+  const snap = await db.ref(`active_sessions/${courseId}`).once("value");
+  const data = snap.val() || {};
+  const ids = new Set();
+  if (data.sessionId) ids.add(data.sessionId);
+  Object.values(data.units || {}).forEach(u => { if (u?.sessionId) ids.add(u.sessionId); });
+  return ids;
+}
+
 async function ensureUnitNode(db, { userId, courseId, unitId, structureType = "Session", topicName = "" }) {
   if(!userId || !courseId || !unitId) return;
   const nodeRef = db.ref(getUnitPath(userId, courseId, unitId));
@@ -1672,11 +1684,7 @@ export async function handler(event){
     // Propagate to all active sessions for this course so students see the
     // change immediately via the existing lesson_payload poll, without waiting
     // for a new session to open.
-    const activeMSnap = await db.ref(`active_sessions/${courseId}`).once("value");
-    const activeMData = activeMSnap.val() || {};
-    const activeMTargets = new Set();
-    if (activeMData.sessionId) activeMTargets.add(activeMData.sessionId);
-    Object.values(activeMData.units || {}).forEach(u => { if (u?.sessionId) activeMTargets.add(u.sessionId); });
+    const activeMTargets = await collectActiveSessionIds(db, courseId);
     if (activeMTargets.size > 0) {
       await Promise.all([...activeMTargets].map(sid =>
         db.ref(`sessions/${sid}/liveMeetingSnapshot`).set(meeting)
@@ -1709,11 +1717,7 @@ export async function handler(event){
 
     // Propagate to all active sessions for this course (e.g. still-open sessions
     // where the faculty published the recording before clicking "close").
-    const activeRSnap = await db.ref(`active_sessions/${courseId}`).once("value");
-    const activeRData = activeRSnap.val() || {};
-    const activeRTargets = new Set();
-    if (activeRData.sessionId) activeRTargets.add(activeRData.sessionId);
-    Object.values(activeRData.units || {}).forEach(u => { if (u?.sessionId) activeRTargets.add(u.sessionId); });
+    const activeRTargets = await collectActiveSessionIds(db, courseId);
     if (activeRTargets.size > 0) {
       await Promise.all([...activeRTargets].map(sid =>
         db.ref(`sessions/${sid}/liveMeetingSnapshot`).update(update)

@@ -754,7 +754,7 @@
       // faculty hasn't published the link yet).
       const hasUrl = !!(liveMeeting?.joinUrl || liveMeeting?.recordingUrl);
       const isLive = liveMeeting?.status === "live";
-      if (!liveMeeting || (!hasUrl && !isLive)) {
+      if (!liveMeeting || !(hasUrl || isLive)) {
         card.style.display = "none";
         return;
       }
