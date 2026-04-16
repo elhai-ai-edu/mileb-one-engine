@@ -1011,6 +1011,17 @@
       <select id="startingBotSelect"></select>
     </div>
 
+    <div id="activity-picker" class="field" style="display:none;">
+      <label>📋 בחר פעילות לשיעור <span style="font-size:11px;color:#94a3b8;font-weight:normal;">(MVP — נשמרת ב-session; תצוגה בשיעור בפיתוח)</span></label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="activitySelect" style="flex:1;" onchange="onActivitySelect(this)">
+          <option value="">— ללא פעילות ספציפית —</option>
+        </select>
+        <button class="btn btn-outline" style="font-size:12px;padding:7px 10px;" onclick="loadActivitiesForPicker()">🔄 טען</button>
+      </div>
+      <div id="activityPickerDetail" style="display:none;margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:13px;line-height:1.5;"></div>
+    </div>
+
     <div id="sessionControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
       <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
       <a href="macro_cockpit.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ תכנון ראשי</a>
@@ -1476,7 +1487,7 @@
 // ─────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────
-const facultyId = sessionStorage.getItem("facultyId") || "f_" + Math.random().toString(36).slice(2,8);
+const facultyId = sessionStorage.getItem("facultyId") || "f_" + Array.from(crypto.getRandomValues(new Uint8Array(8)), b => b.toString(16).padStart(2,"0")).join("");
 sessionStorage.setItem("facultyId", facultyId);
 const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
 const cockpitParams = new URLSearchParams(location.search);
@@ -2122,6 +2133,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     loadPreSessionMission();
     gatekeepingPage = 1;
     loadGatekeepingQueue();
+    toggleActivityPicker(currentLessonId);
   };
 
   if (liveSel) liveSel.addEventListener('change', () => syncFromSelector('botSelect'));
@@ -2142,6 +2154,86 @@ function getSelectedTeachingContext() {
   const selType = selectedOpt?.dataset?.type || 'faculty';
   const classId = selType === 'course' ? selectedValue : null;
   return { selectedValue, selectedOpt, selType, classId };
+}
+
+// ─── Activity Picker ──────────────────────────────────────────────────────────
+
+let selectedActivity = null;
+
+function toggleActivityPicker(classId) {
+  const picker = document.getElementById('activity-picker');
+  if (!picker) return;
+  if (classId) {
+    picker.style.display = '';
+  } else {
+    picker.style.display = 'none';
+    selectedActivity = null;
+    const sel = document.getElementById('activitySelect');
+    if (sel) sel.innerHTML = '<option value="">— ללא פעילות ספציפית —</option>';
+    const detail = document.getElementById('activityPickerDetail');
+    if (detail) detail.style.display = 'none';
+  }
+}
+
+async function loadActivitiesForPicker() {
+  const { classId } = getSelectedTeachingContext();
+  const fId = typeof facultyId !== 'undefined' ? facultyId : null;
+  if (!classId || !fId) return;
+
+  const sel = document.getElementById('activitySelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">טוען...</option>';
+
+  try {
+    const res = await fetch(
+      `/api/activity-bank?facultyId=${encodeURIComponent(fId)}&courseId=${encodeURIComponent(classId)}&limit=50`
+    );
+    const data = await res.json();
+
+    sel.innerHTML = '<option value="">— ללא פעילות ספציפית —</option>';
+    if (data.ok && data.activities?.length > 0) {
+      for (const act of data.activities) {
+        const opt = document.createElement('option');
+        opt.value = act.activityId;
+        const stage = act.stageLabel ? ` · ${act.stageLabel}` : '';
+        opt.textContent = `${act.title || act.activityId}${stage}`;
+        opt.dataset.activity = JSON.stringify(act);
+        sel.appendChild(opt);
+      }
+    } else {
+      const noOpt = document.createElement('option');
+      noOpt.disabled = true;
+      noOpt.textContent = 'אין פעילויות בבנק לקורס זה';
+      sel.appendChild(noOpt);
+    }
+  } catch (e) {
+    console.error('[loadActivitiesForPicker]', e);
+    sel.innerHTML = '<option value="">שגיאה בטעינת פעילויות</option>';
+  }
+}
+
+function onActivitySelect(sel) {
+  const opt = sel.selectedOptions[0];
+  const detail = document.getElementById('activityPickerDetail');
+  if (!opt || !opt.dataset.activity) {
+    selectedActivity = null;
+    if (detail) detail.style.display = 'none';
+    return;
+  }
+  try {
+    selectedActivity = JSON.parse(opt.dataset.activity);
+    if (detail) {
+      const excerpt = (selectedActivity.instructions || '').slice(0, 120);
+      const ellipsis = (selectedActivity.instructions || '').length > 120 ? '…' : '';
+      detail.innerHTML =
+        `<strong>${selectedActivity.title || ''}</strong><br>` +
+        `<span style="color:#64748b;">${excerpt}${ellipsis}</span>`;
+      detail.style.display = 'block';
+    }
+  } catch {
+    selectedActivity = null;
+    if (detail) detail.style.display = 'none';
+  }
 }
 
 function setOpenSessionBusy(isBusy) {
@@ -2320,10 +2412,15 @@ async function openSession() {
     pushedSteps = [];
 
     // Session ID must exist before student redirect signal is emitted.
-    sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
+    sessionId  = "ses_" + Date.now() + "_" + Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2,"0")).join("");
     studentURL = studentURL.replace('SESSION_ID', sessionId);
 
-    const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
+    const res = await callClassroom({
+      action: "open", sessionId, facultyId, userId: facultyId,
+      courseId: classId, unitId, botType, classId,
+      facultyAvatar: safeAvatar(facultyAvatar),
+      ...(selectedActivity ? { currentActivity: selectedActivity } : {})
+    });
     if (!res.ok) {
       alert("שגיאה בפתיחת שיעור");
       return;

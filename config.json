@@ -454,6 +454,29 @@
       "_description": "Meta-layer bot that translates faculty Tally submissions into 8-layer System Prompts. Routes through /api/architect/* — NOT /api/chat.",
       "_reference": "docs/MASTER_LOGIC.md Part 31 + docs/BOT_ARCHITECT_SP.md",
       "createdAt": "2026-03-20"
+    },
+    "activity_translation": {
+      "_description": "Feature-flag policy for the Activity Translation System (ATS). Data lives in Firebase — NOT here. See docs/ATS_CONTRACT_V1.md.",
+      "enabled": true,
+      "use_llm_enrichment": false,
+      "ui_host": "macro_cockpit",
+      "require_human_review": true,
+      "default_stage_taxonomy": "v1",
+      "firebase_paths": {
+        "journals":   "faculty_journals/{facultyId}/{journalId}",
+        "bank":       "activity_bank/{facultyId}/{courseId}/{activityId}",
+        "templates":  "activity_templates/{facultyId}/{templateId}"
+      },
+      "api_routes": {
+        "parse":          "POST /api/journal/parse",
+        "fetch_review":   "GET  /api/journal/review",
+        "save_review":    "POST /api/journal/review",
+        "approve":        "POST /api/journal/approve",
+        "query_bank":     "GET  /api/activity-bank",
+        "save_direct":    "POST /api/activity-bank/save",
+        "update_direct":  "POST /api/activity-bank/update"
+      },
+      "createdAt": "2026-04-15"
     }
   },
 
