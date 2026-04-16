@@ -73,6 +73,15 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .w-hero { text-align: center; padding: 36px 20px 28px; }
 .w-hero h1 { color: var(--navy); font-size: 28px; font-weight: 800; margin-bottom: 8px; }
 .w-hero p  { color: var(--muted); font-size: 15px; }
+.w-project-link {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 16px;
+  padding: 9px 20px; border-radius: 999px;
+  background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
+  border: 1.5px solid #2dd4bf; color: #0f766e;
+  font-size: 13px; font-weight: 700; text-decoration: none;
+  transition: all .15s; cursor: pointer;
+}
+.w-project-link:hover { background: linear-gradient(135deg,#ccfbf1,#99f6e4); box-shadow: 0 3px 12px rgba(13,148,136,.2); }
 .w-pulse {
   width: 60px; height: 60px; border-radius: 50%;
   background: rgba(29,78,216,.15); margin: 0 auto 18px;
@@ -309,26 +318,38 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
 /* ── Project Stages (project mode left panel) ── */
 .panel-project-stages { flex-direction: column; }
-.pstage-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.pstage-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.pstage-wrap { display: flex; flex-direction: column; }
 .pstage-item {
-  width: 100%; text-align: right; padding: 12px 14px;
-  border-radius: 12px; border: 1px solid var(--line);
+  width: 100%; text-align: right; padding: 10px 14px;
+  border-radius: 10px; border: 1px solid var(--line);
   background: #f8fafc; cursor: pointer; font-family: inherit; font-size: 13px;
   display: flex; align-items: center; gap: 10px; transition: all .15s;
 }
-.pstage-item:hover { background: #eff6ff; border-color: #bfdbfe; }
-.pstage-item.active { background: linear-gradient(135deg,#1d4ed8,#2563eb); color: #fff; border-color: #1d4ed8; }
+.pstage-item:hover { background: #f0fdfa; border-color: #99f6e4; }
+.pstage-item.active { background: linear-gradient(135deg,#0d9488,#0f766e); color: #fff; border-color: #0d9488; }
 .pstage-item.completed { background: #f0fdf4; border-color: #bbf7d0; }
 .pstage-num {
   width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
   background: rgba(0,0,0,.08); display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 800;
 }
-.pstage-item.active    .pstage-num { background: rgba(255,255,255,.25); color: #fff; }
+.pstage-item.active    .pstage-num { background: rgba(255,255,255,.22); color: #fff; }
 .pstage-item.completed .pstage-num { background: #dcfce7; color: #166534; }
 .pstage-label { font-weight: 700; flex: 1; }
 .pstage-item.active    .pstage-label { color: #fff; }
 .pstage-item.completed .pstage-label { color: #166534; }
+
+/* Stage description accordion */
+.pstage-desc {
+  display: none; margin: 0 4px 4px; padding: 10px 13px;
+  background: #f0fdfa; border: 1px solid #99f6e4; border-top: none;
+  border-radius: 0 0 10px 10px;
+  font-size: 12px; color: #134e4a; line-height: 1.6;
+  animation: descIn .2s ease;
+}
+.pstage-desc.open { display: block; }
+@keyframes descIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
 
 /* ══════════════════════════════════════
    CENTER COLUMN — Activity-focused
@@ -442,28 +463,28 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-size: 12px; font-weight: 800; color: var(--muted);
   cursor: pointer; transition: all .2s; z-index: 1; position: relative;
 }
-.sprint-bubble.done   { background: #dbeafe; border-color: #3b82f6; color: #1d4ed8; }
-.sprint-bubble.active { background: #1d4ed8; border-color: #1d4ed8; color: #fff; box-shadow: 0 0 0 4px rgba(29,78,216,.2); }
+.sprint-bubble.done   { background: #ccfbf1; border-color: #2dd4bf; color: #0f766e; }
+.sprint-bubble.active { background: #0d9488; border-color: #0d9488; color: #fff; box-shadow: 0 0 0 4px rgba(13,148,136,.2); }
 .sprint-label { font-size: 10px; color: var(--muted); margin-top: 4px; text-align: center; max-width: 60px; }
 .sprint-connector { flex: 1; height: 2px; background: var(--line); margin: 0 -2px; position: relative; top: -14px; }
-.sprint-connector.done { background: #3b82f6; }
+.sprint-connector.done { background: #2dd4bf; }
 
 /* Project guidance (project mode only) */
 .project-guidance {
   margin: 14px 20px 0; padding: 14px; border-radius: 12px;
-  background: linear-gradient(135deg,#f5f3ff,#ede9fe);
-  border: 1px solid #ddd6fe; flex-shrink: 0;
+  background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
+  border: 1px solid #99f6e4; flex-shrink: 0;
 }
-.project-guidance-title { font-size: 11px; font-weight: 800; color: #7c3aed; margin-bottom: 6px; letter-spacing: .3px; }
-.project-guidance-text  { font-size: 13px; color: #4c1d95; line-height: 1.6; }
+.project-guidance-title { font-size: 11px; font-weight: 800; color: #0f766e; margin-bottom: 6px; letter-spacing: .3px; }
+.project-guidance-text  { font-size: 13px; color: #134e4a; line-height: 1.6; }
 
 /* Project work header (project mode center) */
 .project-work-head {
   padding: 14px 20px 10px; border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg,#f5f3ff,#ede9fe); flex-shrink: 0;
+  background: linear-gradient(180deg,#f0fdfa,#ccfbf1); flex-shrink: 0;
 }
-.project-work-title { font-size: 16px; font-weight: 800; color: #4c1d95; }
-.project-work-sub   { font-size: 12px; color: #7c3aed; margin-top: 2px; }
+.project-work-title { font-size: 16px; font-weight: 800; color: #0f766e; }
+.project-work-sub   { font-size: 12px; color: #0d9488; margin-top: 2px; }
 
 /* ── WAF Stream ── */
 .waf-section {
@@ -546,17 +567,17 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 /* Project bot header (project mode) */
 .project-bot-direct {
   padding: 12px 14px; border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg,#f5f3ff,#ede9fe);
+  background: linear-gradient(180deg,#f0fdfa,#ccfbf1);
   align-items: center; gap: 10px; flex-shrink: 0;
 }
 .project-bot-icon {
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg,#6366f1,#8b5cf6);
+  background: linear-gradient(135deg,#0d9488,#0f766e);
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0;
 }
-.project-bot-name { font-size: 14px; font-weight: 800; color: #4c1d95; }
-.project-bot-sub  { font-size: 11px; color: #7c3aed; }
+.project-bot-name { font-size: 14px; font-weight: 800; color: #0f766e; }
+.project-bot-sub  { font-size: 11px; color: #0d9488; }
 
 /* Chat Window */
 .chat-window {
@@ -572,11 +593,19 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   border: 1px solid #f4c0cf; align-self: flex-end;
 }
 .chat-bubble.bot.project-style {
-  background: linear-gradient(135deg,#f5f3ff,#ede9fe);
-  border: 1px solid #ddd6fe;
+  background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
+  border: 1px solid #99f6e4;
 }
 .chat-bubble.user { background: #f0f9ff; border: 1px solid #bae6fd; align-self: flex-start; }
-.chat-input-row { padding: 12px 14px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-shrink: 0; }
+.chat-input-row { padding: 12px 14px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+.mic-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line);
+  background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s; color: var(--muted);
+}
+.mic-btn:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+.mic-btn.recording { background: #dc2626; border-color: #dc2626; color: #fff; animation: micPulse 1s infinite; }
+@keyframes micPulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)} 50%{box-shadow:0 0 0 6px rgba(220,38,38,0)} }
 .chat-input {
   flex: 1; border: 1px solid var(--line); border-radius: 10px;
   padding: 9px 12px; font-family: inherit; font-size: 13px;
@@ -587,7 +616,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   border: none; border-radius: 10px; cursor: pointer;
   font-family: inherit; font-weight: 700; font-size: 13px;
 }
-#lessonScreen[data-mode="project"] .chat-send { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+#lessonScreen[data-mode="project"] .chat-send { background: linear-gradient(135deg,#0d9488,#0f766e); }
 .bot-float-panel .chat-send { background: linear-gradient(135deg, var(--bordeaux-light), var(--bordeaux)); }
 .bot-float-panel .chat-send:hover { background: linear-gradient(135deg, #c83060, var(--bordeaux-light)); }
 .bot-float-panel .chat-input:focus { outline: none; border-color: #d4889a; }
@@ -745,6 +774,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     </div>
     <h1>ברוכים הבאים לכיתה</h1>
     <p>המרצה עוד לא פתח את השיעור — בינתיים, בואו נתחמם 🧠</p>
+    <a href="/project_workspace.html?courseId=he_a2_arabic" class="w-project-link" onclick="return false;" title="נפתח בקרוב">
+      📁 עבודה עצמאית על פרויקט הגמר ←
+    </a>
   </div>
   <div class="w-grid">
     <div class="w-card">
@@ -875,18 +907,39 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     <aside class="panel panel-project-stages">
       <div class="panel-head">📋 שלבי הפרויקט</div>
       <div class="pstage-list" id="pstageList">
-        <button class="pstage-item completed" onclick="selectProjectStage(1)">
-          <div class="pstage-num">✓</div><div class="pstage-label">בחירת בעיה</div>
-        </button>
-        <button class="pstage-item active" onclick="selectProjectStage(2)">
-          <div class="pstage-num">2</div><div class="pstage-label">ניסיונות קודמים</div>
-          <span style="font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;">פעיל</span>
-        </button>
-        <button class="pstage-item" onclick="selectProjectStage(3)"><div class="pstage-num">3</div><div class="pstage-label">מקורות מידע</div></button>
-        <button class="pstage-item" onclick="selectProjectStage(4)"><div class="pstage-num">4</div><div class="pstage-label">שתי אלטרנטיבות</div></button>
-        <button class="pstage-item" onclick="selectProjectStage(5)"><div class="pstage-num">5</div><div class="pstage-label">בחירת פתרון</div></button>
-        <button class="pstage-item" onclick="selectProjectStage(6)"><div class="pstage-num">6</div><div class="pstage-label">כתיבת מסמך</div></button>
-        <button class="pstage-item" onclick="selectProjectStage(7)"><div class="pstage-num">7</div><div class="pstage-label">הצגה</div></button>
+        <div class="pstage-wrap">
+          <button class="pstage-item completed" onclick="selectProjectStage(1)">
+            <div class="pstage-num">✓</div><div class="pstage-label">בחירת בעיה</div>
+          </button>
+          <div class="pstage-desc" id="pdesc-1">הגדרת הבעיה המקצועית שתרצה לפתור — תיאור הלקוח/ה, הקשר, והצורך.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item active" onclick="selectProjectStage(2)">
+            <div class="pstage-num">2</div><div class="pstage-label">ניסיונות קודמים</div>
+            <span style="font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;">פעיל</span>
+          </button>
+          <div class="pstage-desc open" id="pdesc-2">מה ניסו בעבר לפתור את הבעיה? מדוע הפתרונות לא הצליחו? ניתוח ביקורתי של הניסיונות.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(3)"><div class="pstage-num">3</div><div class="pstage-label">מקורות מידע</div></button>
+          <div class="pstage-desc" id="pdesc-3">איסוף וביקורת מקורות מידע רלוונטיים — בחינת מהימנות ורלוונטיות לבעיה.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(4)"><div class="pstage-num">4</div><div class="pstage-label">שתי אלטרנטיבות</div></button>
+          <div class="pstage-desc" id="pdesc-4">פיתוח שתי הצעות פתרון שונות, כולל יתרונות וחסרונות של כל אחת.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(5)"><div class="pstage-num">5</div><div class="pstage-label">בחירת פתרון</div></button>
+          <div class="pstage-desc" id="pdesc-5">בחירת הפתרון המועדף ונימוק מפורט מדוע הוא עדיף על האלטרנטיבה.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(6)"><div class="pstage-num">6</div><div class="pstage-label">כתיבת מסמך</div></button>
+          <div class="pstage-desc" id="pdesc-6">כתיבת המסמך המסכם — מבנה, שפה מקצועית, ציטוטים ומסקנות.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(7)"><div class="pstage-num">7</div><div class="pstage-label">הצגה</div></button>
+          <div class="pstage-desc" id="pdesc-7">הכנה להצגה בפני הקהל — מבנה דקות, slide deck, ותרגול.</div>
+        </div>
       </div>
     </aside>
 
@@ -1071,6 +1124,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       <!-- Chat Input -->
       <div class="chat-input-row">
         <input class="chat-input" id="chatInput" placeholder="שאל שאלה על הפעילות..." onkeydown="handleChatKey(event)">
+        <button class="mic-btn" id="micBtnMain" onclick="toggleMic('micBtnMain','chatInput')" title="דיבור לטקסט">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
         <button class="chat-send" onclick="sendChat()">שלח</button>
       </div>
     </aside>
@@ -1109,6 +1165,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     </div>
     <div class="chat-input-row">
       <input class="chat-input" id="chatInputFloat" placeholder="שאל שאלה על הפעילות..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFloatChat();}">
+      <button class="mic-btn" id="micBtnFloat" onclick="toggleMic('micBtnFloat','chatInputFloat')" title="דיבור לטקסט">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      </button>
       <button class="chat-send" onclick="sendFloatChat()">שלח</button>
     </div>
   </div>
@@ -1244,7 +1303,7 @@ const stageLabels = ['','בחירת בעיה','ניסיונות קודמים ו�
 function selectProjectStage(n) {
   document.querySelectorAll('.pstage-item').forEach((el, i) => {
     el.classList.remove('active','completed');
-    // clean badge
+    el.style.borderRadius = '';
     const badges = el.querySelectorAll('span:not(.pstage-num):not(.pstage-label)');
     badges.forEach(b => b.remove());
     const num = el.querySelector('.pstage-num');
@@ -1252,12 +1311,18 @@ function selectProjectStage(n) {
     else            { num.textContent = i + 1; }
     if (i + 1 === n) {
       el.classList.add('active');
+      el.style.borderRadius = '10px 10px 0 0';
       const badge = document.createElement('span');
       badge.style.cssText = 'font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;';
       badge.textContent = 'פעיל';
       el.appendChild(badge);
     }
   });
+  // Toggle description panels
+  for (let i = 1; i <= 7; i++) {
+    const desc = document.getElementById('pdesc-' + i);
+    if (desc) desc.classList.toggle('open', i === n);
+  }
   document.getElementById('projectGuidanceText').innerHTML =
     'אנחנו בשלב ' + n + ': <strong>' + stageLabels[n] + '</strong><br>השתמש בבוט הפרויקט מימין לסיוע.';
   document.getElementById('projectWorkSub').textContent = 'שלב פעיל: ' + stageLabels[n];
@@ -1341,6 +1406,30 @@ function sendChat() {
   }, 700);
 }
 function handleChatKey(e) { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+
+/* ════════════════ Speech-to-Text Mic ════════════════ */
+let _micRecognition = null;
+function toggleMic(btnId, inputId) {
+  const btn   = document.getElementById(btnId);
+  const input = document.getElementById(inputId);
+  if (_micRecognition) {
+    _micRecognition.stop(); _micRecognition = null;
+    btn.classList.remove('recording'); return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('הדפדפן לא תומך בזיהוי קול — נסה Chrome'); return; }
+  const rec = new SR();
+  rec.lang = 'he-IL'; rec.interimResults = false; rec.maxAlternatives = 1;
+  rec.onstart  = () => btn.classList.add('recording');
+  rec.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    input.value = input.value ? input.value + ' ' + transcript : transcript;
+    input.focus();
+  };
+  rec.onerror = rec.onend = () => { btn.classList.remove('recording'); _micRecognition = null; };
+  _micRecognition = rec;
+  rec.start();
+}
 
 /* ════════════════ WAF / Submit ════════════════ */
 function startRecord(btn) {
