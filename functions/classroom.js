@@ -1552,6 +1552,9 @@ export async function handler(event){
       entranceTickets: body.entranceTickets || null,
       updatedAt: Date.now()
     };
+    if(Object.prototype.hasOwnProperty.call(body, "lessonDate")){
+      payload.lessonDate = String(body.lessonDate || "").trim() || null;
+    }
 
     await db.ref(getUnitPath(userId, courseId, unitId)).update(payload);
     return ok({ ok:true, userId, courseId, unitId });

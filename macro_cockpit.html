@@ -1729,7 +1729,7 @@ body { background: var(--bg) !important; }
 
     <div id="lessonDesignBanner" class="lesson-design-banner" style="display:none;">
       <div class="lesson-design-banner-top">
-        <div class="lesson-design-banner-index">📍 <span id="lessonDesignLessonNum">שיעור —</span></div>
+        <div class="lesson-design-banner-index">📍 <span id="lessonDesignLessonNum">בחר שיעור</span></div>
         <div class="lesson-design-banner-date">
           <label for="lessonDesignLessonDate">תאריך (לא חובה)</label>
           <input id="lessonDesignLessonDate" type="date" class="lp-input" style="margin:0;min-width:160px;">
@@ -2988,7 +2988,7 @@ function buildPlannedLessonItems() {
   return unitIds.map((unitId, index) => {
     const row = macroUnitsMap?.[unitId] || {};
     const lessonNumber = parseLessonNumber(unitId, index);
-    const title = String(row.topicName || row.title || `שיעור ${lessonNumber}`).trim() || `שיעור ${lessonNumber}`;
+    const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
     const date = getLessonDateValue(courseId, unitId, row);
     return { unitId, lessonNumber, title, date };
   });
@@ -3061,6 +3061,27 @@ function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
   renderLessonDesignNavigator();
   if (reloadMetadata) loadCourseMetadataWorkspace();
 }
+async function saveLessonDateForCurrentUnit() {
+  const courseId = currentCourseForSync();
+  if (!courseId || !currentUnitId || !facultyId) return;
+  const unitData = macroUnitsMap[currentUnitId] || {};
+  const lessonDate = getLessonDateValue(courseId, currentUnitId, unitData);
+  const res = await callClassroom({
+    action: "unit_upsert",
+    userId: facultyId,
+    courseId,
+    unitId: currentUnitId,
+    topicName: String(unitData.topicName || "").trim(),
+    structureType: String(unitData.structureType || macroUnitsMode || "Session"),
+    lessonDate
+  });
+  if (res?.ok) {
+    macroUnitsMap[currentUnitId] = {
+      ...(macroUnitsMap[currentUnitId] || {}),
+      lessonDate: lessonDate || null
+    };
+  }
+}
 
 async function loadMacroCourseUnits(courseId) {
   const tbody = document.getElementById("macro-units-tbody");
@@ -3116,9 +3137,10 @@ async function macroAutoSaveUnitRow(row) {
   if (!unitId) return;
   if (statusEl) { statusEl.textContent = "שומר..."; statusEl.className = "unit-row-status"; }
   try {
-    const res = await callClassroom({ action: "unit_upsert", userId: facultyId, courseId: macroCourseId, unitId, structureType: macroUnitsMode, topicName });
+    const lessonDate = getLessonDateValue(macroCourseId, unitId, macroUnitsMap[unitId] || {});
+    const res = await callClassroom({ action: "unit_upsert", userId: facultyId, courseId: macroCourseId, unitId, structureType: macroUnitsMode, topicName, lessonDate });
     if (!res?.ok) throw new Error("not ok");
-    macroUnitsMap[unitId] = { ...(macroUnitsMap[unitId] || {}), topicName, structureType: macroUnitsMode };
+    macroUnitsMap[unitId] = { ...(macroUnitsMap[unitId] || {}), topicName, structureType: macroUnitsMode, lessonDate: lessonDate || null };
     if (statusEl) {
       statusEl.textContent = "נשמר"; statusEl.className = "unit-row-status ok";
       setTimeout(() => { statusEl.textContent = "מוכן"; statusEl.className = "unit-row-status"; }, 1400);
@@ -5021,6 +5043,7 @@ document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (e
   const courseId = currentCourseForSync();
   if (!courseId || !currentUnitId) return;
   setLessonDateValue(courseId, currentUnitId, event?.target?.value || "");
+  saveLessonDateForCurrentUnit().catch(() => {});
   renderLessonDesignNavigator();
 });
 
