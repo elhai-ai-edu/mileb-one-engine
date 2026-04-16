@@ -2448,11 +2448,9 @@ fetch('/config.json').then(r => r.json()).then(config => {
     const selectedOpt = Array.from(sourceSel?.options || []).find(opt => opt.value === selectedValue) || null;
     const selType = selectedOpt?.dataset?.type || null;
     currentLessonId = selType === 'course' ? selectedValue : null;
-    if (currentLessonId) {
-      sessionStorage.setItem("miled_active_course_id", currentLessonId);
-    }
 
     if (currentLessonId) {
+      sessionStorage.setItem("miled_active_course_id", currentLessonId);
       loadTemplates(currentLessonId);
       loadCourseMetadataWorkspace(currentLessonId);
     } else {
