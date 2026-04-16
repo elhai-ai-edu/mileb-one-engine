@@ -62,7 +62,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   padding: 12px 28px; display: flex; align-items: center; justify-content: space-between;
 }
 .w-logo  { color: #fff; font-size: 18px; font-weight: 800; }
-.w-title { color: #93c5fd; font-size: 14px; font-weight: 600; }
+.w-title-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.w-welcome { color: rgba(255,255,255,.65); font-size: 12px; font-weight: 500; letter-spacing: .5px; }
+.w-title { color: #fff; font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
 .w-badge {
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
   border-radius: 999px; padding: 4px 14px; color: #e2e8f0; font-size: 12px; font-weight: 600;
@@ -571,41 +573,43 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .bot-bubble {
   position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
   z-index: 5000;
-  width: 78px; height: 78px; border-radius: 50%;
-  background: radial-gradient(circle at 38% 32%, #d4456a 0%, #8b1a2e 45%, #4a0818 100%);
+  width: 66px; height: 66px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #c0607a 0%, #7a1530 48%, #3d0a14 100%);
   color: #fff; border: none;
   display: none; align-items: center; justify-content: center;
   cursor: pointer;
   box-shadow:
-    0 8px 32px rgba(122,21,48,.55),
-    0 2px 8px rgba(0,0,0,.35),
-    inset 0 -4px 12px rgba(0,0,0,.3);
+    0 4px 18px rgba(122,21,48,.32),
+    0 1px 5px rgba(0,0,0,.22),
+    inset 0 -3px 8px rgba(0,0,0,.22);
   transition: transform .18s cubic-bezier(.34,1.5,.64,1), box-shadow .18s;
-  animation: bubblePulse 4s ease-in-out infinite;
+  animation: bubblePulse 5s ease-in-out infinite;
   overflow: visible;
   flex-direction: column; gap: 2px;
+  opacity: .88;
 }
 
 /* 3D highlight sheen */
 .bot-bubble::before {
   content: '';
   position: absolute;
-  top: 10px; left: 14px;
-  width: 36px; height: 18px;
-  background: radial-gradient(ellipse, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 100%);
+  top: 9px; left: 12px;
+  width: 30px; height: 14px;
+  background: radial-gradient(ellipse, rgba(255,255,255,.32) 0%, rgba(255,255,255,0) 100%);
   border-radius: 50%;
   transform: rotate(-20deg);
   pointer-events: none;
 }
 
 .bot-bubble:hover {
-  transform: translateY(calc(-50% - 5px)) scale(1.08);
-  box-shadow: 0 14px 40px rgba(122,21,48,.7), 0 4px 12px rgba(0,0,0,.4), inset 0 -4px 12px rgba(0,0,0,.3);
+  transform: translateY(calc(-50% - 4px)) scale(1.06);
+  opacity: 1;
+  box-shadow: 0 8px 26px rgba(122,21,48,.48), 0 2px 8px rgba(0,0,0,.28), inset 0 -3px 8px rgba(0,0,0,.22);
 }
 
 @keyframes bubblePulse {
-  0%,100% { box-shadow: 0 8px 32px rgba(122,21,48,.55), 0 2px 8px rgba(0,0,0,.35), inset 0 -4px 12px rgba(0,0,0,.3); }
-  50%     { box-shadow: 0 8px 44px rgba(184,48,85,.75), 0 2px 8px rgba(0,0,0,.35), inset 0 -4px 12px rgba(0,0,0,.3); }
+  0%,100% { box-shadow: 0 4px 18px rgba(122,21,48,.32), 0 1px 5px rgba(0,0,0,.22), inset 0 -3px 8px rgba(0,0,0,.22); }
+  50%     { box-shadow: 0 4px 24px rgba(160,40,70,.44), 0 1px 5px rgba(0,0,0,.22), inset 0 -3px 8px rgba(0,0,0,.22); }
 }
 
 /* Bot face — CSS art inside bubble */
@@ -614,10 +618,10 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   position: relative; z-index: 1;
 }
 .bot-eyes {
-  display: flex; gap: 10px;
+  display: flex; gap: 8px;
 }
 .bot-eye {
-  width: 9px; height: 9px; border-radius: 50%;
+  width: 7px; height: 7px; border-radius: 50%;
   background: #fff;
   box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 12px rgba(255,220,220,.6);
   animation: eyeGlow 3s ease-in-out infinite;
@@ -628,7 +632,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   50%     { opacity: .7; box-shadow: 0 0 10px rgba(255,180,200,1); }
 }
 .bot-smile {
-  width: 22px; height: 10px;
+  width: 18px; height: 8px;
   border: 2.5px solid rgba(255,255,255,.85);
   border-top: none;
   border-radius: 0 0 22px 22px;
@@ -703,7 +707,10 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 <div class="screen active" id="waitingScreen">
   <div class="w-topbar">
     <div class="w-logo">MilEd.One</div>
-    <div class="w-title">עברית מתקדמים א׳ — אופטיקה</div>
+    <div class="w-title-wrap">
+      <span class="w-welcome">ברוכים הבאים 👋</span>
+      <span class="w-title">עברית מתקדמים א׳ — אופטיקה</span>
+    </div>
     <div class="w-badge">⏳ ממתין לפתיחת שיעור</div>
   </div>
   <div class="w-hero">
@@ -767,10 +774,12 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <!-- Topbar -->
   <div class="l-topbar" style="position:relative;">
     <div class="l-logo">MilEd.One</div>
-    <div style="position:absolute;left:50%;transform:translateX(-50%);color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;pointer-events:none;">מרחב למידה כיתתי</div>
+    <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:1px;pointer-events:none;white-space:nowrap;">
+      <div style="color:#fff;font-size:19px;font-weight:800;letter-spacing:-.3px;">עברית מתקדמים א׳ — אופטיקה</div>
+      <div style="color:rgba(255,255,255,.5);font-size:11px;font-weight:500;letter-spacing:.4px;">מרחב למידה כיתתי</div>
+    </div>
     <div class="l-chips">
       <span class="chip chip-default">👁️ סטודנט</span>
-      <span class="chip chip-green">עברית: he_a2_arabic</span>
       <span class="chip chip-purple">🎭 מנחה</span>
     </div>
     <div class="topbar-spacer"></div>
