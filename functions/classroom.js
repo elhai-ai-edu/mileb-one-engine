@@ -348,6 +348,18 @@ function getUnitPath(userId, courseId, unitId) {
   return `users/${userId}/courses/${courseId}/units/${unitId}`;
 }
 
+// Returns a Set of sessionIds that are currently active for a given courseId.
+// Reads from both the top-level sessionId and per-unit sessionIds stored in
+// active_sessions/{courseId}.
+async function collectActiveSessionIds(db, courseId) {
+  const snap = await db.ref(`active_sessions/${courseId}`).once("value");
+  const data = snap.val() || {};
+  const ids = new Set();
+  if (data.sessionId) ids.add(data.sessionId);
+  Object.values(data.units || {}).forEach(u => { if (u?.sessionId) ids.add(u.sessionId); });
+  return ids;
+}
+
 async function ensureUnitNode(db, { userId, courseId, unitId, structureType = "Session", topicName = "" }) {
   if(!userId || !courseId || !unitId) return;
   const nodeRef = db.ref(getUnitPath(userId, courseId, unitId));
@@ -1668,6 +1680,18 @@ export async function handler(event){
 
     await db.ref(`courses/${courseId}/liveMeeting`).set(meeting);
     console.log(`[meeting_save] courseId=${courseId} facultyId=${facultyId} status=${normalizedStatus}`);
+
+    // Propagate to all active sessions for this course so students see the
+    // change immediately via the existing lesson_payload poll, without waiting
+    // for a new session to open.
+    const activeMTargets = await collectActiveSessionIds(db, courseId);
+    if (activeMTargets.size > 0) {
+      await Promise.all([...activeMTargets].map(sid =>
+        db.ref(`sessions/${sid}/liveMeetingSnapshot`).set(meeting)
+      ));
+      console.log(`[meeting_save] propagated to ${activeMTargets.size} active session(s) for ${courseId}`);
+    }
+
     return ok({ ok:true, courseId, liveMeeting: meeting });
   }
 
@@ -1690,6 +1714,17 @@ export async function handler(event){
     };
     await db.ref(`courses/${courseId}/liveMeeting`).update(update);
     console.log(`[meeting_recording_save] courseId=${courseId} facultyId=${facultyId}`);
+
+    // Propagate to all active sessions for this course (e.g. still-open sessions
+    // where the faculty published the recording before clicking "close").
+    const activeRTargets = await collectActiveSessionIds(db, courseId);
+    if (activeRTargets.size > 0) {
+      await Promise.all([...activeRTargets].map(sid =>
+        db.ref(`sessions/${sid}/liveMeetingSnapshot`).update(update)
+      ));
+      console.log(`[meeting_recording_save] propagated to ${activeRTargets.size} active session(s) for ${courseId}`);
+    }
+
     return ok({ ok:true, courseId, recordingUrl: recordingUrl || null });
   }
 

@@ -332,7 +332,7 @@
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
         <span id="liveMeetingStatusPill" class="status-pill" style="font-size:12px;padding:4px 10px;">📅 מתוכנן</span>
       </div>
-      <div id="liveMeetingActions" style="display:flex;gap:8px;flex-wrap:wrap;">
+      <div id="liveMeetingActions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <a id="liveMeetingJoinBtn" href="#" target="_blank" rel="noopener noreferrer"
            class="action-btn primary" style="display:none;text-decoration:none;">
           📹 הצטרפות לזום
@@ -341,6 +341,7 @@
            class="action-btn" style="display:none;text-decoration:none;background:#f0fdf4;color:#065f46;border:1px solid #86efac;">
           🎞️ צפייה בהקלטה
         </a>
+        <span id="liveMeetingNoUrlHint" style="display:none;font-size:13px;color:#64748b;">הקישור יתעדכן בקרוב</span>
       </div>
     </section>
   </div>
@@ -703,6 +704,11 @@
       const doorStatus = String(data?.state?.door_status || "auto").toLowerCase();
       const lobbyMode = !!data?.state?.lobby_mode;
 
+      // Keep the live-meeting card in sync with every poll cycle so that
+      // changes saved by the faculty (joinUrl, status, etc.) are visible to
+      // students within one poll interval without a page reload.
+      renderLiveMeetingCard(data?.liveMeeting || null);
+
       // Pass-through mode (no waiting_lobby UI): redirect as soon as session is open
       if (skipLobbyUI && !lobbyMode && (doorStatus === "open" || doorStatus === "auto")) {
         const dest = new URLSearchParams();
@@ -743,33 +749,42 @@
     function renderLiveMeetingCard(liveMeeting) {
       const card = document.getElementById("liveMeetingCard");
       if (!card) return;
-      if (!liveMeeting || (!liveMeeting.joinUrl && !liveMeeting.recordingUrl)) {
+      // Show the card when there is a URL to act on, OR when the session is
+      // actively live (so students know a meeting is happening even if the
+      // faculty hasn't published the link yet).
+      const hasUrl = !!(liveMeeting?.joinUrl || liveMeeting?.recordingUrl);
+      const isLive = liveMeeting?.status === "live";
+      if (!liveMeeting || !(hasUrl || isLive)) {
         card.style.display = "none";
         return;
       }
       card.style.display = "";
 
-      const titleEl  = document.getElementById("liveMeetingTitle");
-      const pillEl   = document.getElementById("liveMeetingStatusPill");
-      const joinBtn  = document.getElementById("liveMeetingJoinBtn");
-      const recBtn   = document.getElementById("liveMeetingRecordingBtn");
+      const titleEl   = document.getElementById("liveMeetingTitle");
+      const pillEl    = document.getElementById("liveMeetingStatusPill");
+      const joinBtn   = document.getElementById("liveMeetingJoinBtn");
+      const recBtn    = document.getElementById("liveMeetingRecordingBtn");
+      const hintEl    = document.getElementById("liveMeetingNoUrlHint");
 
       if (titleEl) titleEl.textContent = liveMeeting.title || "שיעור חי";
 
       const statusLabels = { scheduled: "📅 מתוכנן", live: "🔴 חי עכשיו", ended: "✅ הסתיים" };
       if (pillEl) pillEl.textContent = statusLabels[liveMeeting.status] || liveMeeting.status || "מתוכנן";
 
+      const showJoin = !!(liveMeeting.joinUrl && liveMeeting.status !== "ended");
       if (joinBtn) {
-        const showJoin = liveMeeting.joinUrl && liveMeeting.status !== "ended";
         joinBtn.style.display = showJoin ? "" : "none";
         if (showJoin) joinBtn.href = liveMeeting.joinUrl;
       }
 
+      const showRec = !!liveMeeting.recordingUrl;
       if (recBtn) {
-        const showRec = !!liveMeeting.recordingUrl;
         recBtn.style.display = showRec ? "" : "none";
         if (showRec) recBtn.href = liveMeeting.recordingUrl;
       }
+
+      // Show a plain-text hint when the meeting is live but no link is available yet
+      if (hintEl) hintEl.style.display = (!showJoin && !showRec && isLive) ? "" : "none";
     }
 
     async function init() {
