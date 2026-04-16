@@ -3005,6 +3005,10 @@ function updateLessonDesignBanner() {
     return;
   }
   const lessons = buildPlannedLessonItems();
+  if (!lessons.length) {
+    banner.style.display = "none";
+    return;
+  }
   const active = lessons.find(item => item.unitId === currentUnitId) || lessons[0];
   banner.style.display = "";
   numEl.textContent = `שיעור ${active.lessonNumber}`;
