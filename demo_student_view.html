@@ -256,6 +256,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
 #lessonScreen[data-mode="project"] .project-work-head    { display: block; }
 #lessonScreen[data-mode="lesson"]  .project-work-head    { display: none; }
+#lessonScreen[data-mode="project"] .context-rail         { display: none !important; }
+#lessonScreen[data-mode="project"] .topbar-system-label  { display: none; }
+#lessonScreen[data-mode="project"] .topbar-stars         { display: none; }
 
 /* Banners */
 #broadcastBanner {
@@ -463,28 +466,28 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-size: 12px; font-weight: 800; color: var(--muted);
   cursor: pointer; transition: all .2s; z-index: 1; position: relative;
 }
-.sprint-bubble.done   { background: #ccfbf1; border-color: #2dd4bf; color: #0f766e; }
-.sprint-bubble.active { background: #0d9488; border-color: #0d9488; color: #fff; box-shadow: 0 0 0 4px rgba(13,148,136,.2); }
+.sprint-bubble.done   { background: #ede9fe; border-color: #a78bfa; color: #6d28d9; }
+.sprint-bubble.active { background: #7c3aed; border-color: #7c3aed; color: #fff; box-shadow: 0 0 0 4px rgba(124,58,237,.2); }
 .sprint-label { font-size: 10px; color: var(--muted); margin-top: 4px; text-align: center; max-width: 60px; }
 .sprint-connector { flex: 1; height: 2px; background: var(--line); margin: 0 -2px; position: relative; top: -14px; }
-.sprint-connector.done { background: #2dd4bf; }
+.sprint-connector.done { background: #a78bfa; }
 
-/* Project guidance (project mode only) */
+/* Project guidance (project mode only) — purple center */
 .project-guidance {
   margin: 14px 20px 0; padding: 14px; border-radius: 12px;
-  background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
-  border: 1px solid #99f6e4; flex-shrink: 0;
+  background: linear-gradient(135deg,#f5f3ff,#ede9fe);
+  border: 1px solid #ddd6fe; flex-shrink: 0;
 }
-.project-guidance-title { font-size: 11px; font-weight: 800; color: #0f766e; margin-bottom: 6px; letter-spacing: .3px; }
-.project-guidance-text  { font-size: 13px; color: #134e4a; line-height: 1.6; }
+.project-guidance-title { font-size: 11px; font-weight: 800; color: #7c3aed; margin-bottom: 6px; letter-spacing: .3px; }
+.project-guidance-text  { font-size: 13px; color: #4c1d95; line-height: 1.6; }
 
-/* Project work header (project mode center) */
+/* Project work header (project mode center) — purple */
 .project-work-head {
   padding: 14px 20px 10px; border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg,#f0fdfa,#ccfbf1); flex-shrink: 0;
+  background: linear-gradient(180deg,#f5f3ff,#ede9fe); flex-shrink: 0;
 }
-.project-work-title { font-size: 16px; font-weight: 800; color: #0f766e; }
-.project-work-sub   { font-size: 12px; color: #0d9488; margin-top: 2px; }
+.project-work-title { font-size: 16px; font-weight: 800; color: #4c1d95; }
+.project-work-sub   { font-size: 12px; color: #7c3aed; margin-top: 2px; }
 
 /* ── WAF Stream ── */
 .waf-section {
@@ -617,6 +620,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-family: inherit; font-weight: 700; font-size: 13px;
 }
 #lessonScreen[data-mode="project"] .chat-send { background: linear-gradient(135deg,#0d9488,#0f766e); }
+#lessonScreen[data-mode="project"] .chat-send:hover { background: linear-gradient(135deg,#0f766e,#115e59); }
 .bot-float-panel .chat-send { background: linear-gradient(135deg, var(--bordeaux-light), var(--bordeaux)); }
 .bot-float-panel .chat-send:hover { background: linear-gradient(135deg, #c83060, var(--bordeaux-light)); }
 .bot-float-panel .chat-input:focus { outline: none; border-color: #d4889a; }
@@ -831,8 +835,8 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <div class="l-topbar" style="position:relative;">
     <div class="l-logo">MilEd.One</div>
     <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;pointer-events:none;white-space:nowrap;">
-      <span style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;">מרחב למידה כיתתי</span>
-      <span style="color:rgba(255,255,255,.35);font-size:11px;letter-spacing:2px;">✦✦✦✦✦</span>
+      <span class="topbar-system-label" style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;">מרחב למידה כיתתי</span>
+      <span class="topbar-stars" style="color:rgba(255,255,255,.35);font-size:11px;letter-spacing:2px;">✦✦✦✦✦</span>
       <span style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;">עברית מתקדמים א׳ — אופטיקה</span>
     </div>
     <div class="l-chips">
