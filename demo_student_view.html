@@ -17,17 +17,17 @@
 }
 body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
-/* ─── Demo Control Bar ─── */
+/* ─── Demo Bar ─── */
 #demoBar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
   background: #1e293b; border-top: 2px solid #334155;
-  display: flex; align-items: center; gap: 10px; padding: 10px 20px;
-  flex-wrap: wrap;
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px; flex-wrap: wrap;
 }
-#demoBar span { color: #94a3b8; font-size: 12px; font-weight: 700; letter-spacing: .5px; margin-left: 8px; }
+#demoBar span { color: #94a3b8; font-size: 11px; font-weight: 700; letter-spacing: .5px; }
+#demoBar .sep { width: 1px; height: 24px; background: #334155; margin: 0 4px; }
 .demo-btn {
-  padding: 7px 16px; border-radius: 20px; border: none; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 700;
+  padding: 6px 13px; border-radius: 20px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 700;
   transition: transform .1s, opacity .1s;
 }
 .demo-btn:active { transform: scale(.96); }
@@ -37,19 +37,20 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .demo-btn.gray   { background: #475569; color: #fff; }
 .demo-btn.amber  { background: #f59e0b; color: #fff; }
 .demo-btn.indigo { background: #6366f1; color: #fff; }
+.demo-btn.teal   { background: #0d9488; color: #fff; }
+.demo-btn.slate  { background: #334155; color: #94a3b8; border: 1px solid #475569; }
 
 /* ─── Screens ─── */
-.screen { display: none; min-height: calc(100vh - 60px); }
+.screen { display: none; min-height: calc(100vh - 52px); }
 .screen.active { display: block; }
 
-/* ════════════════════════════════════════════
+/* ════════════════════════════
    WAITING ROOM
-════════════════════════════════════════════ */
+════════════════════════════ */
 #waitingScreen {
   background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0c4a6e 100%);
-  min-height: calc(100vh - 60px);
-  display: none; flex-direction: column; align-items: stretch;
-  padding: 0 0 60px;
+  min-height: calc(100vh - 52px);
+  display: none; flex-direction: column; padding: 0 0 52px;
 }
 #waitingScreen.active { display: flex; }
 
@@ -57,13 +58,12 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   background: rgba(255,255,255,.07); border-bottom: 1px solid rgba(255,255,255,.1);
   padding: 14px 28px; display: flex; align-items: center; justify-content: space-between;
 }
-.w-logo  { color: #fff; font-size: 18px; font-weight: 800; letter-spacing: -.3px; }
+.w-logo  { color: #fff; font-size: 18px; font-weight: 800; }
 .w-title { color: #94a3b8; font-size: 14px; }
 .w-badge {
   background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
   border-radius: 999px; padding: 4px 14px; color: #e2e8f0; font-size: 12px; font-weight: 600;
 }
-
 .w-hero { text-align: center; padding: 36px 20px 28px; }
 .w-hero h1 { color: #fff; font-size: 28px; font-weight: 800; margin-bottom: 8px; }
 .w-hero p  { color: #94a3b8; font-size: 15px; }
@@ -78,13 +78,11 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(99,102,241,.5); }
   50%      { transform: scale(1.08); box-shadow: 0 0 0 14px rgba(99,102,241,0); }
 }
-
 .w-grid {
   display: grid; grid-template-columns: 1fr 1.2fr 1fr;
   gap: 20px; padding: 0 28px; max-width: 1200px; margin: 0 auto; width: 100%;
 }
 @media (max-width: 800px) { .w-grid { grid-template-columns: 1fr; } }
-
 .w-card {
   background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
   border-radius: 18px; padding: 22px; backdrop-filter: blur(8px);
@@ -93,7 +91,6 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   color: #e2e8f0; font-size: 14px; font-weight: 800;
   margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
 }
-
 .quiz-q { color: #f1f5f9; font-size: 15px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
 .quiz-opt {
   width: 100%; text-align: right; padding: 10px 14px; margin-bottom: 8px;
@@ -106,7 +103,6 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .quiz-opt.correct { background: rgba(34,197,94,.25); border-color: #22c55e; color: #bbf7d0; }
 .quiz-opt.wrong   { background: rgba(239,68,68,.2);  border-color: #ef4444; color: #fecaca; }
 .quiz-result { color: #86efac; font-size: 13px; font-weight: 700; margin-top: 8px; text-align: center; }
-
 .ticket-instructions {
   color: #cbd5e1; font-size: 13px; line-height: 1.7; margin-bottom: 14px;
   border-right: 3px solid #6366f1; padding-right: 12px;
@@ -131,13 +127,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   border-radius: 12px; text-align: center;
   animation: ticketPop .4s cubic-bezier(.34,1.56,.64,1);
 }
-@keyframes ticketPop {
-  0%   { transform: scale(.6); opacity: 0; }
-  100% { transform: scale(1);  opacity: 1; }
-}
+@keyframes ticketPop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
 .golden-ticket .gt-emoji { font-size: 28px; }
 .golden-ticket .gt-text  { color: #78350f; font-weight: 800; font-size: 14px; margin-top: 4px; }
-
 .peer-count { color: #94a3b8; font-size: 12px; margin-bottom: 12px; }
 .peer-item {
   display: flex; align-items: center; gap: 10px;
@@ -150,10 +142,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-size: 18px; background: rgba(255,255,255,.1); flex-shrink: 0;
 }
 .peer-name { color: #e2e8f0; font-size: 13px; font-weight: 600; }
-.peer-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: #22c55e;
-  margin-right: auto; animation: dotPulse 2s infinite;
-}
+.peer-dot  { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; margin-right: auto; animation: dotPulse 2s infinite; }
 @keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
 /* Door animation */
@@ -161,9 +150,8 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   display: none; position: fixed; inset: 0; z-index: 8000;
   background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
   align-items: center; justify-content: center; flex-direction: column;
-  animation: doorFade .5s ease;
 }
-#doorAnim.visible { display: flex; }
+#doorAnim.visible { display: flex; animation: doorFade .5s ease; }
 @keyframes doorFade { from{opacity:0} to{opacity:1} }
 .door-card {
   background: #fff; border-radius: 24px; padding: 48px 56px; text-align: center;
@@ -174,17 +162,16 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .door-title { font-size: 26px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
 .door-sub   { color: var(--muted); font-size: 15px; }
 
-/* ════════════════════════════════════════════
+/* ════════════════════════════
    LESSON ROOM
-════════════════════════════════════════════ */
+════════════════════════════ */
 #lessonScreen {
-  min-height: calc(100vh - 60px);
-  display: none; flex-direction: column;
-  background: var(--bg);
+  min-height: calc(100vh - 52px);
+  display: none; flex-direction: column; background: var(--bg);
 }
 #lessonScreen.active { display: flex; }
 
-/* Lesson Topbar */
+/* Topbar */
 .l-topbar {
   background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%);
   padding: 10px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -200,35 +187,23 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .chip-default { background:#1e293b; color:#94a3b8; border-color:#334155; }
 .chip-green   { background:#f0fdf4; color:#166534; border-color:#bbf7d0; }
 .chip-purple  { background:#faf5ff; color:#6b21a8; border-color:#d8b4fe; }
-
-/* Project mode toggle button in topbar */
 .topbar-spacer { flex: 1; }
-
 .project-enter-btn {
   padding: 7px 16px; border-radius: 20px;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   border: none; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
   cursor: pointer; display: flex; align-items: center; gap: 6px;
-  transition: opacity .15s, transform .1s;
   animation: projectPulse 2.5s infinite;
 }
-.project-enter-btn:hover { opacity: .9; }
-.project-enter-btn:active { transform: scale(.96); }
 @keyframes projectPulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,.5); }
-  50%      { box-shadow: 0 0 0 6px rgba(99,102,241,0); }
+  0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.5)} 50%{box-shadow:0 0 0 6px rgba(99,102,241,0)}
 }
-
 .project-exit-btn {
   padding: 7px 16px; border-radius: 20px;
   background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
   color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
   cursor: pointer; display: none; align-items: center; gap: 6px;
-  transition: background .15s;
 }
-.project-exit-btn:hover { background: rgba(255,255,255,.25); }
-
-/* Project mode badge in topbar */
 .project-mode-badge {
   display: none; padding: 4px 12px; border-radius: 999px;
   background: rgba(99,102,241,.25); border: 1px solid #a5b4fc;
@@ -236,37 +211,38 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 }
 
 /* Mode-driven visibility */
-#lessonScreen[data-mode="lesson"]  .project-enter-btn   { display: flex; }
-#lessonScreen[data-mode="lesson"]  .project-exit-btn    { display: none; }
-#lessonScreen[data-mode="lesson"]  .project-mode-badge  { display: none; }
-#lessonScreen[data-mode="project"] .project-enter-btn   { display: none; }
-#lessonScreen[data-mode="project"] .project-exit-btn    { display: flex; }
-#lessonScreen[data-mode="project"] .project-mode-badge  { display: flex; align-items: center; }
-
+#lessonScreen[data-mode="lesson"]  .project-enter-btn    { display: flex; }
+#lessonScreen[data-mode="lesson"]  .project-exit-btn     { display: none; }
+#lessonScreen[data-mode="lesson"]  .project-mode-badge   { display: none; }
+#lessonScreen[data-mode="project"] .project-enter-btn    { display: none; }
+#lessonScreen[data-mode="project"] .project-exit-btn     { display: flex; }
+#lessonScreen[data-mode="project"] .project-mode-badge   { display: flex; align-items: center; }
 #lessonScreen[data-mode="lesson"]  .panel-bookshelf      { display: flex; }
 #lessonScreen[data-mode="lesson"]  .panel-project-stages { display: none; }
 #lessonScreen[data-mode="lesson"]  .sprint-stepper       { display: none; }
-#lessonScreen[data-mode="lesson"]  .guidance-box         { display: none; }
+#lessonScreen[data-mode="lesson"]  .project-guidance     { display: none; }
 #lessonScreen[data-mode="lesson"]  .bot-tabs             { display: flex; }
 #lessonScreen[data-mode="lesson"]  .project-bot-direct   { display: none; }
-
 #lessonScreen[data-mode="project"] .panel-bookshelf      { display: none; }
 #lessonScreen[data-mode="project"] .panel-project-stages { display: flex; }
 #lessonScreen[data-mode="project"] .sprint-stepper       { display: block; }
-#lessonScreen[data-mode="project"] .guidance-box         { display: block; }
+#lessonScreen[data-mode="project"] .project-guidance     { display: block; }
 #lessonScreen[data-mode="project"] .bot-tabs             { display: none; }
 #lessonScreen[data-mode="project"] .project-bot-direct   { display: flex; }
+/* Hide activity card in project mode, show project area */
+#lessonScreen[data-mode="project"] .activity-focus-area  { display: none; }
+#lessonScreen[data-mode="project"] .project-work-head    { display: block; }
+#lessonScreen[data-mode="lesson"]  .project-work-head    { display: none; }
 
 /* Banners */
 #broadcastBanner {
-  background: linear-gradient(90deg, #eff6ff, #dbeafe);
+  background: linear-gradient(90deg,#eff6ff,#dbeafe);
   border-bottom: 2px solid #bfdbfe; padding: 10px 20px;
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
 }
 .broadcast-label { font-size: 11px; font-weight: 800; color: #1d4ed8; letter-spacing: .4px; }
 .broadcast-text  { font-size: 14px; color: #1e3a8a; font-weight: 600; flex: 1; }
 .broadcast-x { background: none; border: none; color: #64748b; cursor: pointer; font-size: 18px; }
-
 #recallBanner {
   display: none; background: #fef2f2; border-bottom: 2px solid #fecaca;
   padding: 10px 20px; align-items: center; gap: 10px; flex-shrink: 0;
@@ -276,16 +252,9 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .recall-text { color: #991b1b; font-weight: 700; font-size: 14px; flex: 1; }
 .recall-ack  { padding: 5px 14px; background: #ef4444; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
 
-#skillBanner {
-  background: #eff6ff; border-bottom: 1px solid #bfdbfe;
-  padding: 7px 20px; display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: #1e40af; flex-shrink: 0;
-}
-
-/* Main Layout */
+/* Layout */
 .l-layout {
-  display: grid;
-  grid-template-columns: 260px 1fr 380px;
+  display: grid; grid-template-columns: 260px 1fr 380px;
   gap: 0; flex: 1; overflow: hidden; min-height: 0;
 }
 @media (max-width: 1100px) { .l-layout { grid-template-columns: 1fr 1fr; } }
@@ -294,18 +263,17 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 /* Panels */
 .panel {
   border-left: 1px solid var(--line);
-  display: flex; flex-direction: column;
-  overflow-y: auto;
+  display: flex; flex-direction: column; overflow-y: auto;
 }
 .panel:first-child { border-right: 1px solid var(--line); border-left: none; }
 .panel-head {
   padding: 12px 16px; font-weight: 800; font-size: 13px; color: var(--navy);
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #f8fbff, #eef4ff);
+  background: linear-gradient(180deg,#f8fbff,#eef4ff);
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
 
-/* ── Bookshelf Panel ── */
+/* ── Bookshelf ── */
 .panel-bookshelf { flex-direction: column; }
 .bookshelf-section { padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .bookshelf-section h3 { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .5px; margin-bottom: 10px; }
@@ -319,64 +287,115 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .res-icon  { font-size: 18px; flex-shrink: 0; }
 .res-title { font-size: 13px; font-weight: 700; color: var(--navy); }
 .res-meta  { font-size: 11px; color: var(--muted); }
-.res-btn {
+.res-btn   {
   margin-right: auto; padding: 4px 10px; border-radius: 6px;
   border: 1px solid var(--line); background: #fff; cursor: pointer;
   font-size: 11px; font-weight: 700; color: var(--blue);
 }
 
-/* ── Project Stages Panel (left, project mode) ── */
+/* ── Project Stages (project mode left panel) ── */
 .panel-project-stages { flex-direction: column; }
 .pstage-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
 .pstage-item {
   width: 100%; text-align: right; padding: 12px 14px;
   border-radius: 12px; border: 1px solid var(--line);
-  background: #f8fafc; cursor: pointer;
-  font-family: inherit; font-size: 13px;
-  display: flex; align-items: center; gap: 10px;
-  transition: all .15s;
+  background: #f8fafc; cursor: pointer; font-family: inherit; font-size: 13px;
+  display: flex; align-items: center; gap: 10px; transition: all .15s;
 }
 .pstage-item:hover { background: #eff6ff; border-color: #bfdbfe; }
-.pstage-item.active {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
-  color: #fff; border-color: #1d4ed8;
-}
-.pstage-item.completed {
-  background: #f0fdf4; border-color: #bbf7d0;
-}
+.pstage-item.active { background: linear-gradient(135deg,#1d4ed8,#2563eb); color: #fff; border-color: #1d4ed8; }
+.pstage-item.completed { background: #f0fdf4; border-color: #bbf7d0; }
 .pstage-num {
   width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
   background: rgba(0,0,0,.08); display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 800;
 }
-.pstage-item.active   .pstage-num { background: rgba(255,255,255,.25); color: #fff; }
+.pstage-item.active    .pstage-num { background: rgba(255,255,255,.25); color: #fff; }
 .pstage-item.completed .pstage-num { background: #dcfce7; color: #166534; }
 .pstage-label { font-weight: 700; flex: 1; }
-.pstage-item.active   .pstage-label { color: #fff; }
+.pstage-item.active    .pstage-label { color: #fff; }
 .pstage-item.completed .pstage-label { color: #166534; }
-.pstage-check { font-size: 14px; }
-.pstage-item.active { animation: stageHighlight .3s ease; }
-@keyframes stageHighlight { from{transform:scale(.98)} to{transform:scale(1)} }
 
-/* ── Stage / Work Area (center) ── */
-.stage-hero {
-  padding: 18px 20px 14px; border-bottom: 1px solid var(--line); flex-shrink: 0;
+/* ══════════════════════════════════════
+   CENTER COLUMN — Activity-focused
+══════════════════════════════════════ */
+
+/* 1. Context Rail */
+.context-rail {
+  padding: 9px 20px; border-bottom: 1px solid var(--line);
+  background: #f8fafc; display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
 }
-.stage-title { font-size: 18px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
-.stage-sub   { font-size: 13px; color: var(--muted); }
-
-/* Project mode header in center */
-.project-work-head {
-  padding: 14px 20px 10px; border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #f5f3ff, #ede9fe);
-  flex-shrink: 0; display: none;
+.ctx-crumb { font-size: 12px; color: var(--muted); font-weight: 600; }
+.ctx-sep   { font-size: 12px; color: #cbd5e1; }
+.ctx-current {
+  font-size: 12px; font-weight: 800; color: var(--blue);
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  padding: 2px 8px; border-radius: 999px;
 }
-#lessonScreen[data-mode="project"] .project-work-head { display: block; }
-#lessonScreen[data-mode="project"] .stage-hero { display: none; }
-.project-work-title { font-size: 16px; font-weight: 800; color: #4c1d95; }
-.project-work-sub   { font-size: 12px; color: #7c3aed; margin-top: 2px; }
 
-/* Sprint Stepper */
+/* 2. Activity Focus Area */
+.activity-focus-area { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
+
+/* Empty state */
+.activity-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; text-align: center; gap: 10px;
+}
+.activity-empty-icon { font-size: 40px; animation: emptyPulse 2s infinite; }
+@keyframes emptyPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.activity-empty-title { font-size: 16px; font-weight: 800; color: var(--navy); }
+.activity-empty-sub   { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 260px; }
+.activity-empty-hint  {
+  margin-top: 6px; font-size: 12px; color: #3b82f6;
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  padding: 6px 14px; border-radius: 10px;
+}
+
+/* Activity card */
+.activity-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  animation: cardIn .3s ease;
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+.activity-card-header {
+  padding: 14px 18px 12px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-bottom: 1px solid #bfdbfe;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.activity-type-badge {
+  padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800;
+  background: #1d4ed8; color: #fff; white-space: nowrap; flex-shrink: 0;
+  margin-top: 3px;
+}
+.activity-title { font-size: 18px; font-weight: 800; color: var(--navy); line-height: 1.3; }
+.activity-goal  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.activity-blocks { padding: 0; }
+.activity-block {
+  padding: 14px 18px; border-bottom: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.activity-block:last-child { border-bottom: none; }
+.activity-block-label {
+  font-size: 11px; font-weight: 800; color: var(--muted);
+  letter-spacing: .4px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+}
+.activity-block-label::before {
+  content: ''; width: 3px; height: 14px; border-radius: 2px; background: #3b82f6;
+}
+.activity-block-text { font-size: 14px; color: var(--navy); line-height: 1.65; }
+.activity-block-tag  {
+  display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700;
+  background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;
+  padding: 3px 10px; border-radius: 999px;
+}
+
+/* 3. Sprint Stepper (project mode only) */
 .sprint-stepper { padding: 14px 20px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
 .sprint-stepper-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .4px; margin-bottom: 12px; }
 .sprint-steps { display: flex; align-items: center; }
@@ -393,51 +412,71 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .sprint-connector { flex: 1; height: 2px; background: var(--line); margin: 0 -2px; position: relative; top: -14px; }
 .sprint-connector.done { background: #3b82f6; }
 
-/* Guidance */
-.guidance-box {
-  margin: 14px 20px; padding: 14px; border-radius: 12px;
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+/* Project guidance (project mode only) */
+.project-guidance {
+  margin: 14px 20px 0; padding: 14px; border-radius: 12px;
+  background: linear-gradient(135deg,#f5f3ff,#ede9fe);
   border: 1px solid #ddd6fe; flex-shrink: 0;
 }
-.guidance-title { font-size: 11px; font-weight: 800; color: #7c3aed; margin-bottom: 6px; letter-spacing: .3px; }
-.guidance-text  { font-size: 13px; color: #4c1d95; line-height: 1.6; }
+.project-guidance-title { font-size: 11px; font-weight: 800; color: #7c3aed; margin-bottom: 6px; letter-spacing: .3px; }
+.project-guidance-text  { font-size: 13px; color: #4c1d95; line-height: 1.6; }
 
-/* WAF / Comm stream */
-.comm-panel { border-top: 1px solid var(--line); display: flex; flex-direction: column; }
-.comm-stream {
-  min-height: 52px; max-height: 200px; overflow-y: auto;
-  padding: 12px 18px; display: flex; flex-direction: column; gap: 8px;
+/* Project work header (project mode center) */
+.project-work-head {
+  padding: 14px 20px 10px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#f5f3ff,#ede9fe); flex-shrink: 0;
 }
-.comm-empty { font-size: 12px; color: var(--muted); align-self: center; margin: auto; }
+.project-work-title { font-size: 16px; font-weight: 800; color: #4c1d95; }
+.project-work-sub   { font-size: 12px; color: #7c3aed; margin-top: 2px; }
+
+/* ── WAF Stream ── */
+.waf-section {
+  border-top: 1px solid var(--line); display: flex; flex-direction: column; flex-shrink: 0;
+}
+.waf-section-head {
+  padding: 8px 18px 6px; font-size: 11px; font-weight: 800; color: var(--muted);
+  letter-spacing: .4px; border-bottom: 1px solid var(--line);
+  background: #f8fafc; display: flex; align-items: center; gap: 6px;
+}
+.comm-stream {
+  min-height: 52px; max-height: 180px; overflow-y: auto;
+  padding: 10px 18px; display: flex; flex-direction: column; gap: 8px;
+}
 .waf-msg { max-width: 82%; border-radius: 14px; padding: 9px 13px; }
 .waf-msg.lecturer { background: #eff6ff; border: 1px solid #bfdbfe; align-self: flex-end; }
 .waf-msg.student  { background: #f0fdf4; border: 1px solid #bbf7d0; align-self: flex-start; }
 .waf-msg-text { font-size: 13px; color: var(--navy); line-height: 1.5; }
 .waf-msg-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-.comm-input { padding: 14px 18px; }
-.write-head { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 10px; }
-.write-ta {
+/* ── Submission Panel ── */
+.submission-panel { padding: 14px 18px; border-top: 1px solid var(--line); }
+.sub-panel-head {
+  font-size: 13px; font-weight: 800; color: var(--navy);
+  margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
+}
+.sub-hint {
+  font-size: 12px; color: var(--muted); margin-bottom: 10px;
+  padding: 6px 10px; background: #f8fafc; border-radius: 8px;
+  border-right: 3px solid #bfdbfe;
+}
+.sub-ta {
   width: 100%; border: 1px solid var(--line); border-radius: 10px;
   padding: 10px; font-family: inherit; font-size: 13px; resize: none;
-  background: #f8fafc; min-height: 70px;
+  background: #f8fafc; min-height: 72px;
 }
-.write-ta:focus { outline: none; border-color: #93c5fd; background: #fff; }
-.write-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.action-btn {
-  padding: 8px 16px; border-radius: 10px; border: none; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 700;
-  transition: opacity .15s;
+.sub-ta:focus { outline: none; border-color: #93c5fd; background: #fff; }
+.sub-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.sub-btn {
+  padding: 9px 18px; border-radius: 10px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 700; transition: opacity .15s;
 }
-.action-btn:hover { opacity: .85; }
-.action-btn.msg    { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
-.action-btn.submit { background: #1d4ed8; color: #fff; }
-.action-btn.mic    { background: #f1f5f9; border: 1px solid var(--line); }
+.sub-btn:hover { opacity: .85; }
+.sub-btn.primary   { background: #1d4ed8; color: #fff; }
+.sub-btn.secondary { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.sub-btn.icon      { background: #f1f5f9; border: 1px solid var(--line); padding: 9px 12px; }
 
 /* ── Chat Panel ── */
 .chat-panel { display: flex; flex-direction: column; }
-
-/* Bot tabs (lesson mode) */
 .bot-tabs {
   gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line);
   background: linear-gradient(180deg,#f8fbff,#eef4ff); flex-wrap: wrap; flex-shrink: 0;
@@ -445,21 +484,28 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .bot-tab {
   padding: 6px 14px; border-radius: 20px; border: 1px solid #bfdbfe;
   background: #fff; color: #1e40af; cursor: pointer;
-  font-family: inherit; font-size: 13px; font-weight: 700;
-  transition: all .15s;
+  font-family: inherit; font-size: 13px; font-weight: 700; transition: all .15s;
 }
 .bot-tab:hover { background: #eff6ff; }
 .bot-tab.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
 
-/* Project bot header (project mode, no tabs) */
+/* Bot activity context line */
+.bot-activity-ctx {
+  padding: 8px 14px; border-bottom: 1px solid var(--line);
+  background: #fafafa; font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.bot-activity-ctx strong { color: var(--navy); }
+
+/* Project bot header (project mode) */
 .project-bot-direct {
   padding: 12px 14px; border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #f5f3ff, #ede9fe);
+  background: linear-gradient(180deg,#f5f3ff,#ede9fe);
   align-items: center; gap: 10px; flex-shrink: 0;
 }
 .project-bot-icon {
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: linear-gradient(135deg,#6366f1,#8b5cf6);
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; flex-shrink: 0;
 }
@@ -476,16 +522,14 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-size: 13px; line-height: 1.6;
 }
 .chat-bubble.bot {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  background: linear-gradient(135deg,#eff6ff,#dbeafe);
   border: 1px solid #bfdbfe; align-self: flex-end;
 }
 .chat-bubble.bot.project-style {
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  background: linear-gradient(135deg,#f5f3ff,#ede9fe);
   border: 1px solid #ddd6fe;
 }
-.chat-bubble.user {
-  background: #f0f9ff; border: 1px solid #bae6fd; align-self: flex-start;
-}
+.chat-bubble.user { background: #f0f9ff; border: 1px solid #bae6fd; align-self: flex-start; }
 .chat-input-row { padding: 12px 14px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-shrink: 0; }
 .chat-input {
   flex: 1; border: 1px solid var(--line); border-radius: 10px;
@@ -497,24 +541,18 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   border: none; border-radius: 10px; cursor: pointer;
   font-family: inherit; font-weight: 700; font-size: 13px;
 }
-#lessonScreen[data-mode="project"] .chat-send {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-}
+#lessonScreen[data-mode="project"] .chat-send { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
 </style>
 </head>
-
 <body>
 
-<!-- ════════════════════════════════════════════
-     WAITING ROOM
-════════════════════════════════════════════ -->
+<!-- ════════════ WAITING ROOM ════════════ -->
 <div class="screen active" id="waitingScreen">
   <div class="w-topbar">
     <div class="w-logo">MilEd.One</div>
     <div class="w-title">עברית מתקדמים א׳ — אופטיקה</div>
     <div class="w-badge">⏳ ממתין לפתיחת שיעור</div>
   </div>
-
   <div class="w-hero">
     <div class="w-pulse">
       <svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2">
@@ -524,30 +562,24 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     <h1>ברוכים הבאים לכיתה</h1>
     <p>המרצה עוד לא פתח את השיעור — בינתיים, בואו נתחמם 🧠</p>
   </div>
-
   <div class="w-grid">
-
-    <!-- חימום מוחי -->
     <div class="w-card">
       <div class="w-card-title">🧠 חימום מוחי</div>
-      <div class="quiz-q">איזו מהאפשרויות הבאות מתארת <strong>עדשה מתכנסת</strong> (קמורה)?</div>
-      <button class="quiz-opt" onclick="answerQuiz(this, false)">מרחיקה קרני אור מציר העדשה</button>
-      <button class="quiz-opt" onclick="answerQuiz(this, true)">מקרבת קרני אור לנקודה אחת</button>
-      <button class="quiz-opt" onclick="answerQuiz(this, false)">אינה משנה כיוון קרני אור</button>
-      <button class="quiz-opt" onclick="answerQuiz(this, false)">מפזרת אור לכיוונים שונים</button>
-      <div class="quiz-result" id="quizResult" style="display:none;"></div>
+      <div class="quiz-q">איזו מהאפשרויות מתארת <strong>עדשה מתכנסת</strong> (קמורה)?</div>
+      <button class="quiz-opt" onclick="answerQuiz(this,false)">מרחיקה קרני אור מציר העדשה</button>
+      <button class="quiz-opt" onclick="answerQuiz(this,true)">מקרבת קרני אור לנקודה אחת</button>
+      <button class="quiz-opt" onclick="answerQuiz(this,false)">אינה משנה כיוון קרני אור</button>
+      <button class="quiz-opt" onclick="answerQuiz(this,false)">מפזרת אור לכיוונים שונים</button>
+      <div class="quiz-result" id="quizResult" style="display:none"></div>
     </div>
-
-    <!-- כרטיס כניסה -->
     <div class="w-card">
-      <div class="w-card-title">🎓 משימת פתיחה</div>
+      <div class="w-card-title">🎓 כרטיס כניסה</div>
       <div class="ticket-instructions">
         <strong>לפני הכניסה לשיעור:</strong><br>
-        חשבו על אדם מסביבתכם שיש לו בעיית ראייה (לקוח של אופטיקאי).
-        תארו בקצרה: מהי הבעיה? כיצד היא משפיעה על חייו היומיומיים?
+        חשבו על אדם מסביבתכם שיש לו בעיית ראייה. תארו: מהי הבעיה? כיצד היא משפיעה על חייו?
       </div>
       <div id="ticketForm">
-        <textarea class="ticket-ta" id="ticketText" placeholder="כתבו כאן את תשובתכם (2-3 משפטים)..."></textarea>
+        <textarea class="ticket-ta" id="ticketText" placeholder="כתבו כאן (2–3 משפטים)..."></textarea>
         <button class="ticket-submit" onclick="submitTicket()">📝 שלח כרטיס כניסה</button>
       </div>
       <div class="golden-ticket" id="goldenTicket">
@@ -555,26 +587,19 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
         <div class="gt-text">כרטיס הכניסה שלך נשלח!<br>אתה מוכן לשיעור</div>
       </div>
     </div>
-
-    <!-- מי כאן? -->
     <div class="w-card">
       <div class="w-card-title">👥 מי כאן?</div>
       <div class="peer-count">5 תלמידים ממתינים</div>
-      <div>
-        <div class="peer-item"><div class="peer-avatar">🙂</div><div class="peer-name">ירין כ.</div><div class="peer-dot"></div></div>
-        <div class="peer-item"><div class="peer-avatar">😊</div><div class="peer-name">נור מ.</div><div class="peer-dot"></div></div>
-        <div class="peer-item"><div class="peer-avatar">🙃</div><div class="peer-name">אמיר ש.</div><div class="peer-dot"></div></div>
-        <div class="peer-item"><div class="peer-avatar">😄</div><div class="peer-name">לינה ח.</div><div class="peer-dot"></div></div>
-        <div class="peer-item"><div class="peer-avatar">🤩</div><div class="peer-name">את עצמך</div><div class="peer-dot" style="background:#6366f1;"></div></div>
-      </div>
+      <div class="peer-item"><div class="peer-avatar">🙂</div><div class="peer-name">ירין כ.</div><div class="peer-dot"></div></div>
+      <div class="peer-item"><div class="peer-avatar">😊</div><div class="peer-name">נור מ.</div><div class="peer-dot"></div></div>
+      <div class="peer-item"><div class="peer-avatar">🙃</div><div class="peer-name">אמיר ש.</div><div class="peer-dot"></div></div>
+      <div class="peer-item"><div class="peer-avatar">😄</div><div class="peer-name">לינה ח.</div><div class="peer-dot"></div></div>
+      <div class="peer-item"><div class="peer-avatar">🤩</div><div class="peer-name">את עצמך</div><div class="peer-dot" style="background:#6366f1"></div></div>
     </div>
-
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════
-     DOOR-OPEN ANIMATION
-════════════════════════════════════════════ -->
+<!-- ════════════ DOOR ANIMATION ════════════ -->
 <div id="doorAnim">
   <div class="door-card">
     <div class="door-emoji">🚪✅</div>
@@ -583,9 +608,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   </div>
 </div>
 
-<!-- ════════════════════════════════════════════
-     LESSON ROOM
-════════════════════════════════════════════ -->
+<!-- ════════════ LESSON ROOM ════════════ -->
 <div class="screen" id="lessonScreen" data-mode="lesson">
 
   <!-- Topbar -->
@@ -598,18 +621,15 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       <span class="chip chip-purple">🎭 מנחה</span>
     </div>
     <div class="topbar-spacer"></div>
-    <!-- Project mode badge (shown only in project mode) -->
     <div class="project-mode-badge">📁 מצב פרויקט פעיל</div>
-    <!-- Exit project mode -->
     <button class="project-exit-btn" onclick="exitProjectMode()">← חזרה לשיעור</button>
-    <!-- Enter project mode -->
     <button class="project-enter-btn" onclick="enterProjectMode()">📁 עבודת פרויקט</button>
   </div>
 
   <!-- Broadcast Banner -->
   <div id="broadcastBanner">
-    <span class="broadcast-label">📡 הודעה מהמרצה לכל הכיתה · 10:32</span>
-    <span class="broadcast-text">בשיעור של היום נתמקד בשלב 1 — בחירת בעיה של לקוח אמיתי. תוכלו להשתמש בבוט הפרויקט לכל שאלה.</span>
+    <span class="broadcast-label">📡 הודעה מהמרצה · 10:32</span>
+    <span class="broadcast-text">בשיעור היום נתמקד בניתוח פסקת פתיחה — עיינו בחומרים לפני שמתחילים.</span>
     <button class="broadcast-x" onclick="document.getElementById('broadcastBanner').style.display='none'">✕</button>
   </div>
 
@@ -620,97 +640,76 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     <button class="recall-ack" onclick="document.getElementById('recallBanner').classList.remove('visible')">✓ הבנתי</button>
   </div>
 
-  <!-- Skill Banner -->
-  <div id="skillBanner">
-    🎓 <strong>למידה משולבת מיומנויות:</strong>
-    <span>כתיבה אקדמית — השפעה גבוהה</span>
-    <span style="margin-right:8px;font-size:11px;background:#1d4ed8;color:#fff;padding:2px 8px;border-radius:999px;">×2.0</span>
-  </div>
-
   <!-- 3-column layout -->
   <div class="l-layout">
 
-    <!-- ── LEFT: Bookshelf (lesson mode) ── -->
+    <!-- LEFT: Bookshelf (lesson mode) -->
     <aside class="panel panel-bookshelf">
-      <div class="panel-head">📚 ספרייה</div>
+      <div class="panel-head">📚 חומרים לפעילות</div>
       <div class="bookshelf-section">
-        <h3>יחידה פעילה</h3>
+        <h3>פעילות נוכחית</h3>
         <div style="font-size:12px;color:var(--muted);background:#f8fafc;border-radius:8px;padding:8px;border:1px solid var(--line);">
-          יחידה 1 — הכרת הבעיה | 2 משאבים | אופטיקה
+          יחידה 1 — ניתוח פסקת פתיחה
         </div>
       </div>
       <div class="bookshelf-section">
-        <h3>משאבים זמינים</h3>
+        <h3>קשורים לפעילות הזאת</h3>
         <div class="resource-card">
           <div class="res-icon">📄</div>
-          <div><div class="res-title">מדריך כתיבת פרויקט</div><div class="res-meta">PDF · יחידה 1</div></div>
+          <div><div class="res-title">טקסט לניתוח — פסקה א׳</div><div class="res-meta">PDF · יחידה 1</div></div>
           <button class="res-btn">פתח</button>
         </div>
         <div class="resource-card">
           <div class="res-icon">🎬</div>
-          <div><div class="res-title">סרטון: ניסוח בעיה</div><div class="res-meta">וידאו · יחידה 1</div></div>
+          <div><div class="res-title">הדגמה: זיהוי טענה מרכזית</div><div class="res-meta">וידאו · 4 דק׳</div></div>
           <button class="res-btn">צפה</button>
         </div>
         <div class="resource-card">
           <div class="res-icon">📋</div>
-          <div><div class="res-title">טופס הגשה — שלב 1</div><div class="res-meta">מטלה · יחידה 1</div></div>
+          <div><div class="res-title">רשימת מושגים — ניתוח טקסט</div><div class="res-meta">מסמך עזר</div></div>
           <button class="res-btn">פתח</button>
         </div>
       </div>
     </aside>
 
-    <!-- ── LEFT: Project Stages (project mode) ── -->
+    <!-- LEFT: Project Stages (project mode) -->
     <aside class="panel panel-project-stages">
       <div class="panel-head">📋 שלבי הפרויקט</div>
       <div class="pstage-list" id="pstageList">
         <button class="pstage-item completed" onclick="selectProjectStage(1)">
-          <div class="pstage-num">✓</div>
-          <div class="pstage-label">בחירת בעיה</div>
+          <div class="pstage-num">✓</div><div class="pstage-label">בחירת בעיה</div>
         </button>
         <button class="pstage-item active" onclick="selectProjectStage(2)">
-          <div class="pstage-num">2</div>
-          <div class="pstage-label">ניסיונות קודמים</div>
-          <span style="font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;">פעיל</span>
+          <div class="pstage-num">2</div><div class="pstage-label">ניסיונות קודמים</div>
+          <span style="font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;">פעיל</span>
         </button>
-        <button class="pstage-item" onclick="selectProjectStage(3)">
-          <div class="pstage-num">3</div>
-          <div class="pstage-label">מקורות מידע</div>
-        </button>
-        <button class="pstage-item" onclick="selectProjectStage(4)">
-          <div class="pstage-num">4</div>
-          <div class="pstage-label">שתי אלטרנטיבות</div>
-        </button>
-        <button class="pstage-item" onclick="selectProjectStage(5)">
-          <div class="pstage-num">5</div>
-          <div class="pstage-label">בחירת פתרון</div>
-        </button>
-        <button class="pstage-item" onclick="selectProjectStage(6)">
-          <div class="pstage-num">6</div>
-          <div class="pstage-label">כתיבת מסמך</div>
-        </button>
-        <button class="pstage-item" onclick="selectProjectStage(7)">
-          <div class="pstage-num">7</div>
-          <div class="pstage-label">הצגה</div>
-        </button>
+        <button class="pstage-item" onclick="selectProjectStage(3)"><div class="pstage-num">3</div><div class="pstage-label">מקורות מידע</div></button>
+        <button class="pstage-item" onclick="selectProjectStage(4)"><div class="pstage-num">4</div><div class="pstage-label">שתי אלטרנטיבות</div></button>
+        <button class="pstage-item" onclick="selectProjectStage(5)"><div class="pstage-num">5</div><div class="pstage-label">בחירת פתרון</div></button>
+        <button class="pstage-item" onclick="selectProjectStage(6)"><div class="pstage-num">6</div><div class="pstage-label">כתיבת מסמך</div></button>
+        <button class="pstage-item" onclick="selectProjectStage(7)"><div class="pstage-num">7</div><div class="pstage-label">הצגה</div></button>
       </div>
     </aside>
 
-    <!-- ── CENTER: Work Area ── -->
+    <!-- CENTER: Work Area -->
     <section class="panel" style="overflow-y:auto;">
 
-      <!-- Lesson mode header -->
-      <div class="stage-hero">
-        <div class="stage-title">מרחב העבודה שלי</div>
-        <div class="stage-sub">יחידה 1 — הכרת הבעיה | עברית מתקדמים א׳</div>
+      <!-- Context Rail (lesson mode) -->
+      <div class="context-rail" id="contextRail">
+        <span class="ctx-crumb">יחידה 1</span>
+        <span class="ctx-sep">›</span>
+        <span class="ctx-crumb">ספרינט 2</span>
+        <span class="ctx-sep">›</span>
+        <span class="ctx-current" id="ctxCurrentLabel">ניתוח טקסט</span>
       </div>
 
       <!-- Project mode header -->
       <div class="project-work-head">
         <div class="project-work-title">פרויקט גמר — פתרון בעיה מקצועית</div>
-        <div class="project-work-sub">שלב פעיל: ניסיונות קודמים וסיבות לאי הצלחה</div>
+        <div class="project-work-sub" id="projectWorkSub">שלב פעיל: ניסיונות קודמים וסיבות לאי הצלחה</div>
       </div>
 
-      <!-- Sprint Stepper (project mode only) -->
+      <!-- Sprint Stepper (project mode) -->
       <div class="sprint-stepper">
         <div class="sprint-stepper-label">⚡ ספרינטים — שלב 2</div>
         <div class="sprint-steps">
@@ -721,7 +720,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
           <div class="sprint-connector done"></div>
           <div class="sprint-step">
             <div class="sprint-bubble active" onclick="selectSprint(2)">2</div>
-            <div class="sprint-label">ניסוח הבעיה</div>
+            <div class="sprint-label">ניסוח</div>
           </div>
           <div class="sprint-connector"></div>
           <div class="sprint-step">
@@ -736,44 +735,81 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
         </div>
       </div>
 
-      <!-- Guidance (project mode only) -->
-      <div class="guidance-box">
-        <div class="guidance-title">📌 ספרינט פעיל — ניסוח הבעיה</div>
-        <div class="guidance-text" id="guidanceText">
+      <!-- Project guidance (project mode) -->
+      <div class="project-guidance">
+        <div class="project-guidance-title">📌 ספרינט פעיל — ניסוח הבעיה</div>
+        <div class="project-guidance-text" id="projectGuidanceText">
           תאר את הבעיה שבחרת: מי הלקוח? מהי הבעיה הספציפית?<br>
           השתמש בבוט הפרויקט מימין לסיוע בניסוח.
         </div>
       </div>
 
-      <!-- WAF Stream + Write Zone (both modes) -->
-      <div class="comm-panel" style="flex:1;">
-        <div style="padding:10px 18px 6px;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.4px;border-bottom:1px solid var(--line);">
-          💬 תקשורת עם המרצה
+      <!-- ── ACTIVITY FOCUS AREA (lesson mode) ── -->
+      <div class="activity-focus-area" id="activityFocusArea">
+
+        <!-- Empty State -->
+        <div class="activity-empty" id="activityEmpty">
+          <div class="activity-empty-icon">⏳</div>
+          <div class="activity-empty-title">ממתין להנחיה מהמרצה</div>
+          <div class="activity-empty-sub">השיעור פתוח, אבל עדיין לא הוגדרה פעילות.<br>ניתן לעיין בחומרים בינתיים.</div>
+          <div class="activity-empty-hint">💬 ניתן לשאול את הבוט שאלות חופשיות</div>
         </div>
+
+        <!-- Activity Card -->
+        <div class="activity-card" id="activityCard" style="display:none">
+          <div class="activity-card-header">
+            <span class="activity-type-badge" id="activityTypeBadge">ניתוח טקסט</span>
+            <div>
+              <div class="activity-title" id="activityTitle">ניתוח פסקת פתיחה</div>
+              <div class="activity-goal" id="activityGoal">זיהוי הטענה המרכזית והאסטרטגיה הרטורית</div>
+            </div>
+          </div>
+          <div class="activity-blocks">
+            <div class="activity-block">
+              <div class="activity-block-label">מה עושים עכשיו</div>
+              <div class="activity-block-text" id="activityInstructions">
+                קרא את הפסקה המצורפת וכתוב 3–5 משפטים שמזהים את הטענה המרכזית ואת הדרך שבה היא מנוסחת.
+              </div>
+            </div>
+            <div class="activity-block">
+              <div class="activity-block-label">מה מגישים</div>
+              <div class="activity-block-text" id="activityExpected">
+                תשובה קצרה של 3–5 משפטים — בעברית תקנית
+                <span class="activity-block-tag">⏱ 10 דקות</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /activity-focus-area -->
+
+      <!-- WAF Stream -->
+      <div class="waf-section">
+        <div class="waf-section-head">💬 תקשורת עם המרצה</div>
         <div class="comm-stream" id="commStream">
           <div class="waf-msg lecturer">
-            <div class="waf-msg-text">בהצלחה עם ניסוח הבעיה! אם זקוקים לעזרה — שלחו לי הודעה 👍</div>
+            <div class="waf-msg-text">הפעלתי את פעילות הניתוח — יש לכם 10 דקות. אפשר להשתמש בבוט לעזרה 👍</div>
             <div class="waf-msg-meta">מהמרצה · 10:35</div>
-          </div>
-          <div class="waf-msg student">
-            <div class="waf-msg-text">הלקוחה שלי היא סבתא שמתקשה לקרוא בגלל ראיית זקן</div>
-            <div class="waf-msg-meta">שלחת · 10:36</div>
-          </div>
-        </div>
-        <div class="comm-input">
-          <div class="write-head">✍️ אזור עבודה</div>
-          <textarea class="write-ta" id="writeTa" placeholder="כתוב מסר או עבודה למרצה..."></textarea>
-          <div class="write-actions">
-            <button class="action-btn msg" onclick="sendMsg()">💬 שלח מסר</button>
-            <button class="action-btn submit" onclick="sendSubmit()">📄 הגש עבודה</button>
-            <button class="action-btn mic">🎙️</button>
-            <button class="action-btn msg" style="font-size:12px;padding:8px 10px;">📎</button>
           </div>
         </div>
       </div>
-    </section>
 
-    <!-- ── RIGHT: Chat Panel ── -->
+      <!-- Submission Panel -->
+      <div class="submission-panel">
+        <div class="sub-panel-head">📄 הגשת הפעילות</div>
+        <div class="sub-hint" id="subHint">כתוב כאן את תשובתך לפעילות: ניתוח פסקת פתיחה</div>
+        <textarea class="sub-ta" id="writeTa" placeholder="כתוב כאן את תשובתך לפעילות הנוכחית..."></textarea>
+        <div class="sub-actions">
+          <button class="sub-btn primary" onclick="sendSubmit()">📄 הגש פעילות</button>
+          <button class="sub-btn secondary" onclick="sendMsg()">💬 שלח שאלה למרצה</button>
+          <button class="sub-btn icon" title="הקלטה קולית">🎙️</button>
+          <button class="sub-btn icon" title="צרף קובץ">📎</button>
+        </div>
+      </div>
+
+    </section><!-- /center -->
+
+    <!-- RIGHT: Chat Panel -->
     <aside class="panel chat-panel">
 
       <!-- Bot Tabs (lesson mode) -->
@@ -782,26 +818,31 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
         <button class="bot-tab" onclick="switchBot(this,'final')">📝 פרויקט גמר</button>
       </div>
 
-      <!-- Project Bot Header (project mode — no tabs) -->
+      <!-- Bot Activity Context Line -->
+      <div class="bot-activity-ctx" id="botActivityCtx">
+        ליווי למשימה: <strong id="botActivityLabel">ניתוח פסקת פתיחה</strong>
+      </div>
+
+      <!-- Project Bot Header (project mode) -->
       <div class="project-bot-direct">
         <div class="project-bot-icon">📝</div>
         <div>
           <div class="project-bot-name">בוט פרויקט הגמר</div>
-          <div class="project-bot-sub">שלב 2 — ניסיונות קודמים</div>
+          <div class="project-bot-sub" id="projectBotSub">שלב 2 — ניסיונות קודמים</div>
         </div>
       </div>
 
       <!-- Chat Window -->
       <div class="chat-window" id="chatWindow">
         <div class="chat-bubble bot">
-          שלום! אני הבוט הכללי של קורס עברית מתקדמים 📚<br>
-          במה אוכל לעזור לך היום?
+          שלום! אני כאן לעזור לך עם <strong>ניתוח פסקת הפתיחה</strong> 📚<br>
+          אם יש לך שאלה על הטקסט או על הניתוח — שאל אותי.
         </div>
       </div>
 
       <!-- Chat Input -->
       <div class="chat-input-row">
-        <input class="chat-input" id="chatInput" placeholder="כתוב שאלה..." onkeydown="handleChatKey(event)">
+        <input class="chat-input" id="chatInput" placeholder="שאל שאלה על הפעילות..." onkeydown="handleChatKey(event)">
         <button class="chat-send" onclick="sendChat()">שלח</button>
       </div>
     </aside>
@@ -809,23 +850,23 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   </div><!-- /l-layout -->
 </div><!-- /lessonScreen -->
 
-<!-- ════════════════════════════════════════════
-     DEMO CONTROL BAR
-════════════════════════════════════════════ -->
+<!-- ════════════ DEMO BAR ════════════ -->
 <div id="demoBar">
   <span>DEMO</span>
+  <div class="sep"></div>
   <button class="demo-btn blue"   onclick="showWaiting()">⏳ המתנה</button>
   <button class="demo-btn green"  onclick="openDoor()">🚪 פתח שיעור</button>
-  <button class="demo-btn gray"   onclick="showLesson()">🎓 חדר שיעור</button>
+  <button class="demo-btn gray"   onclick="showLessonEmpty()">📭 שיעור — ממתין</button>
+  <button class="demo-btn teal"   onclick="showLessonActivity()">▶ הפעל פעילות</button>
+  <div class="sep"></div>
   <button class="demo-btn indigo" onclick="demoEnterProject()">📁 מצב פרויקט</button>
+  <div class="sep"></div>
   <button class="demo-btn red"    onclick="toggleRecall()">🚨 Recall</button>
   <button class="demo-btn amber"  onclick="toggleBroadcast()">📡 Broadcast</button>
 </div>
 
 <script>
-/* ════════════════
-   Demo Controls
-════════════════ */
+/* ════════════════ Demo Controls ════════════════ */
 function showWaiting() {
   document.getElementById('waitingScreen').classList.add('active');
   document.getElementById('lessonScreen').classList.remove('active');
@@ -833,129 +874,102 @@ function showWaiting() {
 function showLesson() {
   document.getElementById('waitingScreen').classList.remove('active');
   document.getElementById('lessonScreen').classList.add('active');
-  exitProjectMode();
 }
 function openDoor() {
   const anim = document.getElementById('doorAnim');
   anim.classList.add('visible');
-  setTimeout(() => {
-    anim.classList.remove('visible');
-    document.getElementById('waitingScreen').classList.remove('active');
-    document.getElementById('lessonScreen').classList.add('active');
-    exitProjectMode();
-  }, 2200);
+  setTimeout(() => { anim.classList.remove('visible'); showLessonEmpty(); }, 2200);
 }
-function toggleRecall() {
-  document.getElementById('recallBanner').classList.toggle('visible');
+function showLessonEmpty() {
+  showLesson();
+  exitProjectMode();
+  setActivityState('empty');
 }
+function showLessonActivity() {
+  showLesson();
+  exitProjectMode();
+  setActivityState('active');
+}
+function toggleRecall()    { document.getElementById('recallBanner').classList.toggle('visible'); }
 function toggleBroadcast() {
   const b = document.getElementById('broadcastBanner');
   b.style.display = b.style.display === 'none' ? 'flex' : 'none';
 }
 function demoEnterProject() {
-  document.getElementById('waitingScreen').classList.remove('active');
-  document.getElementById('lessonScreen').classList.add('active');
+  showLesson();
   enterProjectMode();
 }
 
-/* ════════════════
-   Waiting Room
-════════════════ */
-function answerQuiz(btn, correct) {
-  document.querySelectorAll('.quiz-opt').forEach(el => {
-    el.disabled = true;
-    el.classList.remove('correct','wrong');
-  });
-  btn.classList.add(correct ? 'correct' : 'wrong');
-  if (!correct) document.querySelectorAll('.quiz-opt')[1].classList.add('correct');
-  const r = document.getElementById('quizResult');
-  r.style.display = 'block';
-  r.textContent = correct ? '✅ נכון! עדשה מתכנסת מרכזת קרני אור.' : '❌ לא בדיוק. עיין בהגדרה של עדשה קמורה.';
-}
-function submitTicket() {
-  const ta = document.getElementById('ticketText');
-  if (!ta.value.trim()) { ta.style.borderColor = '#ef4444'; return; }
-  document.getElementById('ticketForm').style.display = 'none';
-  document.getElementById('goldenTicket').style.display = 'block';
+/* ════════════════ Activity State ════════════════ */
+// 'empty' = ממתין להנחיה | 'active' = פעילות פתוחה
+function setActivityState(state) {
+  const emptyEl  = document.getElementById('activityEmpty');
+  const cardEl   = document.getElementById('activityCard');
+  const subHint  = document.getElementById('subHint');
+  const subTa    = document.getElementById('writeTa');
+  const botLabel = document.getElementById('botActivityLabel');
+  const ctxLabel = document.getElementById('ctxCurrentLabel');
+
+  if (state === 'empty') {
+    emptyEl.style.display = 'flex';
+    cardEl.style.display  = 'none';
+    subHint.textContent   = 'אין פעילות פתוחה כרגע — ניתן לשלוח שאלה למרצה';
+    subTa.placeholder     = 'שלח שאלה או הערה למרצה...';
+    botLabel.textContent  = 'שאלות חופשיות';
+    ctxLabel.textContent  = 'ממתין';
+    ctxLabel.style.background   = '#fef9c3';
+    ctxLabel.style.borderColor  = '#fde68a';
+    ctxLabel.style.color        = '#92400e';
+    _inActivityMode = false;
+  } else {
+    emptyEl.style.display = 'none';
+    cardEl.style.display  = 'block';
+    subHint.textContent   = 'כתוב כאן את תשובתך לפעילות: ניתוח פסקת פתיחה';
+    subTa.placeholder     = 'כתוב כאן את תשובתך לפעילות הנוכחית...';
+    botLabel.textContent  = 'ניתוח פסקת פתיחה';
+    ctxLabel.textContent  = 'ניתוח טקסט';
+    ctxLabel.style.background   = '#eff6ff';
+    ctxLabel.style.borderColor  = '#bfdbfe';
+    ctxLabel.style.color        = '#1d4ed8';
+    _inActivityMode = true;
+  }
 }
 
-/* ════════════════
-   Project Mode
-════════════════ */
+/* ════════════════ Project Mode ════════════════ */
 function enterProjectMode() {
-  const screen = document.getElementById('lessonScreen');
-  screen.dataset.mode = 'project';
-  // Auto-switch chat to project bot
+  document.getElementById('lessonScreen').dataset.mode = 'project';
   loadProjectBotChat();
 }
 function exitProjectMode() {
-  const screen = document.getElementById('lessonScreen');
-  screen.dataset.mode = 'lesson';
-  // Restore course bot chat
+  document.getElementById('lessonScreen').dataset.mode = 'lesson';
   loadCourseBotChat();
-  // Reset bot tabs
   document.querySelectorAll('.bot-tab').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.bot-tab')[0]?.classList.add('active');
 }
 
-function loadCourseBotChat() {
-  document.getElementById('chatWindow').innerHTML = `
-    <div class="chat-bubble bot">
-      שלום! אני הבוט הכללי של קורס עברית מתקדמים 📚<br>
-      במה אוכל לעזור לך היום?
-    </div>`;
-}
-function loadProjectBotChat() {
-  document.getElementById('chatWindow').innerHTML = `
-    <div class="chat-bubble bot project-style">
-      שלום! אני הבוט של פרויקט הגמר 👋<br>
-      אנחנו עכשיו בשלב 2 — ניסיונות קודמים.<br>
-      <strong>שאלה לחשיבה:</strong> מה ניסו לפתור את הבעיה של הלקוחה שלך בעבר, ולמה זה לא הצליח?
-    </div>
-    <div class="chat-bubble user">
-      ניסו משקפיים רגילים אבל זה לא עזר מספיק לקריאה מקרוב
-    </div>
-    <div class="chat-bubble bot project-style">
-      כל הכבוד! 🙂 זה ניסיון קודם טוב.<br>
-      עכשיו — האם יש עוד ניסיון? לדוגמה: עדשות מגע? תאורה מיוחדת?
-    </div>`;
-  replyIdx = 0;
-  _inProjectMode = true;
-}
-
-/* ════════════════
-   Project Stage selection
-════════════════ */
 const stageLabels = ['','בחירת בעיה','ניסיונות קודמים וסיבות לאי הצלחה','מקורות מידע ובחינת מהימנות','שתי אלטרנטיבות — יתרונות/חסרונות','בחירת פתרון ונימוקים','כתיבת המסמך המסכם','הצגה בפני הקהל'];
 
 function selectProjectStage(n) {
-  const items = document.querySelectorAll('.pstage-item');
-  items.forEach((el, i) => {
+  document.querySelectorAll('.pstage-item').forEach((el, i) => {
     el.classList.remove('active','completed');
-    el.querySelector('.pstage-num').textContent = i + 1 < n ? '✓' : (i + 1);
-    if (i + 1 < n)  el.classList.add('completed');
+    // clean badge
+    const badges = el.querySelectorAll('span:not(.pstage-num):not(.pstage-label)');
+    badges.forEach(b => b.remove());
+    const num = el.querySelector('.pstage-num');
+    if (i + 1 < n) { el.classList.add('completed'); num.textContent = '✓'; }
+    else            { num.textContent = i + 1; }
     if (i + 1 === n) {
       el.classList.add('active');
-      el.querySelector('.pstage-num').textContent = n;
+      const badge = document.createElement('span');
+      badge.style.cssText = 'font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;';
+      badge.textContent = 'פעיל';
+      el.appendChild(badge);
     }
-    // Remove "פעיל" badge from all then re-add to active
-    const badge = el.querySelector('span:last-child');
-    if (badge && badge !== el.querySelector('.pstage-num') && badge !== el.querySelector('.pstage-label')) badge.remove();
   });
-  const activeEl = items[n-1];
-  if (activeEl) {
-    const badge = document.createElement('span');
-    badge.style.cssText = 'font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;';
-    badge.textContent = 'פעיל';
-    activeEl.appendChild(badge);
-  }
-  // Update guidance
-  document.getElementById('guidanceText').innerHTML =
-    'אנחנו בשלב ' + n + ': <strong>' + stageLabels[n] + '</strong><br>השתמש בבוט הפרויקט מימין לסיוע בשלב זה.';
-  // Update project work subtitle
-  document.querySelector('.project-work-sub').textContent = 'שלב פעיל: ' + stageLabels[n];
-  // Update project bot subtitle
-  document.querySelector('.project-bot-sub').textContent = 'שלב ' + n + ' — ' + stageLabels[n];
+  document.getElementById('projectGuidanceText').innerHTML =
+    'אנחנו בשלב ' + n + ': <strong>' + stageLabels[n] + '</strong><br>השתמש בבוט הפרויקט מימין לסיוע.';
+  document.getElementById('projectWorkSub').textContent = 'שלב פעיל: ' + stageLabels[n];
+  document.getElementById('projectBotSub').textContent  = 'שלב ' + n + ' — ' + stageLabels[n];
 }
 
 function selectSprint(n) {
@@ -969,89 +983,111 @@ function selectSprint(n) {
   });
 }
 
-/* ════════════════
-   Chat / Bot switching
-════════════════ */
+/* ════════════════ Bot Switching ════════════════ */
+let _inProjectMode   = false;
+let _inActivityMode  = true;
+let replyIdx = 0;
+
 function switchBot(btn, type) {
   document.querySelectorAll('.bot-tab').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   _inProjectMode = (type === 'final');
   replyIdx = 0;
-  if (type === 'main') {
-    loadCourseBotChat();
-  } else {
-    loadProjectBotChat();
-  }
+  if (type === 'main') loadCourseBotChat();
+  else                 loadProjectBotChat();
+}
+function loadCourseBotChat() {
+  _inProjectMode = false;
+  document.getElementById('chatWindow').innerHTML = `
+    <div class="chat-bubble bot">
+      שלום! אני כאן לעזור לך עם <strong>ניתוח פסקת הפתיחה</strong> 📚<br>
+      אם יש לך שאלה על הטקסט או על הניתוח — שאל אותי.
+    </div>`;
+}
+function loadProjectBotChat() {
+  _inProjectMode = true;
+  replyIdx = 0;
+  document.getElementById('chatWindow').innerHTML = `
+    <div class="chat-bubble bot project-style">
+      שלום! אני הבוט של פרויקט הגמר 👋<br>
+      אנחנו בשלב 2 — ניסיונות קודמים.<br>
+      <strong>שאלה לחשיבה:</strong> מה ניסו לפתור את הבעיה של הלקוחה שלך בעבר, ולמה זה לא הצליח?
+    </div>
+    <div class="chat-bubble user">ניסו משקפיים רגילים אבל זה לא עזר לקריאה מקרוב</div>
+    <div class="chat-bubble bot project-style">כל הכבוד! 🙂<br>
+      עכשיו — האם יש עוד ניסיון? לדוגמה: עדשות מגע? תאורה מיוחדת?
+    </div>`;
 }
 
-const botRepliesGeneral = [
-  'מעניין! ספר לי יותר על הנושא.',
-  'שאלה טובה. מה חשבת על כך?',
-  'יפה מאוד! האם יש נקודת מבט נוספת?',
-  'כל הכבוד! המשך באותו כיוון.'
+const repliesGeneral = [
+  'מעניין! ספר לי יותר על הטקסט.',
+  'שאלה טובה. מה לדעתך הטענה המרכזית של הפסקה?',
+  'יפה מאוד! שים לב לאסטרטגיה הרטורית — איך המשפט הפותח בנוי?',
+  'כל הכבוד. כתוב את זה בתשובה שלך ולחץ "הגש פעילות".'
 ];
-const botRepliesProject = [
-  'כל הכבוד! 🙂 זה ניסיון קודם טוב. האם יש עוד?',
-  'מעניין מאוד. מה לדעתך הסיבה העיקרית לכישלון הפתרון הקודם?',
-  'תשובה מצוינת! בוא נמשיך לשלב הבא — מקורות מידע.',
-  'יפה! השתמש בזה בסיכום שלב 2.'
+const repliesProject = [
+  'כל הכבוד! זה ניסיון קודם טוב. האם יש עוד?',
+  'מעניין — מה לדעתך הסיבה העיקרית לכישלון?',
+  'תשובה מצוינת! בוא נמשיך לשלב 3 — מקורות מידע.',
+  'יפה! שמור את זה לסיכום שלב 2.'
 ];
-let replyIdx = 0;
-let _inProjectMode = false;
 
 function sendChat() {
   const input = document.getElementById('chatInput');
   const text = input.value.trim();
   if (!text) return;
   const cw = document.getElementById('chatWindow');
-  const userDiv = document.createElement('div');
-  userDiv.className = 'chat-bubble user';
-  userDiv.textContent = text;
-  cw.appendChild(userDiv);
-  input.value = '';
-  cw.scrollTop = cw.scrollHeight;
+  const u = document.createElement('div');
+  u.className = 'chat-bubble user'; u.textContent = text;
+  cw.appendChild(u); input.value = ''; cw.scrollTop = cw.scrollHeight;
   setTimeout(() => {
-    const botDiv = document.createElement('div');
-    botDiv.className = 'chat-bubble bot' + (_inProjectMode ? ' project-style' : '');
-    const replies = _inProjectMode ? botRepliesProject : botRepliesGeneral;
-    botDiv.textContent = replies[replyIdx % replies.length];
-    replyIdx++;
-    cw.appendChild(botDiv);
-    cw.scrollTop = cw.scrollHeight;
+    const b = document.createElement('div');
+    b.className = 'chat-bubble bot' + (_inProjectMode ? ' project-style' : '');
+    const replies = _inProjectMode ? repliesProject : repliesGeneral;
+    b.textContent = replies[replyIdx % replies.length]; replyIdx++;
+    cw.appendChild(b); cw.scrollTop = cw.scrollHeight;
   }, 700);
 }
-function handleChatKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
-}
+function handleChatKey(e) { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
 
-/* ════════════════
-   WAF messages
-════════════════ */
+/* ════════════════ WAF / Submit ════════════════ */
 function sendMsg() {
   const ta = document.getElementById('writeTa');
-  const text = ta.value.trim();
-  if (!text) return;
+  const text = ta.value.trim(); if (!text) return;
   const stream = document.getElementById('commStream');
-  const div = document.createElement('div');
-  div.className = 'waf-msg student';
-  const now = new Date().toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `<div class="waf-msg-text">${text}</div><div class="waf-msg-meta">שלחת · ${now}</div>`;
-  stream.appendChild(div);
-  stream.scrollTop = stream.scrollHeight;
-  ta.value = '';
+  const d = document.createElement('div'); d.className = 'waf-msg student';
+  const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  d.innerHTML = `<div class="waf-msg-text">${text}</div><div class="waf-msg-meta">שלחת · ${now}</div>`;
+  stream.appendChild(d); stream.scrollTop = stream.scrollHeight; ta.value = '';
 }
 function sendSubmit() {
   const ta = document.getElementById('writeTa');
-  const text = ta.value.trim();
-  if (!text) return;
+  const text = ta.value.trim(); if (!text) return;
   const stream = document.getElementById('commStream');
-  const div = document.createElement('div');
-  div.className = 'waf-msg student';
-  const now = new Date().toLocaleTimeString('he-IL', {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `<div class="waf-msg-text">${text}</div><div class="waf-msg-meta">הגשה · ${now} ✓</div>`;
-  stream.appendChild(div);
-  stream.scrollTop = stream.scrollHeight;
-  ta.value = '';
+  const d = document.createElement('div'); d.className = 'waf-msg student';
+  const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  d.innerHTML = `<div class="waf-msg-text">${text}</div><div class="waf-msg-meta">הגשה · ${now} ✓</div>`;
+  stream.appendChild(d); stream.scrollTop = stream.scrollHeight; ta.value = '';
+  // Flash submit button
+  const btn = event.target;
+  btn.textContent = '✅ הוגש!'; btn.style.background = '#16a34a';
+  setTimeout(()=>{ btn.textContent = '📄 הגש פעילות'; btn.style.background = ''; }, 2000);
+}
+
+/* ════════════════ Waiting Room ════════════════ */
+function answerQuiz(btn, correct) {
+  document.querySelectorAll('.quiz-opt').forEach(el => { el.disabled=true; el.classList.remove('correct','wrong'); });
+  btn.classList.add(correct?'correct':'wrong');
+  if (!correct) document.querySelectorAll('.quiz-opt')[1].classList.add('correct');
+  const r = document.getElementById('quizResult');
+  r.style.display = 'block';
+  r.textContent = correct ? '✅ נכון! עדשה מתכנסת מרכזת קרני אור.' : '❌ לא בדיוק. עיין בהגדרה של עדשה קמורה.';
+}
+function submitTicket() {
+  const ta = document.getElementById('ticketText');
+  if (!ta.value.trim()) { ta.style.borderColor='#ef4444'; return; }
+  document.getElementById('ticketForm').style.display = 'none';
+  document.getElementById('goldenTicket').style.display = 'block';
 }
 </script>
 </body>
