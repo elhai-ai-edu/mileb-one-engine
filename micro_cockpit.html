@@ -966,7 +966,7 @@
       <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
   </div>
-  <a href="/macro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">עבור למאקרו →</a>
+  <a id="toMacroCockpitBtn" href="/macro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">עבור למאקרו →</a>
   <a href="/cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
 </div>
 
@@ -1493,6 +1493,16 @@ const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
 const cockpitParams = new URLSearchParams(location.search);
 const presetCourseId = cockpitParams.get("courseId") || cockpitParams.get("classId") || "";
 const presetUnitId = cockpitParams.get("unitId") || "unit_01";
+
+// ── Preserve courseId context in cross-cockpit navigation links ──
+(function() {
+  if (!presetCourseId) return;
+  const qs = `?courseId=${encodeURIComponent(presetCourseId)}&unitId=${encodeURIComponent(presetUnitId)}`;
+  const toMacro1 = document.getElementById('toMacroCockpitBtn');
+  const toMacro2 = document.getElementById('backToUnitsBtn');
+  if (toMacro1) toMacro1.href = `/macro_cockpit.html${qs}`;
+  if (toMacro2) toMacro2.href = `/macro_cockpit.html${qs}`;
+})();
 
 let sessionId   = null;
 let pollTimer   = null;
