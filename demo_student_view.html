@@ -641,6 +641,21 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .peer-answer-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .3px; }
 .peer-answer-text  { font-size: 13px; color: var(--navy); line-height: 1.6; }
 
+/* Activity rubric */
+.peer-rubric { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 10px; }
+.rubric-item { display: flex; flex-direction: column; gap: 5px; }
+.rubric-q    { font-size: 13px; font-weight: 700; color: var(--navy); }
+.rubric-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.rubric-pill {
+  font-size: 12px; font-weight: 700; padding: 5px 13px; border-radius: 999px;
+  border: 1.5px solid var(--line); background: #f8fafc; color: var(--muted);
+  cursor: pointer; transition: all .14s; font-family: inherit;
+}
+.rubric-pill:hover { border-color: #93c5fd; background: #eff6ff; color: var(--blue); }
+.rubric-pill.sel[data-val="yes"]     { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+.rubric-pill.sel[data-val="partial"] { background: #fefce8; border-color: #fde047; color: #854d0e; }
+.rubric-pill.sel[data-val="no"]      { background: #fef2f2; border-color: #fca5a5; color: #dc2626; }
+
 /* ════ Layer 3 — Group Mode ════ */
 :root { --emerald: #059669; --emerald-dark: #065f46; --emerald-light: #d1fae5; }
 
@@ -704,14 +719,49 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .group-workspace {
   margin: 10px 20px 14px; padding: 14px;
   background: #fff; border: 1.5px solid #a7f3d0; border-radius: 12px;
-  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
 }
 .group-workspace-head {
-  font-size: 13px; font-weight: 800; color: var(--emerald-dark); margin-bottom: 2px;
+  font-size: 13px; font-weight: 800; color: var(--emerald-dark);
 }
 .group-typing-indicator {
-  font-size: 12px; color: var(--emerald); font-style: italic; min-height: 16px;
+  font-size: 12px; color: var(--emerald); font-style: italic; min-height: 16px; margin-top: -4px;
 }
+
+/* Contribution feed */
+.group-contrib-feed {
+  display: flex; flex-direction: column; gap: 7px;
+  max-height: 190px; overflow-y: auto;
+  background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 10px;
+  padding: 8px 10px;
+}
+.group-contrib-feed:empty { display: none; }
+.group-contrib-item {
+  background: #fff; border: 1px solid #a7f3d0; border-radius: 9px;
+  padding: 8px 10px;
+  animation: contribFadeIn .3s ease;
+}
+.group-contrib-item.mine { border-color: #059669; background: #f0fdf4; }
+.contrib-header {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+}
+.contrib-avatar {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff;
+}
+.contrib-name { font-size: 12px; font-weight: 800; color: var(--navy); }
+.contrib-role { font-size: 10px; color: var(--muted); }
+.contrib-time { font-size: 10px; color: var(--muted); margin-right: auto; }
+.contrib-text { font-size: 12px; color: #334155; line-height: 1.55; }
+@keyframes contribFadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+/* My contribution lane */
+.group-my-contrib {
+  border-top: 1.5px dashed #6ee7b7; padding-top: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.my-contrib-label { font-size: 12px; font-weight: 800; color: var(--emerald-dark); }
 
 /* Group bot panel header */
 .group-bot-direct {
@@ -1183,11 +1233,20 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
           <div class="role-chip" style="background:#ecfdf5;border-color:#059669;color:#065f46;">📋 את: ריכוז</div>
         </div>
         <div class="group-workspace">
-          <div class="group-workspace-head">📝 מרחב כתיבה משותף</div>
-          <div class="group-typing-indicator" id="groupTypingIndicator">ירין כותב/ת...</div>
-          <textarea class="sub-ta" id="groupTa" placeholder="כתבו כאן את התוצר הקבוצתי — כל חברי הקבוצה רואים את הכתיבה..." style="min-height:90px;" oninput="onGroupType()"></textarea>
-          <div class="sub-actions">
-            <button class="sub-btn primary" onclick="submitGroupWork()" style="background:linear-gradient(135deg,#34d399,#059669);">הגישו תשובת קבוצה</button>
+          <div class="group-workspace-head">📝 תרומות הקבוצה</div>
+          <div class="group-typing-indicator" id="groupTypingIndicator"></div>
+
+          <!-- Contribution feed — one block per member -->
+          <div class="group-contrib-feed" id="groupContribFeed"></div>
+
+          <!-- My contribution lane -->
+          <div class="group-my-contrib">
+            <div class="my-contrib-label">✏️ הוסיפי את חלקך — 📋 ריכוז</div>
+            <textarea class="sub-ta" id="groupMyContrib" placeholder="כתבי את נקודת המבט שלך לתוצר הקבוצתי..." style="min-height:60px;" oninput="onGroupType()"></textarea>
+            <div class="sub-actions">
+              <button class="sub-btn primary" onclick="addMyContrib()" style="background:linear-gradient(135deg,#34d399,#059669);">+ הוסיפי</button>
+              <button class="sub-btn secondary" onclick="submitGroupWork()">הגישו תשובת קבוצה</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1339,13 +1398,39 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
       <!-- Layer 2: Peer Review Panel (shown after submission) -->
       <div class="peer-review-panel" id="peerReviewPanel" style="display:none">
-        <div class="sub-panel-head">📊 הערכת עמיתים</div>
-        <div class="sub-hint">קראו את התשובה הבאה וכתבו מה עובד בה ומה היית משפרים</div>
+        <div class="sub-panel-head">📊 הערכת עמיתים — ניתוח טקסט</div>
+        <div class="sub-hint">קראו את התשובה הבאה והשתמשו בקריטריונים להערכה</div>
         <div class="peer-answer-card">
           <div class="peer-answer-label">תשובה אנונימית מהכיתה</div>
           <div class="peer-answer-text">"הטענה המרכזית בפסקה היא שהמחבר מציב שאלה רטורית כדי למשוך את הקורא. הוא משתמש בשפה רגשית לצד נתונים כדי לבסס את הטיעון. לדעתי, האסטרטגיה הרטורית כאן היא שכנוע דרך פאתוס — פנייה לרגש לפני פנייה לשכל."</div>
         </div>
-        <textarea class="sub-ta" id="peerFeedbackTa" placeholder="מה עובד טוב? מה אפשר לשפר?"></textarea>
+        <div class="peer-rubric">
+          <div class="rubric-item">
+            <div class="rubric-q">האם הטענה המרכזית זוהתה?</div>
+            <div class="rubric-pills">
+              <button class="rubric-pill" data-group="q1" data-val="yes"     onclick="selectRubric(this)">✅ כן</button>
+              <button class="rubric-pill" data-group="q1" data-val="partial" onclick="selectRubric(this)">⚠️ חלקית</button>
+              <button class="rubric-pill" data-group="q1" data-val="no"      onclick="selectRubric(this)">❌ לא</button>
+            </div>
+          </div>
+          <div class="rubric-item">
+            <div class="rubric-q">האם ההסבר מבוסס על הטקסט?</div>
+            <div class="rubric-pills">
+              <button class="rubric-pill" data-group="q2" data-val="yes"     onclick="selectRubric(this)">✅ כן</button>
+              <button class="rubric-pill" data-group="q2" data-val="partial" onclick="selectRubric(this)">⚠️ חלקית</button>
+              <button class="rubric-pill" data-group="q2" data-val="no"      onclick="selectRubric(this)">❌ לא</button>
+            </div>
+          </div>
+          <div class="rubric-item">
+            <div class="rubric-q">האם נעשה שימוש במושגים מקצועיים?</div>
+            <div class="rubric-pills">
+              <button class="rubric-pill" data-group="q3" data-val="yes"     onclick="selectRubric(this)">✅ כן</button>
+              <button class="rubric-pill" data-group="q3" data-val="partial" onclick="selectRubric(this)">⚠️ חלקית</button>
+              <button class="rubric-pill" data-group="q3" data-val="no"      onclick="selectRubric(this)">❌ לא</button>
+            </div>
+          </div>
+        </div>
+        <textarea class="sub-ta" id="peerFeedbackTa" placeholder="הערה כללית (רשות) — ניתן להוסיף פרט..."></textarea>
         <div class="sub-actions">
           <button class="sub-btn primary" onclick="sendPeerReview()">שלח משוב</button>
           <button class="sub-btn secondary" onclick="skipPeerReview()">דלג</button>
@@ -1823,10 +1908,21 @@ function startPeerCompare() {
 }
 
 /* ════════════════ Layer 2 — Peer Review ════════════════ */
+function selectRubric(btn) {
+  const group = btn.dataset.group;
+  document.querySelectorAll(`.rubric-pill[data-group="${group}"]`).forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+}
+
 function sendPeerReview() {
-  const ta = document.getElementById('peerFeedbackTa');
-  if (!ta.value.trim()) { ta.style.borderColor='#ef4444'; return; }
-  ta.style.borderColor = '';
+  // Require at least one rubric item answered
+  const groups = ['q1','q2','q3'];
+  const answered = groups.filter(g => document.querySelector(`.rubric-pill.sel[data-group="${g}"]`));
+  if (answered.length === 0) {
+    document.querySelector('.peer-rubric').style.outline = '2px solid #ef4444';
+    setTimeout(() => document.querySelector('.peer-rubric').style.outline = '', 1500);
+    return;
+  }
   const panel = document.getElementById('peerReviewPanel');
   panel.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;padding:20px;gap:8px;text-align:center;">
@@ -1842,16 +1938,61 @@ let _groupTimer = null;
 let _groupSeconds = 600;
 
 function simulateGroupTyping() {
+  const indicator = document.getElementById('groupTypingIndicator');
+  const gmYarin   = document.getElementById('gmYarin');
+  const gmNoor    = document.getElementById('gmNoor');
+
+  // Yarin contributes after 3 s
   setTimeout(() => {
-    const indicator = document.getElementById('groupTypingIndicator');
-    if (!indicator) return;
-    indicator.textContent = 'ירין כותב/ת...';
+    if (indicator) indicator.textContent = 'ירין כ. כותב/ת...';
+    if (gmYarin) { gmYarin.classList.add('typing'); gmYarin.querySelector('.gm-status').className = 'gm-status writing'; }
     setTimeout(() => {
-      indicator.textContent = '';
-      const ta = document.getElementById('groupTa');
-      if (ta && !ta.value) ta.value = 'לפי הגישה הרטורית, הפסקה מתחילה בפנייה רגשית ';
-    }, 3500);
+      if (indicator) indicator.textContent = '';
+      if (gmYarin) { gmYarin.classList.remove('typing'); gmYarin.querySelector('.gm-status').className = 'gm-status online'; }
+      addContrib('י', 'ירין כ.', '⌨️ מנסח/ת', 'linear-gradient(135deg,#34d399,#059669)',
+        'לפי הגישה הרטורית, הפסקה מתחילה בפנייה רגשית ויוצרת חיבור עם הקורא לפני שמציגה טיעון.');
+    }, 3200);
   }, 3000);
+
+  // Noor contributes after 9 s
+  setTimeout(() => {
+    if (indicator) indicator.textContent = 'נור מ. כותב/ת...';
+    if (gmNoor) { gmNoor.classList.add('typing'); gmNoor.querySelector('.gm-status').className = 'gm-status writing'; }
+    setTimeout(() => {
+      if (indicator) indicator.textContent = '';
+      if (gmNoor) { gmNoor.classList.remove('typing'); gmNoor.querySelector('.gm-status').className = 'gm-status online'; }
+      addContrib('נ', 'נור מ.', '🔍 מחקר', 'linear-gradient(135deg,#6ee7b7,#059669)',
+        'הגישה התוכנית מתמקדת ב"מה" — תוכן הפסקה, בעוד הגישה הרטורית שואלת "איך" ולמה הקורא מושפע.');
+    }, 3000);
+  }, 9000);
+}
+
+function addContrib(initial, name, role, avatarBg, text, isMine = false) {
+  const feed = document.getElementById('groupContribFeed');
+  if (!feed) return;
+  const now  = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const item = document.createElement('div');
+  item.className = 'group-contrib-item' + (isMine ? ' mine' : '');
+  item.innerHTML = `
+    <div class="contrib-header">
+      <div class="contrib-avatar" style="background:${avatarBg};">${initial}</div>
+      <span class="contrib-name">${name}</span>
+      <span class="contrib-role">${role}</span>
+      <span class="contrib-time">${now}</span>
+    </div>
+    <div class="contrib-text">${text}</div>`;
+  feed.appendChild(item);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function addMyContrib() {
+  const ta = document.getElementById('groupMyContrib');
+  const text = ta.value.trim();
+  if (!text) { ta.style.borderColor = '#ef4444'; return; }
+  ta.style.borderColor = '';
+  addContrib('את', 'את עצמך', '📋 ריכוז', 'linear-gradient(135deg,#059669,#065f46)', text, true);
+  ta.value = '';
+  document.getElementById('groupTypingIndicator').textContent = '';
 }
 
 function enterGroupMode() { MiledState.go('group'); }
@@ -1878,10 +2019,16 @@ function updateTimerDisplay() {
 }
 function onGroupType() {
   document.getElementById('groupTypingIndicator').textContent = '';
+  const myTa = document.getElementById('groupMyContrib');
+  if (myTa) myTa.style.borderColor = '';
 }
 function submitGroupWork() {
-  const ta = document.getElementById('groupTa');
-  if (!ta.value.trim()) { ta.style.borderColor='#ef4444'; return; }
+  const feed  = document.getElementById('groupContribFeed');
+  const myTa  = document.getElementById('groupMyContrib');
+  const hasContribs = feed && feed.children.length > 0;
+  const hasMine     = myTa && myTa.value.trim();
+  if (!hasContribs && !hasMine) { if (myTa) myTa.style.borderColor = '#ef4444'; return; }
+  if (hasMine) addMyContrib();
   stopGroupTimer();
   document.querySelector('.group-workspace').innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;padding:16px;gap:8px;text-align:center;">
