@@ -3037,7 +3037,7 @@ function renderLessonDesignNavigator() {
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = currentUnitId;
   listEl.innerHTML = lessons.map(item => `
-    <button type="button" class="lesson-plan-item ${item.unitId === currentUnitId ? 'active' : ''}" data-lesson-nav-unit="${escapeHtml(item.unitId)}">
+    <button type="button" class="lesson-plan-item ${item.unitId === currentUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}">
       <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       ${item.date ? `<div class="lesson-plan-item-date">📅 ${escapeHtml(item.date)}</div>` : ''}

@@ -1552,7 +1552,7 @@ export async function handler(event){
       entranceTickets: body.entranceTickets || null,
       updatedAt: Date.now()
     };
-    if(Object.prototype.hasOwnProperty.call(body, "lessonDate")){
+    if (Object.prototype.hasOwnProperty.call(body, "lessonDate")) {
       payload.lessonDate = String(body.lessonDate || "").trim() || null;
     }
 
