@@ -1731,7 +1731,7 @@ body { background: var(--bg) !important; }
       <div class="lesson-design-banner-top">
         <div class="lesson-design-banner-index">📍 <span id="lessonDesignLessonNum">שיעור —</span></div>
         <div class="lesson-design-banner-date">
-          <label for="lessonDesignLessonDate">תאריך (אופציונלי)</label>
+          <label for="lessonDesignLessonDate">תאריך (לא חובה)</label>
           <input id="lessonDesignLessonDate" type="date" class="lp-input" style="margin:0;min-width:160px;">
         </div>
       </div>
@@ -3006,10 +3006,6 @@ function updateLessonDesignBanner() {
   }
   const lessons = buildPlannedLessonItems();
   const active = lessons.find(item => item.unitId === currentUnitId) || lessons[0];
-  if (!active) {
-    banner.style.display = "none";
-    return;
-  }
   banner.style.display = "";
   numEl.textContent = `שיעור ${active.lessonNumber}`;
   titleEl.textContent = active.title;
@@ -3280,7 +3276,7 @@ function clearCourseLockUI() {
   });
   currentLessonId = null;
   macroCourseId = "";
-  currentUnitId = "unit_01";
+  currentUnitId = macroToSessionUnitId(1);
   sessionStorage.removeItem("miled_active_course_id");
   sessionStorage.removeItem("miled_active_unit_id");
   const url = new URL(location.href);
