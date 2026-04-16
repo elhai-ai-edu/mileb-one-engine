@@ -573,6 +573,13 @@ export async function handler(event){
       });
     }
 
+    if(action === "meeting_info"){
+      const courseId = String(event.queryStringParameters?.courseId || event.queryStringParameters?.classId || "").trim();
+      if(!courseId) return err("courseId required");
+      const snap = await db.ref(`courses/${courseId}/liveMeeting`).once("value");
+      return ok({ courseId, liveMeeting: snap.val() || null });
+    }
+
     if(action === "lesson_payload"){
       if(!sessionId) return err("sessionId required");
       const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
@@ -608,6 +615,11 @@ export async function handler(event){
       const lessonBundle = getCourseLessonBundle(courseNode, lessonId, courseConfig);
       const pacingSummary = computePacingSummary(session.pacing || {}, state.active_sprint || null);
 
+      // Live meeting: prefer session-level snapshot (locked at session open time),
+      // fall back to the current course-level record.
+      const liveMeeting = session.liveMeetingSnapshot || courseNode.liveMeeting || null;
+      const speakerFocus = session.speakerFocus || null;
+
       return ok({
         sessionId,
         courseId,
@@ -634,7 +646,9 @@ export async function handler(event){
         broadcast: session.broadcast || null,
         broadcastedAt: session.broadcastedAt || null,
         currentStep: session.currentStep || 1,
-        projectStages: courseConfig?.course_units?.semester_a?.project?.stages || []
+        projectStages: courseConfig?.course_units?.semester_a?.project?.stages || [],
+        liveMeeting,
+        speakerFocus
       });
     }
 
@@ -714,12 +728,13 @@ export async function handler(event){
 
       const unitPath = getUnitPath(userId, classId, unitId);
 
-      const [unitSnap, missionSnapLegacy, ticketsSnapLegacy, warmupSnapLegacy, waitingSnapshot] = await Promise.all([
+      const [unitSnap, missionSnapLegacy, ticketsSnapLegacy, warmupSnapLegacy, waitingSnapshot, courseLiveMeetingSnap] = await Promise.all([
         db.ref(unitPath).once("value"),
         db.ref(`pre_session_content/${classId}`).once("value"),
         db.ref(`pre_session_tickets/${classId}`).once("value"),
         db.ref(`pre_session_warmup/${classId}`).once("value"),
-        getFreshWaitingSnapshot(db, classId, unitId)
+        getFreshWaitingSnapshot(db, classId, unitId),
+        db.ref(`courses/${classId}/liveMeeting`).once("value")
       ]);
 
       const unitData = unitSnap.val() || {};
@@ -762,7 +777,8 @@ export async function handler(event){
         entranceTicket,
         hasEntranceTicket: !!(entranceTicket?.answer),
         waitingStudentsCount: waitingSnapshot.count,
-        waitingStudents: waitingSnapshot.students
+        waitingStudents: waitingSnapshot.students,
+        liveMeeting: courseLiveMeetingSnap.val() || null
       });
     }
 
@@ -1620,7 +1636,82 @@ export async function handler(event){
     return ok({ ok:true, courseId, lessonId, sprints: normalizedSprints });
   }
 
+  // ─── Live Meeting: save course-level meeting info ─────────────────────────
+  if(action === "meeting_save"){
+    const courseId = String(body.courseId || body.classId || "").trim();
+    const facultyId = String(body.facultyId || "").trim();
+    if(!courseId) return err("courseId required");
+    if(!facultyId) return err("facultyId required");
+
+    const source = String(body.source || "manual").trim().toLowerCase();
+    const allowedSources = ["manual", "moodle_zoom", "api_linked"];
+    const normalizedSource = allowedSources.includes(source) ? source : "manual";
+
+    const status = String(body.status || "scheduled").trim().toLowerCase();
+    const allowedStatuses = ["scheduled", "live", "ended"];
+    const normalizedStatus = allowedStatuses.includes(status) ? status : "scheduled";
+
+    const joinUrl = String(body.joinUrl || "").trim();
+    // Validate joinUrl is a plausible HTTPS URL if provided
+    if(joinUrl && !joinUrl.startsWith("https://")) return err("joinUrl must be a valid HTTPS URL (e.g., https://zoom.us/j/...)");
+
+    const meeting = {
+      source: normalizedSource,
+      title: String(body.title || "").trim() || null,
+      joinUrl: joinUrl || null,
+      passcode: null, // never stored; client appends to join URL if needed
+      status: normalizedStatus,
+      moodleActivityId: String(body.moodleActivityId || "").trim() || null,
+      updatedAt: Date.now(),
+      updatedBy: facultyId
+    };
+
+    await db.ref(`courses/${courseId}/liveMeeting`).set(meeting);
+    console.log(`[meeting_save] courseId=${courseId} facultyId=${facultyId} status=${normalizedStatus}`);
+    return ok({ ok:true, courseId, liveMeeting: meeting });
+  }
+
+  // ─── Live Meeting: publish recording URL after session ends ──────────────
+  if(action === "meeting_recording_save"){
+    const courseId = String(body.courseId || body.classId || "").trim();
+    const facultyId = String(body.facultyId || "").trim();
+    if(!courseId) return err("courseId required");
+    if(!facultyId) return err("facultyId required");
+
+    const recordingUrl = String(body.recordingUrl || "").trim();
+    if(recordingUrl && !recordingUrl.startsWith("https://")) return err("recordingUrl must be a valid HTTPS URL (e.g., https://zoom.us/rec/...)");
+
+    const update = {
+      recordingUrl: recordingUrl || null,
+      status: "ended",
+      recordingPublishedAt: Date.now(),
+      updatedAt: Date.now(),
+      updatedBy: facultyId
+    };
+    await db.ref(`courses/${courseId}/liveMeeting`).update(update);
+    console.log(`[meeting_recording_save] courseId=${courseId} facultyId=${facultyId}`);
+    return ok({ ok:true, courseId, recordingUrl: recordingUrl || null });
+  }
+
   if(!sessionId) return err("sessionId required");
+
+  // ─── Speaker Focus: set or clear active speaker for a live session ────────
+  if(action === "speaker_focus_set"){
+    const { facultyId } = body;
+    if(!facultyId) return err("facultyId required");
+    const snap = await db.ref(`sessions/${sessionId}`).once("value");
+    const session = snap.val() || null;
+    if(!session) return err("session not found");
+    if(session.facultyId !== facultyId) return err("not session owner");
+
+    const label = String(body.label || "").trim();
+    const speakerFocus = label
+      ? { label, setAt: Date.now(), setBy: facultyId }
+      : null;
+    await db.ref(`sessions/${sessionId}/speakerFocus`).set(speakerFocus);
+    console.log(`[speaker_focus_set] sessionId=${sessionId} label=${label || "(cleared)"}`);
+    return ok({ ok:true, speakerFocus });
+  }
 
   const sessionRef =
     db.ref(`sessions/${sessionId}`);
@@ -1810,6 +1901,14 @@ export async function handler(event){
     if(existing.exists())
       return err("session already exists");
 
+    // Snapshot the current live meeting at session-open time so that
+    // course-level changes during an active session don't confuse students.
+    let liveMeetingSnapshot = null;
+    if(resolvedCourseId){
+      const lmSnap = await db.ref(`courses/${resolvedCourseId}/liveMeeting`).once("value");
+      liveMeetingSnapshot = lmSnap.val() || null;
+    }
+
     await sessionRef.set({
 
       facultyId,
@@ -1834,7 +1933,8 @@ export async function handler(event){
       pacing: {},
       active:true,
       openedAt:Date.now(),
-      answers:{}
+      answers:{},
+      liveMeetingSnapshot
 
     });
 

@@ -324,6 +324,25 @@
         <div class="small-note" id="ticketStatus">השלים את שתי המשימות כדי לעדכן מוכנות אוטומטית.</div>
       </div>
     </section>
+
+    <!-- ─── Live Meeting Card ─── -->
+    <section id="liveMeetingCard" class="grid-card" style="display:none;">
+      <h2>🎥 המפגש החי</h2>
+      <div class="meta" id="liveMeetingTitle">שיעור חי</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span id="liveMeetingStatusPill" class="status-pill" style="font-size:12px;padding:4px 10px;">📅 מתוכנן</span>
+      </div>
+      <div id="liveMeetingActions" style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a id="liveMeetingJoinBtn" href="#" target="_blank" rel="noopener noreferrer"
+           class="action-btn primary" style="display:none;text-decoration:none;">
+          📹 הצטרפות לזום
+        </a>
+        <a id="liveMeetingRecordingBtn" href="#" target="_blank" rel="noopener noreferrer"
+           class="action-btn" style="display:none;text-decoration:none;background:#f0fdf4;color:#065f46;border:1px solid #86efac;">
+          🎞️ צפייה בהקלטה
+        </a>
+      </div>
+    </section>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -519,6 +538,8 @@
       }
       const missionText = data?.mission?.text || "משימת הכניסה תופיע כאן כשהמרצה יעדכן אותה.";
       document.getElementById("missionText").textContent = missionText;
+
+      renderLiveMeetingCard(data?.liveMeeting || null);
 
       const warmup = data?.warmup || null;
       const warmupQuestion = document.getElementById("warmupQuestion");
@@ -717,6 +738,38 @@
 
     function initManualEnter() {
       document.getElementById("manualEnterBtn").addEventListener("click", attemptRedirect);
+    }
+
+    function renderLiveMeetingCard(liveMeeting) {
+      const card = document.getElementById("liveMeetingCard");
+      if (!card) return;
+      if (!liveMeeting || (!liveMeeting.joinUrl && !liveMeeting.recordingUrl)) {
+        card.style.display = "none";
+        return;
+      }
+      card.style.display = "";
+
+      const titleEl  = document.getElementById("liveMeetingTitle");
+      const pillEl   = document.getElementById("liveMeetingStatusPill");
+      const joinBtn  = document.getElementById("liveMeetingJoinBtn");
+      const recBtn   = document.getElementById("liveMeetingRecordingBtn");
+
+      if (titleEl) titleEl.textContent = liveMeeting.title || "שיעור חי";
+
+      const statusLabels = { scheduled: "📅 מתוכנן", live: "🔴 חי עכשיו", ended: "✅ הסתיים" };
+      if (pillEl) pillEl.textContent = statusLabels[liveMeeting.status] || liveMeeting.status || "מתוכנן";
+
+      if (joinBtn) {
+        const showJoin = liveMeeting.joinUrl && liveMeeting.status !== "ended";
+        joinBtn.style.display = showJoin ? "" : "none";
+        if (showJoin) joinBtn.href = liveMeeting.joinUrl;
+      }
+
+      if (recBtn) {
+        const showRec = !!liveMeeting.recordingUrl;
+        recBtn.style.display = showRec ? "" : "none";
+        if (showRec) recBtn.href = liveMeeting.recordingUrl;
+      }
     }
 
     async function init() {
