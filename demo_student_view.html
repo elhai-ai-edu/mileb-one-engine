@@ -224,14 +224,20 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 #lessonScreen[data-mode="lesson"]  .panel-project-stages { display: none; }
 #lessonScreen[data-mode="lesson"]  .sprint-stepper       { display: none; }
 #lessonScreen[data-mode="lesson"]  .project-guidance     { display: none; }
-#lessonScreen[data-mode="lesson"]  .bot-tabs             { display: flex; }
+#lessonScreen[data-mode="lesson"]  .bot-tabs             { display: none; }
 #lessonScreen[data-mode="lesson"]  .project-bot-direct   { display: none; }
+#lessonScreen[data-mode="lesson"]  .bot-activity-ctx     { display: none; }
+#lessonScreen[data-mode="lesson"]  .chat-panel           { display: none !important; }
+#lessonScreen[data-mode="lesson"]  .l-layout             { grid-template-columns: 240px 1fr; }
+#lessonScreen[data-mode="lesson"]  .bot-bubble           { display: flex; }
 #lessonScreen[data-mode="project"] .panel-bookshelf      { display: none; }
 #lessonScreen[data-mode="project"] .panel-project-stages { display: flex; }
 #lessonScreen[data-mode="project"] .sprint-stepper       { display: block; }
 #lessonScreen[data-mode="project"] .project-guidance     { display: block; }
 #lessonScreen[data-mode="project"] .bot-tabs             { display: none; }
 #lessonScreen[data-mode="project"] .project-bot-direct   { display: flex; }
+#lessonScreen[data-mode="project"] .l-layout             { grid-template-columns: 240px 1fr 320px; }
+#lessonScreen[data-mode="project"] .bot-bubble           { display: none !important; }
 /* Hide activity card in project mode, show project area */
 #lessonScreen[data-mode="project"] .activity-focus-area  { display: none; }
 
@@ -556,6 +562,59 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-family: inherit; font-weight: 700; font-size: 13px;
 }
 #lessonScreen[data-mode="project"] .chat-send { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+
+/* ── Floating Bot Bubble ── */
+.bot-bubble {
+  position: fixed; right: 24px; bottom: 72px; z-index: 5000;
+  background: linear-gradient(135deg, #1d4ed8, #6366f1);
+  color: #fff; border: none; border-radius: 999px;
+  padding: 13px 22px 13px 18px;
+  display: none; align-items: center; gap: 10px;
+  cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
+  box-shadow: 0 4px 20px rgba(29,78,216,.4);
+  transition: transform .15s, box-shadow .15s;
+  animation: bubblePulse 3s infinite;
+  max-width: 300px;
+}
+.bot-bubble:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(29,78,216,.5); }
+@keyframes bubblePulse {
+  0%,100% { box-shadow: 0 4px 20px rgba(29,78,216,.4); }
+  50%     { box-shadow: 0 4px 28px rgba(99,102,241,.65); }
+}
+.bot-bubble-icon { font-size: 20px; flex-shrink: 0; }
+.bot-bubble-arrow { font-size: 14px; opacity: .7; flex-shrink: 0; }
+
+/* ── Float Panel Overlay ── */
+.bot-float-overlay {
+  display: none; position: fixed; inset: 0; z-index: 4998;
+  background: rgba(0,0,0,.18);
+}
+.bot-float-overlay.open { display: block; }
+
+/* ── Float Panel ── */
+.bot-float-panel {
+  position: fixed; right: 0; top: 0; bottom: 52px; width: 380px;
+  background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,.14);
+  z-index: 4999; display: flex; flex-direction: column;
+  transform: translateX(110%);
+  transition: transform .3s cubic-bezier(.34,1,.64,1);
+}
+.bot-float-panel.open { transform: translateX(0); }
+
+.bot-float-head {
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#f8fbff,#eef4ff);
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-shrink: 0;
+}
+.bot-float-name { font-size: 14px; font-weight: 800; color: var(--navy); }
+.bot-float-ctx  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.bot-float-close {
+  background: none; border: none; font-size: 20px; color: var(--muted);
+  cursor: pointer; padding: 0 4px; line-height: 1; border-radius: 6px;
+  transition: background .15s;
+}
+.bot-float-close:hover { background: #f1f5f9; color: var(--navy); }
 </style>
 </head>
 <body>
@@ -890,6 +949,38 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     </aside>
 
   </div><!-- /l-layout -->
+
+  <!-- Floating Bot Bubble (lesson mode only) -->
+  <button class="bot-bubble" id="botBubble" onclick="openBotFloat()">
+    <span class="bot-bubble-icon">🤖</span>
+    <span id="bubbleText">צריך עזרה בניתוח?</span>
+    <span class="bot-bubble-arrow">↗</span>
+  </button>
+
+  <!-- Float Panel Overlay -->
+  <div class="bot-float-overlay" id="botFloatOverlay" onclick="closeBotFloat()"></div>
+
+  <!-- Float Panel -->
+  <div class="bot-float-panel" id="botFloatPanel">
+    <div class="bot-float-head">
+      <div>
+        <div class="bot-float-name">🤖 בוט הקורס</div>
+        <div class="bot-float-ctx" id="botFloatCtx">ליווי למשימה: ניתוח פסקת פתיחה</div>
+      </div>
+      <button class="bot-float-close" onclick="closeBotFloat()">✕</button>
+    </div>
+    <div class="chat-window" id="chatWindowFloat">
+      <div class="chat-bubble bot">
+        שלום! אני כאן לעזור לך עם <strong>ניתוח פסקת הפתיחה</strong> 📚<br>
+        אם יש לך שאלה על הטקסט או על הניתוח — שאל אותי.
+      </div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInputFloat" placeholder="שאל שאלה על הפעילות..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFloatChat();}">
+      <button class="chat-send" onclick="sendFloatChat()">שלח</button>
+    </div>
+  </div>
+
 </div><!-- /lessonScreen -->
 
 <!-- ════════════ DEMO BAR ════════════ -->
@@ -959,6 +1050,8 @@ function setActivityState(state) {
     cardEl.style.display   = 'none';
     subPanel.style.display = 'none';
     botLabel.textContent  = 'שאלות חופשיות';
+    document.getElementById('bubbleText').textContent  = 'שאל שאלה חופשית';
+    document.getElementById('botFloatCtx').textContent = 'שאלות חופשיות — אין פעילות פעילה';
     ctxLabel.textContent  = 'ממתין';
     ctxLabel.style.background   = '#fef9c3';
     ctxLabel.style.borderColor  = '#fde68a';
@@ -971,6 +1064,8 @@ function setActivityState(state) {
     subHint.textContent   = 'כתוב כאן את תשובתך לפעילות: ניתוח פסקת פתיחה';
     subTa.placeholder     = 'כתוב כאן את תשובתך לפעילות הנוכחית...';
     botLabel.textContent  = 'ניתוח פסקת פתיחה';
+    document.getElementById('bubbleText').textContent  = 'צריך עזרה בניתוח?';
+    document.getElementById('botFloatCtx').textContent = 'ליווי למשימה: ניתוח פסקת פתיחה';
     ctxLabel.textContent  = 'ניתוח טקסט';
     ctxLabel.style.background   = '#eff6ff';
     ctxLabel.style.borderColor  = '#bfdbfe';
@@ -980,7 +1075,31 @@ function setActivityState(state) {
 }
 
 /* ════════════════ Project Mode ════════════════ */
+/* ── Float Bot ── */
+function openBotFloat() {
+  document.getElementById('botFloatPanel').classList.add('open');
+  document.getElementById('botFloatOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('chatInputFloat').focus(), 320);
+}
+function closeBotFloat() {
+  document.getElementById('botFloatPanel').classList.remove('open');
+  document.getElementById('botFloatOverlay').classList.remove('open');
+}
+function sendFloatChat() {
+  const input = document.getElementById('chatInputFloat');
+  const text = input.value.trim(); if (!text) return;
+  const cw = document.getElementById('chatWindowFloat');
+  const u = document.createElement('div'); u.className = 'chat-bubble user'; u.textContent = text;
+  cw.appendChild(u); input.value = ''; cw.scrollTop = cw.scrollHeight;
+  setTimeout(() => {
+    const b = document.createElement('div'); b.className = 'chat-bubble bot';
+    b.textContent = repliesGeneral[replyIdx % repliesGeneral.length]; replyIdx++;
+    cw.appendChild(b); cw.scrollTop = cw.scrollHeight;
+  }, 700);
+}
+
 function enterProjectMode() {
+  closeBotFloat();
   document.getElementById('lessonScreen').dataset.mode = 'project';
   loadProjectBotChat();
 }
