@@ -231,6 +231,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 #lessonScreen[data-mode="project"] .project-bot-direct   { display: flex; }
 /* Hide activity card in project mode, show project area */
 #lessonScreen[data-mode="project"] .activity-focus-area  { display: none; }
+#lessonScreen[data-mode="project"] #activitySectionLabel { display: none; }
 #lessonScreen[data-mode="project"] .project-work-head    { display: block; }
 #lessonScreen[data-mode="lesson"]  .project-work-head    { display: none; }
 
@@ -622,6 +623,12 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 <div class="screen" id="lessonScreen" data-mode="lesson">
 
   <!-- Topbar -->
+  <!-- Page Title -->
+  <div style="background:#fff;border-bottom:2px solid var(--line);padding:14px 24px;flex-shrink:0;">
+    <div style="font-size:22px;font-weight:800;color:var(--navy);letter-spacing:-.3px;">מרחב למידה כיתתי</div>
+    <div style="font-size:13px;color:var(--muted);margin-top:2px;">עברית מתקדמים א׳ — אופטיקה · יחידה 1</div>
+  </div>
+
   <div class="l-topbar">
     <div class="l-logo">MilEd.One</div>
     <div class="l-course">עברית מתקדמים א׳ — אופטיקה · יחידה 1</div>
@@ -755,6 +762,12 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       </div>
 
       <!-- ── ACTIVITY FOCUS AREA (lesson mode) ── -->
+      <div style="padding:16px 20px 4px;flex-shrink:0;" id="activitySectionLabel">
+        <div style="font-size:17px;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:8px;">
+          <span style="width:4px;height:20px;background:linear-gradient(180deg,#1d4ed8,#6366f1);border-radius:2px;display:inline-block;"></span>
+          משימה לביצוע
+        </div>
+      </div>
       <div class="activity-focus-area" id="activityFocusArea">
 
         <!-- Empty State -->
