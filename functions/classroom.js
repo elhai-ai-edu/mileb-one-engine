@@ -1668,6 +1668,22 @@ export async function handler(event){
 
     await db.ref(`courses/${courseId}/liveMeeting`).set(meeting);
     console.log(`[meeting_save] courseId=${courseId} facultyId=${facultyId} status=${normalizedStatus}`);
+
+    // Propagate to all active sessions for this course so students see the
+    // change immediately via the existing lesson_payload poll, without waiting
+    // for a new session to open.
+    const activeMSnap = await db.ref(`active_sessions/${courseId}`).once("value");
+    const activeMData = activeMSnap.val() || {};
+    const activeMTargets = new Set();
+    if (activeMData.sessionId) activeMTargets.add(activeMData.sessionId);
+    Object.values(activeMData.units || {}).forEach(u => { if (u?.sessionId) activeMTargets.add(u.sessionId); });
+    if (activeMTargets.size > 0) {
+      await Promise.all([...activeMTargets].map(sid =>
+        db.ref(`sessions/${sid}/liveMeetingSnapshot`).set(meeting)
+      ));
+      console.log(`[meeting_save] propagated to ${activeMTargets.size} active session(s) for ${courseId}`);
+    }
+
     return ok({ ok:true, courseId, liveMeeting: meeting });
   }
 
@@ -1690,6 +1706,21 @@ export async function handler(event){
     };
     await db.ref(`courses/${courseId}/liveMeeting`).update(update);
     console.log(`[meeting_recording_save] courseId=${courseId} facultyId=${facultyId}`);
+
+    // Propagate to all active sessions for this course (e.g. still-open sessions
+    // where the faculty published the recording before clicking "close").
+    const activeRSnap = await db.ref(`active_sessions/${courseId}`).once("value");
+    const activeRData = activeRSnap.val() || {};
+    const activeRTargets = new Set();
+    if (activeRData.sessionId) activeRTargets.add(activeRData.sessionId);
+    Object.values(activeRData.units || {}).forEach(u => { if (u?.sessionId) activeRTargets.add(u.sessionId); });
+    if (activeRTargets.size > 0) {
+      await Promise.all([...activeRTargets].map(sid =>
+        db.ref(`sessions/${sid}/liveMeetingSnapshot`).update(update)
+      ));
+      console.log(`[meeting_recording_save] propagated to ${activeRTargets.size} active session(s) for ${courseId}`);
+    }
+
     return ok({ ok:true, courseId, recordingUrl: recordingUrl || null });
   }
 

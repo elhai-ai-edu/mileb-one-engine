@@ -668,6 +668,7 @@
                 font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
         🎞️ הקלטה
       </a>
+      <span id="liveMeetingBarNoUrlHint" style="display:none;font-size:13px;color:#475569;">הקישור יתעדכן בקרוב</span>
     </div>
 
     <!-- ─── Skill Context Banner ─── -->
@@ -1796,33 +1797,42 @@
     function renderLiveMeetingBar(liveMeeting) {
       const bar = document.getElementById("liveMeetingBar");
       if (!bar) return;
-      if (!liveMeeting || (!liveMeeting.joinUrl && !liveMeeting.recordingUrl)) {
+      // Show the bar when there is a URL to act on, OR when the session is
+      // actively live (so students know a meeting is happening even if the
+      // faculty hasn't published the link yet).
+      const hasUrl = !!(liveMeeting?.joinUrl || liveMeeting?.recordingUrl);
+      const isLive = liveMeeting?.status === "live";
+      if (!liveMeeting || (!hasUrl && !isLive)) {
         bar.style.display = "none";
         return;
       }
       bar.style.display = "";
 
-      const titleEl  = document.getElementById("liveMeetingBarTitle");
-      const statusEl = document.getElementById("liveMeetingBarStatus");
-      const joinBtn  = document.getElementById("liveMeetingBarJoinBtn");
-      const recBtn   = document.getElementById("liveMeetingBarRecordingBtn");
+      const titleEl   = document.getElementById("liveMeetingBarTitle");
+      const statusEl  = document.getElementById("liveMeetingBarStatus");
+      const joinBtn   = document.getElementById("liveMeetingBarJoinBtn");
+      const recBtn    = document.getElementById("liveMeetingBarRecordingBtn");
+      const hintEl    = document.getElementById("liveMeetingBarNoUrlHint");
 
       if (titleEl) titleEl.textContent = liveMeeting.title || "שיעור חי";
 
       const statusLabels = { scheduled: "📅 מתוכנן", live: "🔴 חי עכשיו", ended: "✅ הסתיים" };
       if (statusEl) statusEl.textContent = statusLabels[liveMeeting.status] || liveMeeting.status || "";
 
+      const showJoin = !!(liveMeeting.joinUrl && liveMeeting.status !== "ended");
       if (joinBtn) {
-        const showJoin = liveMeeting.joinUrl && liveMeeting.status !== "ended";
         joinBtn.style.display = showJoin ? "" : "none";
         if (showJoin) joinBtn.href = liveMeeting.joinUrl;
       }
 
+      const showRec = !!liveMeeting.recordingUrl;
       if (recBtn) {
-        const showRec = !!liveMeeting.recordingUrl;
         recBtn.style.display = showRec ? "" : "none";
         if (showRec) recBtn.href = liveMeeting.recordingUrl;
       }
+
+      // Show a plain-text hint when the meeting is live but no link is available yet
+      if (hintEl) hintEl.style.display = (!showJoin && !showRec && isLive) ? "" : "none";
     }
 
     function renderSpeakerFocusBanner(speakerFocus) {
@@ -1956,6 +1966,13 @@
             const lobbyUrl = `/waiting_lobby.html?courseId=${encodeURIComponent(lessonData?.courseId || courseIdFromUrl)}&unitId=${encodeURIComponent(lessonData?.lessonId || unitIdFromUrl)}&sessionId=${encodeURIComponent(sessionId)}&mid_session=1`;
             location.replace(lobbyUrl);
           }
+        }
+        // Live-meeting: patch snapshot and re-render bar instantly when the
+        // faculty saves meeting info mid-session (avoids waiting for the 6 s poll).
+        if (live.liveMeetingSnapshot !== undefined) {
+          const prev = JSON.stringify(lessonData.liveMeeting);
+          lessonData.liveMeeting = live.liveMeetingSnapshot;
+          if (JSON.stringify(lessonData.liveMeeting) !== prev) renderLiveMeetingBar(lessonData.liveMeeting);
         }
       });
     }
