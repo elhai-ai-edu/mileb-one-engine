@@ -13,6 +13,7 @@
   --green: #16a34a; --red: #dc2626; --amber: #d97706;
   --line: #e2e8f0; --muted: #64748b; --bg: #f1f5f9;
   --card: #ffffff; --radius: 14px;
+  --bordeaux: #7a1530; --bordeaux-dark: #4a0818; --bordeaux-light: #b83055;
   font-family: 'Assistant', sans-serif;
 }
 body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
@@ -542,8 +543,8 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-size: 13px; line-height: 1.6;
 }
 .chat-bubble.bot {
-  background: linear-gradient(135deg,#eff6ff,#dbeafe);
-  border: 1px solid #bfdbfe; align-self: flex-end;
+  background: linear-gradient(135deg,#fdf2f5,#fce7ed);
+  border: 1px solid #f4c0cf; align-self: flex-end;
 }
 .chat-bubble.bot.project-style {
   background: linear-gradient(135deg,#f5f3ff,#ede9fe);
@@ -562,59 +563,138 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   font-family: inherit; font-weight: 700; font-size: 13px;
 }
 #lessonScreen[data-mode="project"] .chat-send { background: linear-gradient(135deg,#6366f1,#8b5cf6); }
+.bot-float-panel .chat-send { background: linear-gradient(135deg, var(--bordeaux-light), var(--bordeaux)); }
+.bot-float-panel .chat-send:hover { background: linear-gradient(135deg, #c83060, var(--bordeaux-light)); }
+.bot-float-panel .chat-input:focus { outline: none; border-color: #d4889a; }
 
-/* ── Floating Bot Bubble ── */
+/* ── Floating Bot Bubble — Bordeaux 3D Circle ── */
 .bot-bubble {
-  position: fixed; right: 24px; bottom: 72px; z-index: 5000;
-  background: linear-gradient(135deg, #1d4ed8, #6366f1);
-  color: #fff; border: none; border-radius: 999px;
-  padding: 13px 22px 13px 18px;
-  display: none; align-items: center; gap: 10px;
-  cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700;
-  box-shadow: 0 4px 20px rgba(29,78,216,.4);
-  transition: transform .15s, box-shadow .15s;
-  animation: bubblePulse 3s infinite;
-  max-width: 300px;
+  position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
+  z-index: 5000;
+  width: 78px; height: 78px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #d4456a 0%, #8b1a2e 45%, #4a0818 100%);
+  color: #fff; border: none;
+  display: none; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 8px 32px rgba(122,21,48,.55),
+    0 2px 8px rgba(0,0,0,.35),
+    inset 0 -4px 12px rgba(0,0,0,.3);
+  transition: transform .18s cubic-bezier(.34,1.5,.64,1), box-shadow .18s;
+  animation: bubblePulse 4s ease-in-out infinite;
+  overflow: visible;
+  flex-direction: column; gap: 2px;
 }
-.bot-bubble:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(29,78,216,.5); }
+
+/* 3D highlight sheen */
+.bot-bubble::before {
+  content: '';
+  position: absolute;
+  top: 10px; left: 14px;
+  width: 36px; height: 18px;
+  background: radial-gradient(ellipse, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 100%);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+  pointer-events: none;
+}
+
+.bot-bubble:hover {
+  transform: translateY(calc(-50% - 5px)) scale(1.08);
+  box-shadow: 0 14px 40px rgba(122,21,48,.7), 0 4px 12px rgba(0,0,0,.4), inset 0 -4px 12px rgba(0,0,0,.3);
+}
+
 @keyframes bubblePulse {
-  0%,100% { box-shadow: 0 4px 20px rgba(29,78,216,.4); }
-  50%     { box-shadow: 0 4px 28px rgba(99,102,241,.65); }
+  0%,100% { box-shadow: 0 8px 32px rgba(122,21,48,.55), 0 2px 8px rgba(0,0,0,.35), inset 0 -4px 12px rgba(0,0,0,.3); }
+  50%     { box-shadow: 0 8px 44px rgba(184,48,85,.75), 0 2px 8px rgba(0,0,0,.35), inset 0 -4px 12px rgba(0,0,0,.3); }
 }
-.bot-bubble-icon { font-size: 20px; flex-shrink: 0; }
-.bot-bubble-arrow { font-size: 14px; opacity: .7; flex-shrink: 0; }
+
+/* Bot face — CSS art inside bubble */
+.bot-face {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  position: relative; z-index: 1;
+}
+.bot-eyes {
+  display: flex; gap: 10px;
+}
+.bot-eye {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 12px rgba(255,220,220,.6);
+  animation: eyeGlow 3s ease-in-out infinite;
+}
+.bot-eye.right { animation-delay: .4s; }
+@keyframes eyeGlow {
+  0%,100% { opacity: 1; box-shadow: 0 0 6px rgba(255,255,255,.9); }
+  50%     { opacity: .7; box-shadow: 0 0 10px rgba(255,180,200,1); }
+}
+.bot-smile {
+  width: 22px; height: 10px;
+  border: 2.5px solid rgba(255,255,255,.85);
+  border-top: none;
+  border-radius: 0 0 22px 22px;
+}
+
+/* Tooltip label beside bubble */
+.bubble-label {
+  position: absolute;
+  left: 92px; top: 50%; transform: translateY(-50%);
+  background: var(--bordeaux-dark);
+  color: #fff; font-size: 12px; font-weight: 700;
+  padding: 6px 12px; border-radius: 20px;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0,0,0,.3);
+  opacity: 0; transition: opacity .2s;
+  pointer-events: none;
+}
+.bubble-label::after {
+  content: '';
+  position: absolute;
+  right: 100%; top: 50%; transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--bordeaux-dark);
+}
+.bot-bubble:hover .bubble-label { opacity: 1; }
 
 /* ── Float Panel Overlay ── */
 .bot-float-overlay {
   display: none; position: fixed; inset: 0; z-index: 4998;
-  background: rgba(0,0,0,.18);
+  background: rgba(0,0,0,.22);
 }
 .bot-float-overlay.open { display: block; }
 
-/* ── Float Panel ── */
+/* ── Float Panel — compact card that expands ── */
 .bot-float-panel {
-  position: fixed; right: 0; top: 0; bottom: 52px; width: 380px;
-  background: #fff; box-shadow: -4px 0 24px rgba(0,0,0,.14);
+  position: fixed; left: 116px; top: 50%;
+  transform: translateY(-50%) scale(0.85);
+  transform-origin: left center;
+  width: 340px;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 12px 48px rgba(74,8,24,.22), 0 2px 12px rgba(0,0,0,.14);
   z-index: 4999; display: flex; flex-direction: column;
-  transform: translateX(110%);
-  transition: transform .3s cubic-bezier(.34,1,.64,1);
+  max-height: 500px; min-height: 200px;
+  opacity: 0; pointer-events: none;
+  transition: transform .3s cubic-bezier(.34,1.2,.64,1), opacity .25s ease;
+  overflow: hidden;
 }
-.bot-float-panel.open { transform: translateX(0); }
+.bot-float-panel.open {
+  transform: translateY(-50%) scale(1);
+  opacity: 1; pointer-events: all;
+}
 
 .bot-float-head {
-  padding: 14px 16px 12px; border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg,#f8fbff,#eef4ff);
+  padding: 14px 16px 12px; border-bottom: 1px solid #f0e0e4;
+  background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%);
   display: flex; align-items: flex-start; justify-content: space-between;
-  flex-shrink: 0;
+  flex-shrink: 0; border-radius: 20px 20px 0 0;
 }
-.bot-float-name { font-size: 14px; font-weight: 800; color: var(--navy); }
-.bot-float-ctx  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.bot-float-name { font-size: 14px; font-weight: 800; color: #fff; }
+.bot-float-ctx  { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 3px; }
 .bot-float-close {
-  background: none; border: none; font-size: 20px; color: var(--muted);
-  cursor: pointer; padding: 0 4px; line-height: 1; border-radius: 6px;
+  background: rgba(255,255,255,.15); border: none; font-size: 16px; color: #fff;
+  cursor: pointer; padding: 3px 7px; line-height: 1; border-radius: 8px;
   transition: background .15s;
 }
-.bot-float-close:hover { background: #f1f5f9; color: var(--navy); }
+.bot-float-close:hover { background: rgba(255,255,255,.3); }
 </style>
 </head>
 <body>
@@ -952,9 +1032,14 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
   <!-- Floating Bot Bubble (lesson mode only) -->
   <button class="bot-bubble" id="botBubble" onclick="openBotFloat()">
-    <span class="bot-bubble-icon">🤖</span>
-    <span id="bubbleText">צריך עזרה בניתוח?</span>
-    <span class="bot-bubble-arrow">↗</span>
+    <div class="bot-face">
+      <div class="bot-eyes">
+        <div class="bot-eye left"></div>
+        <div class="bot-eye right"></div>
+      </div>
+      <div class="bot-smile"></div>
+    </div>
+    <div class="bubble-label" id="bubbleText">צריך עזרה בניתוח?</div>
   </button>
 
   <!-- Float Panel Overlay -->
@@ -964,7 +1049,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <div class="bot-float-panel" id="botFloatPanel">
     <div class="bot-float-head">
       <div>
-        <div class="bot-float-name">🤖 בוט הקורס</div>
+        <div class="bot-float-name">✦ בוט הקורס</div>
         <div class="bot-float-ctx" id="botFloatCtx">ליווי למשימה: ניתוח פסקת פתיחה</div>
       </div>
       <button class="bot-float-close" onclick="closeBotFloat()">✕</button>
@@ -1079,11 +1164,17 @@ function setActivityState(state) {
 function openBotFloat() {
   document.getElementById('botFloatPanel').classList.add('open');
   document.getElementById('botFloatOverlay').classList.add('open');
+  document.getElementById('botBubble').style.display = 'none';
   setTimeout(() => document.getElementById('chatInputFloat').focus(), 320);
 }
 function closeBotFloat() {
   document.getElementById('botFloatPanel').classList.remove('open');
   document.getElementById('botFloatOverlay').classList.remove('open');
+  // Restore bubble only in lesson mode
+  const mode = document.getElementById('lessonScreen')?.dataset?.mode;
+  if (mode === 'lesson') {
+    document.getElementById('botBubble').style.display = 'flex';
+  }
 }
 function sendFloatChat() {
   const input = document.getElementById('chatInputFloat');
