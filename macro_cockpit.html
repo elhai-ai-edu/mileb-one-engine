@@ -998,6 +998,94 @@ body { background: var(--bg) !important; }
 .mc-section-body {
   padding: 22px 24px;
 }
+
+/* ─────────────────────────────────────────────────────────────────
+   Phase Selector Cards  (replaces the old 4-tab cockpit nav)
+   ───────────────────────────────────────────────────────────────── */
+.phase-card {
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.38);
+  border-radius: 12px;
+  padding: 10px 26px;
+  cursor: pointer;
+  transition: background .18s, border-color .18s, box-shadow .18s, color .18s;
+  text-align: center;
+  min-width: 180px;
+  color: #fff;
+  user-select: none;
+}
+.phase-card:hover { background: rgba(255,255,255,0.24); border-color: #fff; }
+.phase-card.active {
+  background: #fff; border-color: #fff; color: #1e3a8a;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.26);
+}
+.phase-card-phase {
+  font-size: 10px; font-weight: 800; letter-spacing: .7px;
+  text-transform: uppercase; opacity: .7; margin-bottom: 2px;
+}
+.phase-card.active .phase-card-phase { color: #4f46e5; opacity: 1; }
+.phase-card-title { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+.phase-card-meta { font-size: 11px; }
+.phase-card-progress { font-weight: 700; color: #6ee7b7; }
+.phase-card.active .phase-card-progress { color: #059669; }
+.phase-card-status {
+  background: rgba(255,255,255,0.18); border-radius: 20px;
+  padding: 2px 10px; font-weight: 700;
+}
+.phase-card.active .phase-card-status { background: #ede9fe; color: #4f46e5; }
+.phase-divider-arrow { font-size: 22px; color: rgba(255,255,255,.5); flex-shrink: 0; }
+
+/* ─── Wizard Navigation (inside Phase 1) ─── */
+.wizard-nav {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding-bottom: 16px; margin-bottom: 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+.wizard-step-btn {
+  appearance: none;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #475569;
+  border-radius: 10px; padding: 9px 14px;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: all .15s; display: flex; align-items: center; gap: 7px;
+}
+.wizard-step-btn:hover { border-color: #93c5fd; background: #eff6ff; color: #1e3a8a; }
+.wizard-step-btn.active {
+  background: #eff6ff; border-color: #6366f1;
+  color: #1e1b4b; font-weight: 700;
+  box-shadow: 0 2px 8px rgba(99,102,241,.15);
+}
+.ws-check { font-size: 13px; }
+.ws-check.done { color: #10b981; font-weight: 900; }
+.ws-panel { display: block; }
+
+/* ─── Phase Transition Bar ─── */
+.phase-transition-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+  border: 1.5px solid #a7f3d0; border-radius: 14px;
+  padding: 16px 22px; margin-top: 24px;
+}
+.transition-hint { font-size: 14px; color: #065f46; font-weight: 600; }
+.phase-transition-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff; border: none; border-radius: 10px;
+  padding: 11px 24px; font-size: 14px; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  transition: opacity .15s; white-space: nowrap;
+}
+.phase-transition-btn:hover { opacity: .9; }
+
+/* ─── Lesson Gate (soft block) ─── */
+.lesson-gate {
+  background: #fff8f0; border: 1.5px solid #fed7aa;
+  border-radius: 14px; padding: 28px;
+  text-align: center; margin-bottom: 20px;
+}
+.lesson-gate-icon { font-size: 36px; margin-bottom: 10px; }
+.lesson-gate-title { font-size: 16px; font-weight: 700; color: #9a3412; margin-bottom: 8px; }
+.lesson-gate-missing { font-size: 13px; color: #92400e; margin-bottom: 18px; line-height: 1.6; }
 </style>
 <title>MilEd.One — Macro Cockpit</title>
 
@@ -1048,10 +1136,21 @@ body { background: var(--bg) !important; }
 </div>
 
 <div id="cockpit-nav">
-  <button class="cockpit-tab-btn active" data-tab-target="syllabus" onclick="switchCockpitTab('syllabus', this)"><span>חיבור קורס-מיומנויות</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="moodle" onclick="switchCockpitTab('moodle', this)"><span>טעינת יחידות הקורס מMOODLE</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>תכנון ראשי</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="ats" onclick="switchCockpitTab('ats', this)"><span>📓 תרגום יומן הוראה</span></button>
+  <div class="phase-card active" id="phase-card-course" role="button" tabindex="0"
+       onclick="switchPhase('course')"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchPhase('course');}">
+    <div class="phase-card-phase">שלב 1</div>
+    <div class="phase-card-title">🎓 עיצוב קורס</div>
+    <div class="phase-card-meta"><span class="phase-card-progress" id="course-phase-progress">0 / 5 הושלמו</span></div>
+  </div>
+  <div class="phase-divider-arrow" aria-hidden="true">&#x2192;</div>
+  <div class="phase-card" id="phase-card-lesson" role="button" tabindex="0"
+       onclick="switchPhase('lesson')"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchPhase('lesson');}">
+    <div class="phase-card-phase">שלב 2</div>
+    <div class="phase-card-title">📋 עיצוב שיעור</div>
+    <div class="phase-card-meta"><span class="phase-card-status" id="lesson-phase-status-badge">ממתין לעיצוב קורס</span></div>
+  </div>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {
@@ -1063,11 +1162,458 @@ body { background: var(--bg) !important; }
 
 <div class="classroom-grid">
 
-  <div class="panel" data-tab-panel="prep">
-    <div class="mc-section">
-    <div class="mc-section-head">📚 לוח שיעורים<span class="mc-sub">הגדר שלבי שיעור לפני הכיתה — שמור לשימוש חוזר</span></div>
-    <div class="mc-section-body">
+  <!-- ══════════════════════════════════════════════════════════════
+       PHASE 1 — עיצוב קורס (Course Design · Foundation)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="phase-course">
 
+    <!-- ── Wizard step navigation ── -->
+    <div class="wizard-nav" id="wizard-nav" role="tablist" aria-label="שלבי עיצוב הקורס">
+      <button class="wizard-step-btn active" data-wstep="1" onclick="switchWizardStep(1)"
+              role="tab" aria-selected="true" aria-label="שלב 1: טעינת יחידות מ-Moodle, לא הושלם">
+        <span class="ws-check" id="ws-check-1" aria-hidden="true">○</span> 1. טעינת יחידות מ-Moodle
+      </button>
+      <button class="wizard-step-btn" data-wstep="2" onclick="switchWizardStep(2)"
+              role="tab" aria-selected="false" aria-label="שלב 2: יומן הוראה, לא הושלם">
+        <span class="ws-check" id="ws-check-2" aria-hidden="true">○</span> 2. יומן הוראה
+      </button>
+      <button class="wizard-step-btn" data-wstep="3" onclick="switchWizardStep(3)"
+              role="tab" aria-selected="false" aria-label="שלב 3: חיבור קורס-מיומנויות, לא הושלם">
+        <span class="ws-check" id="ws-check-3" aria-hidden="true">○</span> 3. חיבור קורס-מיומנויות
+      </button>
+      <button class="wizard-step-btn" data-wstep="4" onclick="switchWizardStep(4)"
+              role="tab" aria-selected="false" aria-label="שלב 4: יחידות הקורס, לא הושלם">
+        <span class="ws-check" id="ws-check-4" aria-hidden="true">○</span> 4. יחידות הקורס
+      </button>
+      <button class="wizard-step-btn" data-wstep="5" onclick="switchWizardStep(5)"
+              role="tab" aria-selected="false" aria-label="שלב 5: מחזור חיי הכיתה, לא הושלם">
+        <span class="ws-check" id="ws-check-5" aria-hidden="true">○</span> 5. מחזור חיי הכיתה
+      </button>
+    </div>
+
+    <!-- ── Step 1: Moodle Import ── -->
+    <div id="ws-panel-1" class="ws-panel">
+      <div class="mc-section">
+      <div class="mc-section-head">📥 טעינת יחידות הקורס מMoodle<span class="mc-sub">הדבק JSON מסקרייפר Moodle כדי למפות יחידות ומשאבים לקורס</span></div>
+      <div class="mc-section-body">
+      <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:12px;">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;">Moodle Sync</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px;">הדבק JSON מסקרייפר Moodle. המערכת תנקה כותרות, תמפה יחידות ומשאבים, ותכין Bookshelf לשיעור.</div>
+        </div>
+        <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...] }]} ' style="margin:0;"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-blue" type="button" onclick="importMoodleJson()" style="font-size:12px;padding:7px 14px;">יבא Moodle JSON</button>
+          <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()" style="font-size:12px;padding:7px 14px;">טען מטא-דאטה קיים</button>
+          <span id="moodleImportStatus" style="font-size:12px;color:#475569;"></span>
+        </div>
+        <div style="display:grid;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+            <div style="font-size:14px;font-weight:700;color:#0f172a;">Playlist Manager</div>
+            <div id="playlistSelectionCount" style="font-size:12px;color:#64748b;">0 יחידות נבחרו</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
+            <div class="field" style="margin:0;flex:1;min-width:180px;">
+              <label>Lesson ID יעד</label>
+              <input id="playlistLessonId" type="text" value="unit_01" class="lp-input" style="margin:0;">
+            </div>
+            <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
+            <span id="playlistStatus" style="font-size:12px;color:#475569;"></span>
+          </div>
+          <div id="moodleUnitsList" style="display:grid;gap:8px;">
+            <div class="thread-empty">טרם יובא JSON</div>
+          </div>
+        </div>
+      </div>
+      </div></div>
+      <div class="phase-step-nav" style="display:flex;justify-content:flex-end;margin-top:12px;">
+        <button class="btn btn-outline" onclick="switchWizardStep(2)" style="font-size:13px;">הבא: יומן הוראה &#x2192;</button>
+      </div>
+    </div><!-- /ws-panel-1 -->
+
+    <!-- ── Step 2: Teaching Journal (ATS) ── -->
+    <div id="ws-panel-2" class="ws-panel" style="display:none;">
+      <!-- ─────────────────────────────────────────────────────────────────────
+           ATS PANEL — Activity Translation System (תרגום יומן הוראה)
+           Contract v1 · UI Host: macro_cockpit · Data: Firebase activity_bank
+           ───────────────────────────────────────────────────────────────────── -->
+      <div class="mc-section">
+      <div class="mc-section-head">📓 תרגום יומן הוראה<span class="mc-sub">המר יומן הוראה לפעילויות מובנות · שמור לבנק הפעילויות · הפעל דרך מיקרו-קוקפיט</span></div>
+      <div class="mc-section-body">
+
+      <!-- Step indicator -->
+      <div id="ats-steps" style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;">
+        <button class="ats-step-btn active" data-step="1" onclick="atsGoStep(1)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#6366f1;color:#fff;border:none;cursor:pointer;font-family:inherit;">1 — הזנת יומן</button>
+        <button class="ats-step-btn" data-step="2" onclick="atsGoStep(2)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:none;cursor:pointer;font-family:inherit;border-right:1px solid #e2e8f0;">2 — בדיקה ואישור</button>
+        <button class="ats-step-btn" data-step="3" onclick="atsGoStep(3)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:none;cursor:pointer;font-family:inherit;border-right:1px solid #e2e8f0;">3 — שמירה לבנק</button>
+      </div>
+
+      <!-- ── Step 1: Journal Input ── -->
+      <div id="ats-panel-1">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+          <div class="field" style="margin:0;">
+            <label>מספר קורס / מזהה קורס</label>
+            <input id="ats-courseId" type="text" class="lp-input" placeholder="לדוג׳: hebrew_advanced_01" style="margin:0;">
+          </div>
+          <div class="field" style="margin:0;">
+            <label>תאריך שיעור</label>
+            <input id="ats-lessonDate" type="date" class="lp-input" style="margin:0;">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+          <div class="field" style="margin:0;">
+            <label>כותרת שיעור</label>
+            <input id="ats-lessonTitle" type="text" class="lp-input" placeholder="לדוג׳: חשיבה ביקורתית — שיעור 3" style="margin:0;">
+          </div>
+          <div class="field" style="margin:0;">
+            <label>מצב הוראה</label>
+            <select id="ats-lessonMode" class="lp-input" style="margin:0;">
+              <option value="frontal">פרונטלי</option>
+              <option value="zoom">זום</option>
+              <option value="hybrid">היברידי</option>
+              <option value="asynchronous">אסינכרוני</option>
+              <option value="in_class_digital">בכיתה דיגיטלי</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>טקסט יומן ההוראה <span style="font-weight:400;color:#94a3b8;">(הדבק את היומן כאן)</span></label>
+          <textarea id="ats-rawText" class="lp-textarea" rows="10"
+            placeholder="לדוג׳:&#10;1. קריאה של הטקסט — 10 דקות&#10;2. כתוב תמצית קצרה בזוגות&#10;3. הקלט את התמצית ושתף בפדלט"
+            style="min-height:180px;"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-blue" onclick="atsParse()" id="ats-parse-btn" style="font-size:13px;padding:9px 20px;">🔍 נתח יומן</button>
+          <span id="ats-parse-status" style="font-size:12px;color:#64748b;"></span>
+        </div>
+      </div>
+
+      <!-- ── Step 2: Review Panel ── -->
+      <div id="ats-panel-2" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start;">
+
+          <!-- Left: Raw journal text -->
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">טקסט מקורי</div>
+            <div id="ats-raw-display"
+              style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;
+                     font-size:12px;color:#334155;max-height:520px;overflow-y:auto;white-space:pre-wrap;line-height:1.6;"></div>
+          </div>
+
+          <!-- Center: Candidate list -->
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;">פעילויות שחולצו</div>
+              <span id="ats-cand-count" style="font-size:11px;color:#94a3b8;"></span>
+            </div>
+            <div id="ats-candidates-list" style="display:flex;flex-direction:column;gap:6px;max-height:520px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Right: Activity editor -->
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">עריכת פעילות</div>
+            <div id="ats-editor-empty" style="color:#94a3b8;font-size:12px;text-align:center;padding:40px 0;">בחר פעילות מהרשימה לעריכה</div>
+            <div id="ats-editor-form" style="display:none;">
+              <div class="field" style="margin-bottom:8px;">
+                <label style="font-size:11px;">כותרת</label>
+                <input id="ats-ed-title" type="text" class="lp-input" style="margin:0;font-size:12px;">
+              </div>
+              <div class="field" style="margin-bottom:8px;">
+                <label style="font-size:11px;">Type ראשי</label>
+                <select id="ats-ed-primaryType" class="lp-input" style="margin:0;font-size:12px;">
+                  <option value="reading">reading — קריאה</option>
+                  <option value="writing">writing — כתיבה</option>
+                  <option value="speaking">speaking — דיבור</option>
+                  <option value="listening">listening — האזנה</option>
+                  <option value="discussion">discussion — דיון</option>
+                  <option value="analysis">analysis — ניתוח</option>
+                  <option value="classification">classification — מיון</option>
+                  <option value="summarization">summarization — סיכום</option>
+                  <option value="paraphrasing">paraphrasing — ניסוח מחדש</option>
+                  <option value="question_answering">question_answering — מענה</option>
+                  <option value="problem_solving">problem_solving — פתרון בעיה</option>
+                  <option value="reflection">reflection — רפלקציה</option>
+                  <option value="presentation">presentation — הצגה</option>
+                  <option value="research">research — מחקר</option>
+                  <option value="ai_interaction">ai_interaction — עבודה עם AI</option>
+                  <option value="peer_response">peer_response — תגובה לעמית</option>
+                  <option value="collaborative_work">collaborative_work — עבודה שיתופית</option>
+                  <option value="submission">submission — הגשה</option>
+                </select>
+              </div>
+              <div class="field" style="margin-bottom:8px;">
+                <label style="font-size:11px;">שלב</label>
+                <select id="ats-ed-stageLabel" class="lp-input" style="margin:0;font-size:12px;">
+                  <option value="opening">פתיחה</option>
+                  <option value="knowledge_building">בניית ידע</option>
+                  <option value="guided_practice">תרגול מונחה</option>
+                  <option value="independent_practice">תרגול עצמאי</option>
+                  <option value="discussion">דיון</option>
+                  <option value="reflection">רפלקציה</option>
+                  <option value="closure">סיכום</option>
+                  <option value="homework">עבודת בית</option>
+                  <option value="unclassified">לא סווג (זמני)</option>
+                </select>
+              </div>
+              <div class="field" style="margin-bottom:8px;">
+                <label style="font-size:11px;">הוראות</label>
+                <textarea id="ats-ed-instructions" class="lp-textarea" rows="3" style="margin:0;font-size:12px;min-height:60px;"></textarea>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11px;">שיתוף</label>
+                  <select id="ats-ed-collaborationMode" class="lp-input" style="margin:0;font-size:12px;">
+                    <option value="individual">יחיד</option>
+                    <option value="pair">זוגות</option>
+                    <option value="small_group">קבוצה קטנה</option>
+                    <option value="whole_class">מליאה</option>
+                    <option value="teacher_student">מורה-תלמיד</option>
+                    <option value="asynchronous_individual">אסינכרוני</option>
+                  </select>
+                </div>
+                <div class="field" style="margin:0;">
+                  <label style="font-size:11px;">דקות משוערות</label>
+                  <input id="ats-ed-minutes" type="number" class="lp-input" min="1" max="180" placeholder="10" style="margin:0;font-size:12px;">
+                </div>
+              </div>
+              <div class="field" style="margin-bottom:8px;">
+                <label style="font-size:11px;">מצב בוט</label>
+                <select id="ats-ed-botMode" class="lp-input" style="margin:0;font-size:12px;">
+                  <option value="none">אין</option>
+                  <option value="course_support">תמיכת קורס</option>
+                  <option value="task_support">תמיכת משימה</option>
+                  <option value="gatekeeper">שוער</option>
+                  <option value="research_support">מחקר</option>
+                  <option value="writing_support">כתיבה</option>
+                  <option value="paraphrase_support">ניסוח מחדש</option>
+                  <option value="presentation_support">פרזנטציה</option>
+                  <option value="reflection_support">רפלקציה</option>
+                  <option value="diagnostic_support">אבחון</option>
+                </select>
+              </div>
+              <div class="field" style="margin-bottom:8px;">
+                <label style="font-size:11px;">הערות בדיקה</label>
+                <input id="ats-ed-reviewNotes" type="text" class="lp-input" placeholder="הערה אופציונלית" style="margin:0;font-size:12px;">
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                <button onclick="atsEditorApprove()" class="btn btn-green" style="font-size:11px;padding:6px 12px;">✓ אשר</button>
+                <button onclick="atsEditorApproveWithEdits()" class="btn btn-blue" style="font-size:11px;padding:6px 12px;">✎ אשר עם עריכות</button>
+                <button onclick="atsEditorReject()" style="font-size:11px;padding:6px 12px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;cursor:pointer;font-family:inherit;">✕ מחק</button>
+              </div>
+              <button onclick="atsEditorSave()" class="btn btn-outline" style="width:100%;font-size:12px;padding:7px;">💾 שמור שינויים</button>
+            </div>
+          </div>
+
+        </div><!-- end review grid -->
+
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0;">
+          <button onclick="atsSaveReview()" class="btn btn-blue" id="ats-save-review-btn" style="font-size:13px;padding:9px 20px;">💾 שמור בדיקה</button>
+          <button onclick="atsGoStep(3)" class="btn btn-green" style="font-size:13px;padding:9px 20px;">← המשך לשמירה בבנק</button>
+          <span id="ats-review-status" style="font-size:12px;color:#64748b;"></span>
+        </div>
+      </div>
+
+      <!-- ── Step 3: Save to Bank ── -->
+      <div id="ats-panel-3" style="display:none;">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin-bottom:16px;">
+          <div style="font-size:14px;font-weight:700;color:#065f46;margin-bottom:6px;">✅ פעילויות מאושרות לשמירה</div>
+          <div id="ats-approved-summary" style="font-size:13px;color:#047857;"></div>
+        </div>
+        <div id="ats-approved-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <button onclick="atsApproveToBank()" class="btn btn-green" id="ats-bank-btn" style="font-size:13px;padding:9px 22px;">📥 שמור לבנק הפעילויות</button>
+          <button onclick="atsGoStep(2)" class="btn btn-outline" style="font-size:13px;padding:9px 16px;">← חזרה לבדיקה</button>
+          <span id="ats-bank-status" style="font-size:12px;color:#64748b;"></span>
+        </div>
+      </div>
+
+      </div></div><!-- end mc-section -->
+      <div class="phase-step-nav" style="display:flex;justify-content:space-between;margin-top:12px;">
+        <button class="btn btn-outline" onclick="switchWizardStep(1)" style="font-size:13px;">&#x2190; טעינת Moodle</button>
+        <button class="btn btn-outline" onclick="switchWizardStep(3)" style="font-size:13px;">הבא: חיבור קורס-מיומנויות &#x2192;</button>
+      </div>
+    </div><!-- /ws-panel-2 -->
+
+    <!-- ── Step 3: Course-Skills Mapping ── -->
+    <div id="ws-panel-3" class="ws-panel" style="display:none;">
+      <div class="mc-section">
+      <div class="mc-section-head">🎓 חיבור קורס-מיומנויות<span class="mc-sub">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</span></div>
+      <div class="mc-section-body">
+
+      <!-- ─── Balance Weight Editor (v8.5) ─── -->
+      <div class="balance-preview" id="balance-preview-label">⚖️ איזון ציון: 70% אקדמי + 30% מיומנות</div>
+      <div class="field">
+        <label>משקל אקדמי (%) — <strong id="balance-aw-display">70</strong></label>
+        <input type="range" id="balance-aw-slider" min="0" max="100" step="5" value="70"
+          oninput="updateBalanceSlider(this.value)"
+          style="width:100%;accent-color:#6c5ce7;margin-top:6px;">
+      </div>
+      <button class="btn btn-blue" onclick="saveBalance()" style="margin-bottom:16px;width:100%;">💾 שמור איזון ציון</button>
+      <hr style="margin:0 0 14px;border:none;border-top:1px solid #e2e8f0;">
+
+      <div class="field">
+        <label>נושא שיעור / יחידת לימוד</label>
+        <input type="text" id="syllabusTopicInput" placeholder="לדוג׳: כתיבת ביקורת ספרותית...">
+      </div>
+
+      <div class="field">
+        <label>עמוד מיומנות מקושר</label>
+        <select id="syllabusPillarSelect">
+          <option value="">— בחר עמוד —</option>
+          <option value="academic">🎓 למידה וחשיבה</option>
+          <option value="resilience">🧘 ניהול וחוסן</option>
+          <option value="social">🤝 תקשורת וחברה</option>
+          <option value="tools">💻 כלים וטכנולוגיה</option>
+          <option value="career">💼 מוכנות לקריירה</option>
+        </select>
+      </div>
+
+      <button class="btn btn-blue" onclick="addSyllabusRow()" style="margin-bottom:14px;">+ הוסף שיוך</button>
+
+      <div id="syllabus-empty" style="text-align:center;font-size:12px;color:var(--color-text-muted);padding:10px 0;">טרם נוספו שיוכים</div>
+      <table id="syllabus-table" style="width:100%;font-size:13px;border-collapse:collapse;display:none;">
+        <thead>
+          <tr style="border-bottom:1px solid #e2e8f0;">
+            <th style="text-align:right;padding:6px 4px;color:var(--color-text-muted);font-weight:600;">נושא</th>
+            <th style="text-align:right;padding:6px 4px;color:var(--color-text-muted);font-weight:600;">עמוד מיומנות</th>
+            <th style="width:28px;"></th>
+          </tr>
+        </thead>
+        <tbody id="syllabus-tbody"></tbody>
+      </table>
+
+      <hr class="workspace-divider">
+
+      </div></div>
+
+      <div class="mc-section">
+      <div class="mc-section-head">⚖️ איזון תוכן–מיומנויות<span class="mc-sub">קבע את משקל המיומנויות בהערכת הקורס</span></div>
+      <div class="mc-section-body">
+
+      <div class="field">
+        <label>משקל תוכן ↔ מיומנויות</label>
+        <input type="range" id="balance-slider" min="0" max="100" value="70"
+          style="width:100%;accent-color:#6366f1;cursor:pointer;margin-bottom:8px;"
+          oninput="updateBalancePreview(this.value)">
+      </div>
+      <div class="balance-preview" id="balance-preview">70% תוכן / 30% מיומנויות</div>
+
+      <p style="font-size:11px;font-weight:600;color:var(--color-text-muted);margin-bottom:6px;letter-spacing:.3px;">
+        מפת עמודי מיומנות לפי הסילבוס
+      </p>
+      <div style="text-align:center;margin-bottom:8px;">
+        <svg id="pillar-radar-svg" viewBox="0 0 220 220" width="190" height="190"
+          style="display:block;margin:0 auto;"></svg>
+        <p id="pillar-radar-hint" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;">
+          הוסף שיוכי סילבוס כדי לראות את המפה
+        </p>
+      </div>
+      </div></div>
+
+      <div class="phase-step-nav" style="display:flex;justify-content:space-between;margin-top:12px;">
+        <button class="btn btn-outline" onclick="switchWizardStep(2)" style="font-size:13px;">&#x2190; יומן הוראה</button>
+        <button class="btn btn-outline" onclick="switchWizardStep(4)" style="font-size:13px;">הבא: יחידות הקורס &#x2192;</button>
+      </div>
+    </div><!-- /ws-panel-3 -->
+
+    <!-- ── Step 4: Course Units ── -->
+    <div id="ws-panel-4" class="ws-panel" style="display:none;">
+      <!-- ─── Course Units (interactive) ─── -->
+      <div class="mc-section">
+      <div class="mc-section-head">📋 יחידות הקורס<span class="mc-sub">עריכה בשדה הנושא שומרת אוטומטית</span></div>
+      <div class="mc-section-body">
+      <div class="units-layout">
+        <div class="units-card">
+          <div class="units-pill">תצורה</div>
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">מבנה יחידות</div>
+          <div class="units-toggle">
+            <button class="units-toggle-btn active" id="macroModeSessionBtn" type="button" onclick="macroSetUnitsMode('Session')">Academic Sessions (1–14)</button>
+            <button class="units-toggle-btn" id="macroModeTopicBtn" type="button" onclick="macroSetUnitsMode('Topic')">Flexible Topics (עד 50)</button>
+          </div>
+          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">שנה מצב כדי לעבור בין 14 מפגשים מסודרים לנושאים גמישים עד 50.</p>
+        </div>
+
+        <div class="units-card">
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="units-table">
+              <thead>
+                <tr>
+                  <th style="width:96px;">Unit ID</th>
+                  <th style="width:110px;">Type</th>
+                  <th>Topic Name</th>
+                  <th style="width:64px;">Status</th>
+                </tr>
+              </thead>
+              <tbody id="macro-units-tbody">
+                <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">טוען...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="units-card">
+          <div class="units-pill">הסבר</div>
+          <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">כפתור Edit ביחידה יפתח קוקפיט בקונטקסט מלא: courseId + unitId. כך מישימות, missionData ו-entranceTickets נמשכות מהיחידה הנכונה.</p>
+        </div>
+      </div>
+
+      </div></div>
+      <div class="phase-step-nav" style="display:flex;justify-content:space-between;margin-top:12px;">
+        <button class="btn btn-outline" onclick="switchWizardStep(3)" style="font-size:13px;">&#x2190; חיבור קורס-מיומנויות</button>
+        <button class="btn btn-outline" onclick="switchWizardStep(5)" style="font-size:13px;">הבא: מחזור חיי הכיתה &#x2192;</button>
+      </div>
+    </div><!-- /ws-panel-4 -->
+
+    <!-- ── Step 5: Class Lifecycle ── -->
+    <div id="ws-panel-5" class="ws-panel" style="display:none;">
+      <!-- ─── Lifecycle ─── -->
+      <div class="mc-section">
+      <div class="mc-section-head">📅 מחזור חיי הכיתה<span class="mc-sub">תאריכי נעילה ומחיקת נתונים לקורס</span></div>
+      <div class="mc-section-body">
+      <div style="display:grid;gap:10px;">
+        <div>
+          <label style="display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:4px;">תאריך נעילה (lockDate)</label>
+          <input type="date" id="macro-lock-date" style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+        </div>
+        <div>
+          <label style="display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:4px;">תאריך מחיקת נתונים (retentionDate)</label>
+          <input type="date" id="macro-retention-date" style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
+        </div>
+        <button onclick="macroSaveLifecycle()" style="width:100%;padding:9px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600;">שמור</button>
+        <div id="macro-lifecycle-msg" style="font-size:12px;min-height:16px;"></div>
+      </div>
+      </div></div>
+      <div class="phase-step-nav" style="display:flex;justify-content:flex-start;margin-top:12px;">
+        <button class="btn btn-outline" onclick="switchWizardStep(4)" style="font-size:13px;">&#x2190; יחידות הקורס</button>
+      </div>
+    </div><!-- /ws-panel-5 -->
+
+    <!-- ── Phase 1 → Phase 2 Transition ── -->
+    <div class="phase-transition-bar">
+      <div class="transition-hint">📌 השלמת את עיצוב הקורס? המשך לתכנון שיעורים</div>
+      <button class="phase-transition-btn" onclick="switchPhase('lesson')">סיימתי עיצוב קורס → עיצוב שיעור &#x25BA;</button>
+    </div>
+
+  </div><!-- /phase-course -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PHASE 2 — עיצוב שיעור (Lesson Design · Delivery)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="phase-lesson" style="display:none;">
+
+    <!-- Soft gate: shown when no course is active -->
+    <div id="lesson-gate" class="lesson-gate" style="display:none;">
+      <div class="lesson-gate-icon">🔒</div>
+      <div class="lesson-gate-title">יש לבחור קורס פעיל תחילה</div>
+      <div class="lesson-gate-missing" id="lesson-gate-missing">עבור לשלב עיצוב הקורס, בחר קורס וטען נתוני ה-Moodle.</div>
+      <button class="btn btn-outline" onclick="switchPhase('course')" style="margin-top:12px;">&#x2190; חזרה לעיצוב קורס</button>
+    </div>
+
+    <!-- ── Lesson context: course/unit picker ── -->
+    <div class="mc-section">
+    <div class="mc-section-head">📘 הגדרת הקשר שיעור<span class="mc-sub">בחר קורס ויחידה לעיצוב השיעור</span></div>
+    <div class="mc-section-body">
     <div id="activeCourseIndicator" style="display:none;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;font-weight:600;margin-bottom:10px;"></div>
 
     <div class="field">
@@ -1075,8 +1621,14 @@ body { background: var(--bg) !important; }
       <select id="botSelectPrep"><option value="">טוען...</option></select>
     </div>
 
-    <div style="margin:12px 0 16px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;">
-      <div style="font-size:14px;font-weight:700;color:#0f172a;margin-bottom:6px;">🎬 Pre-Session Content</div>
+    </div></div>
+
+    <!-- ── Tool 1: Pre-session Missions ── -->
+    <div class="mc-section">
+    <div class="mc-section-head">🎬 משימות קדם שיעור<span class="mc-sub">הכן תוכן פתיחה לפני תחילת השיעור: וידאו, אודיו או טקסט</span></div>
+    <div class="mc-section-body">
+
+    <div style="margin:0 0 16px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;">
       <div style="font-size:12px;color:#64748b;margin-bottom:10px;">הכן משימת פתיחה לפני תחילת השיעור: וידאו, אודיו או טקסט.</div>
 
       <div class="field" style="margin-bottom:8px;">
@@ -1107,6 +1659,13 @@ body { background: var(--bg) !important; }
       </div>
     </div>
 
+    </div></div>
+
+    <!-- ── Tool 2: Teaching Templates ── -->
+    <div class="mc-section">
+    <div class="mc-section-head">📝 תבניות הוראה<span class="mc-sub">הגדר שלבי שיעור לפני הכיתה — שמור לשימוש חוזר</span></div>
+    <div class="mc-section-body">
+
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <select id="template-select" class="lp-input" style="margin:0;flex:1;">
         <option value="">— טען תבנית שמורה —</option>
@@ -1131,84 +1690,12 @@ body { background: var(--bg) !important; }
 
     </div></div>
 
-    <!-- ─── Course Units (interactive) ─── -->
+    <!-- ── Tool 3: Hybrid Sprint Engine ── -->
     <div class="mc-section">
-    <div class="mc-section-head">📋 יחידות הקורס<span class="mc-sub">עריכה בשדה הנושא שומרת אוטומטית</span></div>
-    <div class="mc-section-body">
-    <div class="units-layout">
-      <div class="units-card">
-        <div class="units-pill">תצורה</div>
-        <div style="font-size:12px;font-weight:700;margin-bottom:6px;">מבנה יחידות</div>
-        <div class="units-toggle">
-          <button class="units-toggle-btn active" id="macroModeSessionBtn" type="button" onclick="macroSetUnitsMode('Session')">Academic Sessions (1–14)</button>
-          <button class="units-toggle-btn" id="macroModeTopicBtn" type="button" onclick="macroSetUnitsMode('Topic')">Flexible Topics (עד 50)</button>
-        </div>
-        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">שנה מצב כדי לעבור בין 14 מפגשים מסודרים לנושאים גמישים עד 50.</p>
-      </div>
-
-      <div class="units-card">
-        <div class="table-wrap" style="overflow-x:auto;">
-          <table class="units-table">
-            <thead>
-              <tr>
-                <th style="width:96px;">Unit ID</th>
-                <th style="width:110px;">Type</th>
-                <th>Topic Name</th>
-                <th style="width:64px;">Status</th>
-              </tr>
-            </thead>
-            <tbody id="macro-units-tbody">
-              <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">טוען...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="units-card">
-        <div class="units-pill">הסבר</div>
-        <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">כפתור Edit ביחידה יפתח קוקפיט בקונטקסט מלא: courseId + unitId. כך מישימות, missionData ו-entranceTickets נמשכות מהיחידה הנכונה.</p>
-      </div>
-    </div>
-
-    </div></div>
-
-    <!-- ─── Bookshelf ─── -->
-    <div class="mc-section">
-    <div class="mc-section-head">📚 מדף ספרים ומשאבים<span class="mc-sub">משאבים ממופה מ-Moodle לפי יחידות</span></div>
-    <div class="mc-section-body">
-    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
-      <select id="macro-resource-unit-filter" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1f2937;"></select>
-      <span id="macro-resource-count" style="font-size:12px;color:#64748b;font-weight:600;">0 משאבים</span>
-    </div>
-    <div id="macro-resource-list" style="display:grid;gap:10px;"></div>
-
-    </div></div>
-
-    <!-- ─── Lifecycle ─── -->
-    <div class="mc-section">
-    <div class="mc-section-head">📅 מחזור חיי הכיתה<span class="mc-sub">תאריכי נעילה ומחיקת נתונים לקורס</span></div>
-    <div class="mc-section-body">
-    <div style="display:grid;gap:10px;">
-      <div>
-        <label style="display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:4px;">תאריך נעילה (lockDate)</label>
-        <input type="date" id="macro-lock-date" style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
-      </div>
-      <div>
-        <label style="display:block;font-size:11px;color:#64748b;font-weight:600;margin-bottom:4px;">תאריך מחיקת נתונים (retentionDate)</label>
-        <input type="date" id="macro-retention-date" style="width:100%;padding:7px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;">
-      </div>
-      <button onclick="macroSaveLifecycle()" style="width:100%;padding:9px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600;">שמור</button>
-      <div id="macro-lifecycle-msg" style="font-size:12px;min-height:16px;"></div>
-    </div>
-    </div></div>
-  </div>
-
-  <div class="panel" data-tab-panel="syllabus">
-    <div class="mc-section">
-    <div class="mc-section-head">🎓 למידה משולבת מיומנויות<span class="mc-sub">שייך נושאי קורס לעמודי מיומנות — לחיזוק מודע ומכוון</span></div>
+    <div class="mc-section-head">⚡ מנוע ספרינט היברידי<span class="mc-sub">הגדר סבבי AI, תחנה פיזית ומליאה — כולל Proof of Work</span></div>
     <div class="mc-section-body">
 
-    <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
+    <div style="padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
         <div>
           <div style="font-size:14px;font-weight:700;color:#0f172a;">Hybrid Sprint Engine</div>
           <div style="font-size:12px;color:#64748b;margin-top:4px;">הגדר סבבים מסוג AI, תחנה פיזית או מליאה. תחנה פיזית יכולה לדרוש Proof of Work לפני מעבר.</div>
@@ -1250,315 +1737,28 @@ body { background: var(--bg) !important; }
         </div>
     </div>
 
-    <!-- ─── Balance Weight Editor (v8.5) ─── -->
-    <div class="balance-preview" id="balance-preview-label">⚖️ איזון ציון: 70% אקדמי + 30% מיומנות</div>
-    <div class="field">
-      <label>משקל אקדמי (%) — <strong id="balance-aw-display">70</strong></label>
-      <input type="range" id="balance-aw-slider" min="0" max="100" step="5" value="70"
-        oninput="updateBalanceSlider(this.value)"
-        style="width:100%;accent-color:#6c5ce7;margin-top:6px;">
+    </div></div>
+
+    <!-- ── Tool 4: Resource Shelf ── -->
+    <div class="mc-section">
+    <div class="mc-section-head">📚 מדף משאבים<span class="mc-sub">משאבים ממופה מ-Moodle לפי יחידות</span></div>
+    <div class="mc-section-body">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
+      <select id="macro-resource-unit-filter" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1f2937;"></select>
+      <span id="macro-resource-count" style="font-size:12px;color:#64748b;font-weight:600;">0 משאבים</span>
     </div>
-    <button class="btn btn-blue" onclick="saveBalance()" style="margin-bottom:16px;width:100%;">💾 שמור איזון ציון</button>
-    <hr style="margin:0 0 14px;border:none;border-top:1px solid #e2e8f0;">
-
-    <div class="field">
-      <label>נושא שיעור / יחידת לימוד</label>
-      <input type="text" id="syllabusTopicInput" placeholder="לדוג׳: כתיבת ביקורת ספרותית...">
-    </div>
-
-    <div class="field">
-      <label>עמוד מיומנות מקושר</label>
-      <select id="syllabusPillarSelect">
-        <option value="">— בחר עמוד —</option>
-        <option value="academic">🎓 למידה וחשיבה</option>
-        <option value="resilience">🧘 ניהול וחוסן</option>
-        <option value="social">🤝 תקשורת וחברה</option>
-        <option value="tools">💻 כלים וטכנולוגיה</option>
-        <option value="career">💼 מוכנות לקריירה</option>
-      </select>
-    </div>
-
-    <button class="btn btn-blue" onclick="addSyllabusRow()" style="margin-bottom:14px;">+ הוסף שיוך</button>
-
-    <div id="syllabus-empty" style="text-align:center;font-size:12px;color:var(--color-text-muted);padding:10px 0;">טרם נוספו שיוכים</div>
-    <table id="syllabus-table" style="width:100%;font-size:13px;border-collapse:collapse;display:none;">
-      <thead>
-        <tr style="border-bottom:1px solid #e2e8f0;">
-          <th style="text-align:right;padding:6px 4px;color:var(--color-text-muted);font-weight:600;">נושא</th>
-          <th style="text-align:right;padding:6px 4px;color:var(--color-text-muted);font-weight:600;">עמוד מיומנות</th>
-          <th style="width:28px;"></th>
-        </tr>
-      </thead>
-      <tbody id="syllabus-tbody"></tbody>
-    </table>
-
-    <hr class="workspace-divider">
+    <div id="macro-resource-list" style="display:grid;gap:10px;"></div>
 
     </div></div>
 
-    <div class="mc-section">
-    <div class="mc-section-head">⚖️ איזון תוכן–מיומנויות<span class="mc-sub">קבע את משקל המיומנויות בהערכת הקורס</span></div>
-    <div class="mc-section-body">
-
-    <div class="field">
-      <label>משקל תוכן ↔ מיומנויות</label>
-      <input type="range" id="balance-slider" min="0" max="100" value="70"
-        style="width:100%;accent-color:#6366f1;cursor:pointer;margin-bottom:8px;"
-        oninput="updateBalancePreview(this.value)">
-    </div>
-    <div class="balance-preview" id="balance-preview">70% תוכן / 30% מיומנויות</div>
-
-    <p style="font-size:11px;font-weight:600;color:var(--color-text-muted);margin-bottom:6px;letter-spacing:.3px;">
-      מפת עמודי מיומנות לפי הסילבוס
-    </p>
-    <div style="text-align:center;margin-bottom:8px;">
-      <svg id="pillar-radar-svg" viewBox="0 0 220 220" width="190" height="190"
-        style="display:block;margin:0 auto;"></svg>
-      <p id="pillar-radar-hint" style="font-size:11px;color:var(--color-text-muted);margin-top:2px;">
-        הוסף שיוכי סילבוס כדי לראות את המפה
-      </p>
-    </div>
-    </div></div>
-  </div>
-
-
-  <div class="panel" data-tab-panel="moodle">
-    <div class="mc-section">
-    <div class="mc-section-head">📥 טעינת יחידות הקורס מMoodle<span class="mc-sub">הדבק JSON מסקרייפר Moodle כדי למפות יחידות ומשאבים לקורס</span></div>
-    <div class="mc-section-body">
-    <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:12px;">
-      <div>
-        <div style="font-size:15px;font-weight:800;color:#0f172a;">Moodle Sync</div>
-        <div style="font-size:12px;color:#64748b;margin-top:4px;">הדבק JSON מסקרייפר Moodle. המערכת תנקה כותרות, תמפה יחידות ומשאבים, ותכין Bookshelf לשיעור.</div>
-      </div>
-      <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...] }]} ' style="margin:0;"></textarea>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-blue" type="button" onclick="importMoodleJson()" style="font-size:12px;padding:7px 14px;">יבא Moodle JSON</button>
-        <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()" style="font-size:12px;padding:7px 14px;">טען מטא-דאטה קיים</button>
-        <span id="moodleImportStatus" style="font-size:12px;color:#475569;"></span>
-      </div>
-
-      <div style="display:grid;gap:8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-          <div style="font-size:14px;font-weight:700;color:#0f172a;">Playlist Manager</div>
-          <div id="playlistSelectionCount" style="font-size:12px;color:#64748b;">0 יחידות נבחרו</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
-          <div class="field" style="margin:0;flex:1;min-width:180px;">
-            <label>Lesson ID יעד</label>
-            <input id="playlistLessonId" type="text" value="unit_01" class="lp-input" style="margin:0;">
-          </div>
-          <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
-          <span id="playlistStatus" style="font-size:12px;color:#475569;"></span>
-        </div>
-        <div id="moodleUnitsList" style="display:grid;gap:8px;">
-          <div class="thread-empty">טרם יובא JSON</div>
-        </div>
-      </div>
-    </div>
-    </div></div>
-  </div>
-
-
-  <!-- ─────────────────────────────────────────────────────────────────────
-       ATS PANEL — Activity Translation System (תרגום יומן הוראה)
-       Contract v1 · UI Host: macro_cockpit · Data: Firebase activity_bank
-       ───────────────────────────────────────────────────────────────────── -->
-  <div class="panel" data-tab-panel="ats">
-    <div class="mc-section">
-    <div class="mc-section-head">📓 תרגום יומן הוראה<span class="mc-sub">המר יומן הוראה לפעילויות מובנות · שמור לבנק הפעילויות · הפעל דרך מיקרו-קוקפיט</span></div>
-    <div class="mc-section-body">
-
-    <!-- Step indicator -->
-    <div id="ats-steps" style="display:flex;gap:0;margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;">
-      <button class="ats-step-btn active" data-step="1" onclick="atsGoStep(1)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#6366f1;color:#fff;border:none;cursor:pointer;font-family:inherit;">1 — הזנת יומן</button>
-      <button class="ats-step-btn" data-step="2" onclick="atsGoStep(2)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:none;cursor:pointer;font-family:inherit;border-right:1px solid #e2e8f0;">2 — בדיקה ואישור</button>
-      <button class="ats-step-btn" data-step="3" onclick="atsGoStep(3)" style="flex:1;padding:10px 6px;font-size:12px;font-weight:700;background:#f1f5f9;color:#64748b;border:none;cursor:pointer;font-family:inherit;border-right:1px solid #e2e8f0;">3 — שמירה לבנק</button>
+    <div style="padding:16px 0 24px;text-align:center;">
+      <button class="btn btn-outline" onclick="switchPhase('course')">&#x2190; חזרה לעיצוב קורס</button>
     </div>
 
-    <!-- ── Step 1: Journal Input ── -->
-    <div id="ats-panel-1">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
-        <div class="field" style="margin:0;">
-          <label>מספר קורס / מזהה קורס</label>
-          <input id="ats-courseId" type="text" class="lp-input" placeholder="לדוג׳: hebrew_advanced_01" style="margin:0;">
-        </div>
-        <div class="field" style="margin:0;">
-          <label>תאריך שיעור</label>
-          <input id="ats-lessonDate" type="date" class="lp-input" style="margin:0;">
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
-        <div class="field" style="margin:0;">
-          <label>כותרת שיעור</label>
-          <input id="ats-lessonTitle" type="text" class="lp-input" placeholder="לדוג׳: חשיבה ביקורתית — שיעור 3" style="margin:0;">
-        </div>
-        <div class="field" style="margin:0;">
-          <label>מצב הוראה</label>
-          <select id="ats-lessonMode" class="lp-input" style="margin:0;">
-            <option value="frontal">פרונטלי</option>
-            <option value="zoom">זום</option>
-            <option value="hybrid">היברידי</option>
-            <option value="asynchronous">אסינכרוני</option>
-            <option value="in_class_digital">בכיתה דיגיטלי</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>טקסט יומן ההוראה <span style="font-weight:400;color:#94a3b8;">(הדבק את היומן כאן)</span></label>
-        <textarea id="ats-rawText" class="lp-textarea" rows="10"
-          placeholder="לדוג׳:&#10;1. קריאה של הטקסט — 10 דקות&#10;2. כתוב תמצית קצרה בזוגות&#10;3. הקלט את התמצית ושתף בפדלט"
-          style="min-height:180px;"></textarea>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button class="btn btn-blue" onclick="atsParse()" id="ats-parse-btn" style="font-size:13px;padding:9px 20px;">🔍 נתח יומן</button>
-        <span id="ats-parse-status" style="font-size:12px;color:#64748b;"></span>
-      </div>
-    </div>
-
-    <!-- ── Step 2: Review Panel ── -->
-    <div id="ats-panel-2" style="display:none;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start;">
-
-        <!-- Left: Raw journal text -->
-        <div>
-          <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">טקסט מקורי</div>
-          <div id="ats-raw-display"
-            style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;
-                   font-size:12px;color:#334155;max-height:520px;overflow-y:auto;white-space:pre-wrap;line-height:1.6;"></div>
-        </div>
-
-        <!-- Center: Candidate list -->
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;">פעילויות שחולצו</div>
-            <span id="ats-cand-count" style="font-size:11px;color:#94a3b8;"></span>
-          </div>
-          <div id="ats-candidates-list" style="display:flex;flex-direction:column;gap:6px;max-height:520px;overflow-y:auto;"></div>
-        </div>
-
-        <!-- Right: Activity editor -->
-        <div>
-          <div style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;">עריכת פעילות</div>
-          <div id="ats-editor-empty" style="color:#94a3b8;font-size:12px;text-align:center;padding:40px 0;">בחר פעילות מהרשימה לעריכה</div>
-          <div id="ats-editor-form" style="display:none;">
-            <div class="field" style="margin-bottom:8px;">
-              <label style="font-size:11px;">כותרת</label>
-              <input id="ats-ed-title" type="text" class="lp-input" style="margin:0;font-size:12px;">
-            </div>
-            <div class="field" style="margin-bottom:8px;">
-              <label style="font-size:11px;">Type ראשי</label>
-              <select id="ats-ed-primaryType" class="lp-input" style="margin:0;font-size:12px;">
-                <option value="reading">reading — קריאה</option>
-                <option value="writing">writing — כתיבה</option>
-                <option value="speaking">speaking — דיבור</option>
-                <option value="listening">listening — האזנה</option>
-                <option value="discussion">discussion — דיון</option>
-                <option value="analysis">analysis — ניתוח</option>
-                <option value="classification">classification — מיון</option>
-                <option value="summarization">summarization — סיכום</option>
-                <option value="paraphrasing">paraphrasing — ניסוח מחדש</option>
-                <option value="question_answering">question_answering — מענה</option>
-                <option value="problem_solving">problem_solving — פתרון בעיה</option>
-                <option value="reflection">reflection — רפלקציה</option>
-                <option value="presentation">presentation — הצגה</option>
-                <option value="research">research — מחקר</option>
-                <option value="ai_interaction">ai_interaction — עבודה עם AI</option>
-                <option value="peer_response">peer_response — תגובה לעמית</option>
-                <option value="collaborative_work">collaborative_work — עבודה שיתופית</option>
-                <option value="submission">submission — הגשה</option>
-              </select>
-            </div>
-            <div class="field" style="margin-bottom:8px;">
-              <label style="font-size:11px;">שלב</label>
-              <select id="ats-ed-stageLabel" class="lp-input" style="margin:0;font-size:12px;">
-                <option value="opening">פתיחה</option>
-                <option value="knowledge_building">בניית ידע</option>
-                <option value="guided_practice">תרגול מונחה</option>
-                <option value="independent_practice">תרגול עצמאי</option>
-                <option value="discussion">דיון</option>
-                <option value="reflection">רפלקציה</option>
-                <option value="closure">סיכום</option>
-                <option value="homework">עבודת בית</option>
-                <option value="unclassified">לא סווג (זמני)</option>
-              </select>
-            </div>
-            <div class="field" style="margin-bottom:8px;">
-              <label style="font-size:11px;">הוראות</label>
-              <textarea id="ats-ed-instructions" class="lp-textarea" rows="3" style="margin:0;font-size:12px;min-height:60px;"></textarea>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
-              <div class="field" style="margin:0;">
-                <label style="font-size:11px;">שיתוף</label>
-                <select id="ats-ed-collaborationMode" class="lp-input" style="margin:0;font-size:12px;">
-                  <option value="individual">יחיד</option>
-                  <option value="pair">זוגות</option>
-                  <option value="small_group">קבוצה קטנה</option>
-                  <option value="whole_class">מליאה</option>
-                  <option value="teacher_student">מורה-תלמיד</option>
-                  <option value="asynchronous_individual">אסינכרוני</option>
-                </select>
-              </div>
-              <div class="field" style="margin:0;">
-                <label style="font-size:11px;">דקות משוערות</label>
-                <input id="ats-ed-minutes" type="number" class="lp-input" min="1" max="180" placeholder="10" style="margin:0;font-size:12px;">
-              </div>
-            </div>
-            <div class="field" style="margin-bottom:8px;">
-              <label style="font-size:11px;">מצב בוט</label>
-              <select id="ats-ed-botMode" class="lp-input" style="margin:0;font-size:12px;">
-                <option value="none">אין</option>
-                <option value="course_support">תמיכת קורס</option>
-                <option value="task_support">תמיכת משימה</option>
-                <option value="gatekeeper">שוער</option>
-                <option value="research_support">מחקר</option>
-                <option value="writing_support">כתיבה</option>
-                <option value="paraphrase_support">ניסוח מחדש</option>
-                <option value="presentation_support">פרזנטציה</option>
-                <option value="reflection_support">רפלקציה</option>
-                <option value="diagnostic_support">אבחון</option>
-              </select>
-            </div>
-            <div class="field" style="margin-bottom:8px;">
-              <label style="font-size:11px;">הערות בדיקה</label>
-              <input id="ats-ed-reviewNotes" type="text" class="lp-input" placeholder="הערה אופציונלית" style="margin:0;font-size:12px;">
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-              <button onclick="atsEditorApprove()" class="btn btn-green" style="font-size:11px;padding:6px 12px;">✓ אשר</button>
-              <button onclick="atsEditorApproveWithEdits()" class="btn btn-blue" style="font-size:11px;padding:6px 12px;">✎ אשר עם עריכות</button>
-              <button onclick="atsEditorReject()" style="font-size:11px;padding:6px 12px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:6px;cursor:pointer;font-family:inherit;">✕ מחק</button>
-            </div>
-            <button onclick="atsEditorSave()" class="btn btn-outline" style="width:100%;font-size:12px;padding:7px;">💾 שמור שינויים</button>
-          </div>
-        </div>
-
-      </div><!-- end review grid -->
-
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px solid #e2e8f0;">
-        <button onclick="atsSaveReview()" class="btn btn-blue" id="ats-save-review-btn" style="font-size:13px;padding:9px 20px;">💾 שמור בדיקה</button>
-        <button onclick="atsGoStep(3)" class="btn btn-green" style="font-size:13px;padding:9px 20px;">← המשך לשמירה בבנק</button>
-        <span id="ats-review-status" style="font-size:12px;color:#64748b;"></span>
-      </div>
-    </div>
-
-    <!-- ── Step 3: Save to Bank ── -->
-    <div id="ats-panel-3" style="display:none;">
-      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:700;color:#065f46;margin-bottom:6px;">✅ פעילויות מאושרות לשמירה</div>
-        <div id="ats-approved-summary" style="font-size:13px;color:#047857;"></div>
-      </div>
-      <div id="ats-approved-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button onclick="atsApproveToBank()" class="btn btn-green" id="ats-bank-btn" style="font-size:13px;padding:9px 22px;">📥 שמור לבנק הפעילויות</button>
-        <button onclick="atsGoStep(2)" class="btn btn-outline" style="font-size:13px;padding:9px 16px;">← חזרה לבדיקה</button>
-        <span id="ats-bank-status" style="font-size:12px;color:#64748b;"></span>
-      </div>
-    </div>
-    </div></div><!-- end mc-section -->
-  </div><!-- end ats panel -->
+  </div><!-- /phase-lesson -->
 
 
-  <!-- RIGHT: Live view (legacy hidden in Macro mode) -->
+  <!-- Live Legacy (hidden — used by micro cockpit live view) -->
   <div class="panel" data-tab-panel="live_legacy">
     <div class="live-header">
       <h2>👥 מצב הכיתה בזמן אמת</h2>
@@ -1584,6 +1784,7 @@ body { background: var(--bg) !important; }
   </div>
 
 </div>
+
 
 <!-- ─── Class Skills Profiler Modal (v8.6) ─── -->
 <div id="class-profiler-overlay" class="class-profiler-overlay" style="display:none;" onclick="handleProfilerOverlayClick(event)">
@@ -4478,7 +4679,76 @@ async function exportSession() {
   }
 }
 
-switchCockpitTab('syllabus');
+// ═══════════════════════════════════════════════════════════════
+// PHASE MANAGER — עיצוב קורס / עיצוב שיעור
+// ═══════════════════════════════════════════════════════════════
+
+let currentPhase = 'course';
+let currentWizardStep = 1;
+const courseStepDone = { 1: false, 2: false, 3: false, 4: false, 5: false };
+
+function switchPhase(phase) {
+  currentPhase = phase;
+  document.getElementById('phase-card-course')?.classList.toggle('active', phase === 'course');
+  document.getElementById('phase-card-lesson')?.classList.toggle('active', phase === 'lesson');
+  const courseBlock = document.getElementById('phase-course');
+  const lessonBlock = document.getElementById('phase-lesson');
+  if (courseBlock) courseBlock.style.display = phase === 'course' ? '' : 'none';
+  if (lessonBlock) lessonBlock.style.display = phase === 'lesson' ? '' : 'none';
+  if (phase === 'lesson') checkLessonGate();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function switchWizardStep(step) {
+  currentWizardStep = step;
+  document.querySelectorAll('.wizard-step-btn').forEach(btn => {
+    const isActive = parseInt(btn.dataset.wstep) === step;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+  for (let i = 1; i <= 5; i++) {
+    const panel = document.getElementById('ws-panel-' + i);
+    if (panel) panel.style.display = i === step ? '' : 'none';
+  }
+}
+
+function markWizardStepDone(step) {
+  courseStepDone[step] = true;
+  const check = document.getElementById('ws-check-' + step);
+  if (check) { check.textContent = '✓'; check.className = 'ws-check done'; }
+  const btn = document.querySelector(`.wizard-step-btn[data-wstep="${step}"]`);
+  if (btn) {
+    const label = btn.getAttribute('aria-label') || '';
+    btn.setAttribute('aria-label', label.replace(', לא הושלם', ', הושלם'));
+  }
+  updateCourseProgress();
+}
+
+function updateCourseProgress() {
+  const done = Object.values(courseStepDone).filter(Boolean).length;
+  const el = document.getElementById('course-phase-progress');
+  if (el) el.textContent = done + ' / 5 הושלמו';
+  const badge = document.getElementById('lesson-phase-status-badge');
+  if (badge && done >= 1) {
+    badge.textContent = 'זמין לעיצוב';
+    badge.style.background = '#d1fae5';
+    badge.style.color = '#065f46';
+  }
+}
+
+function checkLessonGate() {
+  const gate = document.getElementById('lesson-gate');
+  if (!gate) return;
+  const hasActiveContext = !!(macroCourseId || currentLessonId);
+  gate.style.display = hasActiveContext ? 'none' : '';
+  if (!hasActiveContext) {
+    const missingEl = document.getElementById('lesson-gate-missing');
+    if (missingEl) missingEl.textContent = 'עבור לשלב עיצוב הקורס, בחר קורס וטען נתוני ה-Moodle.';
+  }
+}
+
+switchPhase('course');
+switchWizardStep(1);
 syncCockpitNavOffset();
 window.addEventListener('resize', syncCockpitNavOffset);
 renderPreSessionAudioPreview();
