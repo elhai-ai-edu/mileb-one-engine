@@ -946,7 +946,7 @@
     </button>
     <div id="sw-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:6px;min-width:190px;z-index:500;">
       <a href="/student_dashboard.html" onclick="window.MiledAccess?.setPreviewRole?.('student')" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🎓 תצוגת סטודנט</a>
-      <a href="/macro_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧭 Macro Cockpit</a>
+      <a id="roleMacroCockpitLink" href="/macro_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🧭 Macro Cockpit</a>
       <a href="/institution_dashboard.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#1e1b4b;font-size:13px;font-weight:600;">🏛 לוח הנהלה</a>
       <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
@@ -1818,15 +1818,24 @@ const facultyId = sessionStorage.getItem("facultyId") || "f_" + Math.random().to
 sessionStorage.setItem("facultyId", facultyId);
 const LECTURER_AVATAR_KEY = `miled_faculty_avatar_${facultyId}`;
 const cockpitParams = new URLSearchParams(location.search);
-const presetCourseId = cockpitParams.get("courseId") || "";
-const presetUnitId = cockpitParams.get("unitId") || "unit_01";
+const queryCourseId = cockpitParams.get("courseId");
+const queryClassId = cockpitParams.get("classId");
+const queryUnitId = cockpitParams.get("unitId");
+const fallbackCourseId = sessionStorage.getItem("miled_active_course_id") || "";
+const fallbackUnitId = sessionStorage.getItem("miled_active_unit_id") || "";
+const presetCourseId = queryCourseId || queryClassId || fallbackCourseId;
+const presetUnitId = queryUnitId || fallbackUnitId || "unit_01";
+if (queryCourseId || queryClassId) sessionStorage.setItem("miled_active_course_id", presetCourseId);
+if (queryUnitId) sessionStorage.setItem("miled_active_unit_id", presetUnitId);
 
 // ── Preserve courseId context in cross-cockpit navigation link ──
 (function() {
   if (!presetCourseId) return;
   const qs = `?courseId=${encodeURIComponent(presetCourseId)}&unitId=${encodeURIComponent(presetUnitId)}`;
   const btn = document.getElementById('toMicroCockpitBtn');
+  const roleMacro = document.getElementById('roleMacroCockpitLink');
   if (btn) btn.href = `/micro_cockpit.html${qs}`;
+  if (roleMacro) roleMacro.href = `/macro_cockpit.html${qs}`;
 })();
 
 let sessionId   = null;
@@ -2444,6 +2453,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     currentLessonId = selType === 'course' ? selectedValue : null;
 
     if (currentLessonId) {
+      sessionStorage.setItem("miled_active_course_id", currentLessonId);
       loadTemplates(currentLessonId);
       loadCourseMetadataWorkspace(currentLessonId);
     } else {
