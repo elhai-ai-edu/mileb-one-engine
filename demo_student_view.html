@@ -214,6 +214,23 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 @keyframes projectPulse {
   0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.5)} 50%{box-shadow:0 0 0 6px rgba(99,102,241,0)}
 }
+.group-enter-btn {
+  padding: 7px 16px; border-radius: 20px;
+  background: linear-gradient(135deg, #34d399, #059669);
+  color: #fff; border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: none; align-items: center; gap: 6px;
+}
+.group-exit-btn {
+  padding: 7px 16px; border-radius: 20px;
+  background: linear-gradient(135deg, #059669, #065f46);
+  color: #fff; border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: none; align-items: center; gap: 6px;
+}
+.group-mode-badge {
+  display: none; padding: 4px 12px; border-radius: 999px;
+  background: rgba(5,150,105,.2); border: 1px solid #6ee7b7;
+  color: #ecfdf5; font-size: 12px; font-weight: 700;
+}
 .project-exit-btn {
   padding: 7px 16px; border-radius: 20px;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
@@ -230,9 +247,22 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 #lessonScreen[data-mode="lesson"]  .project-enter-btn    { display: flex; }
 #lessonScreen[data-mode="lesson"]  .project-exit-btn     { display: none; }
 #lessonScreen[data-mode="lesson"]  .project-mode-badge   { display: none; }
+#lessonScreen[data-mode="lesson"]  .group-enter-btn      { display: flex; }
+#lessonScreen[data-mode="lesson"]  .group-exit-btn       { display: none; }
+#lessonScreen[data-mode="lesson"]  .group-mode-badge     { display: none; }
 #lessonScreen[data-mode="project"] .project-enter-btn    { display: none; }
 #lessonScreen[data-mode="project"] .project-exit-btn     { display: flex; }
 #lessonScreen[data-mode="project"] .project-mode-badge   { display: flex; align-items: center; }
+#lessonScreen[data-mode="project"] .group-enter-btn      { display: none; }
+#lessonScreen[data-mode="project"] .group-exit-btn       { display: none; }
+#lessonScreen[data-mode="project"] .group-mode-badge     { display: none; }
+#lessonScreen[data-mode="group"]   .project-enter-btn    { display: none; }
+#lessonScreen[data-mode="group"]   .project-exit-btn     { display: none; }
+#lessonScreen[data-mode="group"]   .project-mode-badge   { display: none; }
+#lessonScreen[data-mode="group"]   .group-enter-btn      { display: none; }
+#lessonScreen[data-mode="group"]   .group-exit-btn       { display: flex; }
+#lessonScreen[data-mode="group"]   .group-mode-badge     { display: flex; align-items: center; }
+#lessonScreen[data-mode="group"]   .peer-insight-panel   { display: none !important; }
 #lessonScreen[data-mode="lesson"]  .panel-bookshelf      { display: flex; }
 #lessonScreen[data-mode="lesson"]  .panel-project-stages { display: none; }
 #lessonScreen[data-mode="lesson"]  .sprint-stepper       { display: none; }
@@ -999,8 +1029,11 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     </div>
     <div class="topbar-spacer"></div>
     <div class="project-mode-badge">📁 מצב פרויקט פעיל</div>
+    <div class="group-mode-badge">👥 עבודת צוות פעילה</div>
     <button class="project-exit-btn" onclick="exitProjectMode()">← חזרה לשיעור</button>
-    <button class="project-enter-btn" onclick="enterProjectMode()">📁 מעבר לעבודה על פרויקט גמר</button>
+    <button class="group-exit-btn"   onclick="exitGroupMode()">← חזרה למרחב הכיתתי</button>
+    <button class="project-enter-btn" onclick="enterProjectMode()">📁 מרחב פרויקט גמר</button>
+    <button class="group-enter-btn"   onclick="enterGroupMode()">👥 מרחב עבודת צוות</button>
   </div>
 
   <!-- Broadcast Banner -->
@@ -1125,9 +1158,6 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
           <div class="gm-info"><div class="gm-name">את עצמך</div><div class="gm-role">📋 מנסח/ת</div></div>
           <div class="gm-status online" style="box-shadow:0 0 0 2px #6ee7b7;background:#059669;"></div>
         </div>
-      </div>
-      <div style="padding:12px;border-top:1px solid var(--line);">
-        <button class="sub-btn secondary" style="width:100%;font-size:12px;" onclick="exitGroupMode()">← חזרה למליאה</button>
       </div>
     </aside>
 
