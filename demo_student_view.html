@@ -254,7 +254,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
 /* Layout */
 .l-layout {
-  display: grid; grid-template-columns: 260px 1fr 380px;
+  display: grid; grid-template-columns: 240px 1.5fr 320px;
   gap: 0; flex: 1; overflow: hidden; min-height: 0;
 }
 @media (max-width: 1100px) { .l-layout { grid-template-columns: 1fr 1fr; } }
@@ -698,7 +698,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       <div class="context-rail" id="contextRail">
         <span class="ctx-crumb">יחידה 1</span>
         <span class="ctx-sep">›</span>
-        <span class="ctx-crumb">ספרינט 2</span>
+        <span class="ctx-crumb">שלב 2</span>
         <span class="ctx-sep">›</span>
         <span class="ctx-current" id="ctxCurrentLabel">ניתוח טקסט</span>
       </div>
@@ -711,7 +711,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
       <!-- Sprint Stepper (project mode) -->
       <div class="sprint-stepper">
-        <div class="sprint-stepper-label">⚡ ספרינטים — שלב 2</div>
+        <div class="sprint-stepper-label">⚡ שלבי ביצוע — שלב 2</div>
         <div class="sprint-steps">
           <div class="sprint-step">
             <div class="sprint-bubble done" onclick="selectSprint(1)">✓</div>
@@ -752,7 +752,10 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
           <div class="activity-empty-icon">⏳</div>
           <div class="activity-empty-title">ממתין להנחיה מהמרצה</div>
           <div class="activity-empty-sub">השיעור פתוח, אבל עדיין לא הוגדרה פעילות.<br>ניתן לעיין בחומרים בינתיים.</div>
-          <div class="activity-empty-hint">💬 ניתן לשאול את הבוט שאלות חופשיות</div>
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;justify-content:center;">
+            <button class="sub-btn secondary" onclick="document.querySelector('.bookshelf-section').scrollIntoView({behavior:'smooth'})" style="font-size:12px;padding:7px 14px;">📚 עיין בחומרים</button>
+            <button class="sub-btn secondary" onclick="document.getElementById('chatInput').focus()" style="font-size:12px;padding:7px 14px;">💬 שאל את הבוט</button>
+          </div>
         </div>
 
         <!-- Activity Card -->
@@ -779,13 +782,17 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
               </div>
             </div>
           </div>
+          <div style="padding:10px 18px 14px;display:flex;align-items:center;gap:8px;background:#fafbff;border-top:1px solid var(--line);">
+            <span style="font-size:12px;color:var(--muted);">צריך עזרה?</span>
+            <span style="font-size:12px;color:#1d4ed8;font-weight:700;">השתמש בבוט מימין ←</span>
+          </div>
         </div>
 
       </div><!-- /activity-focus-area -->
 
       <!-- WAF Stream -->
       <div class="waf-section">
-        <div class="waf-section-head">💬 תקשורת עם המרצה</div>
+        <div class="waf-section-head">📩 עדכונים ושאלות למרצה</div>
         <div class="comm-stream" id="commStream">
           <div class="waf-msg lecturer">
             <div class="waf-msg-text">הפעלתי את פעילות הניתוח — יש לכם 10 דקות. אפשר להשתמש בבוט לעזרה 👍</div>
