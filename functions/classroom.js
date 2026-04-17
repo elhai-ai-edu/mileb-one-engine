@@ -40,6 +40,8 @@ function err(msg){
 
 }
 
+const ALLOWED_LIVE_PHASES = ["listening", "interactive", "solo", "pairs", "plenary"];
+
 function normalizeAvatar(value){
   const avatar = String(value || "").trim();
   if(!avatar.startsWith("data:image/")) return null;
@@ -1705,8 +1707,10 @@ export async function handler(event){
     const recordingUrl = String(body.recordingUrl || "").trim();
     if(recordingUrl && !recordingUrl.startsWith("https://")) return err("recordingUrl must be a valid HTTPS URL (e.g., https://zoom.us/rec/...)");
 
+    const recordingUnitId = String(body.unitId || "").trim() || null;
     const update = {
       recordingUrl: recordingUrl || null,
+      recordingUnitId,
       status: "ended",
       recordingPublishedAt: Date.now(),
       updatedAt: Date.now(),
@@ -1725,7 +1729,7 @@ export async function handler(event){
       console.log(`[meeting_recording_save] propagated to ${activeRTargets.size} active session(s) for ${courseId}`);
     }
 
-    return ok({ ok:true, courseId, recordingUrl: recordingUrl || null });
+    return ok({ ok:true, courseId, recordingUrl: recordingUrl || null, recordingUnitId });
   }
 
   if(!sessionId) return err("sessionId required");
@@ -1768,6 +1772,10 @@ export async function handler(event){
     if(body.doorStatus !== undefined) updates.door_status = String(body.doorStatus || "auto").trim().toLowerCase();
     if(body.lobbyMode !== undefined) updates.lobby_mode = !!body.lobbyMode;
     if(body.clearPushedResource) updates.pushed_resource = null;
+    if(body.livePhase !== undefined) {
+      const phase = String(body.livePhase || "").trim().toLowerCase();
+      updates.live_phase = ALLOWED_LIVE_PHASES.includes(phase) ? phase : null;
+    }
 
     await sessionRef.child("state").update(updates);
     return ok({ ok:true, state: updates });
@@ -2343,10 +2351,12 @@ export async function handler(event){
     const { title, instructions, step } = body;
     if(!title) return err("title required");
     const now = Date.now();
+    const rawPhase = String(body.suggestedPhase || "").trim().toLowerCase();
     const taskData = {
       title,
       instructions: instructions || "",
       step: step || 1,
+      suggestedPhase: ALLOWED_LIVE_PHASES.includes(rawPhase) ? rawPhase : null,
       pushedAt: now
     };
     await sessionRef.update({ active_task: taskData });
