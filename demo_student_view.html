@@ -74,14 +74,23 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 .w-hero h1 { color: var(--navy); font-size: 28px; font-weight: 800; margin-bottom: 8px; }
 .w-hero p  { color: var(--muted); font-size: 15px; }
 .w-project-link {
-  display: inline-flex; align-items: center; gap: 6px; margin-top: 16px;
+  display: inline-flex; align-items: center; gap: 6px;
   padding: 9px 20px; border-radius: 999px;
   background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
   border: 1.5px solid #2dd4bf; color: #0f766e;
   font-size: 13px; font-weight: 700; text-decoration: none;
-  transition: all .15s; cursor: pointer;
+  transition: all .15s; cursor: pointer; font-family: inherit;
 }
 .w-project-link:hover { background: linear-gradient(135deg,#ccfbf1,#99f6e4); box-shadow: 0 3px 12px rgba(13,148,136,.2); }
+.w-team-project-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 20px; border-radius: 999px;
+  background: linear-gradient(135deg,#eef2ff,#e0e7ff);
+  border: 1.5px solid #818cf8; color: #4338ca;
+  font-size: 13px; font-weight: 700; text-decoration: none;
+  transition: all .15s; cursor: pointer; font-family: inherit;
+}
+.w-team-project-link:hover { background: linear-gradient(135deg,#e0e7ff,#c7d2fe); box-shadow: 0 3px 12px rgba(99,102,241,.2); }
 .w-pulse {
   width: 60px; height: 60px; border-radius: 50%;
   background: rgba(29,78,216,.15); margin: 0 auto 18px;
@@ -1234,9 +1243,14 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     </div>
     <h1>ברוכים הבאים לכיתה</h1>
     <p>המרצה עוד לא פתח את השיעור — בינתיים, בואו נתחמם 🧠</p>
-    <a href="/project_workspace.html?courseId=he_a2_arabic" class="w-project-link" onclick="return false;" title="נפתח בקרוב">
-      📁 עבודה עצמאית על פרויקט הגמר ←
-    </a>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+      <a href="/project_workspace.html?courseId=he_a2_arabic" class="w-project-link" onclick="return false;" title="נפתח בקרוב">
+        📁 פרויקט הגמר האישי שלי ←
+      </a>
+      <button class="w-team-project-link" onclick="enterTeamProject()">
+        👥 פרויקט הצוות המתמשך ←
+      </button>
+    </div>
   </div>
   <div class="w-grid">
     <div class="w-card">
@@ -1860,7 +1874,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 ════════════════════════════════════════════ -->
 <div id="teamProjectScreen" class="screen">
   <div class="tp-topbar">
-    <button class="tp-topbar-back" onclick="exitTeamProject()">← חזרה לשיעור</button>
+    <button class="tp-topbar-back" onclick="exitTeamProject()">← חזרה להמתנה</button>
     <div class="tp-topbar-title">
       <span style="color:rgba(255,255,255,.45);font-size:11px;letter-spacing:1px;display:block;margin-bottom:1px;">פרויקט צוות מתמשך</span>
       עברית מתקדמים א׳ — אופטיקה
@@ -2106,7 +2120,6 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <div class="sep"></div>
   <button class="demo-btn indigo" onclick="demoEnterProject()">📁 מצב פרויקט</button>
   <button class="demo-btn" style="background:#059669;color:#fff;" onclick="demoEnterGroup()">👥 מצב צוות</button>
-  <button class="demo-btn" style="background:#4f46e5;color:#fff;" onclick="enterTeamProject()">📂 פרויקט צוות</button>
   <div class="sep"></div>
   <button class="demo-btn red"    onclick="toggleRecall()">🚨 Recall</button>
   <button class="demo-btn amber"  onclick="toggleBroadcast()">📡 Broadcast</button>
@@ -2369,7 +2382,7 @@ function submitBaton() {
   if (!ta.value.trim()) { ta.style.borderColor = '#ef4444'; return; }
   ta.style.borderColor = '';
   document.getElementById('batonModal').classList.remove('open');
-  MiledState.go('lesson_empty');
+  MiledState.go('waiting');
 }
 
 /* ════════════════ Project Mode ════════════════ */
