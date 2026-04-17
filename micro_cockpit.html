@@ -3562,6 +3562,8 @@ async function setLivePhase(phase) {
     if (res?.ok) {
       const phaseLabels = { listening:'🎧 מקשיבים', interactive:'💬 דיון', solo:'✍️ עצמאי', pairs:'👥 זוגות', plenary:'🏛️ מליאה' };
       const t = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      // phaseLabels[phase] covers all 5 valid values; the `|| phase` fallback
+      // handles the empty-string clear case and is unreachable for validated phases.
       statusEl.textContent = phase
         ? `${phaseLabels[phase] || phase} (עודכן ב-${t})`
         : `✅ מצב נוקה ב-${t}`;

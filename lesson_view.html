@@ -1875,6 +1875,7 @@
       const showJoin = !!(liveMeeting.joinUrl && !isEnded);
       if (joinBtn) {
         joinBtn.style.display = showJoin ? "" : "none";
+        joinBtn.disabled = !showJoin;
         joinBtn.dataset.joinUrl = showJoin ? liveMeeting.joinUrl : "";
       }
 
@@ -1910,8 +1911,9 @@
       const activeTask = lessonData?.activeTask || null;
       if (activeTaskEl && activeTask?.title && !isEnded) {
         activeTaskEl.style.display = "";
-        const phaseHint = activeTask.suggestedPhase && phaseLabels[activeTask.suggestedPhase]
-          ? ` <span style="font-size:11px;color:#64748b;">(${phaseLabels[activeTask.suggestedPhase]})</span>` : "";
+        const taskPhaseLabel = phaseLabels[activeTask.suggestedPhase] || null;
+        const phaseHint = taskPhaseLabel
+          ? ` <span style="font-size:11px;color:#64748b;">(${taskPhaseLabel})</span>` : "";
         activeTaskEl.innerHTML = `<strong>📝 עכשיו:</strong> ${escapeHtml(activeTask.title)}${phaseHint}`;
       } else if (activeTaskEl) {
         activeTaskEl.style.display = "none";
@@ -1933,6 +1935,7 @@
       const btn = document.getElementById("liveMeetingBarJoinBtn");
       const url = btn?.dataset?.joinUrl || "";
       if (!url) return;
+      // Record when the student opened Zoom; used for future analytics and post-meeting UX
       localStorage.setItem("miled_zoom_opened_at", String(Date.now()));
       window.open(url, "_blank", "noopener,noreferrer,width=1200,height=800");
     }
@@ -2182,8 +2185,11 @@
           renderSprintStepper();
         }
         // Re-render live meeting bar when phase or active task changes
-        const livePhaseChanged = live.state?.live_phase !== undefined && live.state.live_phase !== prevLivePhase;
-        const activeTaskChanged = live.active_task !== undefined && live.active_task !== prevActiveTask;
+        // Use pushedAt timestamp for task comparison to avoid reference-equality false positives
+        const livePhaseChanged = live.state?.live_phase !== prevLivePhase;
+        const prevTaskTs = prevActiveTask?.pushedAt ?? null;
+        const nextTaskTs = live.active_task?.pushedAt ?? null;
+        const activeTaskChanged = live.active_task !== undefined && nextTaskTs !== prevTaskTs;
         if (livePhaseChanged || activeTaskChanged) {
           renderLiveMeetingBar(lessonData.liveMeeting);
         }
