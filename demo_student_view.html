@@ -790,6 +790,201 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 }
 .my-contrib-label { font-size: 12px; font-weight: 800; color: var(--emerald-dark); }
 
+/* ── Call teacher ── */
+.call-teacher-btn {
+  font-size: 11px; font-weight: 800; padding: 5px 11px; border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12);
+  color: #fff; cursor: pointer; font-family: inherit; transition: all .14s;
+}
+.call-teacher-btn:hover { background: rgba(255,255,255,.22); }
+.call-teacher-btn.called { background: #dc2626; border-color: #fca5a5; animation: callPulse 1s infinite; }
+@keyframes callPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+/* ── Master draft ── */
+.master-draft {
+  border: 1.5px dashed #6ee7b7; border-radius: 10px; padding: 10px 12px;
+  background: #f0fdf4; margin-top: 6px;
+}
+.master-draft-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.master-draft-title { font-size: 12px; font-weight: 800; color: var(--emerald-dark); }
+.draft-author-badge {
+  font-size: 10px; background: #d1fae5; border: 1px solid #6ee7b7;
+  border-radius: 999px; padding: 2px 8px; color: #065f46;
+}
+.master-draft-body {
+  font-size: 12px; color: var(--navy); line-height: 1.6; padding: 8px;
+  background: #fff; border-radius: 8px; border: 1px solid #a7f3d0; min-height: 36px;
+}
+.challenge-btn {
+  font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid #fbbf24; background: #fefce8; color: #854d0e;
+  cursor: pointer; font-family: inherit; margin-top: 7px;
+}
+
+/* ── Veto panel ── */
+.veto-panel {
+  margin: 0 20px 14px; padding: 14px 16px;
+  background: #fff; border: 2px solid #6ee7b7; border-radius: 12px; display: none;
+}
+.veto-head { font-size: 13px; font-weight: 800; color: var(--emerald-dark); margin-bottom: 10px; }
+.veto-chips { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.veto-chip {
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+  border-radius: 8px; border: 1px solid var(--line); background: #f8fafc;
+  font-size: 12px; transition: all .35s;
+}
+.veto-chip.approved { background: #f0fdf4; border-color: #86efac; }
+.vc-avatar {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff;
+}
+.vc-name { flex: 1; font-weight: 700; }
+.vc-status { font-size: 11px; color: var(--muted); }
+.veto-chip.approved .vc-status { color: #15803d; }
+.veto-final-btn {
+  width: 100%; padding: 9px; border-radius: 8px; border: none;
+  background: #e2e8f0; color: var(--muted); font-size: 13px; font-weight: 800;
+  cursor: not-allowed; font-family: inherit; transition: all .35s;
+}
+.veto-final-btn.ready { background: linear-gradient(135deg,#34d399,#059669); color: #fff; cursor: pointer; }
+.veto-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+
+/* ════════════════ Team Project Screen ════════════════ */
+#teamProjectScreen { display: none; min-height: calc(100vh - 52px); flex-direction: column; }
+#teamProjectScreen.active { display: flex; }
+.tp-topbar {
+  background: linear-gradient(90deg,#0f172a 0%,#312e81 55%,#1e1b4b 100%);
+  border-bottom: 2px solid #4f46e5;
+  padding: 12px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+}
+.tp-topbar-back {
+  color: #a5b4fc; font-size: 13px; font-weight: 700; background: none;
+  border: 1px solid rgba(165,180,252,.3); cursor: pointer; font-family: inherit;
+  padding: 6px 12px; border-radius: 999px; transition: all .14s;
+}
+.tp-topbar-back:hover { background: rgba(165,180,252,.12); }
+.tp-topbar-title { color: #fff; font-size: 16px; font-weight: 800; flex: 1; text-align: center; }
+.tp-topbar-stage {
+  color: #a5b4fc; font-size: 12px; font-weight: 700;
+  background: rgba(165,180,252,.15); border: 1px solid rgba(165,180,252,.3);
+  border-radius: 999px; padding: 4px 12px;
+}
+.tp-layout {
+  display: grid; grid-template-columns: 200px 1fr 280px;
+  flex: 1; overflow: hidden; min-height: 0;
+}
+/* TP Left */
+.tp-members { border-left: 1px solid var(--line); overflow-y: auto; background: #fafbff; display: flex; flex-direction: column; }
+.tp-members-head {
+  padding: 13px 14px 10px; font-size: 13px; font-weight: 800; color: #312e81;
+  border-bottom: 1px solid var(--line); background: linear-gradient(180deg,#eef2ff,#fafbff); flex-shrink: 0;
+}
+.tp-member-card { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; gap: 8px; }
+.tp-member-card.me { background: #eef2ff; }
+.tp-mem-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff;
+}
+.tp-mem-info { flex: 1; min-width: 0; }
+.tp-mem-name { font-size: 12px; font-weight: 800; color: var(--navy); }
+.tp-mem-role { font-size: 10px; color: #6366f1; }
+.tp-mem-last { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.tp-mem-count {
+  font-size: 10px; background: #eef2ff; border: 1px solid #c7d2fe;
+  border-radius: 999px; padding: 2px 7px; color: #4f46e5; font-weight: 700; flex-shrink: 0;
+}
+.tp-baton-btn {
+  margin: auto 12px 12px; padding: 9px 14px; border-radius: 10px;
+  border: 1.5px solid #c7d2fe; background: #eef2ff; color: #4338ca;
+  font-size: 12px; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: all .14s; text-align: center; line-height: 1.5;
+}
+.tp-baton-btn:hover { background: #e0e7ff; }
+/* TP Center */
+.tp-center { display: flex; flex-direction: column; overflow: hidden; }
+.tp-tabs {
+  display: flex; border-bottom: 2px solid var(--line); background: #fff; flex-shrink: 0;
+}
+.tp-tab {
+  padding: 11px 16px; font-size: 13px; font-weight: 700; color: var(--muted);
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  border-bottom: 2.5px solid transparent; margin-bottom: -2px; transition: all .14s;
+}
+.tp-tab.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+.tp-tab-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.tp-tab-content.hidden { display: none; }
+/* Document sections */
+.doc-section { margin-bottom: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.doc-section-attr {
+  display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+  background: #f8fafc; border-bottom: 1px solid var(--line); font-size: 11px;
+}
+.doc-attr-avatar {
+  width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 9px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.doc-attr-name { font-weight: 700; color: var(--navy); }
+.doc-attr-time { color: var(--muted); margin-right: auto; }
+.doc-section-text { padding: 12px 14px; font-size: 13px; color: var(--navy); line-height: 1.7; }
+.doc-my-input {
+  padding: 14px 16px; background: #eef2ff;
+  border: 2px dashed #a5b4fc; border-radius: 10px; margin-top: 4px;
+}
+.doc-my-input-label { font-size: 12px; font-weight: 800; color: #4338ca; margin-bottom: 6px; }
+/* Sources / tasks */
+.source-card { padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+.source-title { font-size: 13px; font-weight: 700; color: var(--blue); }
+.source-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.task-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
+.task-check {
+  width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--line); flex-shrink: 0;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.task-check.done { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.task-text  { font-size: 13px; color: var(--navy); flex: 1; }
+.task-owner { font-size: 11px; color: var(--muted); }
+/* TP Right */
+.tp-right { border-right: 1px solid var(--line); display: flex; flex-direction: column; background: #fff; }
+.tp-digest { padding: 12px 14px; background: linear-gradient(180deg,#eef2ff,#f5f3ff); border-bottom: 1px solid #c7d2fe; flex-shrink: 0; }
+.tp-digest-head { font-size: 12px; font-weight: 800; color: #4338ca; margin-bottom: 8px; }
+.tp-digest-item {
+  display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: var(--navy);
+  margin-bottom: 4px; padding: 4px 7px; background: #fff; border-radius: 6px; border: 1px solid #e0e7ff;
+}
+.tp-digest-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 8000;
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 20px; width: 440px; max-width: 90vw;
+  padding: 26px 26px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  animation: modalPop .3s cubic-bezier(.34,1.2,.64,1);
+}
+@keyframes modalPop { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+.modal-head { font-size: 18px; font-weight: 900; color: #1e1b4b; margin-bottom: 4px; }
+.modal-sub  { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+.digest-change {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 7px;
+}
+.digest-change-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff;
+}
+.digest-change-text { font-size: 13px; color: var(--navy); flex: 1; }
+.digest-change-time { font-size: 11px; color: var(--muted); }
+.modal-primary-btn {
+  width: 100%; padding: 12px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg,#6366f1,#4f46e5); color: #fff;
+  font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit;
+}
+.modal-primary-btn:hover { opacity: .9; }
+
 /* Group bot panel header */
 .group-bot-direct {
   padding: 12px 14px; border-bottom: 1px solid var(--line);
@@ -1245,7 +1440,10 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       <div class="group-task-area" id="groupTaskArea">
         <div class="group-task-head">
           <div class="group-task-title">משימת צוות — השוואת גישות ניתוח</div>
-          <div class="group-timer" id="groupTimer">⏱ 10:00</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="call-teacher-btn" onclick="callTeacher()">⚡ קרא/י למרצה</button>
+            <div class="group-timer" id="groupTimer">⏱ 10:00</div>
+          </div>
         </div>
         <div class="group-task-card">
           <div class="group-task-label">מה הקבוצה צריכה לעשות</div>
@@ -1275,6 +1473,47 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
               <button class="sub-btn secondary" onclick="submitGroupWork()">הגישו תשובת קבוצה</button>
             </div>
           </div>
+
+          <!-- Master draft (role-gated: מנסח writes, others can challenge) -->
+          <div class="master-draft" id="masterDraft">
+            <div class="master-draft-head">
+              <span class="master-draft-title">📄 טיוטת הצוות הסופית</span>
+              <span class="draft-author-badge">✍️ ירין כ. — מנסח/ת</span>
+            </div>
+            <div class="master-draft-body" id="masterDraftBody">
+              <span style="font-style:italic;color:var(--muted);">הטיוטה הסופית תנוסח כאן ע"י ירין לאחר קריאת התרומות...</span>
+            </div>
+            <button class="challenge-btn" onclick="addChallenge()">🧐 הוסיפי הערה ביקורתית</button>
+          </div>
+        </div>
+
+        <!-- Veto panel (shown after clicking "הגישו") -->
+        <div class="veto-panel" id="vetoPanel">
+          <div class="veto-head">⏳ ממתין לאישור כל הצוות</div>
+          <div class="veto-chips">
+            <div class="veto-chip" id="vc-yarin">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+              <span class="vc-name">ירין כ.</span>
+              <span class="vc-status">⏳ ממתין/ה</span>
+            </div>
+            <div class="veto-chip" id="vc-noor">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+              <span class="vc-name">נור מ.</span>
+              <span class="vc-status">⏳ ממתין/ה</span>
+            </div>
+            <div class="veto-chip" id="vc-amir">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+              <span class="vc-name">אמיר ש.</span>
+              <span class="vc-status">⏳ ממתין/ה</span>
+            </div>
+            <div class="veto-chip approved" id="vc-me">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#059669,#065f46);">את</div>
+              <span class="vc-name">את עצמך</span>
+              <span class="vc-status">✅ אישרת</span>
+            </div>
+          </div>
+          <button class="veto-final-btn" id="vetoFinalBtn" disabled onclick="finalSubmitGroup()">הגשה סופית (ממתין לאישורים...)</button>
+          <div class="veto-hint" id="vetoHint">הגשה תתאפשר לאחר שכולם יאשרו</div>
         </div>
       </div>
 
@@ -1616,6 +1855,246 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
 </div><!-- /lessonScreen -->
 
+<!-- ═══════════════════════════════════════════
+     TEAM PROJECT SCREEN  (async, multi-session)
+════════════════════════════════════════════ -->
+<div id="teamProjectScreen" class="screen">
+  <div class="tp-topbar">
+    <button class="tp-topbar-back" onclick="exitTeamProject()">← חזרה לשיעור</button>
+    <div class="tp-topbar-title">
+      <span style="color:rgba(255,255,255,.45);font-size:11px;letter-spacing:1px;display:block;margin-bottom:1px;">פרויקט צוות מתמשך</span>
+      עברית מתקדמים א׳ — אופטיקה
+    </div>
+    <div class="tp-topbar-stage">שלב 2 / 7</div>
+  </div>
+
+  <div class="tp-layout">
+    <!-- LEFT: async member status -->
+    <aside class="tp-members">
+      <div class="tp-members-head">👥 הצוות שלנו</div>
+      <div class="tp-member-card">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">ירין כ.</div>
+          <div class="tp-mem-role">✍️ מנסח/ת</div>
+          <div class="tp-mem-last">לפני 12 דקות</div>
+        </div>
+        <div class="tp-mem-count">5 קטעים</div>
+      </div>
+      <div class="tp-member-card">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">נור מ.</div>
+          <div class="tp-mem-role">🔍 חוקר/ת</div>
+          <div class="tp-mem-last">לפני 2 שעות</div>
+        </div>
+        <div class="tp-mem-count">3 מקורות</div>
+      </div>
+      <div class="tp-member-card">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">אמיר ש.</div>
+          <div class="tp-mem-role">🎤 מציג/ה</div>
+          <div class="tp-mem-last">אתמול 20:15</div>
+        </div>
+        <div class="tp-mem-count">1 קטע</div>
+      </div>
+      <div class="tp-member-card me">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">את</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">את (ריכוז)</div>
+          <div class="tp-mem-role">📋 מרכז/ת</div>
+          <div class="tp-mem-last" style="color:#4f46e5;font-weight:700;">כאן עכשיו</div>
+        </div>
+        <div class="tp-mem-count">2 קטעים</div>
+      </div>
+      <button class="tp-baton-btn" onclick="showBatonModal()">
+        📌 העבירי מקל<br>
+        <span style="font-size:10px;font-weight:600;opacity:.7;">הצהירי מה השלמת היום</span>
+      </button>
+    </aside>
+
+    <!-- CENTER: tabbed document -->
+    <section class="tp-center">
+      <div class="tp-tabs">
+        <button class="tp-tab active" onclick="switchTpTab(this,'doc')">📄 מסמך</button>
+        <button class="tp-tab" onclick="switchTpTab(this,'sources')">📚 מקורות</button>
+        <button class="tp-tab" onclick="switchTpTab(this,'tasks')">✅ משימות</button>
+      </div>
+
+      <div class="tp-tab-content" id="tpTabDoc">
+        <div class="doc-section">
+          <div class="doc-section-attr">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+            <span class="doc-attr-name">ירין כ.</span>
+            <span class="doc-attr-time">לפני 12 דקות</span>
+          </div>
+          <div class="doc-section-text"><strong>פסקה 1 — הגישה הרטורית:</strong><br>
+            הגישה הרטורית מתמקדת בדרך שבה טקסט משפיע על הקורא. הפסקה נפתחת בשאלה רטורית שנועדה לזמן את הקורא לפנות פנימה לפני שהוא מתנגד — אסטרטגיה של פאתוס לפני לוגוס.</div>
+        </div>
+        <div class="doc-section">
+          <div class="doc-section-attr">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span>
+            <span class="doc-attr-time">לפני 2 שעות</span>
+          </div>
+          <div class="doc-section-text"><strong>פסקה 2 — הגישה התוכנית:</strong><br>
+            הגישה התוכנית שואלת "מה הפסקה אומרת?" הטענה המרכזית: "אנשים נוטים לתעדף מידע חדש על פני ידע קיים." ההנמקה ליניארית: הצגת בעיה → ראיות → מסקנה.</div>
+        </div>
+        <div class="doc-section">
+          <div class="doc-section-attr">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">את</div>
+            <span class="doc-attr-name">את עצמך</span>
+            <span class="doc-attr-time">3 ימים אחורה</span>
+          </div>
+          <div class="doc-section-text"><strong>פסקה 3 — הסינתזה:</strong><br>
+            שתי הגישות משלימות. הרטורית מסבירה <em>למה</em> הקורא מושפע; התוכנית מסבירה <em>מה</em> הקורא מבין. טקסט איכותי פועל על שני המישורים בו-זמנית.</div>
+        </div>
+        <div class="doc-my-input" id="tpMyInputBlock">
+          <div class="doc-my-input-label">✏️ הוסיפי קטע חדש — 📋 ריכוז</div>
+          <textarea class="sub-ta" id="tpMyContrib" placeholder="כתבי את הקטע שלך..." style="min-height:70px;"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="sub-btn primary" onclick="addTpContrib()" style="background:linear-gradient(135deg,#818cf8,#4f46e5);">+ הוסיפי קטע</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tp-tab-content hidden" id="tpTabSources">
+        <div class="source-card">
+          <div class="doc-section-attr" style="padding:0 0 8px;background:none;border:none;">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span><span class="doc-attr-time">אתמול</span>
+          </div>
+          <div class="source-title">Aristotle, Rhetoric — Book I, Chapter 2</div>
+          <div class="source-meta">על שלושת יסודות השכנוע: אתוס, פאתוס, לוגוס</div>
+        </div>
+        <div class="source-card">
+          <div class="doc-section-attr" style="padding:0 0 8px;background:none;border:none;">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span><span class="doc-attr-time">לפני 2 שעות</span>
+          </div>
+          <div class="source-title">Fahnestock & Secor (2004) — A Rhetoric of Argument</div>
+          <div class="source-meta">הבחנה בין ניתוח סמנטי לניתוח רטורי של טקסטים אקדמיים</div>
+        </div>
+        <div class="source-card">
+          <div class="doc-section-attr" style="padding:0 0 8px;background:none;border:none;">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span><span class="doc-attr-time">לפני 2 שעות</span>
+          </div>
+          <div class="source-title">מדריך לכתיבה אקדמית — אוניברסיטת בן-גוריון (2022)</div>
+          <div class="source-meta">פרק 3: זיהוי טענות מרכזיות בטקסטים מורכבים</div>
+        </div>
+        <div class="doc-my-input" style="margin-top:8px;">
+          <div class="doc-my-input-label">📎 הוסיפי מקור</div>
+          <input type="text" class="sub-ta" placeholder="שם המקור, מחבר, שנה..." style="padding:8px 12px;">
+          <div style="margin-top:8px;"><button class="sub-btn primary" style="background:linear-gradient(135deg,#818cf8,#4f46e5);">+ הוסיפי מקור</button></div>
+        </div>
+      </div>
+
+      <div class="tp-tab-content hidden" id="tpTabTasks">
+        <div class="task-item">
+          <div class="task-check done">✓</div>
+          <div class="task-text">לנסח את הגדרת הגישה הרטורית</div>
+          <div class="task-owner">ירין</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check done">✓</div>
+          <div class="task-text">לאתר 3 מקורות אקדמיים</div>
+          <div class="task-owner">נור</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+          <div class="task-text">לכתוב את פסקת הסינתזה</div>
+          <div class="task-owner">את</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+          <div class="task-text">להכין סיכום מצגת — 5 שקפים</div>
+          <div class="task-owner">אמיר</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+          <div class="task-text">לבדוק את כל המסמך יחד — שיעור הבא</div>
+          <div class="task-owner">כולם</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: digest + bot -->
+    <aside class="tp-right">
+      <div class="tp-digest">
+        <div class="tp-digest-head">⚡ מה השתנה</div>
+        <div class="tp-digest-item">
+          <div class="tp-digest-dot" style="background:#34d399;"></div>
+          <span>ירין עדכנ/ה 2 פסקאות — לפני 12 דק'</span>
+        </div>
+        <div class="tp-digest-item">
+          <div class="tp-digest-dot" style="background:#6ee7b7;"></div>
+          <span>נור הוסיפ/ה מקור חדש — לפני שעתיים</span>
+        </div>
+        <div class="tp-digest-item">
+          <div class="tp-digest-dot" style="background:#94a3b8;"></div>
+          <span>אמיר עיין/ה — אתמול, ללא עדכון</span>
+        </div>
+      </div>
+      <div class="project-bot-direct" style="display:flex;background:linear-gradient(180deg,#eef2ff,#f5f3ff);border-bottom:1px solid #c7d2fe;">
+        <div class="project-bot-icon" style="background:linear-gradient(135deg,#818cf8,#4f46e5);">🤖</div>
+        <div>
+          <div class="project-bot-name" style="color:#312e81;">בוט הפרויקט</div>
+          <div class="project-bot-sub" style="color:#6366f1;">מלווה את תהליך הסינתזה</div>
+        </div>
+      </div>
+      <div class="chat-window" id="tpChatWindow">
+        <div class="chat-bubble bot" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-color:#c7d2fe;">
+          ברוכה השבה! ירין הוסיפ/ה 2 פסקאות מאז הביקור האחרון שלך. 📚<br>
+          <strong>שאלה לחשיבה:</strong> איך תקשרי את הקטעים שלהם לסינתזה שלך?
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="tpChatInput" placeholder="שאלי את הבוט..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendTpChat();}">
+        <button class="chat-send" onclick="sendTpChat()">שלח</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══ AI Digest Modal ══ -->
+<div class="modal-overlay" id="digestModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-head">👋 ברוכה השבה!</div>
+    <div class="modal-sub">הנה מה שהשתנה מאז הביקור האחרון שלך (לפני יומיים):</div>
+    <div class="digest-change">
+      <div class="digest-change-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+      <div class="digest-change-text">ירין הוסיפ/ה 2 פסקאות לגישה הרטורית</div>
+      <div class="digest-change-time">12 דק'</div>
+    </div>
+    <div class="digest-change">
+      <div class="digest-change-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+      <div class="digest-change-text">נור הוסיפ/ה מקור אקדמי חדש</div>
+      <div class="digest-change-time">2 שע'</div>
+    </div>
+    <div class="digest-change" style="margin-bottom:16px;">
+      <div class="digest-change-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+      <div class="digest-change-text">אמיר עיין/ה ולא עדכנ/ה — סטטוס: "ממתין"</div>
+      <div class="digest-change-time">אתמול</div>
+    </div>
+    <button class="modal-primary-btn" onclick="closeDigestModal()">✓ הבנתי — כניסה לפרויקט</button>
+  </div>
+</div>
+
+<!-- ══ Pass-the-Baton Modal ══ -->
+<div class="modal-overlay" id="batonModal">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-head">📌 העברת מקל</div>
+    <div class="modal-sub">לפני יציאה — השאירי סטטוס קצר לחברי הצוות</div>
+    <textarea class="sub-ta" id="batonText" placeholder='למשל: "השלמתי את פסקת הסינתזה. נשאר לבדוק קישור למקורות של נור."' style="min-height:80px;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="sub-btn primary" onclick="submitBaton()" style="background:linear-gradient(135deg,#818cf8,#4f46e5);flex:1;">שמרי וצאי</button>
+      <button class="sub-btn secondary" onclick="document.getElementById('batonModal').classList.remove('open')">ביטול</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════ DEMO BAR ════════════ -->
 <div id="demoBar">
   <span>DEMO</span>
@@ -1627,6 +2106,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <div class="sep"></div>
   <button class="demo-btn indigo" onclick="demoEnterProject()">📁 מצב פרויקט</button>
   <button class="demo-btn" style="background:#059669;color:#fff;" onclick="demoEnterGroup()">👥 מצב צוות</button>
+  <button class="demo-btn" style="background:#4f46e5;color:#fff;" onclick="enterTeamProject()">📂 פרויקט צוות</button>
   <div class="sep"></div>
   <button class="demo-btn red"    onclick="toggleRecall()">🚨 Recall</button>
   <button class="demo-btn amber"  onclick="toggleBroadcast()">📡 Broadcast</button>
@@ -1687,7 +2167,25 @@ const MiledState = {
     },
     group: {
       screen: 'lesson', mode: 'group',
-      onEnter() { loadGroupBotChat(); startGroupTimer(); simulateGroupTyping(); },
+      onEnter() {
+        // Reset veto + workspace state
+        document.querySelector('.group-workspace').style.display = '';
+        document.getElementById('vetoPanel').style.display = 'none';
+        document.querySelectorAll('.veto-chip').forEach(c => c.classList.remove('approved'));
+        document.querySelector('#vc-me')?.classList.add('approved');
+        document.querySelectorAll('.veto-chip .vc-status').forEach((s,i) => {
+          s.textContent = i === 3 ? '✅ אישרת' : '⏳ ממתין/ה';
+        });
+        const vfb = document.getElementById('vetoFinalBtn');
+        if (vfb) { vfb.classList.remove('ready'); vfb.disabled = true; vfb.textContent = 'הגשה סופית (ממתין לאישורים...)'; }
+        const mdb = document.getElementById('masterDraftBody');
+        if (mdb) mdb.innerHTML = '<span style="font-style:italic;color:var(--muted);">הטיוטה הסופית תנוסח כאן ע"י ירין לאחר קריאת התרומות...</span>';
+        loadGroupBotChat(); startGroupTimer(); simulateGroupTyping();
+      },
+    },
+    team_project: {
+      screen: 'team_project',
+      onEnter() { replyIdx = 0; setTimeout(() => showDigestModal(), 350); },
     },
   },
 
@@ -1698,8 +2196,9 @@ const MiledState = {
     this.current = name;
 
     // ── Screen ──
-    document.getElementById('waitingScreen').classList.toggle('active', s.screen === 'waiting');
-    document.getElementById('lessonScreen').classList.toggle('active',  s.screen === 'lesson');
+    document.getElementById('waitingScreen').classList.toggle('active',     s.screen === 'waiting');
+    document.getElementById('lessonScreen').classList.toggle('active',      s.screen === 'lesson');
+    document.getElementById('teamProjectScreen').classList.toggle('active', s.screen === 'team_project');
 
     // ── data-mode → drives all CSS structural rules ──
     if (s.mode) document.getElementById('lessonScreen').dataset.mode = s.mode;
@@ -1758,6 +2257,119 @@ function toggleRecall()    { document.getElementById('recallBanner').classList.t
 function toggleBroadcast() {
   const b = document.getElementById('broadcastBanner');
   b.style.display = b.style.display === 'none' ? 'flex' : 'none';
+}
+
+/* ════════════════ Group: Call Teacher ════════════════ */
+function callTeacher() {
+  const btn = document.querySelector('.call-teacher-btn');
+  btn.textContent = '📡 קריאה נשלחה!';
+  btn.classList.add('called');
+  setTimeout(() => { btn.textContent = '⚡ קרא/י למרצה'; btn.classList.remove('called'); }, 4000);
+}
+
+/* ════════════════ Group: Master Draft ════════════════ */
+function addChallenge() {
+  const body = document.getElementById('masterDraftBody');
+  if (!body) return;
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:11px;background:#fefce8;border:1px solid #fde047;border-radius:6px;padding:5px 8px;margin-top:6px;color:#854d0e;font-weight:700;';
+  note.textContent = '🧐 הערת ריכוז: האם ההשוואה מאוזנת? כדאי לתת משקל שווה לשתי הגישות.';
+  body.appendChild(note);
+}
+
+/* ════════════════ Group: Veto Mechanism ════════════════ */
+function showVetoPanel() {
+  document.querySelector('.group-workspace').style.display = 'none';
+  document.getElementById('vetoPanel').style.display = 'block';
+  // Simulate member approvals sequentially
+  setTimeout(() => approveVetoChip('vc-yarin'), 2400);
+  setTimeout(() => approveVetoChip('vc-noor'),  4500);
+  setTimeout(() => approveVetoChip('vc-amir'),  6800);
+}
+function approveVetoChip(id) {
+  const chip = document.getElementById(id);
+  if (!chip) return;
+  chip.classList.add('approved');
+  chip.querySelector('.vc-status').textContent = '✅ אישר/ה';
+  const allApproved = ['vc-yarin','vc-noor','vc-amir','vc-me'].every(i => document.getElementById(i)?.classList.contains('approved'));
+  if (allApproved) {
+    const btn = document.getElementById('vetoFinalBtn');
+    btn.classList.add('ready'); btn.disabled = false;
+    btn.textContent = '🎉 כולם אישרו — הגש/י עכשיו';
+    document.getElementById('vetoHint').textContent = 'כל חברי הצוות אישרו!';
+  }
+}
+function finalSubmitGroup() {
+  document.getElementById('vetoPanel').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;padding:16px;gap:8px;text-align:center;">
+      <div style="font-size:28px;">🎉</div>
+      <div style="font-size:15px;font-weight:800;color:#065f46;">תשובת הקבוצה הוגשה!</div>
+      <div style="font-size:13px;color:var(--muted);">המרצה יקבל את תשובתכם בקרוב.</div>
+      <button class="sub-btn secondary" onclick="exitGroupMode()" style="margin-top:6px;font-size:12px;">← חזרה למליאה</button>
+    </div>`;
+}
+
+/* ════════════════ Team Project Screen ════════════════ */
+function enterTeamProject() { MiledState.go('team_project'); }
+function exitTeamProject()  { showBatonModal(); }
+
+function sendTpChat() {
+  const input = document.getElementById('tpChatInput');
+  const text = input.value.trim(); if (!text) return;
+  const cw = document.getElementById('tpChatWindow');
+  const u = document.createElement('div'); u.className = 'chat-bubble user'; u.textContent = text;
+  cw.appendChild(u); input.value = ''; cw.scrollTop = cw.scrollHeight;
+  const replies = [
+    'שאלה מעניינת! איך זה מתקשר למה שנור כתב/ה על הגישה התוכנית?',
+    'כל הכבוד. האם תוכלי לתמוך בזה עם ציטוט ממקורות הצוות?',
+    'מה לדעתך ירין תחשוב/יחשוב על הנקודה הזו?',
+    'יפה! שלבי את זה בפסקת הסינתזה שלך.',
+  ];
+  setTimeout(() => {
+    const b = document.createElement('div');
+    b.className = 'chat-bubble bot';
+    b.style.cssText = 'background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-color:#c7d2fe;';
+    b.textContent = replies[replyIdx % replies.length]; replyIdx++;
+    cw.appendChild(b); cw.scrollTop = cw.scrollHeight;
+  }, 700);
+}
+
+function switchTpTab(btn, tab) {
+  document.querySelectorAll('.tp-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const map = { doc: 'tpTabDoc', sources: 'tpTabSources', tasks: 'tpTabTasks' };
+  document.querySelectorAll('.tp-tab-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById(map[tab])?.classList.remove('hidden');
+}
+
+function addTpContrib() {
+  const ta = document.getElementById('tpMyContrib');
+  const text = ta.value.trim(); if (!text) { ta.style.borderColor = '#ef4444'; return; }
+  ta.style.borderColor = '';
+  const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const section = document.createElement('div');
+  section.className = 'doc-section';
+  section.innerHTML = `
+    <div class="doc-section-attr">
+      <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">את</div>
+      <span class="doc-attr-name">את עצמך</span>
+      <span class="doc-attr-time">עכשיו · ${now}</span>
+    </div>
+    <div class="doc-section-text">${text}</div>`;
+  document.getElementById('tpMyInputBlock').before(section);
+  ta.value = '';
+}
+
+function showDigestModal()  { document.getElementById('digestModal').classList.add('open'); }
+function closeDigestModal() { document.getElementById('digestModal').classList.remove('open'); }
+function showBatonModal()   { document.getElementById('batonModal').classList.add('open'); }
+
+function submitBaton() {
+  const ta = document.getElementById('batonText');
+  if (!ta.value.trim()) { ta.style.borderColor = '#ef4444'; return; }
+  ta.style.borderColor = '';
+  document.getElementById('batonModal').classList.remove('open');
+  MiledState.go('lesson_empty');
 }
 
 /* ════════════════ Project Mode ════════════════ */
@@ -2046,6 +2658,17 @@ function simulateGroupTyping() {
         'הגישה התוכנית מתמקדת ב"מה" — תוכן הפסקה, בעוד הגישה הרטורית שואלת "איך" ולמה הקורא מושפע.');
     }, 3000);
   }, 9000);
+
+  // ירין publishes master draft after contributions settle (14 s)
+  setTimeout(() => {
+    const mdb = document.getElementById('masterDraftBody');
+    if (!mdb) return;
+    mdb.innerHTML = '<div style="font-size:12px;color:var(--navy);line-height:1.6;">הגישה הרטורית מסבירה <em>למה</em> הקורא מושפע; הגישה התוכנית מסבירה <em>מה</em> הקורא מבין. טקסט איכותי פועל על שני המישורים בו-זמנית.</div>';
+    const badge = document.createElement('div');
+    badge.style.cssText = 'font-size:10px;color:#065f46;margin-top:6px;font-weight:700;';
+    badge.textContent = '✍️ עודכן ע"י ירין כ. — עכשיו';
+    mdb.appendChild(badge);
+  }, 14000);
 }
 
 function addContrib(initial, name, role, avatarBg, text, isMine = false) {
@@ -2111,13 +2734,7 @@ function submitGroupWork() {
   if (!hasContribs && !hasMine) { if (myTa) myTa.style.borderColor = '#ef4444'; return; }
   if (hasMine) addMyContrib();
   stopGroupTimer();
-  document.querySelector('.group-workspace').innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;padding:16px;gap:8px;text-align:center;">
-      <div style="font-size:28px;">🎉</div>
-      <div style="font-size:15px;font-weight:800;color:#065f46;">תשובת הקבוצה הוגשה!</div>
-      <div style="font-size:13px;color:var(--muted);">המרצה יקבל את תשובתכם בקרוב.</div>
-      <button class="sub-btn secondary" onclick="exitGroupMode()" style="margin-top:6px;font-size:12px;">← חזרה למליאה</button>
-    </div>`;
+  showVetoPanel();
 }
 
 function loadGroupBotChat() {
