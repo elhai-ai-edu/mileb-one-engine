@@ -1773,6 +1773,15 @@ let broadcastAudioChunks = [];
 let broadcastAudioStream = null;
 let facultyAvatar = localStorage.getItem(LECTURER_AVATAR_KEY) || "";
 let latestStudentsSnapshot = [];
+
+// Shared phase labels used by setLivePhase, resetPhaseToActivity, and Lesson Planner rendering.
+const PHASE_LABELS = {
+  listening: '🎧 מקשיבים',
+  interactive: '💬 דיון',
+  solo: '✍️ עצמאי',
+  pairs: '👥 זוגות',
+  plenary: '🏛️ מליאה'
+};
 let waitingStudentsSnapshot = 0;
 let waitingPressureTimer = null;
 let waitingAttendeesRef = null;
@@ -3562,12 +3571,11 @@ async function setLivePhase(phase) {
   const res = await callClassroom({ action: 'session_state_update', sessionId, facultyId, livePhase: phase });
   if (statusEl) {
     if (res?.ok) {
-      const phaseLabels = { listening:'🎧 מקשיבים', interactive:'💬 דיון', solo:'✍️ עצמאי', pairs:'👥 זוגות', plenary:'🏛️ מליאה' };
       const t = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-      // phaseLabels[phase] covers all 5 valid values; the `|| phase` fallback
+      // PHASE_LABELS covers all 5 valid values; the `|| phase` fallback
       // handles the empty-string clear case and is unreachable for validated phases.
       statusEl.textContent = phase
-        ? `${phaseLabels[phase] || phase} — ידני (עודכן ב-${t})`
+        ? `${PHASE_LABELS[phase] || phase} — ידני (עודכן ב-${t})`
         : `✅ מצב נוקה ב-${t}`;
     } else {
       statusEl.textContent = `שגיאה: ${res?.error || 'לא ידוע'}`;
@@ -3585,10 +3593,9 @@ async function resetPhaseToActivity() {
   if (statusEl) {
     if (res?.ok) {
       const t = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-      const phaseLabels = { listening:'🎧 מקשיבים', interactive:'💬 דיון', solo:'✍️ עצמאי', pairs:'👥 זוגות', plenary:'🏛️ מליאה' };
       const derivedPhase = res.state?.live_phase;
       statusEl.textContent = derivedPhase
-        ? `📌 נגזר מפעילות: ${phaseLabels[derivedPhase] || derivedPhase} (${t})`
+        ? `📌 נגזר מפעילות: ${PHASE_LABELS[derivedPhase] || derivedPhase} (${t})`
         : `📌 הצמד לפעילות — אין פעילות פעילה עם מצב מוגדר (${t})`;
     } else {
       statusEl.textContent = `שגיאה: ${res?.error || 'לא ידוע'}`;
@@ -4736,12 +4743,11 @@ function renderLessonSteps() {
   if (!lessonSteps.length) {
     container.innerHTML = '<div class="lesson-steps-empty">טרם הוגדרו שלבים</div>';
   } else {
-    const modeLabels = { listening:"🎧 מקשיבים", interactive:"💬 דיון", solo:"✍️ עצמאי", pairs:"👥 זוגות", plenary:"🏛️ מליאה" };
     container.innerHTML = lessonSteps.map((s, i) => `
       <div class="lesson-step-item">
         <div class="lesson-step-num">${i + 1}</div>
         <div class="lesson-step-content">
-          <div class="lesson-step-title">${escapeHtml(s.title)}${s.mode && modeLabels[s.mode] ? ` <span style="font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:10px;margin-right:4px;">${modeLabels[s.mode]}</span>` : ""}</div>
+          <div class="lesson-step-title">${escapeHtml(s.title)}${s.mode && PHASE_LABELS[s.mode] ? ` <span style="font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:10px;margin-right:4px;">${PHASE_LABELS[s.mode]}</span>` : ""}</div>
           ${s.instructions ? `<div class="lesson-step-inst">${escapeHtml(s.instructions)}</div>` : ""}
         </div>
         <button class="lesson-step-remove" onclick="removeLessonStep(${i})">✕</button>
