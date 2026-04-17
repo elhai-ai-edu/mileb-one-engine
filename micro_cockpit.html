@@ -1317,6 +1317,14 @@
     <div class="lp-step-form">
       <input type="text" id="step-title-input" placeholder="כותרת השלב (חובה)" class="lp-input">
       <textarea id="step-instructions-input" placeholder="הוראות / הסבר לסטודנטים (אופציונלי)" class="lp-textarea" rows="2"></textarea>
+      <select id="step-mode-input" class="lp-input" style="margin:0;">
+        <option value="">מצב שיעור (אופציונלי)</option>
+        <option value="listening">🎧 מקשיבים</option>
+        <option value="interactive">💬 דיון פעיל</option>
+        <option value="solo">✍️ עבודה עצמאית</option>
+        <option value="pairs">👥 עבודה בזוגות</option>
+        <option value="plenary">🏛️ מליאה</option>
+      </select>
       <button class="btn btn-outline" onclick="addLessonStep()" style="width:100%;font-size:13px;">+ הוסף שלב</button>
     </div>
 
@@ -1604,6 +1612,20 @@
           <button class="btn btn-outline" type="button" onclick="clearSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">✕ נקה</button>
         </div>
         <div id="speakerFocusStatus" style="font-size:12px;color:#475569;"></div>
+      </div>
+
+      <!-- Live Phase section -->
+      <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:8px;">
+        <div style="font-size:13px;font-weight:700;color:#0f172a;">🏷️ מצב שיעור (Live Phase)</div>
+        <div style="font-size:12px;color:#64748b;">עדכן את הסטודנטים מה קורה עכשיו — הבאדג׳ יוצג בזמן אמת בתצוגת השיעור.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-outline" type="button" onclick="setLivePhase('listening')" style="font-size:12px;padding:6px 12px;">🎧 מקשיבים</button>
+          <button class="btn btn-outline" type="button" onclick="setLivePhase('interactive')" style="font-size:12px;padding:6px 12px;">💬 דיון</button>
+          <button class="btn btn-outline" type="button" onclick="setLivePhase('solo')" style="font-size:12px;padding:6px 12px;">✍️ עצמאי</button>
+          <button class="btn btn-outline" type="button" onclick="setLivePhase('pairs')" style="font-size:12px;padding:6px 12px;">👥 זוגות</button>
+          <button class="btn btn-outline" type="button" onclick="setLivePhase('')" style="font-size:12px;padding:6px 12px;">✕ נקה</button>
+        </div>
+        <div id="livePhaseStatus" style="font-size:12px;color:#475569;"></div>
       </div>
     </div>
 
@@ -3486,7 +3508,8 @@ async function publishRecordingUrl() {
     courseId,
     classId: courseId,
     facultyId,
-    recordingUrl
+    recordingUrl,
+    unitId: currentUnitId || 'unit_01'
   });
 
   if (statusEl) {
@@ -3528,6 +3551,24 @@ async function clearSpeakerFocus() {
   }
   const inputEl = document.getElementById('speakerFocusInput');
   if (inputEl) inputEl.value = '';
+}
+
+async function setLivePhase(phase) {
+  if (!sessionId) { alert('פתח שיעור תחילה'); return; }
+  const statusEl = document.getElementById('livePhaseStatus');
+  if (statusEl) statusEl.textContent = 'מעדכן...';
+  const res = await callClassroom({ action: 'session_state_update', sessionId, facultyId, livePhase: phase });
+  if (statusEl) {
+    if (res?.ok) {
+      const phaseLabels = { listening:'🎧 מקשיבים', interactive:'💬 דיון', solo:'✍️ עצמאי', pairs:'👥 זוגות', plenary:'🏛️ מליאה' };
+      const t = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+      statusEl.textContent = phase
+        ? `${phaseLabels[phase] || phase} (עודכן ב-${t})`
+        : `✅ מצב נוקה ב-${t}`;
+    } else {
+      statusEl.textContent = `שגיאה: ${res?.error || 'לא ידוע'}`;
+    }
+  }
 }
 
 async function callGatekeeping(body) {
@@ -4650,9 +4691,12 @@ function addLessonStep() {
   const title = document.getElementById("step-title-input").value.trim();
   const instructions = document.getElementById("step-instructions-input").value.trim();
   if (!title) { alert("הוסף כותרת לשלב"); return; }
-  lessonSteps.push({ title, instructions });
+  const mode = document.getElementById("step-mode-input")?.value || "";
+  lessonSteps.push({ title, instructions, mode: mode || null });
   document.getElementById("step-title-input").value = "";
   document.getElementById("step-instructions-input").value = "";
+  const modeEl = document.getElementById("step-mode-input");
+  if (modeEl) modeEl.value = "";
   renderLessonSteps();
 }
 
@@ -4667,11 +4711,12 @@ function renderLessonSteps() {
   if (!lessonSteps.length) {
     container.innerHTML = '<div class="lesson-steps-empty">טרם הוגדרו שלבים</div>';
   } else {
+    const modeLabels = { listening:"🎧 מקשיבים", interactive:"💬 דיון", solo:"✍️ עצמאי", pairs:"👥 זוגות", plenary:"🏛️ מליאה" };
     container.innerHTML = lessonSteps.map((s, i) => `
       <div class="lesson-step-item">
         <div class="lesson-step-num">${i + 1}</div>
         <div class="lesson-step-content">
-          <div class="lesson-step-title">${escapeHtml(s.title)}</div>
+          <div class="lesson-step-title">${escapeHtml(s.title)}${s.mode && modeLabels[s.mode] ? ` <span style="font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:10px;margin-right:4px;">${modeLabels[s.mode]}</span>` : ""}</div>
           ${s.instructions ? `<div class="lesson-step-inst">${escapeHtml(s.instructions)}</div>` : ""}
         </div>
         <button class="lesson-step-remove" onclick="removeLessonStep(${i})">✕</button>
@@ -4775,7 +4820,8 @@ async function pushTask(stepIdx) {
   if (pushedSteps.includes(stepNum)) return;
   const res = await callClassroom({
     action: "push_task", sessionId, facultyId,
-    title: step.title, instructions: step.instructions || "", step: stepNum
+    title: step.title, instructions: step.instructions || "", step: stepNum,
+    suggestedPhase: step.mode || null
   });
   if (res.ok) {
     pushedSteps.push(stepNum);

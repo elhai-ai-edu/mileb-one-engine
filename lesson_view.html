@@ -675,26 +675,48 @@
     <div id="liveMeetingBar" style="display:none;padding:12px 18px;border-radius:14px;
          background:linear-gradient(120deg,#f8fbff,#eff6ff);
          border:1.5px solid #bfdbfe;
-         display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-      <span style="font-size:20px;">🎥</span>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:14px;font-weight:800;color:#1e3a8a;" id="liveMeetingBarTitle">שיעור חי</div>
-        <div style="font-size:12px;color:#475569;" id="liveMeetingBarStatus"></div>
+         display:flex;flex-direction:column;gap:8px;">
+      <!-- top row: icon + title/status + action buttons -->
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <span style="font-size:20px;">🎥</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:800;color:#1e3a8a;" id="liveMeetingBarTitle">שיעור חי</div>
+          <div style="font-size:12px;color:#475569;" id="liveMeetingBarStatus"></div>
+        </div>
+        <button id="liveMeetingBarJoinBtn"
+           style="display:none;padding:8px 16px;border-radius:10px;
+                  background:linear-gradient(135deg,#1d4ed8,#0f766e);
+                  color:#fff;font-size:13px;font-weight:700;
+                  border:none;cursor:pointer;white-space:nowrap;"
+           onclick="openZoomJoin()">
+          📹 הצטרף לזום
+        </button>
+        <a id="liveMeetingBarRecordingBtn" href="#" target="_blank" rel="noopener noreferrer"
+           style="display:none;padding:8px 16px;border-radius:10px;
+                  background:#f0fdf4;color:#065f46;border:1px solid #86efac;
+                  font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
+          🎞️ הקלטה
+        </a>
+        <span id="liveMeetingBarNoUrlHint" style="display:none;font-size:13px;color:#475569;">הקישור יתעדכן בקרוב</span>
       </div>
-      <a id="liveMeetingBarJoinBtn" href="#" target="_blank" rel="noopener noreferrer"
-         style="display:none;padding:8px 16px;border-radius:10px;
-                background:linear-gradient(135deg,#1d4ed8,#0f766e);
-                color:#fff;font-size:13px;font-weight:700;
-                text-decoration:none;white-space:nowrap;">
-        📹 הצטרף לזום
-      </a>
-      <a id="liveMeetingBarRecordingBtn" href="#" target="_blank" rel="noopener noreferrer"
-         style="display:none;padding:8px 16px;border-radius:10px;
-                background:#f0fdf4;color:#065f46;border:1px solid #86efac;
-                font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
-        🎞️ הקלטה
-      </a>
-      <span id="liveMeetingBarNoUrlHint" style="display:none;font-size:13px;color:#475569;">הקישור יתעדכן בקרוב</span>
+      <!-- live-phase badge -->
+      <div id="liveMeetingBarPhase" style="display:none;"></div>
+      <!-- active task row -->
+      <div id="liveMeetingBarActiveTask" style="display:none;padding:8px 12px;border-radius:10px;
+           background:#fff;border:1px solid #bfdbfe;font-size:13px;color:#1e3a8a;"></div>
+      <!-- ended card (shown when status === ended) -->
+      <div id="liveMeetingBarEndedCard" style="display:none;padding:10px 12px;border-radius:10px;
+           background:#f0fdf4;border:1px solid #86efac;font-size:13px;color:#065f46;
+           display:flex;flex-direction:column;gap:6px;">
+        <div style="font-weight:700;">✅ השיעור הסתיים</div>
+        <div id="liveMeetingBarEndedTask" style="display:none;color:#0f172a;"></div>
+        <button id="liveMeetingBarChatBtn"
+                onclick="document.getElementById('chatFrame')?.scrollIntoView({behavior:'smooth'})"
+                style="align-self:flex-start;padding:6px 12px;border-radius:8px;border:none;
+                       background:#d1fae5;color:#065f46;font-size:12px;font-weight:700;cursor:pointer;">
+          🤖 שוחח עם הבוט
+        </button>
+      </div>
     </div>
 
     <!-- ─── Skill Context Banner ─── -->
@@ -1828,27 +1850,32 @@
       // faculty hasn't published the link yet).
       const hasUrl = !!(liveMeeting?.joinUrl || liveMeeting?.recordingUrl);
       const isLive = liveMeeting?.status === "live";
-      if (!liveMeeting || !(hasUrl || isLive)) {
+      const isEnded = liveMeeting?.status === "ended";
+      if (!liveMeeting || !(hasUrl || isLive || isEnded)) {
         bar.style.display = "none";
         return;
       }
       bar.style.display = "";
 
-      const titleEl   = document.getElementById("liveMeetingBarTitle");
-      const statusEl  = document.getElementById("liveMeetingBarStatus");
-      const joinBtn   = document.getElementById("liveMeetingBarJoinBtn");
-      const recBtn    = document.getElementById("liveMeetingBarRecordingBtn");
-      const hintEl    = document.getElementById("liveMeetingBarNoUrlHint");
+      const titleEl      = document.getElementById("liveMeetingBarTitle");
+      const statusEl     = document.getElementById("liveMeetingBarStatus");
+      const joinBtn      = document.getElementById("liveMeetingBarJoinBtn");
+      const recBtn       = document.getElementById("liveMeetingBarRecordingBtn");
+      const hintEl       = document.getElementById("liveMeetingBarNoUrlHint");
+      const phaseEl      = document.getElementById("liveMeetingBarPhase");
+      const activeTaskEl = document.getElementById("liveMeetingBarActiveTask");
+      const endedCard    = document.getElementById("liveMeetingBarEndedCard");
+      const endedTaskEl  = document.getElementById("liveMeetingBarEndedTask");
 
       if (titleEl) titleEl.textContent = liveMeeting.title || "שיעור חי";
 
       const statusLabels = { scheduled: "📅 מתוכנן", live: "🔴 חי עכשיו", ended: "✅ הסתיים" };
       if (statusEl) statusEl.textContent = statusLabels[liveMeeting.status] || liveMeeting.status || "";
 
-      const showJoin = !!(liveMeeting.joinUrl && liveMeeting.status !== "ended");
+      const showJoin = !!(liveMeeting.joinUrl && !isEnded);
       if (joinBtn) {
         joinBtn.style.display = showJoin ? "" : "none";
-        if (showJoin) joinBtn.href = liveMeeting.joinUrl;
+        joinBtn.dataset.joinUrl = showJoin ? liveMeeting.joinUrl : "";
       }
 
       const showRec = !!liveMeeting.recordingUrl;
@@ -1859,6 +1886,55 @@
 
       // Show a plain-text hint when the meeting is live but no link is available yet
       if (hintEl) hintEl.style.display = (!showJoin && !showRec && isLive) ? "" : "none";
+
+      // Live-phase badge
+      const livePhase = lessonData?.state?.live_phase || null;
+      const phaseLabels = {
+        listening:   "🎧 מקשיבים",
+        interactive: "💬 דיון פעיל",
+        solo:        "✍️ עבודה עצמאית",
+        pairs:       "👥 עבודה בזוגות",
+        plenary:     "🏛️ מליאה"
+      };
+      if (phaseEl) {
+        if (livePhase && phaseLabels[livePhase]) {
+          phaseEl.style.display = "";
+          phaseEl.innerHTML = `<span style="display:inline-block;padding:4px 10px;border-radius:20px;
+            background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700;">${phaseLabels[livePhase]}</span>`;
+        } else {
+          phaseEl.style.display = "none";
+        }
+      }
+
+      // Active task row ("what's happening now")
+      const activeTask = lessonData?.activeTask || null;
+      if (activeTaskEl && activeTask?.title && !isEnded) {
+        activeTaskEl.style.display = "";
+        const phaseHint = activeTask.suggestedPhase && phaseLabels[activeTask.suggestedPhase]
+          ? ` <span style="font-size:11px;color:#64748b;">(${phaseLabels[activeTask.suggestedPhase]})</span>` : "";
+        activeTaskEl.innerHTML = `<strong>📝 עכשיו:</strong> ${escapeHtml(activeTask.title)}${phaseHint}`;
+      } else if (activeTaskEl) {
+        activeTaskEl.style.display = "none";
+      }
+
+      // Ended card
+      if (endedCard) {
+        endedCard.style.display = isEnded ? "" : "none";
+        if (isEnded && endedTaskEl && activeTask?.title) {
+          endedTaskEl.style.display = "";
+          endedTaskEl.textContent = `📝 משימת המשך: ${activeTask.title}`;
+        } else if (endedTaskEl) {
+          endedTaskEl.style.display = "none";
+        }
+      }
+    }
+
+    function openZoomJoin() {
+      const btn = document.getElementById("liveMeetingBarJoinBtn");
+      const url = btn?.dataset?.joinUrl || "";
+      if (!url) return;
+      localStorage.setItem("miled_zoom_opened_at", String(Date.now()));
+      window.open(url, "_blank", "noopener,noreferrer,width=1200,height=800");
     }
 
     let _speakerStageDragInit = false;
@@ -2095,13 +2171,21 @@
         const broadcastChanged = live.broadcast !== lessonData.broadcast || live.broadcastedAt !== lessonData.broadcastedAt;
         lessonData.broadcast = live.broadcast ?? lessonData.broadcast;
         lessonData.broadcastedAt = live.broadcastedAt ?? lessonData.broadcastedAt;
+        const prevActiveTask = lessonData.activeTask;
         if (live.active_task !== undefined) lessonData.activeTask = live.active_task;
         const prevActiveSprint = lessonData.state?.active_sprint;
+        const prevLivePhase = lessonData.state?.live_phase;
         if (live.state) lessonData.state = { ...lessonData.state, ...live.state };
         if (broadcastChanged) renderBroadcast();
         if (live.state?.active_sprint !== undefined && live.state.active_sprint !== prevActiveSprint) {
           renderActiveSprint();
           renderSprintStepper();
+        }
+        // Re-render live meeting bar when phase or active task changes
+        const livePhaseChanged = live.state?.live_phase !== undefined && live.state.live_phase !== prevLivePhase;
+        const activeTaskChanged = live.active_task !== undefined && live.active_task !== prevActiveTask;
+        if (livePhaseChanged || activeTaskChanged) {
+          renderLiveMeetingBar(lessonData.liveMeeting);
         }
         // Show/hide waiting screen based on live door state
         if (role === "student") {
