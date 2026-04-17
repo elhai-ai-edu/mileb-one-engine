@@ -42,6 +42,12 @@ function err(msg){
 
 const ALLOWED_LIVE_PHASES = ["listening", "interactive", "solo", "pairs", "plenary"];
 
+// Normalise and validate a raw phase string. Returns the validated phase or null.
+function validateLivePhase(raw) {
+  const phase = String(raw || "").trim().toLowerCase();
+  return ALLOWED_LIVE_PHASES.includes(phase) ? phase : null;
+}
+
 function normalizeAvatar(value){
   const avatar = String(value || "").trim();
   if(!avatar.startsWith("data:image/")) return null;
@@ -649,6 +655,8 @@ export async function handler(event){
           active_sprint: state.active_sprint || null,
           door_status: String(state.door_status || "auto").toLowerCase(),
           pushed_resource: state.pushed_resource || null,
+          live_phase: state.live_phase || null,
+          phase_source: state.phase_source || null,
           updatedAt: Number(state.updatedAt) || null
         },
         playlist: lessonBundle.playlist || null,
@@ -1773,8 +1781,17 @@ export async function handler(event){
     if(body.lobbyMode !== undefined) updates.lobby_mode = !!body.lobbyMode;
     if(body.clearPushedResource) updates.pushed_resource = null;
     if(body.livePhase !== undefined) {
-      const phase = String(body.livePhase || "").trim().toLowerCase();
-      updates.live_phase = ALLOWED_LIVE_PHASES.includes(phase) ? phase : null;
+      updates.live_phase = validateLivePhase(body.livePhase);
+      // Track whether the phase was set manually so push_task auto-derive is suppressed.
+      updates.phase_source = updates.live_phase ? "manual" : null;
+    }
+
+    // Allow the instructor to release a manual override and re-derive the phase
+    // from the currently active task's suggestedPhase.
+    if(body.resetPhaseSource) {
+      const derivedPhase = session.active_task?.suggestedPhase || null;
+      updates.live_phase = validateLivePhase(derivedPhase);
+      updates.phase_source = updates.live_phase ? "derived" : null;
     }
 
     await sessionRef.child("state").update(updates);
@@ -2351,15 +2368,24 @@ export async function handler(event){
     const { title, instructions, step } = body;
     if(!title) return err("title required");
     const now = Date.now();
-    const rawPhase = String(body.suggestedPhase || "").trim().toLowerCase();
     const taskData = {
       title,
       instructions: instructions || "",
       step: step || 1,
-      suggestedPhase: ALLOWED_LIVE_PHASES.includes(rawPhase) ? rawPhase : null,
+      suggestedPhase: validateLivePhase(body.suggestedPhase),
       pushedAt: now
     };
     await sessionRef.update({ active_task: taskData });
+    // Auto-derive live_phase from suggestedPhase unless the instructor has set
+    // a manual override (phase_source === "manual").
+    const currentPhaseSource = session.state?.phase_source || null;
+    if(taskData.suggestedPhase && currentPhaseSource !== "manual") {
+      await sessionRef.child("state").update({
+        live_phase: taskData.suggestedPhase,
+        phase_source: "derived",
+        updatedAt: now
+      });
+    }
     // log for export journal
     await db.ref(`sessions/${sessionId}/task_log`).push({ ...taskData, facultyId });
     return ok({ ok:true });
