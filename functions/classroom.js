@@ -649,6 +649,8 @@ export async function handler(event){
           active_sprint: state.active_sprint || null,
           door_status: String(state.door_status || "auto").toLowerCase(),
           pushed_resource: state.pushed_resource || null,
+          live_phase: state.live_phase || null,
+          phase_source: state.phase_source || null,
           updatedAt: Number(state.updatedAt) || null
         },
         playlist: lessonBundle.playlist || null,
@@ -1775,6 +1777,16 @@ export async function handler(event){
     if(body.livePhase !== undefined) {
       const phase = String(body.livePhase || "").trim().toLowerCase();
       updates.live_phase = ALLOWED_LIVE_PHASES.includes(phase) ? phase : null;
+      // Track whether the phase was set manually so push_task auto-derive is suppressed.
+      updates.phase_source = updates.live_phase ? "manual" : null;
+    }
+
+    // Allow the instructor to release a manual override and re-derive the phase
+    // from the currently active task's suggestedPhase.
+    if(body.resetPhaseSource) {
+      const derivedPhase = session.active_task?.suggestedPhase || null;
+      updates.live_phase = ALLOWED_LIVE_PHASES.includes(derivedPhase || "") ? derivedPhase : null;
+      updates.phase_source = updates.live_phase ? "derived" : null;
     }
 
     await sessionRef.child("state").update(updates);
@@ -2360,6 +2372,16 @@ export async function handler(event){
       pushedAt: now
     };
     await sessionRef.update({ active_task: taskData });
+    // Auto-derive live_phase from suggestedPhase unless the instructor has set
+    // a manual override (phase_source === "manual").
+    const currentPhaseSource = session.state?.phase_source || null;
+    if(taskData.suggestedPhase && currentPhaseSource !== "manual") {
+      await sessionRef.child("state").update({
+        live_phase: taskData.suggestedPhase,
+        phase_source: "derived",
+        updatedAt: now
+      });
+    }
     // log for export journal
     await db.ref(`sessions/${sessionId}/task_log`).push({ ...taskData, facultyId });
     return ok({ ok:true });
