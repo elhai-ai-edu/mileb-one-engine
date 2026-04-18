@@ -311,6 +311,72 @@
     }
     .w-team-project-link:hover { background: linear-gradient(135deg,#e0e7ff,#c7d2fe); box-shadow: 0 3px 12px rgba(99,102,241,.2); }
 
+    /* ── Entrance task card ── */
+    .entrance-task-card {
+      border: 2px solid #4f46e5;
+      background: linear-gradient(140deg, #faf5ff 0%, #ede9fe 100%);
+    }
+    .et-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    .et-badge  {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 12px; border-radius: 999px;
+      background: #ede9fe; color: #4f46e5; font-size: 11px; font-weight: 800;
+    }
+    .et-title  { font-size: 16px; font-weight: 800; color: #3730a3; }
+    .et-prompt { font-size: 14px; color: #1e293b; line-height: 1.75; margin-bottom: 16px;
+                 border-right: 3px solid #818cf8; padding-right: 12px; }
+    .et-option {
+      width: 100%; text-align: right; padding: 11px 14px; margin-bottom: 8px;
+      border-radius: 12px; border: 1.5px solid #c7d2fe;
+      background: #fff; color: #1e293b; cursor: pointer;
+      font: 600 13px "Assistant", sans-serif; transition: all .15s; display: block;
+    }
+    .et-option:hover    { background: #ede9fe; border-color: #818cf8; }
+    .et-option.correct  { background: #f0fdf4; border-color: #22c55e; color: #166534; pointer-events: none; }
+    .et-option.wrong    { background: #fef2f2; border-color: #ef4444; color: #991b1b; pointer-events: none; }
+    .et-option:disabled { pointer-events: none; opacity: .6; }
+    .et-textarea {
+      width: 100%; border: 1.5px solid #c7d2fe; border-radius: 12px;
+      padding: 11px; font: 400 13px "Assistant", sans-serif;
+      resize: vertical; min-height: 90px; background: #faf5ff; color: #1e293b; margin-bottom: 6px;
+    }
+    .et-textarea:focus { outline: none; border-color: #4f46e5; }
+    .et-submit {
+      width: 100%; padding: 12px; border-radius: 12px; border: none;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; font: 700 14px "Assistant", sans-serif; cursor: pointer;
+      transition: opacity .15s; margin-top: 4px;
+    }
+    .et-submit:hover    { opacity: .88; }
+    .et-submit:disabled { opacity: .42; cursor: not-allowed; }
+    .et-char-count { font-size: 11px; color: #94a3b8; margin-bottom: 8px; }
+    .et-success {
+      display: none; text-align: center; padding: 28px 20px; margin-top: 12px;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      border-radius: 16px; animation: ticketPop .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes ticketPop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+    .et-success-emoji { font-size: 36px; margin-bottom: 8px; }
+    .et-success-text  { color: #431407; font-size: 15px; font-weight: 800; line-height: 1.5; }
+    .et-video-wrap {
+      position: relative; width: 100%; padding-bottom: 56.25%; margin-bottom: 14px;
+      border-radius: 12px; overflow: hidden; background: #0f172a;
+    }
+    .et-video-wrap iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%; border: none;
+    }
+    .et-vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .et-vocab-col  { display: flex; flex-direction: column; gap: 6px; }
+    .et-vocab-btn {
+      padding: 9px 12px; border-radius: 10px; border: 1.5px solid #c7d2fe;
+      background: #fff; color: #1e293b; font: 600 12px "Assistant", sans-serif;
+      cursor: pointer; text-align: center; transition: all .15s; width: 100%;
+    }
+    .et-vocab-btn:hover    { background: #ede9fe; border-color: #818cf8; }
+    .et-vocab-btn.selected { background: #ede9fe; border-color: #4f46e5; color: #3730a3; }
+    .et-vocab-btn.matched  { background: #f0fdf4; border-color: #22c55e; color: #166534; pointer-events: none; }
+    .et-vocab-btn.wrong    { background: #fef2f2; border-color: #ef4444; }
+
     /* ── Door animation ── */
     #doorAnim {
       display: none; position: fixed; inset: 0; z-index: 8000;
@@ -418,6 +484,19 @@
         <div id="memoryBoard" class="memory-board"></div>
         <div class="small-note" id="memoryStatus">טרם הושלם</div>
       </article>
+    </section>
+
+    <!-- ─── Entrance Task (lecturer-configured gate) ─── -->
+    <section id="entranceTaskSection" class="grid-card entrance-task-card" style="display:none;">
+      <div class="et-header">
+        <div class="et-badge">🎯 מטלת כניסה</div>
+        <div class="et-title" id="etTitle">משימה לפני הכניסה לשיעור</div>
+      </div>
+      <div id="etBody"></div>
+      <div class="et-success" id="etSuccess">
+        <div class="et-success-emoji">🎫✨</div>
+        <div class="et-success-text">המשימה הושלמה!<br>הדלת נפתחת...</div>
+      </div>
     </section>
 
     <section class="grid-card">
@@ -553,10 +632,12 @@
     async function updateReadyState() {
       const readyBanner = document.getElementById("readyBanner");
       const readyNote = document.getElementById("readyNote");
-      const tasksCompleted = warmupDone && memoryDone;
+      // Entrance task overrides the warmup+memory gate when configured
+      const tasksCompleted = _entranceTask ? entranceTaskDone : (warmupDone && memoryDone);
       if (readyBanner) readyBanner.classList.toggle("visible", tasksCompleted || latestDoorSignal === "open");
       if (readyNote) {
         if (latestDoorSignal === "open") readyNote.textContent = "המרצה פתח את הדלת. אפשר לעבור מיד לשיעור.";
+        else if (tasksCompleted && _entranceTask) readyNote.textContent = "מטלת הכניסה הושלמה! עוברים לשיעור...";
         else if (tasksCompleted) readyNote.textContent = "האימות הושלם. ממתין שהמרצה יפתח את השיעור...";
       }
 
@@ -800,6 +881,210 @@
       pendingTicketPayload = null;
     }
 
+    // ════════════════════════════════════════════════
+    // Entrance Task — lecturer-configured gate
+    // ════════════════════════════════════════════════
+    let _entranceTask    = null;
+    let entranceTaskDone = false;
+    let _vocabSelected   = null;
+    let _vocabMatched    = new Set();
+
+    function getDb() {
+      if (!window.firebase || !window.MILED_FIREBASE_CONFIG) return null;
+      if (!firebase.apps.length) firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+      if (typeof firebase.database !== "function") return null;
+      return firebase.database();
+    }
+
+    async function loadEntranceTask() {
+      if (!courseId) return;
+      const db = getDb();
+      if (!db) return;
+      try {
+        const snap = await db.ref(`classes/${courseId}/features/entranceTask`).once("value");
+        const task = snap.val();
+        if (!task?.enabled || !task?.type) return;
+        _entranceTask = task;
+        renderEntranceTask(task);
+      } catch(e) { console.warn("[MilEd] loadEntranceTask failed:", e); }
+    }
+
+    function renderEntranceTask(task) {
+      const section = document.getElementById("entranceTaskSection");
+      const titleEl = document.getElementById("etTitle");
+      const bodyEl  = document.getElementById("etBody");
+      if (!section || !bodyEl) return;
+      if (titleEl) titleEl.textContent = task.title || "משימה לפני הכניסה לשיעור";
+      section.style.display = "";
+      section.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      switch (task.type) {
+        case "quiz":   renderQuizTask(task, bodyEl);   break;
+        case "video":  renderVideoTask(task, bodyEl);  break;
+        case "vocab":  renderVocabTask(task, bodyEl);  break;
+        default:       renderTicketTask(task, bodyEl); break; // "ticket" + fallback
+      }
+    }
+
+    // ── Quiz ─────────────────────────────────────────
+    function renderQuizTask(task, el) {
+      const opts = Array.isArray(task.options) ? task.options : [];
+      const ci   = Number(task.correctIndex ?? -1);
+      el.innerHTML = `
+        <div class="et-prompt">${escapeHtml(task.prompt || "")}</div>
+        ${opts.map((opt, i) =>
+          `<button class="et-option" onclick="handleQuizAnswer(${i},${ci})">${escapeHtml(opt)}</button>`
+        ).join("")}
+        <div id="etFeedback" style="font-size:13px;font-weight:700;margin-top:8px;display:none;"></div>`;
+    }
+
+    function handleQuizAnswer(idx, correctIdx) {
+      const btns = document.querySelectorAll(".et-option");
+      btns.forEach(b => { b.disabled = true; });
+      const correct = idx === correctIdx || correctIdx < 0;
+      btns[idx]?.classList.add(correct ? "correct" : "wrong");
+      if (!correct && correctIdx >= 0 && btns[correctIdx]) btns[correctIdx].classList.add("correct");
+      const fb = document.getElementById("etFeedback");
+      if (fb) {
+        fb.style.display = "";
+        fb.style.color   = correct ? "#16a34a" : "#dc2626";
+        fb.textContent   = correct ? "✅ תשובה נכונה!" : "❌ לא מדויק — ראה/י את התשובה הנכונה.";
+      }
+      if (correct || _entranceTask?.allowWrongAnswer) {
+        setTimeout(() => completeEntranceTask(`quiz:${idx}`), 900);
+      }
+    }
+
+    // ── Ticket (open text) ───────────────────────────
+    function renderTicketTask(task, el) {
+      const minLen = Number(task.minLength || 20);
+      el.innerHTML = `
+        <div class="et-prompt">${escapeHtml(task.prompt || "")}</div>
+        <textarea class="et-textarea" id="etTicketTa"
+          placeholder="כתוב/י כאן (לפחות ${minLen} תווים)..."></textarea>
+        <div class="et-char-count" id="etCharCount">0 / ${minLen} תווים מינימלי</div>
+        <button class="et-submit" id="etTicketBtn" disabled onclick="submitTicketTask(${minLen})">
+          📝 שלח/י כרטיס כניסה
+        </button>`;
+      const ta  = document.getElementById("etTicketTa");
+      const btn = document.getElementById("etTicketBtn");
+      const cnt = document.getElementById("etCharCount");
+      if (ta) ta.addEventListener("input", () => {
+        const len = ta.value.trim().length;
+        if (cnt) cnt.textContent = `${len} / ${minLen} תווים מינימלי`;
+        if (btn) btn.disabled = len < minLen;
+      });
+    }
+
+    function submitTicketTask(minLen) {
+      const ta   = document.getElementById("etTicketTa");
+      const text = String(ta?.value || "").trim();
+      if (text.length < minLen) return;
+      completeEntranceTask(`ticket:${text.slice(0, 500)}`);
+    }
+
+    // ── Video ────────────────────────────────────────
+    function renderVideoTask(task, el) {
+      const raw    = String(task.videoUrl || "");
+      const embed  = raw.replace("watch?v=", "embed/").replace("youtu.be/", "www.youtube.com/embed/");
+      el.innerHTML = `
+        <div class="et-prompt">${escapeHtml(task.prompt || "צפה/י בסרטון ולחץ/י על 'סיימתי' לאחר הצפייה.")}</div>
+        ${embed
+          ? `<div class="et-video-wrap">
+               <iframe src="${escapeHtml(embed)}" allowfullscreen loading="lazy"></iframe>
+             </div>`
+          : `<div style="font-size:13px;color:#94a3b8;margin-bottom:12px;">⚠️ קישור וידאו לא הוגדר</div>`}
+        <button class="et-submit" onclick="completeEntranceTask('video:watched')">✅ סיימתי לצפות</button>`;
+    }
+
+    // ── Vocab matching ───────────────────────────────
+    function renderVocabTask(task, el) {
+      const pairs = Array.isArray(task.pairs) ? task.pairs : [];
+      const left  = shuffle(pairs.map((p, i) => ({ id: `L${i}`, text: p[0], pi: i })));
+      const right = shuffle(pairs.map((p, i) => ({ id: `R${i}`, text: p[1], pi: i })));
+      _vocabSelected = null;
+      _vocabMatched  = new Set();
+      el.innerHTML = `
+        <div class="et-prompt">${escapeHtml(task.prompt || "התאם/י כל מונח לתרגומו.")}</div>
+        <div class="et-vocab-grid">
+          <div class="et-vocab-col">
+            ${left.map(item =>
+              `<button class="et-vocab-btn" id="vb_${item.id}"
+                data-side="L" data-pi="${item.pi}"
+                onclick="vocabClick(this)">${escapeHtml(item.text)}</button>`
+            ).join("")}
+          </div>
+          <div class="et-vocab-col">
+            ${right.map(item =>
+              `<button class="et-vocab-btn" id="vb_${item.id}"
+                data-side="R" data-pi="${item.pi}"
+                onclick="vocabClick(this)">${escapeHtml(item.text)}</button>`
+            ).join("")}
+          </div>
+        </div>
+        <div id="etVocabStatus" style="font-size:12px;color:#64748b;text-align:center;margin-top:4px;">
+          0 / ${pairs.length} זוגות הותאמו
+        </div>`;
+    }
+
+    function vocabClick(btn) {
+      const pi   = Number(btn.dataset.pi);
+      const side = btn.dataset.side;
+      if (!_vocabSelected) {
+        _vocabSelected = { btn, pi, side };
+        btn.classList.add("selected");
+        return;
+      }
+      const prev = _vocabSelected;
+      _vocabSelected = null;
+      // Same side → swap selection
+      if (prev.side === side) {
+        prev.btn.classList.remove("selected");
+        _vocabSelected = { btn, pi, side };
+        btn.classList.add("selected");
+        return;
+      }
+      prev.btn.classList.remove("selected");
+      if (prev.pi === pi) {
+        // Match
+        prev.btn.classList.add("matched");
+        btn.classList.add("matched");
+        _vocabMatched.add(pi);
+        const pairs  = Array.isArray(_entranceTask?.pairs) ? _entranceTask.pairs : [];
+        const status = document.getElementById("etVocabStatus");
+        if (status) status.textContent = `${_vocabMatched.size} / ${pairs.length} זוגות הותאמו`;
+        if (_vocabMatched.size === pairs.length) setTimeout(() => completeEntranceTask("vocab:matched"), 500);
+      } else {
+        // Wrong
+        prev.btn.classList.add("wrong");
+        btn.classList.add("wrong");
+        setTimeout(() => { prev.btn.classList.remove("wrong"); btn.classList.remove("wrong"); }, 650);
+      }
+    }
+
+    // ── Complete ─────────────────────────────────────
+    async function completeEntranceTask(answer) {
+      if (entranceTaskDone) return;
+      entranceTaskDone = true;
+      // Visual success
+      const body    = document.getElementById("etBody");
+      const success = document.getElementById("etSuccess");
+      if (body)    body.style.opacity = ".25";
+      if (success) success.style.display = "";
+      // Write completion to Firebase
+      const db = getDb();
+      if (db && courseId) {
+        try {
+          await db.ref(`entranceTickets/${courseId}/${studentId}`).set({
+            type:        _entranceTask?.type || "unknown",
+            answer:      String(answer).slice(0, 500),
+            studentName: getStudentName(),
+            completedAt: Date.now()
+          });
+        } catch(e) { console.warn("[MilEd] entranceTicket write failed:", e); }
+      }
+      await updateReadyState();
+    }
+
     function showDoorAnimation() {
       const el = document.getElementById("doorAnim");
       if (el) el.classList.add("visible");
@@ -807,7 +1092,7 @@
 
     function attemptRedirect() {
       if (redirecting || !waitingSessionId) return;
-      const tasksCompleted = warmupDone && memoryDone;
+      const tasksCompleted = _entranceTask ? entranceTaskDone : (warmupDone && memoryDone);
       if (!tasksCompleted && latestDoorSignal !== "open") return;
       redirecting = true;
       showDoorAnimation();
@@ -987,6 +1272,7 @@
       initManualEnter();
       renderMemoryBoard();
       await loadConfigTitle();
+      if (!skipLobbyUI) await loadEntranceTask();
       if (!skipLobbyUI) await loadPreSession();
       if (!skipLobbyUI) await upsertAttendeePresence();
       // Always run state check (discovers sessionId if missing)
