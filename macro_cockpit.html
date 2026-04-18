@@ -1749,16 +1749,59 @@ body { background: var(--bg) !important; }
     <div class="mc-section-body">
 
     <div style="margin:0 0 16px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;">
-      <div style="font-size:12px;color:#64748b;margin-bottom:10px;">הכן משימת פתיחה לפני תחילת השיעור: וידאו, אודיו או טקסט.</div>
+      <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:4px;">🎯 מטלת כניסה</div>
+      <div style="font-size:12px;color:#64748b;margin-bottom:10px;">הגדר מטלה שהסטודנט חייב להשלים לפני כניסה לשיעור.</div>
 
       <div class="field" style="margin-bottom:8px;">
-        <label>Video URL</label>
-        <input id="preSessionVideoUrl" type="url" placeholder="https://..." class="lp-input" style="margin:0;">
+        <label>סוג המטלה</label>
+        <select id="preSessionTaskType" class="lp-input" style="margin:0;" onchange="updateEntranceTaskFields()">
+          <option value="ticket">✍️ כתיבה חופשית (Ticket)</option>
+          <option value="quiz">❓ חידון (Quiz)</option>
+          <option value="video">🎬 צפייה בסרטון</option>
+          <option value="vocab">📖 אוצר מילים</option>
+        </select>
       </div>
 
       <div class="field" style="margin-bottom:8px;">
-        <label>Text Mission</label>
-        <textarea id="preSessionText" class="lp-textarea" rows="3" placeholder="כתוב כאן את משימת הכניסה..." style="margin:0;"></textarea>
+        <label>כותרת המטלה</label>
+        <input id="preSessionTaskTitle" type="text" placeholder="למשל: ענה על שאלת הפתיחה לפני הכניסה" class="lp-input" style="margin:0;">
+      </div>
+
+      <div class="field" style="margin-bottom:8px;">
+        <label>שאלה / הנחיה לסטודנט</label>
+        <textarea id="preSessionText" class="lp-textarea" rows="3" placeholder="כתוב כאן את ההנחיה..." style="margin:0;"></textarea>
+      </div>
+
+      <!-- Video URL — shown only for video type -->
+      <div id="videoUrlField" class="field" style="margin-bottom:8px;display:none;">
+        <label>Video URL</label>
+        <input id="preSessionVideoUrl" type="url" placeholder="https://youtube.com/..." class="lp-input" style="margin:0;">
+      </div>
+
+      <!-- Quiz fields — shown only for quiz type -->
+      <div id="quizFields" style="display:none;">
+        <div class="field" style="margin-bottom:8px;">
+          <label>אפשרויות תשובה (שורה לכל אפשרות)</label>
+          <textarea id="preSessionQuizOptions" class="lp-textarea" rows="4" placeholder="אפשרות א'&#10;אפשרות ב'&#10;אפשרות ג'&#10;אפשרות ד'" style="margin:0;"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:8px;">
+          <label>מספר התשובה הנכונה (1, 2, 3... — 0 = כל תשובה מקובלת)</label>
+          <input id="preSessionCorrectIndex" type="number" min="0" max="10" value="1" class="lp-input" style="margin:0;width:80px;">
+        </div>
+      </div>
+
+      <!-- Vocab fields — shown only for vocab type -->
+      <div id="vocabFields" style="display:none;">
+        <div class="field" style="margin-bottom:8px;">
+          <label>זוגות מילים (שורה לכל זוג: מילה|תרגום)</label>
+          <textarea id="preSessionVocabPairs" class="lp-textarea" rows="5" placeholder="שלום|Hello&#10;תודה|Thank you&#10;כן|Yes" style="margin:0;"></textarea>
+        </div>
+      </div>
+
+      <!-- Ticket min-length — shown only for ticket type -->
+      <div id="ticketLengthField" class="field" style="margin-bottom:8px;">
+        <label>מינימום תווים לתשובה</label>
+        <input id="preSessionMinLength" type="number" min="5" max="2000" value="20" class="lp-input" style="margin:0;width:80px;">
       </div>
 
       <div class="field" style="margin-bottom:8px;">
@@ -1772,7 +1815,7 @@ body { background: var(--bg) !important; }
       </div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-blue" onclick="savePreSessionMission()" style="font-size:12px;padding:7px 14px;">💾 שמור משימת פתיחה</button>
+        <button class="btn btn-blue" onclick="savePreSessionMission()" style="font-size:12px;padding:7px 14px;">💾 שמור מטלת כניסה</button>
         <button class="btn btn-outline" onclick="clearPreSessionMission()" style="font-size:12px;padding:7px 14px;">🗑️ נקה</button>
         <button class="btn btn-outline" id="generateWarmupBtn" onclick="generateWarmup()" style="font-size:12px;padding:7px 14px;background:#f0fdf4;color:#166534;border-color:#bbf7d0;">🤖 צור חימום AI</button>
         <span id="preSessionStatus" style="font-size:12px;color:#475569;align-self:center;"></span>
@@ -2459,6 +2502,17 @@ async function handlePreSessionAudioUpload(event) {
   event.target.value = '';
 }
 
+function updateEntranceTaskFields() {
+  const type = document.getElementById('preSessionTaskType')?.value || 'ticket';
+  const show = id => { const el = document.getElementById(id); if (el) el.style.display = ''; };
+  const hide = id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; };
+  hide('videoUrlField'); hide('quizFields'); hide('vocabFields'); hide('ticketLengthField');
+  if (type === 'video')  show('videoUrlField');
+  if (type === 'quiz')   show('quizFields');
+  if (type === 'vocab')  show('vocabFields');
+  if (type === 'ticket') show('ticketLengthField');
+}
+
 async function loadPreSessionMission() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
   const unitId = currentUnitId || "unit_01";
@@ -2470,7 +2524,7 @@ async function loadPreSessionMission() {
     if (textEl) textEl.value = '';
     preSessionAudioDataUrl = '';
     renderPreSessionAudioPreview();
-    if (statusEl) statusEl.textContent = 'בחר קורס כדי להגדיר משימת פתיחה';
+    if (statusEl) statusEl.textContent = 'בחר קורס כדי להגדיר מטלת כניסה';
     return;
   }
 
@@ -2479,15 +2533,33 @@ async function loadPreSessionMission() {
     if (!res.ok) return;
     const data = await res.json();
     const mission = data?.mission || {};
+    const et = data?.entranceTask || {};
+
     const videoEl = document.getElementById('preSessionVideoUrl');
-    const textEl = document.getElementById('preSessionText');
-    if (videoEl) videoEl.value = mission.videoUrl || '';
-    if (textEl) textEl.value = mission.text || '';
+    const textEl  = document.getElementById('preSessionText');
+    if (videoEl) videoEl.value = et.videoUrl || mission.videoUrl || '';
+    if (textEl)  textEl.value  = et.prompt   || mission.text     || '';
     preSessionAudioDataUrl = mission.audioDataUrl || '';
     renderPreSessionAudioPreview();
-    if (statusEl) statusEl.textContent = mission.updatedAt ? `עודכן: ${new Date(mission.updatedAt).toLocaleString('he-IL')}` : 'אין משימת פתיחה שמורה';
+
+    // Populate entrance task fields
+    const typeEl = document.getElementById('preSessionTaskType');
+    if (typeEl && et.type) typeEl.value = et.type;
+    const titleEl = document.getElementById('preSessionTaskTitle');
+    if (titleEl) titleEl.value = et.title || '';
+    const optionsEl = document.getElementById('preSessionQuizOptions');
+    if (optionsEl) optionsEl.value = Array.isArray(et.options) ? et.options.join('\n') : '';
+    const correctEl = document.getElementById('preSessionCorrectIndex');
+    if (correctEl) correctEl.value = et.correctIndex != null ? et.correctIndex + 1 : 1;
+    const pairsEl = document.getElementById('preSessionVocabPairs');
+    if (pairsEl) pairsEl.value = Array.isArray(et.pairs) ? et.pairs.map(p => p.join('|')).join('\n') : '';
+    const minLenEl = document.getElementById('preSessionMinLength');
+    if (minLenEl) minLenEl.value = et.minLength || 20;
+
+    updateEntranceTaskFields();
+    if (statusEl) statusEl.textContent = et.updatedAt ? `עודכן: ${new Date(et.updatedAt).toLocaleString('he-IL')}` : (mission.updatedAt ? `עודכן: ${new Date(mission.updatedAt).toLocaleString('he-IL')}` : 'אין מטלת כניסה שמורה');
   } catch (e) {
-    if (statusEl) statusEl.textContent = 'שגיאה בטעינת משימת פתיחה';
+    if (statusEl) statusEl.textContent = 'שגיאה בטעינת מטלת כניסה';
   }
 }
 
@@ -2500,24 +2572,38 @@ async function savePreSessionMission() {
     return;
   }
 
-  const videoUrl = document.getElementById('preSessionVideoUrl')?.value?.trim() || '';
-  const text = document.getElementById('preSessionText')?.value?.trim() || '';
-  if (!videoUrl && !text && !preSessionAudioDataUrl) {
-    if (statusEl) statusEl.textContent = 'הוסף לפחות סוג תוכן אחד (וידאו/אודיו/טקסט)';
+  const taskType   = document.getElementById('preSessionTaskType')?.value || 'ticket';
+  const taskTitle  = document.getElementById('preSessionTaskTitle')?.value?.trim() || '';
+  const prompt     = document.getElementById('preSessionText')?.value?.trim() || '';
+  const videoUrl   = document.getElementById('preSessionVideoUrl')?.value?.trim() || '';
+  const options    = document.getElementById('preSessionQuizOptions')?.value?.trim() || '';
+  const correctIdx = document.getElementById('preSessionCorrectIndex')?.value || '1';
+  const vocabPairs = document.getElementById('preSessionVocabPairs')?.value?.trim() || '';
+  const minLength  = document.getElementById('preSessionMinLength')?.value || '20';
+
+  if (!prompt && !videoUrl && !preSessionAudioDataUrl) {
+    if (statusEl) statusEl.textContent = 'הוסף לפחות הנחיה או קישור לסרטון';
     return;
   }
 
   if (statusEl) statusEl.textContent = 'שומר...';
   const res = await callClassroom({
-    action: 'pre_session_save',
+    action:       'pre_session_save',
     classId,
-    courseId: classId,
+    courseId:     classId,
     unitId,
-    userId: facultyId,
+    userId:       facultyId,
     facultyId,
+    taskType,
+    taskTitle,
+    prompt,
     videoUrl,
-    text,
-    audioDataUrl: preSessionAudioDataUrl || ''
+    options,
+    correctIndex: correctIdx,
+    pairs:        vocabPairs,
+    minLength,
+    audioDataUrl: preSessionAudioDataUrl || '',
+    text:         prompt
   });
 
   if (!res?.ok) {

@@ -67,6 +67,43 @@ function normalizePreSessionMission(input = {}) {
   };
 }
 
+function buildEntranceTask(input = {}) {
+  const type = String(input.taskType || input.type || "ticket").trim().toLowerCase();
+  const title  = String(input.taskTitle || input.title || "").trim() || null;
+  const prompt = String(input.text || input.prompt || "").trim() || null;
+
+  const task = { enabled: true, type, title, prompt, updatedAt: Date.now() };
+
+  if (type === "video") {
+    task.videoUrl = String(input.videoUrl || "").trim() || null;
+  }
+  if (type === "quiz") {
+    const rawOptions = input.options;
+    const options = Array.isArray(rawOptions)
+      ? rawOptions.map(o => String(o).trim()).filter(Boolean)
+      : String(rawOptions || "").split("\n").map(o => o.trim()).filter(Boolean);
+    task.options       = options.length ? options : null;
+    task.correctIndex  = Number.isFinite(Number(input.correctIndex)) ? Number(input.correctIndex) - 1 : -1;
+    task.allowWrongAnswer = task.correctIndex < 0;
+  }
+  if (type === "ticket") {
+    task.minLength = Number(input.minLength) > 0 ? Number(input.minLength) : 20;
+  }
+  if (type === "vocab") {
+    const rawPairs = input.pairs;
+    let pairs = [];
+    if (Array.isArray(rawPairs)) {
+      pairs = rawPairs.map(p => Array.isArray(p) ? p : String(p).split("|").map(s => s.trim())).filter(p => p.length >= 2);
+    } else {
+      pairs = String(rawPairs || "").split("\n")
+        .map(line => line.split("|").map(s => s.trim()))
+        .filter(p => p.length >= 2 && p[0] && p[1]);
+    }
+    task.pairs = pairs.length ? pairs : null;
+  }
+  return task;
+}
+
 function clipCardText(text, maxLen = 40) {
   const clean = String(text || "").replace(/\s+/g, " ").trim();
   if(clean.length <= maxLen) return clean;
@@ -750,13 +787,14 @@ export async function handler(event){
 
       const unitPath = getUnitPath(userId, classId, unitId);
 
-      const [unitSnap, missionSnapLegacy, ticketsSnapLegacy, warmupSnapLegacy, waitingSnapshot, courseLiveMeetingSnap] = await Promise.all([
+      const [unitSnap, missionSnapLegacy, ticketsSnapLegacy, warmupSnapLegacy, waitingSnapshot, courseLiveMeetingSnap, entranceTaskSnap] = await Promise.all([
         db.ref(unitPath).once("value"),
         db.ref(`pre_session_content/${classId}`).once("value"),
         db.ref(`pre_session_tickets/${classId}`).once("value"),
         db.ref(`pre_session_warmup/${classId}`).once("value"),
         getFreshWaitingSnapshot(db, classId, unitId),
-        db.ref(`courses/${classId}/liveMeeting`).once("value")
+        db.ref(`courses/${classId}/liveMeeting`).once("value"),
+        db.ref(`classes/${classId}/features/entranceTask`).once("value")
       ]);
 
       const unitData = unitSnap.val() || {};
@@ -796,6 +834,7 @@ export async function handler(event){
         structureType: unitData?.structureType || null,
         mission,
         warmup,
+        entranceTask: entranceTaskSnap.val() || null,
         entranceTicket,
         hasEntranceTicket: !!(entranceTicket?.answer),
         waitingStudentsCount: waitingSnapshot.count,
@@ -1190,12 +1229,16 @@ export async function handler(event){
 
     await db.ref(`pre_session_content/${resolvedCourseId}`).set(missionPayload);
 
+    // Write structured entrance task for the new gate system
+    const entranceTask = buildEntranceTask(body);
+    await db.ref(`classes/${resolvedCourseId}/features/entranceTask`).set(entranceTask);
+
     // New mission resets entrance tickets so lecturer sees fresh intent.
     await db.ref(`pre_session_tickets/${resolvedCourseId}`).remove();
     if(userId)
       await db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/entranceTickets`).remove();
 
-    return ok({ ok:true, classId: resolvedCourseId, unitId, userId, mission: missionPayload });
+    return ok({ ok:true, classId: resolvedCourseId, unitId, userId, mission: missionPayload, entranceTask });
   }
 
   if(action === "pre_session_clear"){
@@ -1209,7 +1252,8 @@ export async function handler(event){
     const clearOps = [
       db.ref(`pre_session_content/${resolvedCourseId}`).remove(),
       db.ref(`pre_session_tickets/${resolvedCourseId}`).remove(),
-      db.ref(`pre_session_warmup/${resolvedCourseId}`).remove()
+      db.ref(`pre_session_warmup/${resolvedCourseId}`).remove(),
+      db.ref(`classes/${resolvedCourseId}/features/entranceTask`).remove()
     ];
     if(userId){
       clearOps.push(db.ref(`${getUnitPath(userId, resolvedCourseId, unitId)}/missionData`).remove());

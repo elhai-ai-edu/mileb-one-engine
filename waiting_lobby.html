@@ -1074,11 +1074,16 @@
       const db = getDb();
       if (db && courseId) {
         try {
-          await db.ref(`entranceTickets/${courseId}/${studentId}`).set({
+          // Write to the path the cockpit reads: pre_session_tickets/{classId}/{studentId}
+          await db.ref(`pre_session_tickets/${courseId}/${studentId}`).set({
+            studentId,
+            studentName: getStudentName(),
+            name:        getStudentName(),
             type:        _entranceTask?.type || "unknown",
             answer:      String(answer).slice(0, 500),
-            studentName: getStudentName(),
-            completedAt: Date.now()
+            text:        String(answer).slice(0, 500),
+            submittedAt: Date.now(),
+            classId:     courseId
           });
         } catch(e) { console.warn("[MilEd] entranceTicket write failed:", e); }
       }
