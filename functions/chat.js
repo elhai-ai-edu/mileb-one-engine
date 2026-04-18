@@ -200,6 +200,7 @@ async function verifyFacultyId(facultyId) {
     const snap = await getDB().ref(`admin/auth/${facultyId}`).get();
     if (!snap.exists()) return false;
     const record = snap.val();
+    if (!record || typeof record !== "object") return false;
     const role = record.role || "";
     return ["faculty", "admin", "superadmin"].includes(role);
   } catch (e) {
