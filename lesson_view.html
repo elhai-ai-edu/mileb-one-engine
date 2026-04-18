@@ -638,6 +638,11 @@
     .comm-panel.submitted .write-action-row { display: none; }
     .comm-panel.submitted .sub-submitted-banner { display: flex; }
 
+    /* ── Quiz Option Buttons (demo toggle) ── */
+    .quiz-option { cursor:pointer; padding:8px 14px; border:1.5px solid #e2e8f0; border-radius:8px; background:#f8fafc; font-size:13px; transition:all .15s; text-align:right; width:100%; }
+    .quiz-option:hover { border-color:#a5b4fc; background:#eef2ff; }
+    .quiz-option.selected { border-color:#4f46e5; background:#eef2ff; color:#3730a3; font-weight:700; }
+
     /* ── Peer Review Panel ── */
     .peer-review-panel {
       padding: 14px 18px; border-top: 2px solid #bfdbfe;
@@ -3152,6 +3157,49 @@
         });
         if (res.ok && ta) ta.value = "";
       } catch(e) { console.warn("[MilEd] contribute failed:", e); }
+    }
+
+    // ── Demo: inject fake peer contributions one by one ──────────────────────
+    function simulateGroupTyping() {
+      const feed = document.getElementById("groupContribFeed");
+      if (!feed) return;
+      const fakes = [
+        { name: "נועה כהן",   id: "sim_1", type: "content",   text: "לדעתי המושג המרכזי הוא הקשר בין זהות לשפה — כדאי להדגיש את זה בטיוטה." },
+        { name: "יאיר לוי",   id: "sim_2", type: "challenge",  text: "מסכים, אבל מה עם הגישה הביקורתית של פוקו? האם אנחנו מתייחסים אליה?" },
+        { name: "מיכל אברהם", id: "sim_3", type: "comment",   text: "✍️ מנסה לנסח משפט מסכם — אעלה תוך כמה דקות." },
+        { name: "ראם שלום",   id: "sim_4", type: "content",   text: "מצאתי מקור: בן-רפאל (2001) דן בדיוק בזה. אוסיף ציטוט?" }
+      ];
+      const colors   = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
+      const typeIcon = { content: "✍️", challenge: "🤔", comment: "💬" };
+      if (!feed.querySelector(".group-contrib-item")) feed.innerHTML = "";
+      fakes.forEach((f, i) => {
+        setTimeout(() => {
+          const color = colors[Math.abs(f.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % colors.length];
+          const time  = new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+          const el    = document.createElement("div");
+          el.className = "group-contrib-item";
+          el.style.cssText = "opacity:0;transition:opacity .3s;";
+          el.innerHTML = `
+            <div class="contrib-avatar" style="background:${color};">${f.name.charAt(0)}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="contrib-header">
+                <span class="contrib-name">${f.name}</span>
+                <span class="contrib-time">${time} ${typeIcon[f.type] || ""}</span>
+              </div>
+              <div class="contrib-text">${f.text}</div>
+            </div>`;
+          feed.appendChild(el);
+          requestAnimationFrame(() => { el.style.opacity = "1"; });
+          feed.scrollTop = feed.scrollHeight;
+        }, i * 1400);
+      });
+    }
+
+    // ── Demo: toggle quiz choice buttons (static, not engine) ────────────────
+    function answerQuiz(btn) {
+      const group = btn.closest(".quiz-options")?.querySelectorAll(".quiz-option") || [btn];
+      group.forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
     }
 
     async function saveMasterDraft() {
