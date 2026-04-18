@@ -6,18 +6,25 @@
   <title>Lesson View - MilEd.One</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --navy: #0f172a;
-      --blue: #1d4ed8;
-      --cyan: #0f766e;
-      --ink: #0f172a;
-      --muted: #475569;
-      --line: #dbe7ff;
-      --panel: rgba(255,255,255,0.92);
-      --good: #166534;
-      --warn: #92400e;
+      --navy:           #0f172a;
+      --blue:           #1d4ed8;
+      --cyan:           #0f766e;
+      --ink:            #0f172a;
+      --muted:          #475569;
+      --line:           #dbe7ff;
+      --panel:          rgba(255,255,255,0.92);
+      --good:           #166534;
+      --warn:           #92400e;
+      /* ── Brand additions (align with demo) ── */
+      --bordeaux:       #7a1530;
+      --bordeaux-dark:  #4a0818;
+      --bordeaux-light: #b83055;
+      --emerald:        #059669;
+      --emerald-dark:   #065f46;
+      --line-soft:      #e2e8f0;
     }
     * { box-sizing: border-box; }
     html { font-size: 113%; }
@@ -44,9 +51,10 @@
       gap: 12px;
       padding: 16px 18px;
       border-radius: 22px;
-      background: linear-gradient(120deg, #0f172a, #1d4ed8 60%, #0f766e 100%);
+      background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%);
       color: #fff;
       box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
+      border-bottom: 2px solid #1e40af;
     }
     .topbar-title { display: grid; gap: 4px; }
     .topbar-title strong { font-size: 1.3rem; }
@@ -607,6 +615,62 @@
       cursor: pointer;
       font-family: inherit;
     }
+
+    /* ── Activity block label (blue bar accent) ── */
+    .activity-block-label {
+      font-size: 11px; font-weight: 800; color: var(--muted);
+      letter-spacing: .4px; text-transform: uppercase;
+      display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+    }
+    .activity-block-label::before {
+      content: ''; width: 3px; height: 14px; border-radius: 2px;
+      background: var(--blue); flex-shrink: 0;
+    }
+
+    /* ── Submission success state ── */
+    .sub-submitted-banner {
+      display: none; align-items: center; gap: 12px;
+      padding: 10px 14px; background: #f0fdf4;
+      border: 1.5px solid #86efac; border-radius: 10px; margin-top: 8px;
+      font-size: 14px; font-weight: 700; color: #15803d;
+    }
+    .comm-panel.submitted textarea   { display: none; }
+    .comm-panel.submitted .write-action-row { display: none; }
+    .comm-panel.submitted .sub-submitted-banner { display: flex; }
+
+    /* ── Peer Review Panel ── */
+    .peer-review-panel {
+      padding: 14px 18px; border-top: 2px solid #bfdbfe;
+      background: linear-gradient(180deg, #f0f7ff, #fff);
+      display: none;
+    }
+    .peer-review-panel.visible { display: block; }
+    .peer-review-head { font-size: 15px; font-weight: 800; color: var(--navy); margin-bottom: 12px; }
+    .peer-rubric { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+    .rubric-item { display: flex; flex-direction: column; gap: 6px; }
+    .rubric-q    { font-size: 13px; font-weight: 700; color: var(--navy); }
+    .rubric-scale { display: flex; gap: 4px; }
+    .rubric-scale-pill {
+      flex: 1; font-size: 11px; font-weight: 700; padding: 6px 4px;
+      border-radius: 8px; border: 1.5px solid var(--line-soft);
+      background: #f8fafc; color: var(--muted);
+      cursor: pointer; transition: all .14s; font-family: inherit; text-align: center;
+    }
+    .rubric-scale-pill:hover { border-color: #93c5fd; background: #eff6ff; }
+    .rubric-scale-pill.sel[data-level="1"] { background: #fef2f2; border-color: #fca5a5; color: #dc2626; font-weight: 800; }
+    .rubric-scale-pill.sel[data-level="2"] { background: #fefce8; border-color: #fde047; color: #854d0e; font-weight: 800; }
+    .rubric-scale-pill.sel[data-level="3"] { background: #ecfdf5; border-color: #86efac; color: #15803d; font-weight: 800; }
+    .rubric-scale-pill.sel[data-level="4"] { background: #f0fdf4; border-color: #4ade80; color: #15803d; font-weight: 900; box-shadow: 0 0 0 2px #bbf7d0; }
+    .emoji-bank-label { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 6px; }
+    .emoji-bank { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+    .emoji-item {
+      width: 34px; height: 34px; border-radius: 8px;
+      border: 1.5px solid var(--line-soft); background: #f8fafc;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; cursor: pointer; transition: all .12s; font-family: inherit;
+    }
+    .emoji-item:hover { background: #eff6ff; border-color: #93c5fd; transform: scale(1.15); }
+    .emoji-item.sel   { background: #eff6ff; border-color: var(--blue); box-shadow: 0 0 0 2px #bfdbfe; transform: scale(1.12); }
   </style>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
