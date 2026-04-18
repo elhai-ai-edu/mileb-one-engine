@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>פרויקט הצוות — MilEd.One</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy:        #0f172a;
+      --blue:        #1d4ed8;
+      --indigo:      #4f46e5;
+      --ink:         #0f172a;
+      --muted:       #475569;
+      --line-soft:   #e2e8f0;
+      --panel:       rgba(255,255,255,0.95);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 112%; }
+    body {
+      font-family: "Assistant", sans-serif;
+      background: #f0f4ff;
+      color: var(--ink);
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    /* ── Topbar ── */
+    .tp-topbar {
+      position: sticky; top: 0; z-index: 100;
+      background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%);
+      border-bottom: 2px solid #1e40af;
+      padding: 0 20px;
+      height: 52px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .tp-logo {
+      font-size: 15px; font-weight: 800; color: #fff;
+      letter-spacing: .5px; white-space: nowrap;
+    }
+    .tp-title {
+      font-size: 13px; font-weight: 600; color: #bfdbfe;
+      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tp-baton-badge {
+      display: none; padding: 4px 12px; border-radius: 999px;
+      background: #fef9c3; color: #854d0e;
+      font-size: 11px; font-weight: 800; white-space: nowrap;
+    }
+    .tp-back-btn {
+      padding: 6px 14px; border-radius: 8px; border: 1.5px solid #3b82f6;
+      background: transparent; color: #93c5fd; font: 600 12px "Assistant", sans-serif;
+      cursor: pointer; white-space: nowrap;
+    }
+    .tp-back-btn:hover { background: rgba(59,130,246,.15); }
+
+    /* ── Layout ── */
+    .tp-layout {
+      max-width: 960px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 240px; gap: 18px;
+      padding: 20px 16px;
+    }
+    @media (max-width: 700px) {
+      .tp-layout { grid-template-columns: 1fr; }
+    }
+
+    /* ── Panel base ── */
+    .tp-panel {
+      background: var(--panel);
+      border: 1.5px solid var(--line-soft);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .tp-section-head {
+      font-size: 13px; font-weight: 800; color: #3730a3;
+      letter-spacing: .3px; margin-bottom: 12px;
+    }
+
+    /* ── Document blocks ── */
+    .block-card {
+      border: 1px solid var(--line-soft);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      background: #fff;
+      position: relative;
+    }
+    .block-meta {
+      font-size: 10px; font-weight: 700; color: #64748b;
+      margin-bottom: 6px; display: flex; gap: 8px; align-items: center;
+    }
+    .block-author { color: #3730a3; }
+    .block-text   { font-size: 13px; color: #0f172a; line-height: 1.7; }
+    .block-new-badge {
+      position: absolute; top: 8px; left: 10px;
+      background: #dbeafe; color: #1e40af;
+      font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 4px;
+    }
+
+    /* ── Add block form ── */
+    .add-block-form { margin-top: 14px; }
+    .add-block-form textarea {
+      width: 100%; border: 1.5px solid #c7d2fe; border-radius: 10px;
+      padding: 10px; font: 400 13px "Assistant", sans-serif;
+      resize: none; min-height: 70px; background: #f5f3ff;
+      margin-bottom: 8px;
+    }
+    .add-block-form textarea:focus { outline: none; border-color: var(--indigo); }
+    .add-block-form textarea:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Action buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; border-radius: 10px; border: none;
+      font: 700 13px "Assistant", sans-serif; cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-primary  { background: var(--indigo); color: #fff; }
+    .btn-primary:hover  { background: #4338ca; }
+    .btn-ghost    { background: #f1f5f9; color: #334155; border: 1.5px solid #e2e8f0; }
+    .btn-ghost:hover    { background: #e2e8f0; }
+    .btn-danger   { background: #dc2626; color: #fff; }
+    .btn-danger:hover   { background: #b91c1c; }
+    .btn-full { width: 100%; justify-content: center; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* ── Sidebar ── */
+    .tp-sidebar { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Member presence ── */
+    .member-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; border-bottom: 1px solid #f1f5f9;
+      font-size: 12px;
+    }
+    .member-dot {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .dot-online  { background: #22c55e; }
+    .dot-offline { background: #cbd5e1; }
+    .member-name { font-weight: 600; flex: 1; }
+    .member-role { font-size: 10px; color: #94a3b8; font-weight: 600; }
+    .member-baton { font-size: 11px; }
+
+    /* ── Veto chips ── */
+    .veto-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 700; margin: 3px 3px 3px 0;
+    }
+    .veto-approved { background: #dcfce7; color: #15803d; }
+    .veto-vetoed   { background: #fee2e2; color: #dc2626; }
+    .veto-pending  { background: #f1f5f9; color: #64748b; }
+
+    /* ── Digest modal overlay ── */
+    .digest-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200; padding: 20px;
+    }
+    .digest-card {
+      background: #fff; border-radius: 16px; padding: 28px 24px;
+      max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      direction: rtl;
+    }
+    .digest-head {
+      font-size: 15px; font-weight: 800; color: #3730a3; margin-bottom: 6px;
+    }
+    .digest-sub {
+      font-size: 12px; color: #94a3b8; margin-bottom: 16px;
+    }
+    .digest-body {
+      font-size: 14px; color: #1e293b; line-height: 1.8;
+      padding: 14px; background: #f8fafc; border-radius: 10px;
+      margin-bottom: 20px; border: 1px solid var(--line-soft);
+    }
+
+    /* ── Baton modal ── */
+    .baton-modal-overlay {
+      position: fixed; inset: 0; background: rgba(15,23,42,.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 210; padding: 20px;
+    }
+    .baton-modal-card {
+      background: #fff; border-radius: 16px; padding: 28px 24px;
+      max-width: 440px; width: 100%; direction: rtl;
+    }
+    .baton-modal-head {
+      font-size: 15px; font-weight: 800; color: #854d0e; margin-bottom: 8px;
+    }
+    .baton-modal-sub  { font-size: 12px; color: #78350f; margin-bottom: 16px; }
+    .baton-modal-card textarea {
+      width: 100%; border: 1.5px solid #fed7aa; border-radius: 10px;
+      padding: 10px; font: 400 13px "Assistant", sans-serif;
+      resize: none; min-height: 80px; background: #fffbeb; margin-bottom: 16px;
+    }
+
+    /* ── Status banners ── */
+    .tp-status-banner {
+      padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
+      text-align: center; margin-bottom: 14px;
+    }
+    .banner-success { background: #f0fdf4; border: 1.5px solid #86efac; color: #15803d; }
+    .banner-info    { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; }
+    .banner-warn    { background: #fffbeb; border: 1.5px solid #fed7aa; color: #92400e; }
+
+    /* ── Loading ── */
+    .tp-loading {
+      text-align: center; padding: 48px; color: #94a3b8; font-size: 14px;
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="/firebase-init.js"></script>
+  <script src="/auth-guard.js?v=20260409a"></script>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="tp-topbar">
+    <div class="tp-logo">MilEd.One</div>
+    <div class="tp-title" id="tpTitle">טוען פרויקט...</div>
+    <div class="tp-baton-badge" id="tpBatonBadge">🏏 הבטון אצלך!</div>
+    <button class="tp-back-btn" onclick="exitProject()">← יציאה מהפרויקט</button>
+  </header>
+
+  <!-- Digest modal — shown on entry -->
+  <div class="digest-overlay" id="digestOverlay" style="display:none;">
+    <div class="digest-card">
+      <div class="digest-head">👋 ברוך/ה השב/ה לפרויקט</div>
+      <div class="digest-sub" id="digestSub">מאז הביקור האחרון...</div>
+      <div class="digest-body" id="digestBody">טוען סיכום...</div>
+      <button class="btn btn-primary btn-full" onclick="closeDigest()">הבנתי — נכנסים לעבודה</button>
+    </div>
+  </div>
+
+  <!-- Baton pass modal -->
+  <div class="baton-modal-overlay" id="batonModal" style="display:none;">
+    <div class="baton-modal-card">
+      <div class="baton-modal-head">🏏 העברת הבטון</div>
+      <div class="baton-modal-sub">כתוב/י הערת מסירה לחבר/ת הצוות הבא/ה. שדה חובה.</div>
+      <textarea id="handoffNoteTa" placeholder="מה עשיתי? מה נותר? מה חשוב לדעת?"></textarea>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" style="flex:1;" onclick="confirmBatonPass()">העבר/י בטון ←</button>
+        <button class="btn btn-ghost" onclick="closeBatonModal()">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main layout -->
+  <div class="tp-layout" id="tpLayout" style="display:none;">
+
+    <!-- Left: document -->
+    <main>
+      <!-- Submitted banner -->
+      <div id="tpSubmittedBanner" class="tp-status-banner banner-success" style="display:none;">
+        ✅ הפרויקט הוגש בהצלחה — כל חברי הצוות אישרו!
+      </div>
+
+      <!-- Baton warning (not your turn) -->
+      <div id="tpNotYourTurnBanner" class="tp-status-banner banner-warn" style="display:none;">
+        ⏳ הבטון אצל חבר/ת אחר/ת — תוכל/י לצפות בלבד
+      </div>
+
+      <!-- Document blocks -->
+      <div class="tp-panel" style="margin-bottom:16px;">
+        <div class="tp-section-head">📄 מסמך הפרויקט</div>
+        <div id="blocksContainer">
+          <div class="tp-loading">טוען תוכן...</div>
+        </div>
+
+        <!-- Add block form -->
+        <div class="add-block-form" id="addBlockForm">
+          <textarea id="newBlockTa" placeholder="הוסף/י בלוק חדש למסמך..." rows="3"></textarea>
+          <button class="btn btn-primary btn-full" id="addBlockBtn" onclick="addBlock()">+ הוסף/י בלוק</button>
+        </div>
+      </div>
+
+      <!-- Veto / Approval panel -->
+      <div class="tp-panel" id="vetoPanel" style="display:none;">
+        <div class="tp-section-head">📋 אישור קבוצתי (נדרש פה אחד)</div>
+        <div id="vetoChipsContainer" style="margin-bottom:14px;"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-primary" id="vetoApproveBtn" onclick="castVote(true)">✅ אני מאשר/ת</button>
+          <button class="btn btn-ghost"   id="vetoRejectBtn"  onclick="castVote(false)">❌ יש לי הסתייגות</button>
+          <button class="btn btn-danger btn-full" id="finalSubmitBtn" style="display:none;" onclick="finalSubmit()">
+            🎉 כולם אישרו — הגש/י את הפרויקט!
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;" id="tpActionsRow">
+        <button class="btn btn-ghost" id="initiateVetoBtn" onclick="initiateVeto()" style="display:none;">
+          📋 שלח לאישור קבוצתי
+        </button>
+        <button class="btn btn-ghost" id="batonPassBtn" onclick="openBatonModal()" style="display:none;">
+          🏏 העבר/י בטון
+        </button>
+      </div>
+    </main>
+
+    <!-- Right: sidebar -->
+    <aside class="tp-sidebar">
+
+      <!-- Baton status -->
+      <div class="tp-panel">
+        <div class="tp-section-head">🏏 הבטון</div>
+        <div id="batonStatusText" style="font-size:13px;color:#475569;">טוען...</div>
+        <div id="handoffNoteDisplay" style="display:none;margin-top:8px;padding:8px;
+             background:#fffbeb;border-radius:8px;font-size:12px;color:#92400e;line-height:1.6;"></div>
+      </div>
+
+      <!-- Members -->
+      <div class="tp-panel">
+        <div class="tp-section-head">👥 חברי הצוות</div>
+        <div id="membersContainer">
+          <div style="color:#94a3b8;font-size:12px;">טוען...</div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <!-- Loading screen -->
+  <div class="tp-loading" id="tpLoadingScreen" style="padding-top:80px;">
+    🔄 טוען פרויקט...
+  </div>
+
+  <script>
+    // ── URL params ───────────────────────────────────────────────────────────
+    const params      = new URLSearchParams(location.search);
+    const projectId   = params.get("projectId")   || "";
+    const studentId   = params.get("studentId")   || "";
+    const studentName = params.get("studentName") || studentId;
+    const courseId    = params.get("courseId")    || "";
+
+    if (!projectId || !studentId) {
+      document.body.innerHTML = '<div style="padding:48px;text-align:center;font-size:15px;color:#dc2626;">חסרים פרמטרים — חזור/י ל-waiting lobby.</div>';
+      throw new Error("missing params");
+    }
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let _project        = null;
+    let _baton          = null;
+    let _vetoActivityId = "final";
+    let _newBlockIds    = new Set();
+
+    let _docRef   = null;
+    let _batonRef = null;
+    let _vetoRef  = null;
+
+    // ── Firebase ─────────────────────────────────────────────────────────────
+    function getDb() {
+      if (!window.firebase || !window.MILED_FIREBASE_CONFIG) return null;
+      if (!firebase.apps.length) firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+      if (typeof firebase.database !== "function") return null;
+      return firebase.database();
+    }
+
+    // ── Entry ────────────────────────────────────────────────────────────────
+    async function init() {
+      try {
+        const res = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "entry", projectId, studentId, studentName })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || "entry failed");
+
+        _project     = data.project;
+        _baton       = data.baton;
+        _newBlockIds = new Set(data.newBlocks?.map?.(id => id) || []);
+
+        // Topbar
+        document.getElementById("tpTitle").textContent = _project.title || "פרויקט הצוות";
+
+        // Show layout
+        document.getElementById("tpLoadingScreen").style.display = "none";
+        document.getElementById("tpLayout").style.display = "";
+
+        // Render initial state
+        renderDocument(data.document);
+        renderBaton(_baton);
+        renderMembers();
+
+        // Digest modal
+        showDigest(data.digest);
+
+        // Firebase listeners
+        startListeners();
+
+      } catch(e) {
+        document.getElementById("tpLoadingScreen").innerHTML =
+          `<div style="color:#dc2626;">שגיאה: ${e.message}</div>`;
+      }
+    }
+
+    // ── Digest modal ─────────────────────────────────────────────────────────
+    function showDigest(text) {
+      if (!text) return;
+      document.getElementById("digestBody").textContent = text;
+      document.getElementById("digestOverlay").style.display = "flex";
+    }
+
+    function closeDigest() {
+      document.getElementById("digestOverlay").style.display = "none";
+    }
+
+    // ── Document rendering ────────────────────────────────────────────────────
+    function renderDocument(doc) {
+      const container = document.getElementById("blocksContainer");
+      if (!container) return;
+
+      const blocks = Object.values(doc?.blocks || {})
+        .filter(b => !b.deleted)
+        .sort((a, b) => a.addedAt - b.addedAt);
+
+      if (!blocks.length) {
+        container.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px;">המסמך ריק — הוסף/י בלוק ראשון.</div>';
+        return;
+      }
+
+      container.innerHTML = blocks.map(b => {
+        const date   = new Date(b.addedAt).toLocaleDateString("he-IL");
+        const isNew  = _newBlockIds.has(b.id);
+        return `<div class="block-card">
+          ${isNew ? '<span class="block-new-badge">✨ חדש</span>' : ""}
+          <div class="block-meta">
+            <span class="block-author">${b.authorName || b.authorId}</span>
+            <span>${date}</span>
+          </div>
+          <div class="block-text">${escHtml(b.text)}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function escHtml(str) {
+      return String(str || "")
+        .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    // ── Baton rendering ───────────────────────────────────────────────────────
+    function renderBaton(baton) {
+      _baton = baton || {};
+      const isMine     = _baton.currentHolder === studentId;
+      const holderName = _baton.currentHolder || "—";
+
+      // Topbar badge
+      const badge = document.getElementById("tpBatonBadge");
+      if (badge) badge.style.display = isMine ? "block" : "none";
+
+      // Sidebar text
+      const statusText = document.getElementById("batonStatusText");
+      if (statusText) {
+        statusText.textContent = isMine
+          ? "🏏 הבטון אצלך — זה תורך לערוך!"
+          : `הבטון אצל ${holderName}`;
+        statusText.style.color = isMine ? "#15803d" : "#475569";
+      }
+
+      // Handoff note
+      const noteEl = document.getElementById("handoffNoteDisplay");
+      if (noteEl && _baton.handoffNote) {
+        noteEl.style.display = "";
+        noteEl.textContent   = `הערת מסירה: ${_baton.handoffNote}`;
+      } else if (noteEl) {
+        noteEl.style.display = "none";
+      }
+
+      // Not-your-turn banner + add block lock
+      const notYourTurn = document.getElementById("tpNotYourTurnBanner");
+      const addBlockBtn = document.getElementById("addBlockBtn");
+      const addBlockTa  = document.getElementById("newBlockTa");
+      const blocked     = _baton.status === "holding" && !isMine;
+
+      if (notYourTurn) notYourTurn.style.display = blocked ? "" : "none";
+      if (addBlockBtn) addBlockBtn.disabled = blocked;
+      if (addBlockTa)  addBlockTa.disabled  = blocked;
+
+      // Baton pass button — only show for holder
+      const batonPassBtn = document.getElementById("batonPassBtn");
+      if (batonPassBtn) batonPassBtn.style.display = isMine ? "" : "none";
+
+      // Initiate veto button — show for holder (any member can trigger)
+      const initiateVetoBtn = document.getElementById("initiateVetoBtn");
+      if (initiateVetoBtn) initiateVetoBtn.style.display = isMine ? "" : "none";
+    }
+
+    // ── Members sidebar ───────────────────────────────────────────────────────
+    function renderMembers() {
+      const container = document.getElementById("membersContainer");
+      if (!container || !_project?.members) return;
+
+      const roles    = _project.roles    || {};
+      const presence = {};  // will be filled by presence listener
+
+      container.innerHTML = _project.members.map(sid => {
+        const role     = roles[sid] || "";
+        const isBaton  = _baton?.currentHolder === sid;
+        const isMe     = sid === studentId;
+        return `<div class="member-row" id="member_${sid}">
+          <span class="member-dot dot-offline" id="dot_${sid}"></span>
+          <span class="member-name">${isMe ? "(אתה/את) " : ""}${sid}</span>
+          ${role ? `<span class="member-role">${role}</span>` : ""}
+          ${isBaton ? '<span class="member-baton">🏏</span>' : ""}
+        </div>`;
+      }).join("");
+
+      // Start presence listener
+      startPresenceListener();
+    }
+
+    // ── Veto rendering ────────────────────────────────────────────────────────
+    function renderVeto(veto) {
+      const panel     = document.getElementById("vetoPanel");
+      const chipsEl   = document.getElementById("vetoChipsContainer");
+      const finalBtn  = document.getElementById("finalSubmitBtn");
+      const submitBanner = document.getElementById("tpSubmittedBanner");
+
+      if (!veto || !veto.approvals) {
+        if (panel) panel.style.display = "none";
+        return;
+      }
+
+      if (panel) panel.style.display = "";
+
+      const approvals = veto.approvals || {};
+      if (chipsEl) {
+        chipsEl.innerHTML = Object.entries(approvals).map(([sid, v]) => {
+          const cls  = v.approved === true ? "veto-approved" : v.approved === false ? "veto-vetoed" : "veto-pending";
+          const icon = v.approved === true ? "✅" : v.approved === false ? "❌" : "⏳";
+          return `<span class="veto-chip ${cls}">${icon} ${sid}</span>`;
+        }).join("");
+      }
+
+      if (finalBtn) {
+        finalBtn.style.display = veto.status === "approved" ? "" : "none";
+      }
+
+      if (veto.status === "submitted") {
+        if (panel) panel.style.display = "none";
+        if (submitBanner) submitBanner.style.display = "";
+      }
+    }
+
+    // ── Firebase real-time listeners ─────────────────────────────────────────
+    function startListeners() {
+      const db = getDb();
+      if (!db) return;
+
+      // Document listener
+      _docRef = db.ref(`team_projects/${projectId}/document`);
+      _docRef.on("value", snap => {
+        renderDocument(snap.val());
+      });
+
+      // Baton listener
+      _batonRef = db.ref(`team_projects/${projectId}/baton`);
+      _batonRef.on("value", snap => {
+        renderBaton(snap.val());
+      });
+
+      // Veto listener
+      _vetoRef = db.ref(`team_projects/${projectId}/veto/${_vetoActivityId}`);
+      _vetoRef.on("value", snap => {
+        renderVeto(snap.val());
+      });
+    }
+
+    function startPresenceListener() {
+      const db = getDb();
+      if (!db || !_project?.members) return;
+      _project.members.forEach(sid => {
+        db.ref(`team_projects/${projectId}/presence/${sid}`).on("value", snap => {
+          const p   = snap.val() || {};
+          const dot = document.getElementById(`dot_${sid}`);
+          if (dot) {
+            dot.className = "member-dot " + (p.online ? "dot-online" : "dot-offline");
+          }
+          // Update baton icon in member row
+          const row = document.getElementById(`member_${sid}`);
+          if (row) {
+            const existingBaton = row.querySelector(".member-baton");
+            const isBaton = _baton?.currentHolder === sid;
+            if (isBaton && !existingBaton) {
+              row.insertAdjacentHTML("beforeend", '<span class="member-baton">🏏</span>');
+            } else if (!isBaton && existingBaton) {
+              existingBaton.remove();
+            }
+          }
+        });
+      });
+    }
+
+    function stopListeners() {
+      if (_docRef)   { _docRef.off();   _docRef   = null; }
+      if (_batonRef) { _batonRef.off(); _batonRef = null; }
+      if (_vetoRef)  { _vetoRef.off();  _vetoRef  = null; }
+    }
+
+    // ── Add block ─────────────────────────────────────────────────────────────
+    async function addBlock() {
+      const ta   = document.getElementById("newBlockTa");
+      const text = String(ta?.value || "").trim();
+      if (!text) return;
+
+      const btn = document.getElementById("addBlockBtn");
+      if (btn) btn.disabled = true;
+
+      try {
+        const res = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "add_block", projectId, studentId, studentName, text })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        if (ta) ta.value = "";
+      } catch(e) {
+        alert(`שגיאה: ${e.message}`);
+      } finally {
+        if (btn && !(_baton?.status === "holding" && _baton?.currentHolder !== studentId)) {
+          btn.disabled = false;
+        }
+      }
+    }
+
+    // ── Veto actions ──────────────────────────────────────────────────────────
+    async function initiateVeto() {
+      if (!confirm("האם להעביר את המסמך הנוכחי לאישור קבוצתי?")) return;
+      try {
+        const res = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "veto_initiate", projectId, studentId, activityId: _vetoActivityId })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        // Listener will update UI
+      } catch(e) {
+        alert(`שגיאה: ${e.message}`);
+      }
+    }
+
+    async function castVote(approved) {
+      let vetoReason = "";
+      if (!approved) {
+        vetoReason = String(prompt("מה ההסתייגות שלך?") || "").trim();
+      }
+      try {
+        await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "veto_approve", projectId, studentId,
+            activityId: _vetoActivityId, approved, vetoReason
+          })
+        });
+      } catch(e) {
+        alert(`שגיאה: ${e.message}`);
+      }
+    }
+
+    async function finalSubmit() {
+      if (!confirm("האם אתה/את בטוח/ה? הגשה זו היא סופית.")) return;
+      try {
+        const res = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "final_submit", projectId, studentId, activityId: _vetoActivityId })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        document.getElementById("tpSubmittedBanner").style.display = "";
+      } catch(e) {
+        alert(`שגיאה: ${e.message}`);
+      }
+    }
+
+    // ── Baton pass ────────────────────────────────────────────────────────────
+    function openBatonModal() {
+      document.getElementById("batonModal").style.display = "flex";
+      document.getElementById("handoffNoteTa").value = "";
+      document.getElementById("handoffNoteTa").focus();
+    }
+
+    function closeBatonModal() {
+      document.getElementById("batonModal").style.display = "none";
+    }
+
+    async function confirmBatonPass() {
+      const note = String(document.getElementById("handoffNoteTa")?.value || "").trim();
+      if (!note) {
+        alert("יש לכתוב הערת מסירה לפני העברת הבטון.");
+        return;
+      }
+      try {
+        const res = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "baton_pass", projectId, studentId, studentName, handoffNote: note })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        closeBatonModal();
+        // Redirect back to waiting lobby after baton pass
+        const lobbyUrl = `/waiting_lobby.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}`;
+        setTimeout(() => location.href = lobbyUrl, 1500);
+      } catch(e) {
+        alert(`שגיאה: ${e.message}`);
+      }
+    }
+
+    // ── Exit ──────────────────────────────────────────────────────────────────
+    function exitProject() {
+      const isBatonHolder = _baton?.currentHolder === studentId && _baton?.status === "holding";
+      if (isBatonHolder) {
+        openBatonModal();
+        return;
+      }
+      const lobbyUrl = `/waiting_lobby.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}`;
+      location.href = lobbyUrl;
+    }
+
+    // ── Cleanup ───────────────────────────────────────────────────────────────
+    window.addEventListener("beforeunload", () => {
+      stopListeners();
+      // Mark offline
+      const db = getDb();
+      if (db) {
+        db.ref(`team_projects/${projectId}/presence/${studentId}`).update({ online: false });
+      }
+    });
+
+    // ── Boot ──────────────────────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>

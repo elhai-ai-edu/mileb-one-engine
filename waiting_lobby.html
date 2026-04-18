@@ -656,7 +656,14 @@
         // Show team project button if configured
         if (config?.my_courses?.[courseId]?.teamProject) {
           const btn = document.getElementById("teamProjectBtn");
-          if (btn) btn.style.display = "inline-flex";
+          if (btn) {
+            const projectId   = config.my_courses[courseId].teamProject.projectId || "";
+            const sName = localStorage.getItem(`miled_student_name_${courseId}`) || studentId;
+            btn.style.display = "inline-flex";
+            btn.onclick = () => {
+              location.href = `/team_project.html?projectId=${encodeURIComponent(projectId)}&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(sName)}&courseId=${encodeURIComponent(courseId)}`;
+            };
+          }
         }
       } catch {}
     }

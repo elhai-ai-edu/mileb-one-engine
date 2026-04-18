@@ -894,6 +894,77 @@
                text-align:center;font-weight:700;color:#15803d;">✅ הערכה נשלחה — תודה!</div>
         </div>
 
+        <!-- ─── Group Workspace Panel ─── -->
+        <div id="groupWorkspacePanel" style="display:none;margin-top:18px;border:1.5px solid #c7d2fe;
+             border-radius:14px;background:#fafafe;padding:18px 18px 14px;direction:rtl;">
+          <div style="font-size:13px;font-weight:800;color:#3730a3;letter-spacing:.3px;margin-bottom:12px;">
+            👥 סביבת עבודה קבוצתית
+          </div>
+
+          <!-- Role badge -->
+          <div id="groupRoleBadge" style="display:inline-block;padding:3px 12px;border-radius:999px;
+               font-size:11px;font-weight:700;background:#e0e7ff;color:#3730a3;margin-bottom:14px;"></div>
+
+          <!-- Timer -->
+          <div id="groupTimerBar" style="display:none;font-size:12px;font-weight:700;color:#64748b;
+               margin-bottom:10px;padding:6px 12px;background:#f1f5f9;border-radius:8px;">⏱ זמן קבוצתי: <span id="groupTimerCount">--:--</span></div>
+
+          <!-- Contributions list -->
+          <div style="font-size:11px;font-weight:700;color:#64748b;letter-spacing:.3px;margin-bottom:6px;">תרומות חברי הקבוצה</div>
+          <div id="groupContribList" style="max-height:200px;overflow-y:auto;margin-bottom:12px;
+               border:1px solid #e2e8f0;border-radius:10px;padding:10px;background:#fff;
+               font-size:13px;color:#1e293b;line-height:1.7;">
+            <span style="color:#94a3b8;font-size:12px;">ממתין לתרומות...</span>
+          </div>
+
+          <!-- Add contribution -->
+          <textarea id="groupContribTa" placeholder="הוסף/י תרומה לדיון..."
+            style="width:100%;border:1px solid #c7d2fe;border-radius:10px;padding:10px;font:inherit;
+                   font-size:13px;resize:none;min-height:56px;background:#f5f3ff;margin-bottom:8px;"></textarea>
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button class="action-btn ghost" onclick="addGroupContrib('content')" style="flex:1;">✍️ תרום תוכן</button>
+            <button class="action-btn ghost" onclick="addGroupContrib('challenge')" style="flex:1;">🤔 אתגר</button>
+            <button class="action-btn ghost" onclick="addGroupContrib('comment')" style="flex:1;">💬 הערה</button>
+          </div>
+
+          <!-- Master draft (מנסח only) -->
+          <div id="masterDraftSection" style="display:none;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;">✏️ טיוטה מרכזית (מנסח בלבד)</div>
+            <textarea id="masterDraftTa" placeholder="כתוב/י את הטיוטה המרכזית..."
+              style="width:100%;border:1.5px solid #6366f1;border-radius:10px;padding:10px;font:inherit;
+                     font-size:13px;resize:none;min-height:80px;background:#f5f3ff;margin-bottom:8px;"></textarea>
+            <button class="action-btn primary" onclick="saveMasterDraft()" style="margin-bottom:12px;">💾 שמור טיוטה</button>
+          </div>
+
+          <!-- Master draft read-only (others) -->
+          <div id="masterDraftReadonly" style="display:none;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;">📄 טיוטה מרכזית</div>
+            <div id="masterDraftText" style="padding:10px 14px;border:1px solid #e2e8f0;border-radius:10px;
+                 background:#fff;font-size:13px;color:#0f172a;line-height:1.7;min-height:40px;">אין טיוטה עדיין.</div>
+          </div>
+
+          <!-- Veto panel -->
+          <div id="groupVetoPanel" style="display:none;border-top:1px solid #e2e8f0;padding-top:14px;">
+            <div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:8px;">אישור קבוצתי (נדרש פה אחד)</div>
+            <div id="groupVetoChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+            <button id="groupVetoApproveBtn" class="action-btn primary"
+              onclick="approveGroupVeto(true)" style="margin-left:8px;">✅ אני מאשר/ת</button>
+            <button class="action-btn ghost" onclick="approveGroupVeto(false)">❌ לי יש הסתייגות</button>
+            <button id="groupFinalSubmitBtn" class="action-btn submit" style="display:none;margin-top:10px;width:100%;"
+              onclick="submitGroupWork()">🎉 כולם אישרו — הגש/י עכשיו</button>
+          </div>
+
+          <button id="groupInitiateVetoBtn" class="action-btn" onclick="initiateGroupVeto()"
+            style="width:100%;margin-top:4px;background:#6366f1;color:#fff;border:none;padding:10px;
+                   border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;">
+            📋 שלח טיוטה לאישור קבוצתי
+          </button>
+
+          <div id="groupSubmittedBanner" style="display:none;margin-top:10px;padding:12px 14px;
+               background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;
+               text-align:center;font-weight:700;color:#15803d;">✅ העבודה הקבוצתית הוגשה!</div>
+        </div>
+
       </section>
 
       <aside class="panel chat-shell">
@@ -2400,6 +2471,11 @@
         __classFeatures = snap.val() ?? {};
       } catch(e) {
         console.warn("[MilEd] class features load failed:", e);
+        return;
+      }
+      // After loading features, initialize group workspace if enabled
+      if (__classFeatures.groupMode?.enabled && role === "student") {
+        initGroupWorkspace();
       }
     }
 
@@ -2420,6 +2496,246 @@
         const subPart   = ctx.floatCtx ? ` — ${ctx.floatCtx}` : '';
         taskEl.textContent = titlePart + subPart;
       }
+    }
+
+    // ═══════════════════════════════════════════════
+    // Group Mode — Workspace + Firebase Listener
+    // ═══════════════════════════════════════════════
+    let __groupRole          = null;
+    let _groupContribRef     = null;
+    let _groupVetoRef        = null;
+    let _groupTimerInterval  = null;
+
+    function initGroupWorkspace() {
+      const gm = __classFeatures.groupMode;
+      if (!gm?.enabled) return;
+
+      __groupRole = gm.roles?.[studentId] || null;
+      const panel = document.getElementById("groupWorkspacePanel");
+      if (panel) panel.style.display = "";
+
+      // Badge
+      const badge = document.getElementById("groupRoleBadge");
+      if (badge) badge.textContent = __groupRole ? `תפקיד: ${__groupRole}` : "חבר/ת קבוצה";
+
+      // Show master draft editor only for מנסח
+      const editorSection = document.getElementById("masterDraftSection");
+      const readonlySection = document.getElementById("masterDraftReadonly");
+      if (editorSection)  editorSection.style.display  = __groupRole === "מנסח" ? "" : "none";
+      if (readonlySection) readonlySection.style.display = __groupRole !== "מנסח" ? "" : "none";
+
+      startGroupContribListener();
+    }
+
+    function startGroupContribListener() {
+      const gm = __classFeatures.groupMode;
+      const classId    = lessonData?.courseId || courseIdFromUrl;
+      const groupId    = gm?.groupId;
+      const activityId = lessonData?.activeTask?.activityId || "default";
+      if (!classId || !groupId) return;
+
+      const db = getRealtimeDb();
+      if (!db) return;
+
+      // Detach previous listeners
+      stopGroupListeners();
+
+      const basePath = `group_contributions/${classId}/${groupId}/${activityId}`;
+      _groupContribRef = db.ref(basePath);
+      _groupContribRef.on("value", snap => {
+        const data = snap.val();
+        renderGroupContribs(data?.contributions);
+        renderMasterDraftReadonly(data?.masterDraft);
+        renderGroupVeto(data?.veto);
+        startGroupTimer(data?.timer);
+      });
+    }
+
+    function stopGroupListeners() {
+      if (_groupContribRef) { _groupContribRef.off(); _groupContribRef = null; }
+      if (_groupVetoRef)    { _groupVetoRef.off();    _groupVetoRef    = null; }
+      if (_groupTimerInterval) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
+    }
+
+    function renderGroupContribs(contribs) {
+      const el = document.getElementById("groupContribList");
+      if (!el) return;
+      if (!contribs) {
+        el.innerHTML = '<span style="color:#94a3b8;font-size:12px;">ממתין לתרומות...</span>';
+        return;
+      }
+      const items = Object.values(contribs).sort((a, b) => a.addedAt - b.addedAt);
+      const typeIcon = { content: "✍️", challenge: "🤔", comment: "💬" };
+      el.innerHTML = items.map(c => `
+        <div style="padding:6px 0;border-bottom:1px solid #f1f5f9;">
+          <span style="font-weight:700;color:#3730a3;">${c.authorName || c.authorId}</span>
+          <span style="font-size:10px;color:#94a3b8;margin-right:4px;">${typeIcon[c.type] || "•"}</span>
+          <span style="color:#1e293b;">${c.text}</span>
+        </div>`).join("");
+    }
+
+    function renderMasterDraftReadonly(draft) {
+      const el = document.getElementById("masterDraftText");
+      if (!el) return;
+      el.textContent = draft?.text || "אין טיוטה עדיין.";
+      // Also fill the editor textarea if מנסח
+      if (__groupRole === "מנסח") {
+        const ta = document.getElementById("masterDraftTa");
+        if (ta && !ta.dataset.userEditing && draft?.text) ta.value = draft.text;
+      }
+    }
+
+    function renderGroupVeto(veto) {
+      const vetoPanel = document.getElementById("groupVetoPanel");
+      const initiateBtn = document.getElementById("groupInitiateVetoBtn");
+      const finalBtn    = document.getElementById("groupFinalSubmitBtn");
+      if (!vetoPanel) return;
+
+      if (!veto) {
+        vetoPanel.style.display   = "none";
+        if (initiateBtn) initiateBtn.style.display = __groupRole === "מנסח" ? "" : "none";
+        return;
+      }
+
+      vetoPanel.style.display   = "";
+      if (initiateBtn) initiateBtn.style.display = "none";
+
+      const approvals = veto.approvals || {};
+      const chips = document.getElementById("groupVetoChips");
+      if (chips) {
+        chips.innerHTML = Object.entries(approvals).map(([sid, v]) => {
+          const color = v.approved === true  ? "#dcfce7" : v.approved === false ? "#fee2e2" : "#f1f5f9";
+          const icon  = v.approved === true  ? "✅" : v.approved === false ? "❌" : "⏳";
+          return `<span style="padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;
+                   background:${color};color:#1e293b;">${icon} ${sid}</span>`;
+        }).join("");
+      }
+
+      if (finalBtn) {
+        finalBtn.style.display = veto.status === "approved" ? "" : "none";
+      }
+
+      // If submitted, hide everything and show banner
+      if (veto.status === "submitted") {
+        vetoPanel.style.display = "none";
+        const banner = document.getElementById("groupSubmittedBanner");
+        if (banner) banner.style.display = "";
+      }
+    }
+
+    function startGroupTimer(timer) {
+      const bar  = document.getElementById("groupTimerBar");
+      const disp = document.getElementById("groupTimerCount");
+      if (!bar || !timer || timer.status !== "running") {
+        if (bar) bar.style.display = "none";
+        if (_groupTimerInterval) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
+        return;
+      }
+      bar.style.display = "";
+      if (_groupTimerInterval) clearInterval(_groupTimerInterval);
+      const endAt = timer.startedAt + (timer.durationSeconds * 1000);
+      _groupTimerInterval = setInterval(() => {
+        const rem = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
+        const m   = String(Math.floor(rem / 60)).padStart(2, "0");
+        const s   = String(rem % 60).padStart(2, "0");
+        if (disp) disp.textContent = `${m}:${s}`;
+        if (rem === 0) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
+      }, 1000);
+    }
+
+    async function addGroupContrib(type) {
+      const ta = document.getElementById("groupContribTa");
+      const text = String(ta?.value || "").trim();
+      if (!text) return;
+      const gm      = __classFeatures.groupMode;
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      try {
+        const res = await fetch("/.netlify/functions/group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "contribute", classId, studentId, studentName,
+            groupId: gm?.groupId, activityId: lessonData?.activeTask?.activityId || "default",
+            text, type
+          })
+        });
+        if (res.ok && ta) ta.value = "";
+      } catch(e) { console.warn("[MilEd] contribute failed:", e); }
+    }
+
+    async function saveMasterDraft() {
+      const ta   = document.getElementById("masterDraftTa");
+      const text = String(ta?.value || "").trim();
+      if (!text) return;
+      const gm      = __classFeatures.groupMode;
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      ta.dataset.userEditing = "1";
+      try {
+        await fetch("/.netlify/functions/group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "master_draft", classId, studentId, studentName,
+            groupId: gm?.groupId, activityId: lessonData?.activeTask?.activityId || "default", text
+          })
+        });
+      } catch(e) { console.warn("[MilEd] master_draft save failed:", e); }
+      setTimeout(() => { delete ta.dataset.userEditing; }, 3000);
+    }
+
+    async function initiateGroupVeto() {
+      const gm      = __classFeatures.groupMode;
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      try {
+        await fetch("/.netlify/functions/group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "veto_initiate", classId, studentId,
+            groupId: gm?.groupId, activityId: lessonData?.activeTask?.activityId || "default"
+          })
+        });
+      } catch(e) { console.warn("[MilEd] veto_initiate failed:", e); }
+    }
+
+    async function approveGroupVeto(approved) {
+      const gm      = __classFeatures.groupMode;
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      let vetoReason = "";
+      if (!approved) {
+        vetoReason = String(prompt("מה ההסתייגות שלך?") || "").trim();
+      }
+      try {
+        await fetch("/.netlify/functions/group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "veto_approve", classId, studentId,
+            groupId: gm?.groupId, activityId: lessonData?.activeTask?.activityId || "default",
+            approved, vetoReason
+          })
+        });
+      } catch(e) { console.warn("[MilEd] veto_approve failed:", e); }
+    }
+
+    async function submitGroupWork() {
+      const gm      = __classFeatures.groupMode;
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      try {
+        const res = await fetch("/.netlify/functions/group", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "submit", classId, studentId,
+            groupId: gm?.groupId, activityId: lessonData?.activeTask?.activityId || "default"
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          const banner = document.getElementById("groupSubmittedBanner");
+          if (banner) banner.style.display = "";
+        }
+      } catch(e) { console.warn("[MilEd] group submit failed:", e); }
     }
 
     // ═══════════════════════════════════════════════
@@ -2984,7 +3300,7 @@
       refreshTimer = setInterval(refreshLesson, 6000);
       sendHeartbeat(); // immediate — registers student in session.students right away
       heartbeatTimer = setInterval(sendHeartbeat, 30000);
-      window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); stopPeerReviewListener(); });
+      window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); stopPeerReviewListener(); stopGroupListeners(); });
     }
 
     init();
