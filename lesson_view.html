@@ -841,6 +841,10 @@
           <iframe id="presentationFrame" class="presentation-frame" title="presentation-stage"></iframe>
           <div id="sprintList" class="sprint-list"></div>
         </div>
+        <!-- ─── Submission success banner (injected inside comm-panel via JS) ─── -->
+        <div class="sub-submitted-banner" id="subSuccessBanner" style="display:none;">
+          ✅ ההגשה נשלחה בהצלחה — הערכת עמיתים מוצגת למטה
+        </div>
         <!-- ─── Communication Panel (WAF + write, unified) ─── -->
         <div class="comm-panel" id="writePanel">
           <div class="comm-stream" id="wafMessages">
@@ -870,6 +874,26 @@
             </div>
           </div>
         </div>
+        <!-- ─── Peer Review Panel ─── -->
+        <div class="peer-review-panel" id="peerReviewPanel">
+          <div class="peer-review-head">📊 הערכת עמיתים</div>
+          <div id="peerAnswerCard" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;letter-spacing:.3px;">תשובת עמית לסקירה</div>
+            <div id="peerAnswerText" style="font-size:13px;color:#0f172a;line-height:1.6;">טוען...</div>
+          </div>
+          <div class="peer-rubric" id="peerRubric"></div>
+          <div class="emoji-bank-label">הוסף/י תגובה גרפית (אופציונלי)</div>
+          <div class="emoji-bank" id="peerEmojiBank"></div>
+          <textarea id="peerCommentTa" placeholder="הערה נוספת (אופציונלי)"
+            style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:10px;font:inherit;
+                   font-size:13px;resize:none;min-height:56px;background:#f8fafc;margin-bottom:10px;"></textarea>
+          <button class="action-btn primary" id="peerSubmitBtn" onclick="submitPeerReview()"
+            style="width:100%;padding:10px;font-size:14px;font-weight:800;">שלח הערכת עמיתים</button>
+          <div id="peerReviewSent" style="display:none;margin-top:8px;padding:10px 14px;
+               background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;
+               text-align:center;font-weight:700;color:#15803d;">✅ הערכה נשלחה — תודה!</div>
+        </div>
+
       </section>
 
       <aside class="panel chat-shell">
@@ -2257,6 +2281,7 @@
         if (livePhaseChanged || activeTaskChanged) {
           renderLiveMeetingBar(lessonData.liveMeeting);
         }
+        if (activeTaskChanged && lessonData.activeTask) applyBotContext(lessonData.activeTask);
         // Show/hide waiting screen based on live door state
         if (role === "student") {
           const liveDoor = String(live.state?.door_status || "auto").toLowerCase();
@@ -2330,6 +2355,153 @@
       }
     }
 
+    // ═══════════════════════════════════════════════
+    // Feature Flags — classes/{classId}/features
+    // ═══════════════════════════════════════════════
+    let __classFeatures = {};
+
+    async function loadClassFeatures() {
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      if (!classId) return;
+      const db = getRealtimeDb();
+      if (!db) return;
+      try {
+        const snap = await db.ref(`classes/${classId}/features`).get();
+        __classFeatures = snap.val() ?? {};
+      } catch(e) {
+        console.warn("[MilEd] class features load failed:", e);
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // Bot Context Label — from config.json activityContexts
+    // ═══════════════════════════════════════════════
+    function applyBotContext(task) {
+      if (!task || !_fetchedCourseConfig) return;
+      const activityId = task.activityId || null;
+      const ctx = (activityId && _fetchedCourseConfig.activityContexts?.[activityId])
+                ?? _fetchedCourseConfig.activityContexts?.default
+                ?? null;
+      if (!ctx) return;
+      // Reflect activity context in the live meeting bar
+      const taskEl = document.getElementById("liveMeetingBarActiveTask");
+      if (taskEl && ctx.botLabel) {
+        const titlePart = task.title ? `📝 ${task.title}` : ctx.botLabel;
+        const subPart   = ctx.floatCtx ? ` — ${ctx.floatCtx}` : '';
+        taskEl.textContent = titlePart + subPart;
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // Peer Review Panel
+    // ═══════════════════════════════════════════════
+    const PEER_EMOJI_BANK = [
+      "💡","🔥","🌟","👏","🎯","💬","🤔","📚","✍️","🧠",
+      "💪","🎉","🙌","👍","✅","❓","🔍","📝","⚡","🌱"
+    ];
+    let _peerSelectedEmojis = new Set();
+    let _peerRubricScores   = {};
+
+    const DEFAULT_RUBRIC_QUESTIONS = [
+      { id: "q1", text: "עד כמה הרעיון הוצג בבהירות?" },
+      { id: "q2", text: "עד כמה הטיעון מגובה בדוגמאות?" },
+      { id: "q3", text: "עד כמה ניתן לראות מאמץ אישי בתשובה?" }
+    ];
+    const RUBRIC_LABELS = ["כלל לא", "במידה מועטה", "ברובה", "בהחלט ✓"];
+
+    function renderPeerRubric(questions = DEFAULT_RUBRIC_QUESTIONS) {
+      const container = document.getElementById("peerRubric");
+      if (!container) return;
+      _peerRubricScores = {};
+      container.innerHTML = questions.map(q => `
+        <div class="rubric-item">
+          <div class="rubric-q">${escapeHtml(q.text)}</div>
+          <div class="rubric-scale">
+            ${RUBRIC_LABELS.map((label, i) => `
+              <button class="rubric-scale-pill"
+                      data-group="${escapeHtml(q.id)}"
+                      data-level="${i + 1}"
+                      onclick="selectRubricPill(this)">${escapeHtml(label)}</button>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectRubricPill(btn) {
+      const group = btn.dataset.group;
+      document.querySelectorAll(`.rubric-scale-pill[data-group="${CSS.escape(group)}"]`)
+        .forEach(el => el.classList.remove('sel'));
+      btn.classList.add('sel');
+      _peerRubricScores[group] = Number(btn.dataset.level);
+    }
+
+    function renderEmojiBank() {
+      const container = document.getElementById("peerEmojiBank");
+      if (!container) return;
+      _peerSelectedEmojis.clear();
+      container.innerHTML = PEER_EMOJI_BANK.map(emoji =>
+        `<button class="emoji-item" onclick="togglePeerEmoji(this, '${emoji}')">${emoji}</button>`
+      ).join('');
+    }
+
+    function togglePeerEmoji(btn, emoji) {
+      if (_peerSelectedEmojis.has(emoji)) {
+        _peerSelectedEmojis.delete(emoji);
+        btn.classList.remove('sel');
+      } else {
+        _peerSelectedEmojis.add(emoji);
+        btn.classList.add('sel');
+      }
+    }
+
+    function showPeerReviewPanel(reviewedText = null) {
+      const panel = document.getElementById("peerReviewPanel");
+      if (!panel) return;
+      // Reset
+      _peerRubricScores = {};
+      _peerSelectedEmojis.clear();
+      document.getElementById("peerReviewSent").style.display = "none";
+      document.getElementById("peerCommentTa").value = "";
+      const submitBtn = document.getElementById("peerSubmitBtn");
+      if (submitBtn) submitBtn.style.display = "";
+      // Populate
+      renderPeerRubric(DEFAULT_RUBRIC_QUESTIONS);
+      renderEmojiBank();
+      // Peer's answer (will be real data in Phase 2)
+      const answerCard = document.getElementById("peerAnswerCard");
+      if (reviewedText) {
+        document.getElementById("peerAnswerText").textContent = reviewedText;
+        if (answerCard) answerCard.style.display = "";
+      } else {
+        if (answerCard) answerCard.style.display = "none";
+      }
+      panel.classList.add("visible");
+      setTimeout(() => panel.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
+    }
+
+    async function submitPeerReview() {
+      const comment  = String(document.getElementById("peerCommentTa")?.value || "").trim();
+      const classId  = lessonData?.courseId || courseIdFromUrl;
+      const activityId = lessonData?.activeTask?.activityId || "default";
+      try {
+        await callClassroom("POST", {
+          action:    "peer_review",
+          classId,   sessionId, studentId,
+          rubricId:  __classFeatures?.peerReview?.rubricId || "default",
+          activityId,
+          scores:    _peerRubricScores,
+          emoji:     [..._peerSelectedEmojis],
+          comment
+        });
+      } catch(e) {
+        console.warn("[MilEd] peer review submit failed:", e);
+      }
+      document.getElementById("peerReviewSent").style.display = "block";
+      const submitBtn = document.getElementById("peerSubmitBtn");
+      if (submitBtn) submitBtn.style.display = "none";
+    }
+
     // ─── Student Avatar ────────────────────────────────────────────────────
     function applyStudentAvatar(dataUrl) {
       studentAvatarDataUrl = dataUrl;
@@ -2392,6 +2564,11 @@
         document.getElementById("studentText").value = "";
         setWriteStatus("✓ עבודה הוגשה", "ok");
         appendStudentBubble(text, "submission");
+        document.getElementById("subSuccessBanner").style.display = "flex";
+        document.getElementById("writePanel")?.classList.add("submitted");
+        if (__classFeatures?.peerReview?.enabled !== false) {
+          showPeerReviewPanel();
+        }
       } catch (e) { setWriteStatus(e.message, "err"); }
     }
 
@@ -2763,6 +2940,7 @@
       initControls();
       applyStudentAvatar(studentAvatarDataUrl);
       await refreshLesson();
+      await loadClassFeatures();
       hydrateStudentHistory(lessonData?.studentSteps || []);
       renderHeaderBadges();
       initRoleAssignment();
