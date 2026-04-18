@@ -30,8 +30,8 @@
     /* ── Topbar ── */
     .tp-topbar {
       position: sticky; top: 0; z-index: 100;
-      background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%);
-      border-bottom: 2px solid #1e40af;
+      background: linear-gradient(90deg, #0f172a 0%, #312e81 55%, #1e1b4b 100%);
+      border-bottom: 2px solid #4f46e5;
       padding: 0 20px;
       height: 52px;
       display: flex; align-items: center; gap: 14px;
@@ -58,12 +58,18 @@
 
     /* ── Layout ── */
     .tp-layout {
-      max-width: 960px; margin: 0 auto;
-      display: grid; grid-template-columns: 1fr 240px; gap: 18px;
-      padding: 20px 16px;
+      max-width: 1180px; margin: 0 auto;
+      display: grid; grid-template-columns: 200px 1fr 280px; gap: 16px;
+      padding: 18px 16px;
+      align-items: start;
     }
-    @media (max-width: 700px) {
+    @media (max-width: 900px) {
+      .tp-layout { grid-template-columns: 1fr 260px; }
+      .tp-members-col { display: none; }
+    }
+    @media (max-width: 640px) {
       .tp-layout { grid-template-columns: 1fr; }
+      .tp-right-col { display: none; }
     }
 
     /* ── Panel base ── */
@@ -210,6 +216,104 @@
     .tp-loading {
       text-align: center; padding: 48px; color: #94a3b8; font-size: 14px;
     }
+
+    /* ── Attributed document blocks (doc-section) ── */
+    .doc-section {
+      display: flex; gap: 10px;
+      padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+    }
+    .doc-section:last-child { border-bottom: none; }
+    .doc-attr-avatar {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #fff;
+      margin-top: 2px;
+    }
+    .doc-section-body { flex: 1; min-width: 0; }
+    .doc-section-attr {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 4px;
+    }
+    .doc-section-name { font-size: 11px; font-weight: 700; color: #3730a3; }
+    .doc-section-time { font-size: 10px; color: #94a3b8; }
+    .doc-section-new  {
+      font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 4px;
+      background: #dbeafe; color: #1e40af;
+    }
+    .doc-section-text {
+      font-size: 13px; color: #0f172a; line-height: 1.75; white-space: pre-wrap;
+    }
+
+    /* ── Tabs ── */
+    .tp-tabs {
+      display: flex; gap: 2px; margin-bottom: 14px;
+      border-bottom: 2px solid #e2e8f0; padding-bottom: 0;
+    }
+    .tp-tab {
+      padding: 7px 16px; font: 600 12px "Assistant", sans-serif;
+      cursor: pointer; border: none; background: none;
+      color: #64748b; border-bottom: 2px solid transparent;
+      margin-bottom: -2px; transition: all .12s;
+    }
+    .tp-tab.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+    .tp-tab:hover  { color: #3730a3; }
+    .tp-tab-pane   { display: none; }
+    .tp-tab-pane.active { display: block; }
+
+    /* ── Members column ── */
+    .tp-members-col { display: flex; flex-direction: column; gap: 0; }
+    .tp-mc-head {
+      font-size: 11px; font-weight: 800; color: #64748b;
+      letter-spacing: .5px; text-transform: uppercase;
+      padding: 12px 14px 8px;
+    }
+    .tp-member-card {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 14px; border-bottom: 1px solid #f1f5f9;
+      transition: background .1s;
+    }
+    .tp-member-card:hover { background: #f8fafc; }
+    .tp-mc-avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: #fff;
+    }
+    .tp-mc-info    { flex: 1; min-width: 0; }
+    .tp-mc-name    { font-size: 12px; font-weight: 700; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tp-mc-role    { font-size: 10px; color: #94a3b8; }
+    .tp-mc-baton   { font-size: 13px; flex-shrink: 0; }
+    .tp-mc-dot     { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; background: #cbd5e1; }
+    .tp-mc-dot.online { background: #22c55e; }
+
+    /* ── Right column ── */
+    .tp-right-col { display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── Digest sidebar ── */
+    .tp-digest-sidebar .tp-section-head { margin-bottom: 8px; }
+    .tp-digest-text {
+      font-size: 12px; color: #334155; line-height: 1.7;
+      padding: 10px; background: #f8fafc; border-radius: 8px;
+      border: 1px solid var(--line-soft);
+    }
+    .tp-digest-btn {
+      margin-top: 8px; padding: 6px 12px; border-radius: 8px;
+      border: 1.5px solid #c7d2fe; background: #f5f3ff;
+      color: #4338ca; font: 600 11px "Assistant", sans-serif;
+      cursor: pointer; width: 100%;
+    }
+    .tp-digest-btn:hover { background: #ede9fe; }
+
+    /* ── Modal spring animation ── */
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    .digest-card, .baton-modal-card {
+      animation: modalPop .2s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    /* ── Sidebar ── */
+    .tp-sidebar { display: flex; flex-direction: column; gap: 14px; }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
@@ -254,7 +358,15 @@
   <!-- Main layout -->
   <div class="tp-layout" id="tpLayout" style="display:none;">
 
-    <!-- Left: document -->
+    <!-- Col 1: Members -->
+    <aside class="tp-panel tp-members-col">
+      <div class="tp-mc-head">👥 חברי הצוות</div>
+      <div id="membersContainer">
+        <div style="color:#94a3b8;font-size:12px;padding:8px 14px;">טוען...</div>
+      </div>
+    </aside>
+
+    <!-- Col 2: Document -->
     <main>
       <!-- Submitted banner -->
       <div id="tpSubmittedBanner" class="tp-status-banner banner-success" style="display:none;">
@@ -266,24 +378,38 @@
         ⏳ הבטון אצל חבר/ת אחר/ת — תוכל/י לצפות בלבד
       </div>
 
-      <!-- Document blocks -->
+      <!-- Document panel with tabs -->
       <div class="tp-panel" style="margin-bottom:16px;">
-        <div class="tp-section-head">📄 מסמך הפרויקט</div>
-        <div id="blocksContainer">
-          <div class="tp-loading">טוען תוכן...</div>
+        <div class="tp-tabs">
+          <button class="tp-tab active" onclick="switchTab('document', this)">📄 מסמך</button>
+          <button class="tp-tab" onclick="switchTab('sources', this)">📚 מקורות</button>
+          <button class="tp-tab" onclick="switchTab('tasks', this)">✅ משימות</button>
         </div>
 
-        <!-- Add block form -->
-        <div class="add-block-form" id="addBlockForm">
-          <textarea id="newBlockTa" placeholder="הוסף/י בלוק חדש למסמך..." rows="3"></textarea>
-          <button class="btn btn-primary btn-full" id="addBlockBtn" onclick="addBlock()">+ הוסף/י בלוק</button>
+        <div class="tp-tab-pane active" id="tabDocument">
+          <div id="blocksContainer">
+            <div class="tp-loading">טוען תוכן...</div>
+          </div>
+          <!-- Add block form -->
+          <div class="add-block-form" id="addBlockForm" style="margin-top:14px;">
+            <textarea id="newBlockTa" placeholder="הוסף/י בלוק חדש למסמך..." rows="3"></textarea>
+            <button class="btn btn-primary btn-full" id="addBlockBtn" onclick="addBlock()">+ הוסף/י בלוק</button>
+          </div>
+        </div>
+
+        <div class="tp-tab-pane" id="tabSources">
+          <div style="color:#94a3b8;font-size:13px;padding:8px 0;">מקורות ומראי מקום ייתווספו כאן.</div>
+        </div>
+
+        <div class="tp-tab-pane" id="tabTasks">
+          <div style="color:#94a3b8;font-size:13px;padding:8px 0;">רשימת משימות ייתווסף כאן.</div>
         </div>
       </div>
 
       <!-- Veto / Approval panel -->
       <div class="tp-panel" id="vetoPanel" style="display:none;">
         <div class="tp-section-head">📋 אישור קבוצתי (נדרש פה אחד)</div>
-        <div id="vetoChipsContainer" style="margin-bottom:14px;"></div>
+        <div id="vetoChipsContainer" style="margin-bottom:14px;display:flex;gap:6px;flex-wrap:wrap;"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-primary" id="vetoApproveBtn" onclick="castVote(true)">✅ אני מאשר/ת</button>
           <button class="btn btn-ghost"   id="vetoRejectBtn"  onclick="castVote(false)">❌ יש לי הסתייגות</button>
@@ -304,8 +430,17 @@
       </div>
     </main>
 
-    <!-- Right: sidebar -->
-    <aside class="tp-sidebar">
+    <!-- Col 3: Digest + Baton -->
+    <aside class="tp-right-col">
+
+      <!-- Digest sidebar -->
+      <div class="tp-panel tp-digest-sidebar" id="digestSidebarPanel" style="display:none;">
+        <div class="tp-section-head">🧠 מה השתנה</div>
+        <div class="tp-digest-text" id="digestSidebarText"></div>
+        <button class="tp-digest-btn" onclick="document.getElementById('digestSidebarPanel').style.display='none'">
+          ✓ הבנתי
+        </button>
+      </div>
 
       <!-- Baton status -->
       <div class="tp-panel">
@@ -313,14 +448,6 @@
         <div id="batonStatusText" style="font-size:13px;color:#475569;">טוען...</div>
         <div id="handoffNoteDisplay" style="display:none;margin-top:8px;padding:8px;
              background:#fffbeb;border-radius:8px;font-size:12px;color:#92400e;line-height:1.6;"></div>
-      </div>
-
-      <!-- Members -->
-      <div class="tp-panel">
-        <div class="tp-section-head">👥 חברי הצוות</div>
-        <div id="membersContainer">
-          <div style="color:#94a3b8;font-size:12px;">טוען...</div>
-        </div>
       </div>
 
     </aside>
@@ -401,11 +528,26 @@
       }
     }
 
-    // ── Digest modal ─────────────────────────────────────────────────────────
+    // ── Tab switching ────────────────────────────────────────────────────────
+    function switchTab(name, btn) {
+      document.querySelectorAll(".tp-tab-pane").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".tp-tab").forEach(b => b.classList.remove("active"));
+      const pane = document.getElementById("tab" + name.charAt(0).toUpperCase() + name.slice(1));
+      if (pane) pane.classList.add("active");
+      if (btn)  btn.classList.add("active");
+    }
+
+    // ── Digest modal + sidebar ────────────────────────────────────────────────
     function showDigest(text) {
       if (!text) return;
+      // Modal
       document.getElementById("digestBody").textContent = text;
       document.getElementById("digestOverlay").style.display = "flex";
+      // Sidebar
+      const sidebarText  = document.getElementById("digestSidebarText");
+      const sidebarPanel = document.getElementById("digestSidebarPanel");
+      if (sidebarText)  sidebarText.textContent   = text;
+      if (sidebarPanel) sidebarPanel.style.display = "";
     }
 
     function closeDigest() {
@@ -413,6 +555,12 @@
     }
 
     // ── Document rendering ────────────────────────────────────────────────────
+    const _AVATAR_COLORS = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed","#0f766e","#be185d"];
+
+    function avatarColor(id) {
+      return _AVATAR_COLORS[Math.abs((id || "").split("").reduce((a, c) => a + c.charCodeAt(0), 0)) % _AVATAR_COLORS.length];
+    }
+
     function renderDocument(doc) {
       const container = document.getElementById("blocksContainer");
       if (!container) return;
@@ -422,21 +570,29 @@
         .sort((a, b) => a.addedAt - b.addedAt);
 
       if (!blocks.length) {
-        container.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px;">המסמך ריק — הוסף/י בלוק ראשון.</div>';
+        container.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">המסמך ריק — הוסף/י בלוק ראשון.</div>';
         return;
       }
 
       container.innerHTML = blocks.map(b => {
-        const date   = new Date(b.addedAt).toLocaleDateString("he-IL");
-        const isNew  = _newBlockIds.has(b.id);
-        return `<div class="block-card">
-          ${isNew ? '<span class="block-new-badge">✨ חדש</span>' : ""}
-          <div class="block-meta">
-            <span class="block-author">${b.authorName || b.authorId}</span>
-            <span>${date}</span>
-          </div>
-          <div class="block-text">${escHtml(b.text)}</div>
-        </div>`;
+        const authorId = b.authorId || "";
+        const name     = b.authorName || authorId;
+        const initial  = (name.charAt(0) || "?").toUpperCase();
+        const color    = avatarColor(authorId);
+        const time     = new Date(b.addedAt).toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+        const isNew    = _newBlockIds.has(b.id);
+        return `
+          <div class="doc-section">
+            <div class="doc-attr-avatar" style="background:${color};">${initial}</div>
+            <div class="doc-section-body">
+              <div class="doc-section-attr">
+                <span class="doc-section-name">${escHtml(name)}</span>
+                <span class="doc-section-time">${time}</span>
+                ${isNew ? '<span class="doc-section-new">✨ חדש</span>' : ""}
+              </div>
+              <div class="doc-section-text">${escHtml(b.text)}</div>
+            </div>
+          </div>`;
       }).join("");
     }
 
@@ -490,26 +646,42 @@
       // Initiate veto button — show for holder (any member can trigger)
       const initiateVetoBtn = document.getElementById("initiateVetoBtn");
       if (initiateVetoBtn) initiateVetoBtn.style.display = isMine ? "" : "none";
+
+      // Refresh baton icons in member column
+      if (_project?.members) {
+        _project.members.forEach(sid => {
+          const row = document.getElementById(`member_${sid}`);
+          if (row) {
+            const batonEl = row.querySelector(".tp-mc-baton");
+            if (batonEl) batonEl.style.opacity = _baton.currentHolder === sid ? "1" : "0";
+          }
+        });
+      }
     }
 
-    // ── Members sidebar ───────────────────────────────────────────────────────
+    // ── Members column ────────────────────────────────────────────────────────
     function renderMembers() {
       const container = document.getElementById("membersContainer");
       if (!container || !_project?.members) return;
 
-      const roles    = _project.roles    || {};
-      const presence = {};  // will be filled by presence listener
+      const roles = _project.roles || {};
 
       container.innerHTML = _project.members.map(sid => {
-        const role     = roles[sid] || "";
-        const isBaton  = _baton?.currentHolder === sid;
-        const isMe     = sid === studentId;
-        return `<div class="member-row" id="member_${sid}">
-          <span class="member-dot dot-offline" id="dot_${sid}"></span>
-          <span class="member-name">${isMe ? "(אתה/את) " : ""}${sid}</span>
-          ${role ? `<span class="member-role">${role}</span>` : ""}
-          ${isBaton ? '<span class="member-baton">🏏</span>' : ""}
-        </div>`;
+        const role    = roles[sid] || "חבר/ת צוות";
+        const isBaton = _baton?.currentHolder === sid;
+        const isMe    = sid === studentId;
+        const initial = (sid.charAt(0) || "?").toUpperCase();
+        const color   = avatarColor(sid);
+        return `
+          <div class="tp-member-card" id="member_${sid}">
+            <div class="tp-mc-avatar" style="background:${color};">${initial}</div>
+            <div class="tp-mc-info">
+              <div class="tp-mc-name">${escHtml(sid)}${isMe ? " (את/ה)" : ""}</div>
+              <div class="tp-mc-role">${escHtml(role)}</div>
+            </div>
+            <div class="tp-mc-dot" id="dot_${sid}"></div>
+            ${isBaton ? '<div class="tp-mc-baton">🏏</div>' : '<div class="tp-mc-baton" style="opacity:0;">🏏</div>'}
+          </div>`;
       }).join("");
 
       // Start presence listener
@@ -518,13 +690,21 @@
 
     // ── Veto rendering ────────────────────────────────────────────────────────
     function renderVeto(veto) {
-      const panel     = document.getElementById("vetoPanel");
-      const chipsEl   = document.getElementById("vetoChipsContainer");
-      const finalBtn  = document.getElementById("finalSubmitBtn");
+      const panel        = document.getElementById("vetoPanel");
+      const chipsEl      = document.getElementById("vetoChipsContainer");
+      const finalBtn     = document.getElementById("finalSubmitBtn");
+      const approveBtn   = document.getElementById("vetoApproveBtn");
+      const rejectBtn    = document.getElementById("vetoRejectBtn");
       const submitBanner = document.getElementById("tpSubmittedBanner");
 
       if (!veto || !veto.approvals) {
         if (panel) panel.style.display = "none";
+        return;
+      }
+
+      if (veto.status === "submitted") {
+        if (panel) panel.style.display = "none";
+        if (submitBanner) submitBanner.style.display = "";
         return;
       }
 
@@ -533,19 +713,27 @@
       const approvals = veto.approvals || {};
       if (chipsEl) {
         chipsEl.innerHTML = Object.entries(approvals).map(([sid, v]) => {
-          const cls  = v.approved === true ? "veto-approved" : v.approved === false ? "veto-vetoed" : "veto-pending";
-          const icon = v.approved === true ? "✅" : v.approved === false ? "❌" : "⏳";
-          return `<span class="veto-chip ${cls}">${icon} ${sid}</span>`;
+          const cls    = v.approved === true ? "veto-approved" : v.approved === false ? "veto-vetoed" : "veto-pending";
+          const icon   = v.approved === true ? "✅" : v.approved === false ? "❌" : "⏳";
+          const initial = (sid.charAt(0) || "?").toUpperCase();
+          const color   = avatarColor(sid);
+          return `<span class="veto-chip ${cls}" title="${sid}">
+            <span style="display:inline-flex;align-items:center;justify-content:center;
+              width:16px;height:16px;border-radius:50%;background:${color};color:#fff;
+              font-size:9px;font-weight:800;margin-left:4px;">${initial}</span>
+            ${icon} ${sid}
+          </span>`;
         }).join("");
       }
 
+      // My vote buttons — only show if I haven't voted
+      const myVote       = approvals[studentId];
+      const canVote      = veto.status === "pending" && myVote?.approved === null;
+      if (approveBtn) approveBtn.style.display = canVote ? "" : "none";
+      if (rejectBtn)  rejectBtn.style.display  = canVote ? "" : "none";
+
       if (finalBtn) {
         finalBtn.style.display = veto.status === "approved" ? "" : "none";
-      }
-
-      if (veto.status === "submitted") {
-        if (panel) panel.style.display = "none";
-        if (submitBanner) submitBanner.style.display = "";
       }
     }
 
@@ -580,19 +768,12 @@
         db.ref(`team_projects/${projectId}/presence/${sid}`).on("value", snap => {
           const p   = snap.val() || {};
           const dot = document.getElementById(`dot_${sid}`);
-          if (dot) {
-            dot.className = "member-dot " + (p.online ? "dot-online" : "dot-offline");
-          }
-          // Update baton icon in member row
+          if (dot) dot.className = "tp-mc-dot" + (p.online ? " online" : "");
+          // Update baton icon visibility
           const row = document.getElementById(`member_${sid}`);
           if (row) {
-            const existingBaton = row.querySelector(".member-baton");
-            const isBaton = _baton?.currentHolder === sid;
-            if (isBaton && !existingBaton) {
-              row.insertAdjacentHTML("beforeend", '<span class="member-baton">🏏</span>');
-            } else if (!isBaton && existingBaton) {
-              existingBaton.remove();
-            }
+            const batonEl = row.querySelector(".tp-mc-baton");
+            if (batonEl) batonEl.style.opacity = _baton?.currentHolder === sid ? "1" : "0";
           }
         });
       });

@@ -671,6 +671,195 @@
     }
     .emoji-item:hover { background: #eff6ff; border-color: #93c5fd; transform: scale(1.15); }
     .emoji-item.sel   { background: #eff6ff; border-color: var(--blue); box-shadow: 0 0 0 2px #bfdbfe; transform: scale(1.12); }
+
+    /* ══════════════════════════════════════════
+       Group Mode — data-mode Architecture
+       All visibility driven by #lessonMain[data-mode]
+    ══════════════════════════════════════════ */
+
+    /* Topbar mode buttons */
+    .group-enter-btn {
+      padding: 7px 16px; border-radius: 20px;
+      background: linear-gradient(135deg,#34d399,#059669);
+      color: #fff; border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: none; align-items: center; gap: 6px;
+      transition: opacity .15s;
+    }
+    .group-enter-btn:hover { opacity: .85; }
+    .group-exit-btn {
+      padding: 7px 16px; border-radius: 20px;
+      background: linear-gradient(135deg,#059669,#065f46);
+      color: #fff; border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; display: none; align-items: center; gap: 6px;
+    }
+    .group-mode-badge {
+      padding: 4px 12px; border-radius: 999px;
+      background: rgba(5,150,105,.22); border: 1px solid #6ee7b7;
+      color: #ecfdf5; font-size: 12px; font-weight: 700; display: none;
+    }
+
+    /* Mode-driven layout selectors */
+    #lessonMain[data-mode="group"] .panel-group-members  { display: flex !important; }
+    #lessonMain[data-mode="group"] .panel-head-bookshelf { display: none !important; }
+    #lessonMain[data-mode="group"] .panel-body-bookshelf { display: none !important; }
+    #lessonMain[data-mode="group"] .group-task-area      { display: flex !important; }
+    #lessonMain[data-mode="group"] .comm-panel           { display: none !important; }
+    #lessonMain[data-mode="group"] #subSuccessBanner     { display: none !important; }
+    #lessonMain[data-mode="group"] #peerReviewPanel      { display: none !important; }
+    #lessonMain[data-mode="group"] #groupWorkspacePanel  { display: none !important; }
+    #lessonMain[data-mode="group"] .stage-hero           { display: none !important; }
+    #lessonMain[data-mode="group"] #projectStepperWrap   { display: none !important; }
+    #lessonMain[data-mode="group"] #sprintStepper        { display: none !important; }
+    #lessonMain[data-mode="group"] .stage-display        { display: none !important; }
+
+    /* Group members left panel */
+    .panel-group-members {
+      display: none; flex-direction: column; overflow-y: auto;
+    }
+    .panel-head-group {
+      padding: 13px 14px 10px; font-size: 13px; font-weight: 800; color: #065f46;
+      border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(180deg,#ecfdf5,#f8fafc); flex-shrink: 0;
+    }
+    .group-member-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-bottom: 1px solid var(--line-soft);
+      background: #f8fafc; transition: background .15s;
+    }
+    .group-member-card.me { background: #f0fdf4; }
+    .gm-avatar {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg,#34d399,#059669);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800; color: #fff;
+    }
+    .gm-info { flex: 1; min-width: 0; }
+    .gm-name { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .gm-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .gm-status-dot {
+      width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: #d1d5db;
+    }
+    .gm-status-dot.online { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
+
+    /* Group task area */
+    .group-task-area {
+      display: none; flex-direction: column; overflow-y: auto;
+    }
+    .group-task-head {
+      padding: 14px 20px 10px; border-bottom: 1px solid var(--line-soft);
+      background: linear-gradient(180deg,#ecfdf5,#d1fae5);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .group-task-title { font-size: 15px; font-weight: 800; color: #065f46; }
+    .group-timer-display {
+      font-size: 18px; font-weight: 800; color: #059669;
+      font-variant-numeric: tabular-nums; letter-spacing: .5px; display: none;
+    }
+    .group-timer-display.urgent { color: #dc2626; animation: gmTimerPulse 1s infinite; }
+    @keyframes gmTimerPulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+    /* Role chips */
+    .group-roles-row { display: flex; gap: 8px; padding: 10px 20px 4px; flex-wrap: wrap; flex-shrink: 0; }
+    .role-chip {
+      font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px;
+      background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46;
+    }
+    .role-chip.me { background: #d1fae5; border-color: #059669; font-weight: 800; }
+
+    /* Group workspace card */
+    .group-workspace-card {
+      margin: 10px 20px 14px; padding: 14px;
+      background: #fff; border: 1.5px solid #a7f3d0; border-radius: 12px;
+      display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+    }
+    .group-workspace-card-head { font-size: 13px; font-weight: 800; color: #065f46; }
+
+    /* Contribution feed */
+    .group-contrib-feed {
+      display: flex; flex-direction: column; gap: 7px;
+      max-height: 190px; overflow-y: auto;
+      background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 10px;
+      padding: 8px 10px;
+    }
+    .group-contrib-item {
+      background: #fff; border: 1px solid #a7f3d0; border-radius: 9px;
+      padding: 8px 10px; animation: contribFadeIn .3s ease;
+    }
+    .group-contrib-item.mine { border-color: #059669; background: #f0fdf4; }
+    @keyframes contribFadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+    .contrib-header { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+    .contrib-avatar {
+      width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; color: #fff;
+    }
+    .contrib-name { font-size: 12px; font-weight: 800; color: var(--ink); }
+    .contrib-role { font-size: 10px; color: var(--muted); }
+    .contrib-time { font-size: 10px; color: var(--muted); margin-right: auto; }
+    .contrib-text { font-size: 12px; color: #334155; line-height: 1.55; }
+
+    /* My contribution lane */
+    .group-my-contrib {
+      border-top: 1.5px dashed #6ee7b7; padding-top: 10px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .my-contrib-label { font-size: 12px; font-weight: 800; color: #065f46; }
+
+    /* Master draft card */
+    .master-draft-card {
+      border: 1.5px dashed #6ee7b7; border-radius: 10px; padding: 10px 12px;
+      background: #f0fdf4;
+    }
+    .master-draft-card-head {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+    }
+    .master-draft-card-title { font-size: 12px; font-weight: 800; color: #065f46; }
+    .draft-author-badge {
+      font-size: 10px; background: #d1fae5; border: 1px solid #6ee7b7;
+      border-radius: 999px; padding: 2px 8px; color: #065f46; font-weight: 700;
+    }
+    .master-draft-body {
+      font-size: 12px; color: var(--ink); line-height: 1.6; padding: 8px;
+      background: #fff; border-radius: 8px; border: 1px solid #a7f3d0; min-height: 36px;
+    }
+    .challenge-btn {
+      font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 999px;
+      border: 1px solid #fbbf24; background: #fefce8; color: #854d0e;
+      cursor: pointer; font-family: inherit;
+    }
+
+    /* Veto panel (group) */
+    .group-veto-panel {
+      margin: 0 20px 14px; padding: 14px 16px;
+      background: #fff; border: 2px solid #6ee7b7; border-radius: 12px; display: none;
+    }
+    .group-veto-head { font-size: 13px; font-weight: 800; color: #065f46; margin-bottom: 10px; }
+    .group-veto-chips { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .group-veto-chip {
+      display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+      border-radius: 8px; border: 1px solid var(--line-soft); background: #f8fafc;
+      font-size: 12px; transition: all .35s;
+    }
+    .group-veto-chip.approved { background: #f0fdf4; border-color: #86efac; }
+    .group-veto-chip.vetoed   { background: #fef2f2; border-color: #fca5a5; }
+    .gvc-avatar {
+      width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 800; color: #fff;
+    }
+    .gvc-name   { flex: 1; font-weight: 700; font-size: 12px; }
+    .gvc-status { font-size: 11px; color: var(--muted); }
+    .group-veto-chip.approved .gvc-status { color: #15803d; }
+    .group-veto-chip.vetoed   .gvc-status { color: #dc2626; }
+    .group-veto-final-btn {
+      width: 100%; padding: 9px; border-radius: 8px; border: none;
+      background: #e2e8f0; color: var(--muted); font-size: 13px; font-weight: 800;
+      cursor: not-allowed; font-family: inherit; transition: all .35s;
+    }
+    .group-veto-final-btn.ready {
+      background: linear-gradient(135deg,#34d399,#059669); color: #fff; cursor: pointer;
+    }
+    .group-veto-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
   </style>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -693,6 +882,10 @@
         <div class="chip" id="sessionChip">sessionId: --</div>
         <div class="chip" id="hebrewLevelChip" style="display:none;background:#f0fdf4;color:#166534;border-color:#bbf7d0;"></div>
         <div class="chip" id="teamRoleChip"    style="display:none;background:#faf5ff;color:#6b21a8;border-color:#d8b4fe;"></div>
+        <!-- ── Group mode buttons (shown when groupMode.enabled) ── -->
+        <button class="group-enter-btn" id="groupEnterBtn" onclick="enterGroupMode()">👥 סביבת קבוצה ←</button>
+        <button class="group-exit-btn"  id="groupExitBtn"  onclick="exitGroupMode()">← יציאה מקבוצה</button>
+        <div    class="group-mode-badge" id="groupModeBadge">👥 מצב קבוצתי</div>
       </div>
     </header>
 
@@ -804,10 +997,18 @@
       <div style="width:40px;height:40px;border-radius:50%;border:4px solid #dbeafe;border-top-color:#1d4ed8;animation:openBtnSpin .9s linear infinite;margin:0 auto;"></div>
     </div>
 
-    <main id="lessonMain" class="layout">
+    <main id="lessonMain" class="layout" data-mode="lesson">
+
+      <!-- Left panel: Bookshelf (lesson mode) + Group Members (group mode) -->
       <aside class="panel">
-        <div class="panel-head">Bookshelf</div>
-        <div class="panel-body">
+        <!-- Group members panel — shown when data-mode="group" -->
+        <div class="panel-group-members" id="groupMembersPanel">
+          <div class="panel-head-group">👥 חברי הקבוצה</div>
+          <div id="groupMembersList"></div>
+        </div>
+        <!-- Bookshelf — hidden in group mode -->
+        <div class="panel-head panel-head-bookshelf">Bookshelf</div>
+        <div class="panel-body panel-body-bookshelf">
           <div class="state-strip">
             <strong id="bookshelfLessonId">lessonId: --</strong>
             <div class="resource-meta" id="selectedUnitsMeta">אין יחידות משויכות</div>
@@ -841,7 +1042,80 @@
           <iframe id="presentationFrame" class="presentation-frame" title="presentation-stage"></iframe>
           <div id="sprintList" class="sprint-list"></div>
         </div>
-        <!-- ─── Submission success banner (injected inside comm-panel via JS) ─── -->
+        <!-- ─── Group Task Area (shown when data-mode="group") ─── -->
+        <div class="group-task-area" id="groupTaskArea">
+          <!-- Header with task title and timer -->
+          <div class="group-task-head">
+            <div class="group-task-title" id="groupTaskTitleDisplay">עבודה קבוצתית</div>
+            <div class="group-timer-display" id="groupTimerDisplay">--:--</div>
+          </div>
+          <!-- Role chips -->
+          <div class="group-roles-row" id="groupRolesRow"></div>
+          <!-- Workspace card: contributions + master draft -->
+          <div class="group-workspace-card">
+            <div class="group-workspace-card-head">תרומות הקבוצה</div>
+            <div class="group-contrib-feed" id="groupContribFeed">
+              <span style="color:#94a3b8;font-size:12px;">ממתין לתרומות...</span>
+            </div>
+            <!-- My contribution -->
+            <div class="group-my-contrib">
+              <div class="my-contrib-label">✍️ התרומה שלי</div>
+              <textarea id="groupMyContribTa"
+                style="width:100%;border:1px solid #a7f3d0;border-radius:8px;padding:8px;
+                       font:inherit;font-size:13px;resize:none;min-height:56px;background:#f0fdf4;"
+                placeholder="כתוב/י את התרומה שלך..."></textarea>
+              <div style="display:flex;gap:6px;margin-top:4px;">
+                <button class="challenge-btn" onclick="addGroupContrib('content')">✍️ תרום תוכן</button>
+                <button class="challenge-btn" onclick="addGroupContrib('challenge')">🤔 אתגר</button>
+                <button class="challenge-btn" onclick="addGroupContrib('comment')">💬 הערה</button>
+              </div>
+            </div>
+            <!-- Master draft read-only (all members) -->
+            <div class="master-draft-card" id="masterDraftCard" style="display:none;">
+              <div class="master-draft-card-head">
+                <div class="master-draft-card-title">📄 טיוטה מרכזית</div>
+                <div class="draft-author-badge" id="masterDraftAuthorBadge">—</div>
+              </div>
+              <div class="master-draft-body" id="masterDraftBodyText">אין טיוטה עדיין.</div>
+            </div>
+            <!-- Master draft editor (מנסח only) -->
+            <div id="masterDraftEditorSection" style="display:none;">
+              <div class="master-draft-card-title" style="margin-bottom:6px;">✏️ ערוך טיוטה מרכזית</div>
+              <textarea id="masterDraftEditorTa"
+                style="width:100%;border:1.5px solid #059669;border-radius:10px;padding:10px;
+                       font:inherit;font-size:13px;resize:none;min-height:80px;background:#f5fff9;
+                       margin-bottom:8px;" placeholder="כתוב/י את הטיוטה..."></textarea>
+              <button class="challenge-btn" onclick="saveMasterDraft()"
+                style="background:#ecfdf5;border-color:#6ee7b7;color:#065f46;">💾 שמור טיוטה</button>
+            </div>
+          </div>
+          <!-- Veto panel -->
+          <div class="group-veto-panel" id="groupVetoPanel">
+            <div class="group-veto-head">📋 אישור קבוצתי — נדרש פה אחד</div>
+            <div class="group-veto-chips" id="groupVetoChips"></div>
+            <button class="group-veto-final-btn" id="groupVetoFinalBtn" onclick="submitGroupWork()">
+              הגש עבודה
+            </button>
+            <div class="group-veto-hint">כולם חייבים לאשר לפני הגשה</div>
+          </div>
+          <!-- Action row -->
+          <div style="display:flex;gap:8px;padding:0 20px 14px;flex-wrap:wrap;">
+            <button id="groupInitiateVetoBtn" class="action-btn"
+              onclick="initiateGroupVeto()"
+              style="background:linear-gradient(135deg,#34d399,#059669);color:#fff;border:none;">
+              📋 שלח לאישור קבוצתי
+            </button>
+            <button id="groupVetoApproveBtn" class="action-btn ghost"
+              onclick="approveGroupVeto(true)" style="display:none;">✅ אני מאשר/ת</button>
+            <button id="groupVetoRejectBtn"  class="action-btn ghost"
+              onclick="approveGroupVeto(false)" style="display:none;">❌ הסתייגות</button>
+          </div>
+          <div id="groupSubmittedBanner" style="display:none;margin:0 20px 14px;padding:12px;
+               background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;
+               text-align:center;font-weight:700;color:#15803d;">✅ העבודה הקבוצתית הוגשה!</div>
+        </div>
+
+        <!-- ─── Submission success banner ─── -->
         <div class="sub-submitted-banner" id="subSuccessBanner" style="display:none;">
           ✅ ההגשה נשלחה בהצלחה — הערכת עמיתים מוצגת למטה
         </div>
@@ -2499,36 +2773,103 @@
     }
 
     // ═══════════════════════════════════════════════
-    // Group Mode — Workspace + Firebase Listener
+    // Group Mode — data-mode architecture + Workspace
     // ═══════════════════════════════════════════════
     let __groupRole          = null;
     let _groupContribRef     = null;
     let _groupVetoRef        = null;
     let _groupTimerInterval  = null;
 
+    // ── Mode switching ──────────────────────────────
+    function setLessonMode(mode) {
+      const main = document.getElementById("lessonMain");
+      if (main) main.dataset.mode = mode;
+      const gEnter = document.getElementById("groupEnterBtn");
+      const gExit  = document.getElementById("groupExitBtn");
+      const gBadge = document.getElementById("groupModeBadge");
+      const hasGroup = !!__classFeatures.groupMode?.enabled;
+      if (gEnter) gEnter.style.display = (mode === "lesson" && hasGroup) ? "flex" : "none";
+      if (gExit)  gExit.style.display  = mode === "group" ? "flex" : "none";
+      if (gBadge) gBadge.style.display = mode === "group" ? "flex" : "none";
+    }
+
+    function enterGroupMode() {
+      setLessonMode("group");
+      renderGroupMembersSidebar();
+      renderGroupRoleChips();
+      startGroupContribListener();
+    }
+
+    function exitGroupMode() {
+      setLessonMode("lesson");
+      stopGroupListeners();
+    }
+
+    // ── Member sidebar ──────────────────────────────
+    function renderGroupMembersSidebar() {
+      const el = document.getElementById("groupMembersList");
+      if (!el) return;
+      const gm      = __classFeatures.groupMode;
+      const members = gm?.members || [];
+      const roles   = gm?.roles   || {};
+      if (!members.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12px;padding:8px;">אין חברי קבוצה.</div>'; return; }
+      el.innerHTML = members.map(sid => {
+        const role    = roles[sid] || "חבר/ת קבוצה";
+        const isMe    = sid === studentId;
+        const initial = (sid.charAt(0) || "?").toUpperCase();
+        const colors  = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
+        const color   = colors[Math.abs(sid.split("").reduce((a,c) => a + c.charCodeAt(0), 0)) % colors.length];
+        return `
+          <div class="group-member-card${isMe ? " me" : ""}">
+            <div class="gm-avatar" style="background:${color};">${initial}</div>
+            <div class="gm-info">
+              <div class="gm-name">${escapeHtml(sid)}${isMe ? " (את/ה)" : ""}</div>
+              <div class="gm-role">${escapeHtml(role)}</div>
+            </div>
+            <div class="gm-status-dot" id="gmDot_${sid}"></div>
+          </div>`;
+      }).join("");
+    }
+
+    // ── Role chips ──────────────────────────────────
+    function renderGroupRoleChips() {
+      const row   = document.getElementById("groupRolesRow");
+      if (!row) return;
+      const gm    = __classFeatures.groupMode;
+      const roles = gm?.roles || {};
+      const me    = roles[studentId] || null;
+      const allRoles = [...new Set(Object.values(roles))];
+      row.innerHTML = allRoles.map(r =>
+        `<div class="role-chip${r === me ? " me" : ""}">${escapeHtml(r)}</div>`
+      ).join("");
+      // Also update task title if available
+      const titleEl = document.getElementById("groupTaskTitleDisplay");
+      if (titleEl && lessonData?.activeTask?.title) titleEl.textContent = lessonData.activeTask.title;
+    }
+
+    // ── Init (called from loadClassFeatures, shows enter button) ───
     function initGroupWorkspace() {
       const gm = __classFeatures.groupMode;
       if (!gm?.enabled) return;
 
       __groupRole = gm.roles?.[studentId] || null;
-      const panel = document.getElementById("groupWorkspacePanel");
-      if (panel) panel.style.display = "";
 
-      // Badge
-      const badge = document.getElementById("groupRoleBadge");
-      if (badge) badge.textContent = __groupRole ? `תפקיד: ${__groupRole}` : "חבר/ת קבוצה";
+      // Reveal the enter button; mode stays "lesson" until student clicks it
+      const btn = document.getElementById("groupEnterBtn");
+      if (btn) btn.style.display = "flex";
 
-      // Show master draft editor only for מנסח
-      const editorSection = document.getElementById("masterDraftSection");
-      const readonlySection = document.getElementById("masterDraftReadonly");
-      if (editorSection)  editorSection.style.display  = __groupRole === "מנסח" ? "" : "none";
-      if (readonlySection) readonlySection.style.display = __groupRole !== "מנסח" ? "" : "none";
+      // Editor section: only מנסח gets the draft textarea
+      const editorSection = document.getElementById("masterDraftEditorSection");
+      if (editorSection) editorSection.style.display = __groupRole === "מנסח" ? "" : "none";
 
-      startGroupContribListener();
+      // Initiate-veto button: only מנסח sees it initially
+      const initiateBtn = document.getElementById("groupInitiateVetoBtn");
+      if (initiateBtn) initiateBtn.style.display = __groupRole === "מנסח" ? "" : "none";
     }
 
+    // ── Firebase listener ───────────────────────────
     function startGroupContribListener() {
-      const gm = __classFeatures.groupMode;
+      const gm         = __classFeatures.groupMode;
       const classId    = lessonData?.courseId || courseIdFromUrl;
       const groupId    = gm?.groupId;
       const activityId = lessonData?.activeTask?.activityId || "default";
@@ -2537,7 +2878,6 @@
       const db = getRealtimeDb();
       if (!db) return;
 
-      // Detach previous listeners
       stopGroupListeners();
 
       const basePath = `group_contributions/${classId}/${groupId}/${activityId}`;
@@ -2557,94 +2897,139 @@
       if (_groupTimerInterval) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
     }
 
+    // ── Render helpers ──────────────────────────────
     function renderGroupContribs(contribs) {
-      const el = document.getElementById("groupContribList");
+      const el = document.getElementById("groupContribFeed");
       if (!el) return;
       if (!contribs) {
         el.innerHTML = '<span style="color:#94a3b8;font-size:12px;">ממתין לתרומות...</span>';
         return;
       }
-      const items = Object.values(contribs).sort((a, b) => a.addedAt - b.addedAt);
+      const items    = Object.values(contribs).sort((a, b) => a.addedAt - b.addedAt);
       const typeIcon = { content: "✍️", challenge: "🤔", comment: "💬" };
-      el.innerHTML = items.map(c => `
-        <div style="padding:6px 0;border-bottom:1px solid #f1f5f9;">
-          <span style="font-weight:700;color:#3730a3;">${c.authorName || c.authorId}</span>
-          <span style="font-size:10px;color:#94a3b8;margin-right:4px;">${typeIcon[c.type] || "•"}</span>
-          <span style="color:#1e293b;">${c.text}</span>
-        </div>`).join("");
+      const gm       = __classFeatures.groupMode;
+      const roles    = gm?.roles || {};
+      const colors   = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
+      el.innerHTML = items.map(c => {
+        const isMe    = c.authorId === studentId;
+        const initial = ((c.authorName || c.authorId || "?").charAt(0)).toUpperCase();
+        const color   = colors[Math.abs((c.authorId || "").split("").reduce((a, ch) => a + ch.charCodeAt(0), 0)) % colors.length];
+        const role    = roles[c.authorId] || "";
+        const time    = new Date(c.addedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+        return `
+          <div class="group-contrib-item${isMe ? " mine" : ""}">
+            <div class="contrib-avatar" style="background:${color};">${initial}</div>
+            <div style="flex:1;min-width:0;">
+              <div class="contrib-header">
+                <span class="contrib-name">${escapeHtml(c.authorName || c.authorId)}</span>
+                ${role ? `<span class="contrib-role">${escapeHtml(role)}</span>` : ""}
+                <span class="contrib-time">${time} ${typeIcon[c.type] || ""}</span>
+              </div>
+              <div class="contrib-text">${escapeHtml(c.text)}</div>
+            </div>
+          </div>`;
+      }).join("");
+      el.scrollTop = el.scrollHeight;
     }
 
     function renderMasterDraftReadonly(draft) {
-      const el = document.getElementById("masterDraftText");
-      if (!el) return;
-      el.textContent = draft?.text || "אין טיוטה עדיין.";
-      // Also fill the editor textarea if מנסח
+      const bodyEl  = document.getElementById("masterDraftBodyText");
+      const card    = document.getElementById("masterDraftCard");
+      const authorEl= document.getElementById("masterDraftAuthorBadge");
+
+      if (card)   card.style.display  = draft?.text ? "" : "none";
+      if (bodyEl) bodyEl.textContent  = draft?.text || "אין טיוטה עדיין.";
+      if (authorEl && draft?.lastEditedBy) {
+        const time = draft.lastEditedAt ? new Date(draft.lastEditedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
+        authorEl.textContent = `${draft.lastEditedBy}${time ? " · " + time : ""}`;
+      }
+
+      // Sync editor textarea for מנסח (only if user isn't actively typing)
       if (__groupRole === "מנסח") {
-        const ta = document.getElementById("masterDraftTa");
+        const ta = document.getElementById("masterDraftEditorTa");
         if (ta && !ta.dataset.userEditing && draft?.text) ta.value = draft.text;
       }
     }
 
     function renderGroupVeto(veto) {
-      const vetoPanel = document.getElementById("groupVetoPanel");
+      const vetoPanel   = document.getElementById("groupVetoPanel");
       const initiateBtn = document.getElementById("groupInitiateVetoBtn");
-      const finalBtn    = document.getElementById("groupFinalSubmitBtn");
+      const approveBtn  = document.getElementById("groupVetoApproveBtn");
+      const rejectBtn   = document.getElementById("groupVetoRejectBtn");
+      const finalBtn    = document.getElementById("groupVetoFinalBtn");
       if (!vetoPanel) return;
 
-      if (!veto) {
-        vetoPanel.style.display   = "none";
+      if (!veto || veto.status === "submitted") {
+        vetoPanel.style.display = "none";
         if (initiateBtn) initiateBtn.style.display = __groupRole === "מנסח" ? "" : "none";
+        if (approveBtn)  approveBtn.style.display  = "none";
+        if (rejectBtn)   rejectBtn.style.display   = "none";
+        if (veto?.status === "submitted") {
+          const banner = document.getElementById("groupSubmittedBanner");
+          if (banner) banner.style.display = "";
+        }
         return;
       }
 
-      vetoPanel.style.display   = "";
+      vetoPanel.style.display = "";
       if (initiateBtn) initiateBtn.style.display = "none";
 
-      const approvals = veto.approvals || {};
+      // My vote buttons — only show if pending and I haven't voted yet
+      const myVote = veto.approvals?.[studentId];
+      const showVoteButtons = veto.status === "pending" && myVote?.approved === null;
+      if (approveBtn) approveBtn.style.display = showVoteButtons ? "" : "none";
+      if (rejectBtn)  rejectBtn.style.display  = showVoteButtons ? "" : "none";
+
+      // Approval chips
       const chips = document.getElementById("groupVetoChips");
       if (chips) {
+        const approvals = veto.approvals || {};
         chips.innerHTML = Object.entries(approvals).map(([sid, v]) => {
-          const color = v.approved === true  ? "#dcfce7" : v.approved === false ? "#fee2e2" : "#f1f5f9";
-          const icon  = v.approved === true  ? "✅" : v.approved === false ? "❌" : "⏳";
-          return `<span style="padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;
-                   background:${color};color:#1e293b;">${icon} ${sid}</span>`;
+          const stateClass = v.approved === true ? "approved" : v.approved === false ? "vetoed" : "";
+          const icon       = v.approved === true ? "✅" : v.approved === false ? "❌" : "⏳";
+          const initial    = (sid.charAt(0) || "?").toUpperCase();
+          const colors     = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
+          const color      = colors[Math.abs(sid.split("").reduce((a,c) => a + c.charCodeAt(0), 0)) % colors.length];
+          return `
+            <div class="group-veto-chip${stateClass ? " " + stateClass : ""}">
+              <div class="gvc-avatar" style="background:${color};">${initial}</div>
+              <div class="gvc-name">${escapeHtml(sid)}</div>
+              <div class="gvc-status">${icon}</div>
+            </div>`;
         }).join("");
       }
 
+      // Final submit button — only for מנסח when all approved
       if (finalBtn) {
-        finalBtn.style.display = veto.status === "approved" ? "" : "none";
-      }
-
-      // If submitted, hide everything and show banner
-      if (veto.status === "submitted") {
-        vetoPanel.style.display = "none";
-        const banner = document.getElementById("groupSubmittedBanner");
-        if (banner) banner.style.display = "";
+        const canSubmit = veto.status === "approved" && __groupRole === "מנסח";
+        finalBtn.classList.toggle("ready", canSubmit);
+        finalBtn.style.display = __groupRole === "מנסח" ? "" : "none";
       }
     }
 
     function startGroupTimer(timer) {
-      const bar  = document.getElementById("groupTimerBar");
-      const disp = document.getElementById("groupTimerCount");
-      if (!bar || !timer || timer.status !== "running") {
-        if (bar) bar.style.display = "none";
-        if (_groupTimerInterval) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
+      const disp = document.getElementById("groupTimerDisplay");
+      if (!disp) return;
+      if (_groupTimerInterval) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
+      if (!timer || timer.status !== "running") {
+        disp.textContent = "--:--";
+        disp.classList.remove("urgent");
         return;
       }
-      bar.style.display = "";
-      if (_groupTimerInterval) clearInterval(_groupTimerInterval);
       const endAt = timer.startedAt + (timer.durationSeconds * 1000);
       _groupTimerInterval = setInterval(() => {
         const rem = Math.max(0, Math.ceil((endAt - Date.now()) / 1000));
         const m   = String(Math.floor(rem / 60)).padStart(2, "0");
         const s   = String(rem % 60).padStart(2, "0");
-        if (disp) disp.textContent = `${m}:${s}`;
+        disp.textContent = `${m}:${s}`;
+        disp.classList.toggle("urgent", rem <= 60);
         if (rem === 0) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
       }, 1000);
     }
 
+    // ── Actions ─────────────────────────────────────
     async function addGroupContrib(type) {
-      const ta = document.getElementById("groupContribTa");
+      const ta   = document.getElementById("groupMyContribTa");
       const text = String(ta?.value || "").trim();
       if (!text) return;
       const gm      = __classFeatures.groupMode;
@@ -2664,7 +3049,7 @@
     }
 
     async function saveMasterDraft() {
-      const ta   = document.getElementById("masterDraftTa");
+      const ta   = document.getElementById("masterDraftEditorTa");
       const text = String(ta?.value || "").trim();
       if (!text) return;
       const gm      = __classFeatures.groupMode;
@@ -2722,7 +3107,7 @@
       const gm      = __classFeatures.groupMode;
       const classId = lessonData?.courseId || courseIdFromUrl;
       try {
-        const res = await fetch("/.netlify/functions/group", {
+        const res  = await fetch("/.netlify/functions/group", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
