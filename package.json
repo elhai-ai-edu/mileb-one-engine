@@ -7,7 +7,8 @@
     "smoke:skills": "node scripts/smoke_test.mjs",
     "smoke:gatekeeping": "node scripts/smoke_gatekeeping.mjs",
     "test:gatekeeping:integration": "node scripts/integration_gatekeeping_flow.mjs",
-    "test:gatekeeping:auth-negative": "node scripts/test_gatekeeping_auth_negative.mjs"
+    "test:gatekeeping:auth-negative": "node scripts/test_gatekeeping_auth_negative.mjs",
+    "experiment:new": "bash scripts/new_experiment.sh"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
