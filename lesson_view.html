@@ -886,6 +886,13 @@
         <button class="group-enter-btn" id="groupEnterBtn" onclick="enterGroupMode()">👥 סביבת קבוצה ←</button>
         <button class="group-exit-btn"  id="groupExitBtn"  onclick="exitGroupMode()">← יציאה מקבוצה</button>
         <div    class="group-mode-badge" id="groupModeBadge">👥 מצב קבוצתי</div>
+        <!-- ── Call teacher ── -->
+        <button id="callTeacherBtn" onclick="callTeacher()"
+          style="display:none;padding:5px 12px;border-radius:8px;border:1.5px solid #fca5a5;
+                 background:transparent;color:#fca5a5;font:700 11px 'Assistant',sans-serif;
+                 cursor:pointer;white-space:nowrap;transition:all .15s;">
+          🆘 קרא למורה
+        </button>
       </div>
     </header>
 
@@ -1151,9 +1158,21 @@
         <!-- ─── Peer Review Panel ─── -->
         <div class="peer-review-panel" id="peerReviewPanel">
           <div class="peer-review-head">📊 הערכת עמיתים</div>
+          <!-- Split-view: my answer | peer answer -->
+          <div id="peerCompareWrap" style="display:none;gap:10px;margin-bottom:14px;">
+            <div style="flex:1;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:10px 12px;min-width:0;">
+              <div style="font-size:10px;font-weight:700;color:#15803d;margin-bottom:5px;letter-spacing:.3px;">✍️ התשובה שלי</div>
+              <div id="myAnswerText" style="font-size:12px;color:#0f172a;line-height:1.6;white-space:pre-wrap;max-height:140px;overflow-y:auto;"></div>
+            </div>
+            <div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;min-width:0;">
+              <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:5px;letter-spacing:.3px;">👤 תשובת העמית</div>
+              <div id="peerAnswerText" style="font-size:12px;color:#0f172a;line-height:1.6;white-space:pre-wrap;max-height:140px;overflow-y:auto;">טוען...</div>
+            </div>
+          </div>
+          <!-- Single peer answer (no compare) -->
           <div id="peerAnswerCard" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:14px;">
             <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;letter-spacing:.3px;">תשובת עמית לסקירה</div>
-            <div id="peerAnswerText" style="font-size:13px;color:#0f172a;line-height:1.6;">טוען...</div>
+            <div id="peerAnswerTextSingle" style="font-size:13px;color:#0f172a;line-height:1.6;">טוען...</div>
           </div>
           <div class="peer-rubric" id="peerRubric"></div>
           <div class="emoji-bank-label">הוסף/י תגובה גרפית (אופציונלי)</div>
@@ -2751,6 +2770,47 @@
       if (__classFeatures.groupMode?.enabled && role === "student") {
         initGroupWorkspace();
       }
+      // Show "call teacher" button if feature is on (or by default for students)
+      if (role === "student" && __classFeatures.callTeacher?.enabled !== false) {
+        const btn = document.getElementById("callTeacherBtn");
+        if (btn) btn.style.display = "";
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // Call Teacher
+    // ═══════════════════════════════════════════════
+    let _callTeacherCooldown = false;
+
+    async function callTeacher() {
+      if (_callTeacherCooldown) return;
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      const db = getRealtimeDb();
+      if (!db || !classId) return;
+
+      _callTeacherCooldown = true;
+      const btn = document.getElementById("callTeacherBtn");
+      const origLabel = btn?.textContent || "🆘 קרא למורה";
+      if (btn) { btn.textContent = "⏳ נשלח..."; btn.style.opacity = ".6"; }
+
+      try {
+        await db.ref(`helpRequests/${classId}/${studentId}`).set({
+          studentId,
+          studentName: studentName || studentId,
+          requestedAt: Date.now(),
+          sessionId:   sessionId || null,
+          status:      "pending"
+        });
+        if (btn) { btn.textContent = "✅ המורה קיבל/ה"; btn.style.borderColor = "#86efac"; btn.style.color = "#86efac"; }
+        setTimeout(() => {
+          if (btn) { btn.textContent = origLabel; btn.style.opacity = "1"; btn.style.borderColor = ""; btn.style.color = ""; }
+          _callTeacherCooldown = false;
+        }, 15000);
+      } catch(e) {
+        console.warn("[MilEd] callTeacher failed:", e);
+        if (btn) { btn.textContent = origLabel; btn.style.opacity = "1"; }
+        _callTeacherCooldown = false;
+      }
     }
 
     // ═══════════════════════════════════════════════
@@ -2775,10 +2835,11 @@
     // ═══════════════════════════════════════════════
     // Group Mode — data-mode architecture + Workspace
     // ═══════════════════════════════════════════════
-    let __groupRole          = null;
-    let _groupContribRef     = null;
-    let _groupVetoRef        = null;
-    let _groupTimerInterval  = null;
+    let __groupRole            = null;
+    let _groupContribRef       = null;
+    let _groupVetoRef          = null;
+    let _groupTimerInterval    = null;
+    let _groupPresenceRefs     = [];
 
     // ── Mode switching ──────────────────────────────
     function setLessonMode(mode) {
@@ -2798,11 +2859,13 @@
       renderGroupMembersSidebar();
       renderGroupRoleChips();
       startGroupContribListener();
+      startGroupPresenceListener();
     }
 
     function exitGroupMode() {
       setLessonMode("lesson");
       stopGroupListeners();
+      _writeGroupPresence(false);
     }
 
     // ── Member sidebar ──────────────────────────────
@@ -2895,6 +2958,47 @@
       if (_groupContribRef) { _groupContribRef.off(); _groupContribRef = null; }
       if (_groupVetoRef)    { _groupVetoRef.off();    _groupVetoRef    = null; }
       if (_groupTimerInterval) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
+      stopGroupPresenceListeners();
+    }
+
+    // ── Group presence ─────────────────────────────
+    function _groupPresencePath() {
+      const gm      = __classFeatures.groupMode;
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      return gm?.groupId ? `group_contributions/${classId}/${gm.groupId}/presence` : null;
+    }
+
+    function _writeGroupPresence(online) {
+      const db   = getRealtimeDb();
+      const base = _groupPresencePath();
+      if (!db || !base) return;
+      db.ref(`${base}/${studentId}`).update({ online, lastSeen: Date.now() });
+    }
+
+    function startGroupPresenceListener() {
+      const db      = getRealtimeDb();
+      const base    = _groupPresencePath();
+      const members = __classFeatures.groupMode?.members || [];
+      if (!db || !base || !members.length) return;
+
+      // Mark self online
+      _writeGroupPresence(true);
+
+      // Listen to each member's presence
+      members.forEach(sid => {
+        const ref = db.ref(`${base}/${sid}`);
+        ref.on("value", snap => {
+          const p   = snap.val() || {};
+          const dot = document.getElementById(`gmDot_${sid}`);
+          if (dot) dot.classList.toggle("online", p.online === true);
+        });
+        _groupPresenceRefs.push(ref);
+      });
+    }
+
+    function stopGroupPresenceListeners() {
+      _groupPresenceRefs.forEach(ref => ref.off());
+      _groupPresenceRefs = [];
     }
 
     // ── Render helpers ──────────────────────────────
@@ -3130,8 +3234,9 @@
       "💡","🔥","🌟","👏","🎯","💬","🤔","📚","✍️","🧠",
       "💪","🎉","🙌","👍","✅","❓","🔍","📝","⚡","🌱"
     ];
-    let _peerSelectedEmojis = new Set();
-    let _peerRubricScores   = {};
+    let _peerSelectedEmojis  = new Set();
+    let _peerRubricScores    = {};
+    let _lastSubmittedText   = "";
 
     const DEFAULT_RUBRIC_QUESTIONS = [
       { id: "q1", text: "עד כמה הרעיון הוצג בבהירות?" },
@@ -3196,17 +3301,33 @@
       document.getElementById("peerCommentTa").value = "";
       const submitBtn = document.getElementById("peerSubmitBtn");
       if (submitBtn) submitBtn.style.display = "";
-      // Populate
+      // Populate rubric + emojis
       renderPeerRubric(DEFAULT_RUBRIC_QUESTIONS);
       renderEmojiBank();
-      // Peer's answer (will be real data in Phase 2)
-      const answerCard = document.getElementById("peerAnswerCard");
-      if (reviewedText) {
+
+      const compareWrap  = document.getElementById("peerCompareWrap");
+      const answerCard   = document.getElementById("peerAnswerCard");
+      const hasPeerText  = !!reviewedText;
+      const hasMyText    = !!_lastSubmittedText;
+
+      if (hasPeerText && hasMyText) {
+        // Split-view: show both side by side
+        document.getElementById("myAnswerText").textContent  = _lastSubmittedText;
         document.getElementById("peerAnswerText").textContent = reviewedText;
-        if (answerCard) answerCard.style.display = "";
+        if (compareWrap) compareWrap.style.display = "flex";
+        if (answerCard)  answerCard.style.display  = "none";
+      } else if (hasPeerText) {
+        // Peer text only — single card
+        const singleEl = document.getElementById("peerAnswerTextSingle");
+        if (singleEl) singleEl.textContent = reviewedText;
+        if (compareWrap) compareWrap.style.display = "none";
+        if (answerCard)  answerCard.style.display  = "";
       } else {
-        if (answerCard) answerCard.style.display = "none";
+        // Neither — hide both
+        if (compareWrap) compareWrap.style.display = "none";
+        if (answerCard)  answerCard.style.display  = "none";
       }
+
       panel.classList.add("visible");
       setTimeout(() => panel.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
     }
@@ -3294,6 +3415,7 @@
         if (!res?.ok) throw new Error(res?.error || "שגיאה");
         document.getElementById("studentText").value = "";
         setWriteStatus("✓ עבודה הוגשה", "ok");
+        _lastSubmittedText = text;
         appendStudentBubble(text, "submission");
         document.getElementById("subSuccessBanner").style.display = "flex";
         document.getElementById("writePanel")?.classList.add("submitted");
@@ -3685,7 +3807,7 @@
       refreshTimer = setInterval(refreshLesson, 6000);
       sendHeartbeat(); // immediate — registers student in session.students right away
       heartbeatTimer = setInterval(sendHeartbeat, 30000);
-      window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); stopPeerReviewListener(); stopGroupListeners(); });
+      window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); stopPeerReviewListener(); stopGroupListeners(); _writeGroupPresence(false); });
     }
 
     init();
