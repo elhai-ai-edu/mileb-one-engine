@@ -2480,6 +2480,35 @@ export async function handler(event){
 
   }
 
+  // ─── Peer Review ──────────────────────────────────────────────────────────
+  if(action === "peer_review"){
+
+    const { classId: reviewClassId, activityId, rubricId, scores, emoji, comment } = body;
+    const reviewStudentId = String(body.studentId || "").trim();
+    const resolvedClassId = String(reviewClassId || body.courseId || "").trim();
+
+    if(!resolvedClassId) return err("classId required");
+    if(!reviewStudentId)  return err("studentId required");
+
+    const actId  = String(activityId || "default").trim();
+    const now    = Date.now();
+
+    const review = {
+      reviewerId:  reviewStudentId,
+      rubricId:    String(rubricId || "default").trim(),
+      scores:      (scores && typeof scores === "object" && !Array.isArray(scores)) ? scores : {},
+      emoji:       Array.isArray(emoji) ? emoji.slice(0, 5) : [],
+      comment:     String(comment || "").trim().slice(0, 500),
+      submittedAt: now
+    };
+
+    await db.ref(`submissions/${resolvedClassId}/${actId}/${reviewStudentId}/peer_reviews`).push(review);
+    await db.ref(`submissions/${resolvedClassId}/${actId}/${reviewStudentId}/peer_review_ready`).set(false);
+
+    return ok({ ok: true });
+
+  }
+
   if(action === "export_session"){
 
     const [taskLogSnap, studentsSnap] = await Promise.all([

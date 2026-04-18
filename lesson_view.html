@@ -2281,7 +2281,10 @@
         if (livePhaseChanged || activeTaskChanged) {
           renderLiveMeetingBar(lessonData.liveMeeting);
         }
-        if (activeTaskChanged && lessonData.activeTask) applyBotContext(lessonData.activeTask);
+        if (activeTaskChanged && lessonData.activeTask) {
+          applyBotContext(lessonData.activeTask);
+          if (role === "student") startPeerReviewListener(lessonData.activeTask.activityId);
+        }
         // Show/hide waiting screen based on live door state
         if (role === "student") {
           const liveDoor = String(live.state?.door_status || "auto").toLowerCase();
@@ -2352,6 +2355,33 @@
       if (sessionFirebaseRef) {
         sessionFirebaseRef.off();
         sessionFirebaseRef = null;
+      }
+    }
+
+    // ═══════════════════════════════════════════════
+    // Peer Review Ready — Firebase listener
+    // Path: submissions/{classId}/{activityId}/{studentId}/peer_review_ready
+    // Re-registers whenever the active task changes.
+    // ═══════════════════════════════════════════════
+    let _peerReviewReadyRef = null;
+
+    function startPeerReviewListener(activityId) {
+      stopPeerReviewListener();
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      if (!classId || !studentId || !activityId) return;
+      const db = getRealtimeDb();
+      if (!db) return;
+      _peerReviewReadyRef = db.ref(`submissions/${classId}/${activityId}/${studentId}/peer_review_ready`);
+      _peerReviewReadyRef.on("value", snap => {
+        const isReady = snap.val();
+        if (isReady === true) showPeerReviewPanel();
+      });
+    }
+
+    function stopPeerReviewListener() {
+      if (_peerReviewReadyRef) {
+        _peerReviewReadyRef.off();
+        _peerReviewReadyRef = null;
       }
     }
 
@@ -2948,10 +2978,13 @@
       renderBotMenu();
       startSessionListener();
       startWafListener();
+      if (role === "student" && lessonData?.activeTask?.activityId) {
+        startPeerReviewListener(lessonData.activeTask.activityId);
+      }
       refreshTimer = setInterval(refreshLesson, 6000);
       sendHeartbeat(); // immediate — registers student in session.students right away
       heartbeatTimer = setInterval(sendHeartbeat, 30000);
-      window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); });
+      window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); stopPeerReviewListener(); });
     }
 
     init();
