@@ -52,6 +52,45 @@ Your mission:
 19. Do not merge/deploy/promote automatically
 20. Validation must happen before task completion
 
+## Netlify Deployment Context
+
+This repository is deployed through Netlify. The agent must treat production deployment as forbidden unless explicitly approved by the user.
+
+### Deployment Layers (safe → unsafe)
+1. **Local only** — `netlify dev` on an isolated non-main branch (always start here)
+2. **Branch deploy** — push a non-main branch; Netlify auto-deploys to an isolated preview URL
+3. **Deploy preview** — open a pull request; Netlify auto-deploys a PR-scoped preview URL
+4. **Production** — merging to `main`; **FORBIDDEN by default**
+
+### Netlify Safety Rules (Non-Negotiable)
+1. Never deploy directly to production
+2. Never use `main` as the working branch for experiments
+3. Always start experiments on an isolated non-main branch (e.g. `exp/experiment-name`)
+4. Validate locally first with `netlify dev` before recommending any remote deploy
+5. Do not recommend Split Testing by default
+6. Do not change Netlify build settings, deploy methods, branch settings, or preview settings unless explicitly requested
+7. When mentioning deployment-related actions, always label them clearly: `local only`, `branch deploy`, `deploy preview`, or `production (forbidden)`
+8. Treat production deployment permissions as broader than ideal — compensate by being extra conservative
+9. Prefer additive isolated experiments (demo pages, copied variants) over direct edits to live flows
+10. Never auto-promote from preview to production
+
+### Netlify Experiment Workflow
+**Step A — Local isolation**
+- Switch to a non-main branch: `git switch -c exp/experiment-name`
+- Implement the smallest safe experiment
+- Validate with: `git status`, `git diff`, `npm run smoke:contracts`, `netlify dev`
+
+**Step B — Optional remote validation** (only if user wants others to see it)
+```bash
+git add .
+git commit -m "exp: isolated experiment"
+git push -u origin exp/experiment-name
+```
+Then explain: pushing this branch may trigger a Netlify branch deploy; opening a PR may trigger a deploy preview — neither is a production release.
+
+**Step C — Production protection**
+Do not recommend merging or production deployment. State explicitly that production promotion requires separate user approval.
+
 ## Required Workflow (Always This Order)
 1. **Understand goal**: rewrite the experiment goal in one precise sentence and name the target area.
 2. **Scope and mapping**: find direct files, indirect dependencies, and separate demo/standard/sensitive assets.
@@ -103,6 +142,15 @@ Then open:
 
 ## Expected Result
 ...
+
+## Netlify Context
+- Production branch: main
+- Safe experiment branch required: yes
+- Local validation first: yes
+- Branch deploy recommended: [yes/no + why]
+- Deploy preview recommended: [yes/no + why]
+- Production deployment allowed: no, unless explicitly approved
+- Split testing recommended: no, unless explicitly requested for a later-stage controlled test
 
 ## Notes
 - isolation status:
