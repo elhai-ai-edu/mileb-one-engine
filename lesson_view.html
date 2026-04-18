@@ -33,28 +33,28 @@
       min-height: 100vh;
       font-family: "Assistant", sans-serif;
       color: var(--ink);
-      background:
-        radial-gradient(circle at 12% 8%, rgba(29,78,216,0.16), transparent 35%),
-        radial-gradient(circle at 86% 16%, rgba(15,118,110,0.14), transparent 30%),
-        linear-gradient(165deg, #f7fbff 0%, #eef4ff 44%, #f7fbff 100%);
+      background: #f1f5f9;
+      display: flex;
+      flex-direction: column;
     }
     .shell {
-      width: min(1540px, 97vw);
-      margin: 14px auto;
-      display: grid;
-      gap: 14px;
+      width: 100%;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
     }
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 16px 18px;
-      border-radius: 22px;
+      padding: 10px 20px;
+      border-radius: 0;
       background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%);
       color: #fff;
-      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.2);
       border-bottom: 2px solid #1e40af;
+      flex-shrink: 0;
     }
     .topbar-title { display: grid; gap: 4px; }
     .topbar-title strong { font-size: 1.3rem; }
@@ -88,17 +88,25 @@
     }
     .layout {
       display: grid;
-      grid-template-columns: 320px minmax(0, 1fr) 400px;
-      gap: 14px;
-      align-items: start;
+      grid-template-columns: 240px 1.5fr 320px;
+      gap: 0;
+      flex: 1;
+      overflow: hidden;
+      min-height: 0;
     }
     .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      box-shadow: 0 16px 40px rgba(15,23,42,0.08);
-      overflow: hidden;
+      background: #fff;
+      border: none;
+      border-radius: 0;
+      border-left: 1px solid #e2e8f0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
     }
+    /* Bookshelf (right in RTL) gets right border instead */
+    aside.panel:first-child { border-left: none; border-right: 1px solid #e2e8f0; }
+    /* Chat (left in RTL) gets both borders */
+    aside.panel.chat-shell  { border-left: 1px solid #e2e8f0; }
     .panel-head {
       padding: 14px 16px;
       border-bottom: 1px solid var(--line);
@@ -183,24 +191,30 @@
       border-color: #86efac;
     }
     .stage {
-      display: grid;
-      gap: 14px;
-      min-height: calc(100vh - 160px);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow-y: auto;
     }
     .stage-hero {
-      padding: 18px;
-      border-bottom: 1px solid var(--line);
-      background: linear-gradient(135deg, #f8fbff, #edf6ff);
+      padding: 14px 18px;
+      border-bottom: 1px solid #bfdbfe;
+      background: linear-gradient(135deg, #eff6ff, #dbeafe);
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
       gap: 12px;
       flex-wrap: wrap;
+      flex-shrink: 0;
     }
+    .stage-hero h1 { font-size: 17px !important; font-weight: 800; margin: 0 0 4px; }
+    .stage-hero p  { font-size: 13px; color: #334155; margin: 0; line-height: 1.55; }
     .stage-display {
-      padding: 18px;
-      display: grid;
-      gap: 14px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex-shrink: 0;
     }
     .presentation-frame {
       width: 100%;
@@ -865,6 +879,72 @@
       background: linear-gradient(135deg,#34d399,#059669); color: #fff; cursor: pointer;
     }
     .group-veto-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+
+    /* ══ Context Rail — Lesson Stages Progress Bar ══ */
+    #contextRail {
+      padding: 10px 20px 10px; border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc; flex-shrink: 0; display: none;
+    }
+    #contextRail.visible { display: block; }
+    .ctx-rail-label { font-size: 12px; color: #0f172a; font-weight: 800; letter-spacing: -.1px; margin-bottom: 8px; text-align: center; }
+    .ctx-stages { display: flex; align-items: center; gap: 0; justify-content: center; flex-wrap: wrap; gap: 4px; }
+    .ctx-stage  { display: flex; align-items: center; gap: 0; flex-shrink: 0; }
+    .ctx-stage-box {
+      font-size: 11px; font-weight: 700; padding: 4px 13px;
+      border: 1.5px solid #cbd5e1; border-radius: 8px;
+      background: #fff; color: #64748b; white-space: nowrap; transition: all .15s;
+    }
+    .ctx-stage-box.done   { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+    .ctx-stage-box.active { background: linear-gradient(135deg,#eff6ff,#dbeafe); border-color: #93c5fd; color: #1e40af; font-weight: 800; box-shadow: 0 2px 8px rgba(29,78,216,.12); }
+    .ctx-stage-connector  { width: 20px; height: 2px; background: #cbd5e1; flex-shrink: 0; }
+
+    /* ══ Activity Empty State ══ */
+    #activityEmptyState {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 40px 20px; text-align: center; gap: 10px; flex-shrink: 0;
+    }
+    #activityEmptyState.hidden { display: none !important; }
+    .activity-empty-icon  { font-size: 40px; animation: emptyPulse 2s infinite; }
+    @keyframes emptyPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .activity-empty-title { font-size: 15px; font-weight: 800; color: #0f172a; }
+    .activity-empty-sub   { font-size: 13px; color: #64748b; line-height: 1.6; max-width: 240px; }
+
+    /* ══ Active sprint box → slim card ══ */
+    .active-sprint-box { border-radius: 12px !important; padding: 14px !important; }
+
+    /* ══ WAF section header (injected above wafMessages) ══ */
+    .waf-section-head {
+      padding: 11px 18px; font-size: 14px; font-weight: 800; color: #0f172a;
+      border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;
+      background: #f8fafc; display: flex; align-items: center; gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* ══ Submission area header ══ */
+    .write-panel-head {
+      font-size: 14px !important; font-weight: 800 !important;
+      color: #0f172a !important; padding-bottom: 8px !important;
+    }
+
+    /* ══ Comm panel layout ══ */
+    .comm-panel { border-top: none !important; flex-shrink: 0; }
+    .comm-stream { min-height: 60px; max-height: 200px; padding: 10px 18px; }
+    .comm-input  { padding: 14px 18px !important; border-top: 1px solid #e2e8f0; }
+
+    /* ══ Flat panel heads ══ */
+    .panel-head {
+      background: linear-gradient(180deg, #f8fbff, #eef4ff) !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      padding: 12px 16px !important; font-size: 13px !important;
+      flex-shrink: 0;
+    }
+    .panel-body { flex: 1; overflow-y: auto; }
+
+    /* ══ Resource cards flat ══ */
+    .resource-card, .sprint-card, .state-strip { border-radius: 10px !important; }
+
+    /* ══ Broadcast banner — full width when inside shell ══ */
+    #broadcastBanner { border-radius: 0 !important; margin: 0 !important; }
   </style>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -1031,10 +1111,16 @@
       </aside>
 
       <section class="panel stage">
+        <!-- ─── Context Rail — Lesson Stages Progress ─── -->
+        <div id="contextRail">
+          <div class="ctx-rail-label">שלבים מתוכננים של השיעור</div>
+          <div class="ctx-stages" id="contextRailStages"></div>
+        </div>
+
         <div class="stage-hero">
           <div class="hero-copy">
-            <h1 id="stageTitle">מרחב מצגת וספרינט</h1>
-            <p id="stageSubtitle">המשאב הדחוף, הספרינט הפעיל או הוראות המליאה יוצגו כאן.</p>
+            <h1 id="stageTitle">ממתין להנחיה מהמרצה</h1>
+            <p id="stageSubtitle">השיעור פתוח — הפעילות הנוכחית תוצג כאן כשהמרצה יפעיל אותה.</p>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="mini-btn ghost" id="clearPushBtn" style="display:none;">נקה משאב דחוף</button>
@@ -1048,6 +1134,13 @@
         </div>
         <!-- ─── Sprint Stepper ─── -->
         <div id="sprintStepper"></div>
+
+        <!-- ─── Activity Empty State (hidden when sprint is active) ─── -->
+        <div id="activityEmptyState" class="hidden">
+          <div class="activity-empty-icon">⏳</div>
+          <div class="activity-empty-title">ממתין להנחיה מהמרצה</div>
+          <div class="activity-empty-sub">השיעור פתוח, אבל עדיין לא הוגדרה פעילות. אפשר לעיין בחומרים בינתיים.</div>
+        </div>
 
         <div class="stage-display">
           <div id="activeSprintBox" class="active-sprint-box"></div>
@@ -1133,6 +1226,7 @@
         </div>
         <!-- ─── Communication Panel (WAF + write, unified) ─── -->
         <div class="comm-panel" id="writePanel">
+          <div class="waf-section-head">📩 עדכונים ושאלות למרצה</div>
           <div class="comm-stream" id="wafMessages">
             <span class="comm-stream-empty" id="wafEmptyHint">ממתין להודעות מהמרצה...</span>
           </div>
@@ -1833,6 +1927,31 @@
       stepper.classList.add("visible");
     }
 
+    function renderContextRail() {
+      const rail       = document.getElementById("contextRail");
+      const stagesEl   = document.getElementById("contextRailStages");
+      const emptyState = document.getElementById("activityEmptyState");
+      if (!rail || !stagesEl) return;
+
+      const sprints      = lessonData?.sprints || [];
+      const activeSprint = lessonData?.state?.active_sprint || null;
+
+      if (!sprints.length) { rail.classList.remove("visible"); return; }
+      rail.classList.add("visible");
+
+      stagesEl.innerHTML = sprints.map((s, i) => {
+        const isDone   = s.status === "completed" || (activeSprint && sprints.findIndex(x => x.id === activeSprint) > i);
+        const isActive = s.id === activeSprint;
+        const cls      = isDone ? "done" : isActive ? "active" : "";
+        const connector = i < sprints.length - 1 ? '<div class="ctx-stage-connector"></div>' : "";
+        return `<div class="ctx-stage"><div class="ctx-stage-box ${cls}">${escapeHtml(s.title || s.id)}${isDone ? " ✓" : ""}</div></div>${connector}`;
+      }).join("");
+
+      // Show/hide activity empty state
+      const hasActivity = !!activeSprint || !!(lessonData?.state?.pushed_resource?.url);
+      if (emptyState) emptyState.classList.toggle("hidden", hasActivity);
+    }
+
     function renderActiveSprint() {
       const box = document.getElementById("activeSprintBox");
       const frame = document.getElementById("presentationFrame");
@@ -2291,6 +2410,7 @@
       renderAdminLinks();
       renderResources();
       renderHeatStrip();
+      renderContextRail();
       renderActiveSprint();
       renderSprintList();
       renderSprintStepper();
@@ -2640,6 +2760,7 @@
         if (live.state) lessonData.state = { ...lessonData.state, ...live.state };
         if (broadcastChanged) renderBroadcast();
         if (live.state?.active_sprint !== undefined && live.state.active_sprint !== prevActiveSprint) {
+          renderContextRail();
           renderActiveSprint();
           renderSprintStepper();
         }
