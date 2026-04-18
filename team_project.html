@@ -212,6 +212,14 @@
     .banner-info    { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; }
     .banner-warn    { background: #fffbeb; border: 1.5px solid #fed7aa; color: #92400e; }
 
+    /* ── Chat iframe ── */
+    .tp-chat-frame {
+      width: 100%; border: none; border-radius: 10px;
+      height: 520px; display: block;
+      background: #f8fafc;
+    }
+    @media (max-width: 900px) { .tp-chat-frame { height: 420px; } }
+
     /* ── Loading ── */
     .tp-loading {
       text-align: center; padding: 48px; color: #94a3b8; font-size: 14px;
@@ -384,6 +392,7 @@
           <button class="tp-tab active" onclick="switchTab('document', this)">📄 מסמך</button>
           <button class="tp-tab" onclick="switchTab('sources', this)">📚 מקורות</button>
           <button class="tp-tab" onclick="switchTab('tasks', this)">✅ משימות</button>
+          <button class="tp-tab" id="chatTab" onclick="switchTab('chat', this)">💬 צ'אט</button>
         </div>
 
         <div class="tp-tab-pane active" id="tabDocument">
@@ -403,6 +412,10 @@
 
         <div class="tp-tab-pane" id="tabTasks">
           <div style="color:#94a3b8;font-size:13px;padding:8px 0;">רשימת משימות ייתווסף כאן.</div>
+        </div>
+
+        <div class="tp-tab-pane" id="tabChat">
+          <iframe id="tpChatFrame" class="tp-chat-frame" title="project-chat"></iframe>
         </div>
       </div>
 
@@ -535,6 +548,22 @@
       const pane = document.getElementById("tab" + name.charAt(0).toUpperCase() + name.slice(1));
       if (pane) pane.classList.add("active");
       if (btn)  btn.classList.add("active");
+      // Lazy-load chat iframe on first open
+      if (name === "chat") setChatFrame();
+    }
+
+    // ── Chat frame ───────────────────────────────────────────────────────────
+    function setChatFrame() {
+      const frame = document.getElementById("tpChatFrame");
+      if (!frame || frame.getAttribute("data-loaded")) return;
+      const botType = _project?.botType || "";
+      const query   = new URLSearchParams();
+      if (courseId) query.set("classId", courseId);
+      if (botType)  query.set("botType", botType);
+      // Use projectId+studentId as a stable session key for the project chat
+      query.set("sessionId", `tp_${projectId}_${studentId}`);
+      frame.src = `/chat.html?${query.toString()}`;
+      frame.setAttribute("data-loaded", "1");
     }
 
     // ── Digest modal + sidebar ────────────────────────────────────────────────
