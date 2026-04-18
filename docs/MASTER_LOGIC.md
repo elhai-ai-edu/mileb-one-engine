@@ -1753,7 +1753,7 @@ The Export Hub is always visible at the bottom of Section 3 but its buttons are 
 - Server reads `architect_sessions/{sessionId}/exports/json` from Firebase
 - Injects the config.json snippet into the live config
 - Disabled state message: "AR-1 implementation pending"
-- Enabled state: green "Save" button
+- Enabled state: green "Save" button — calls `POST /api/architect/export`
 
 **Export for External AI (Secondary)**
 - Client-side: scans chat history for the last assistant message containing the External SP
@@ -1785,7 +1785,7 @@ The page has no authentication gate of its own — it inherits the faculty sessi
 | Reference | Relationship |
 |-----------|-------------|
 | Part 31 — Bot Architect Engine | The backend logic the Studio exposes to faculty |
-| `functions/architect_api.js` | The API the Export Hub calls (AR-1 pending) |
+| `functions/architect_api.js` | The API the Export Hub calls (AR-1 complete) |
 | `config.json system.bot_architect` | The bot config entry the Studio chat uses |
 | `docs/BOT_ARCHITECT_SP.md` | The System Prompt loaded by the Studio's chat engine |
 

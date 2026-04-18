@@ -192,16 +192,33 @@ async function loadConfig() {
 // AUTHORIZATION LAYER
 // ─────────────────────────────────────────
 
+// Verify that the claimed facultyId corresponds to a real faculty/admin account in Firebase.
+// Returns true only if the record exists and has an appropriate role.
+async function verifyFacultyId(facultyId) {
+  if (!facultyId) return false;
+  try {
+    const snap = await getDB().ref(`admin/auth/${facultyId}`).get();
+    if (!snap.exists()) return false;
+    const record = snap.val();
+    const role = record.role || "";
+    return ["faculty", "admin", "superadmin"].includes(role);
+  } catch (e) {
+    console.error("VERIFY_FACULTY: Firebase lookup failed:", e.message);
+    return false;
+  }
+}
+
 function hasAccess(bot, context) {
   const scope = bot.scope || "global";
   const owner = bot.owner || null;
-  const facultyId = context.facultyId || null;
-  const classId   = context.classId   || null;
-  void classId;
+  const facultyId      = context.facultyId      || null;
+  const classId        = context.classId        || null;
+  const facultyVerified = context.facultyVerified === true;
+
   if (scope === "global")          return true;
-  if (scope === "institution")     return !!facultyId;
-  if (scope === "faculty_private") return !!(owner && facultyId && owner === facultyId);
-  if (scope === "course_specific") return true;
+  if (scope === "institution")     return facultyVerified;
+  if (scope === "faculty_private") return !!(owner && facultyId && owner === facultyId && facultyVerified);
+  if (scope === "course_specific") return !!(classId && bot.courseId && classId === bot.courseId);
   return false;
 }
 
@@ -411,7 +428,10 @@ export async function handler(event) {
     if (!botType)
       return { statusCode: 400, headers, body: JSON.stringify({ error: "botType required" }) };
 
-    const context = { facultyId, classId, studentId };
+    // ─── FACULTY VERIFICATION ───
+    // Resolve facultyVerified server-side so clients cannot spoof access to institution-scoped bots.
+    const facultyVerified = await verifyFacultyId(facultyId);
+    const context = { facultyId, classId, studentId, facultyVerified };
 
     // ─── LOAD CONFIG ───
     const config = await loadConfig();

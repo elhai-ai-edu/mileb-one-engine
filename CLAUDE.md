@@ -114,9 +114,9 @@ docs/
 
 | ID | Issue | Status |
 |----|-------|--------|
-| BP-2 | `spi_builder.js` reads `engine.kernel.public/.private` — these don't exist in config.json | Open |
-| BP-3 | `create_sp.js` reads `config.functionPolicies` — deprecated, replace with Phase-Based enforcement | Open |
-| PV-5 | Faculty bots with `scope: "global"` accessible to students | Open |
+| BP-2 | `spi_builder.js` reads `engine.kernel.public/.private` — these don't exist in config.json | Completed — reads `kernel.universal` / `kernel.private` / `kernel.binding` which all exist in config.json |
+| BP-3 | `create_sp.js` reads `config.functionPolicies` — deprecated, replace with Phase-Based enforcement | Completed — `create_sp.js` uses `config.engine` via `buildSPI()`; no `functionPolicies` reference exists |
+| PV-5 | `hasAccess()` in `chat.js`: `scope: "institution"` bots accessible to anyone who sends a claimed `facultyId` — no server-side role verification | Completed — `verifyFacultyId()` now validates against Firebase `admin/auth/{id}` before granting access |
 | AR-1 | `architect_api.js` — export bridge: `handleExport()` fully implemented | Completed |
 | AR-2 | `architect_api.js` — intake & bootstrap: `handleTallyIntake()` + `handleBootstrapSession()` fully implemented; `architect_studio.html` wired to bootstrap endpoint | Completed |
 | DL-1 | Data Lifecycle Management (v9.0.7) — lockDate/retentionDate per class in admin UI, isBypassingLock toggle per user, waiting/lesson gatekeeper, retention cleanup prompt | Completed |
