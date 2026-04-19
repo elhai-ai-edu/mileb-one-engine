@@ -2681,11 +2681,11 @@ function renderPreClass() {
 }
 
 async function loadPreSessionMission() {
-  const classId = activeCourseId || getSelectedTeachingContext().classId;
+  const designCourseId = currentCourseForSync();
   const lessonId = resolveActiveLessonId();
   const statusEl = document.getElementById('preSessionStatus');
   ensureCurrentLessonForId(lessonId);
-  if (!classId) {
+  if (!designCourseId) {
     if (currentLesson) currentLesson.preClass = [normalizePreClassItem()];
     renderLesson();
     if (statusEl) statusEl.textContent = 'בחר קורס כדי להגדיר מטלת כניסה';
@@ -2694,7 +2694,7 @@ async function loadPreSessionMission() {
 
   try {
     // Transitional compatibility: classroom APIs still route by `unitId`, while macro runtime resolves lesson ids.
-    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}&userId=${encodeURIComponent(facultyId)}`);
+    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(designCourseId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}&userId=${encodeURIComponent(facultyId)}`);
     if (!res.ok) return;
     const data = await res.json();
     const mission = data?.mission || {};
@@ -2722,11 +2722,11 @@ async function loadPreSessionMission() {
 }
 
 async function savePreSessionMission() {
-  const classId = activeCourseId || getSelectedTeachingContext().classId;
+  const designCourseId = currentCourseForSync();
   const lessonId = resolveActiveLessonId();
   const statusEl = document.getElementById('preSessionStatus');
   ensureCurrentLessonForId(lessonId);
-  if (!classId) {
+  if (!designCourseId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני שמירה';
     return;
   }
@@ -2739,8 +2739,8 @@ async function savePreSessionMission() {
   if (statusEl) statusEl.textContent = 'שומר...';
   const res = await callClassroom({
     action:       'pre_session_save',
-    classId,
-    courseId:     classId,
+    classId:      designCourseId,
+    courseId:     designCourseId,
     unitId: lessonId,
     lessonId,
     userId:       facultyId,
@@ -2766,16 +2766,16 @@ async function savePreSessionMission() {
 }
 
 async function clearPreSessionMission() {
-  const classId = activeCourseId || getSelectedTeachingContext().classId;
+  const designCourseId = currentCourseForSync();
   const lessonId = resolveActiveLessonId();
   const statusEl = document.getElementById('preSessionStatus');
   ensureCurrentLessonForId(lessonId);
-  if (!classId) {
+  if (!designCourseId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני ניקוי';
     return;
   }
 
-  const res = await callClassroom({ action: 'pre_session_clear', classId, courseId: classId, unitId: lessonId, lessonId, userId: facultyId, facultyId });
+  const res = await callClassroom({ action: 'pre_session_clear', classId: designCourseId, courseId: designCourseId, unitId: lessonId, lessonId, userId: facultyId, facultyId });
   if (!res?.ok) {
     if (statusEl) statusEl.textContent = 'שגיאה בניקוי';
     return;
@@ -2788,18 +2788,18 @@ async function clearPreSessionMission() {
 }
 
 async function generateWarmup() {
-  const classId = activeCourseId || getSelectedTeachingContext().classId;
+  const designCourseId = currentCourseForSync();
   const lessonId = resolveActiveLessonId();
   const btn = document.getElementById('generateWarmupBtn');
   const statusEl = document.getElementById('preSessionStatus');
-  if (!classId) {
+  if (!designCourseId) {
     if (statusEl) statusEl.textContent = 'בחר קורס תחילה';
     return;
   }
   if (btn) btn.disabled = true;
   if (statusEl) statusEl.textContent = '⏳ מייצר שאלת חימום...';
   try {
-    const res = await callClassroom({ action: 'generate_warmup', classId, courseId: classId, unitId: lessonId, lessonId, userId: facultyId, facultyId, warmupType: 'memory_match' });
+    const res = await callClassroom({ action: 'generate_warmup', classId: designCourseId, courseId: designCourseId, unitId: lessonId, lessonId, userId: facultyId, facultyId, warmupType: 'memory_match' });
     if (!res?.ok) {
       if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביצירת חימום';
     } else {
@@ -3785,14 +3785,18 @@ async function openSession() {
   openSessionInFlight = true;
   setOpenSessionBusy(true);
 
+  // Scoped for catch-path cleanup if open flow fails mid-flight.
+  let sessionUnitId = null;
+  let classId = null;
+  let doorStateActivated = false;
   try {
     debugLessonContext("session-open:start");
     // Resolve botType + classId depending on selection type
     const lessonId = resolveActiveLessonId();
     sessionLessonId = lessonId;
     // TODO(BP-runtime): remove `unitId` transport alias once classroom endpoints are lessonId-native.
-    const sessionUnitId = lessonId; // classroom API currently uses legacy `unitId` for session routing.
-    let botType, classId;
+    sessionUnitId = lessonId; // classroom API currently uses legacy `unitId` for session routing.
+    let botType;
     if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
       classId  = selectedClassId;
       botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
@@ -3820,33 +3824,53 @@ async function openSession() {
     if (classId) {
       // Canonical session signal key: active_sessions/{courseId}_{unitId}
       await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId, status: 'active', entryPolicy: 'open_all' });
+      doorStateActivated = true;
       startWaitingAttendeesListener(classId, sessionUnitId);
     }
 
     const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId: sessionUnitId, lessonId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
     if (!res.ok) {
-      resetRuntimeSessionState({ resetUi: true });
-      if (classId) {
+      resetRuntimeSessionState({ resetUi: true, reason: "session-open:failed" });
+      if (doorStateActivated && classId) {
         await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
       }
       alert("שגיאה בפתיחת שיעור");
       return;
     }
 
-    document.getElementById('sessionInfo').style.display = "block";
-    document.getElementById('sessionIdDisplay').textContent = sessionId;
+    const sessionInfoEl = document.getElementById('sessionInfo');
+    const sessionIdDisplayEl = document.getElementById('sessionIdDisplay');
+    if (sessionInfoEl) sessionInfoEl.style.display = "block";
+    if (sessionIdDisplayEl) sessionIdDisplayEl.textContent = sessionId;
     setSessionControls(true);
     persistRuntimeSessionContext();
 
     // Share URL for students — now points to waiting_lobby.html
-    document.getElementById('sessionIdDisplay').innerHTML =
-      `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
+    if (sessionIdDisplayEl) {
+      sessionIdDisplayEl.innerHTML =
+        `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
+    }
 
     if (classId) loadTemplates(classId);
     setOpenAllGateState(false);
     renderDJBooth();
     startPolling();
     debugLessonContext("session-open:ready");
+  } catch (error) {
+    if (LESSON_CONTEXT_DEBUG) {
+      console.error("[lesson-context] session-open:failed-exception; clearing runtime session state", error);
+    }
+    if (doorStateActivated && classId && sessionUnitId) {
+      try {
+        await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
+      } catch (doorStateError) {
+        if (LESSON_CONTEXT_DEBUG) {
+          console.warn("[lesson-context] session-open:failed-exception; door-state cleanup failed", doorStateError);
+        }
+      }
+    }
+    resetRuntimeSessionState({ resetUi: true, reason: "session-open:failed-exception" });
+    alert("שגיאה בפתיחת שיעור");
   } finally {
     openSessionInFlight = false;
     setOpenSessionBusy(false);
@@ -3928,6 +3952,7 @@ async function broadcast() {
 async function closeSession() {
   if (!confirm("לסגור את השיעור?")) return;
   if (!sessionId) return;
+  debugLessonContext("session-close:start");
   const closingClassId = sessionCourseId;
   const closingLessonId = sessionLessonId;
   await callClassroom({ action: "close", sessionId, facultyId });
@@ -3946,7 +3971,8 @@ async function closeSession() {
       sessionLessonId
     });
   }
-  resetRuntimeSessionState({ resetUi: true });
+  resetRuntimeSessionState({ resetUi: true, reason: "session-close" });
+  debugLessonContext("session-close:done");
   renderLesson();
   loadPacingHeatmap();
 }
@@ -3989,7 +4015,7 @@ async function fetchDashboard() {
         || errorText === "session not found"
         || errorText === "session expired";
       if (sessionId && invalidSession) {
-        resetRuntimeSessionState({ resetUi: true });
+        resetRuntimeSessionState({ resetUi: true, reason: "dashboard:invalid-session" });
         renderLesson();
         loadPacingHeatmap();
       }
@@ -4489,6 +4515,7 @@ function escapeHtml(str) {
 }
 
 function currentCourseForSync() {
+  // Design-time forms (lesson editing, pre-session setup) follow UI selection, not session-pinned runtime binding.
   return activeCourseId || getSelectedTeachingContext().classId || null;
 }
 
@@ -4507,7 +4534,9 @@ function resolveActiveLessonId() {
   return activeLessonId || mapUnitToLessonDesignId(activeUnitId) || "lesson_01";
 }
 
-function resetRuntimeSessionState({ resetUi = false } = {}) {
+// `reason` is an optional debug label to trace why reset happened (logged only when LESSON_CONTEXT_DEBUG is on).
+function resetRuntimeSessionState({ resetUi = false, reason = "" } = {}) {
+  // Canonical teardown path for both normal close and failure cleanup to avoid stale runtime/session restores.
   sessionId = null;
   sessionLessonId = null;
   sessionCourseId = null;
@@ -4525,6 +4554,7 @@ function resetRuntimeSessionState({ resetUi = false } = {}) {
     setSessionControls(false);
     setOpenAllGateState(false);
   }
+  if (reason) debugLessonContext(reason);
 }
 
 function buildWaitingLobbyUrl({ classId = null, lessonId = "", sessionId: sid = "" } = {}) {
