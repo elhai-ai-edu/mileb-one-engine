@@ -5244,7 +5244,11 @@ async function quickEvaluate(studentId, submissionId, status) {
 document.getElementById("stagesStageFilter")?.addEventListener("input", renderStageSummaryTable);
 document.getElementById("stagesStatusFilter")?.addEventListener("change", renderStageSummaryTable);
 
-
+document.addEventListener("click", (event) => {
+  const target = event?.target;
+  const avatarEl = target && typeof target.closest === "function"
+    ? target.closest(".student-avatar-mini, .presence-row-avatar")
+    : null;
   if (avatarEl && avatarEl.getAttribute("src")) {
     openAvatarLightbox(avatarEl.getAttribute("src"));
   }
