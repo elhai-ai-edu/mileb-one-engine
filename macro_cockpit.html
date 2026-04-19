@@ -3928,10 +3928,9 @@ async function broadcast() {
 async function closeSession() {
   if (!confirm("לסגור את השיעור?")) return;
   if (!sessionId) return;
-  const closingSessionId = sessionId;
-  const closingClassId = sessionCourseId || null;
-  const closingLessonId = sessionLessonId || null;
-  await callClassroom({ action: "close", sessionId: closingSessionId, facultyId });
+  const closingClassId = sessionCourseId;
+  const closingLessonId = sessionLessonId;
+  await callClassroom({ action: "close", sessionId, facultyId });
   if (closingClassId && closingLessonId) {
     await writeActiveDoorState({
       classId: closingClassId,
@@ -3939,6 +3938,12 @@ async function closeSession() {
       sessionId: null,
       status: "closed",
       entryPolicy: "closed"
+    });
+  } else if (LESSON_CONTEXT_DEBUG) {
+    console.warn("[lesson-context] closing session without full course/lesson binding; skipping door-state write", {
+      sessionId,
+      sessionCourseId,
+      sessionLessonId
     });
   }
   resetRuntimeSessionState({ resetUi: true });
@@ -3959,6 +3964,7 @@ function startPolling() {
 
 async function fetchDashboard() {
   try {
+    // Dashboard polling runs only during active sessions; invalid active-session responses trigger local cleanup.
     if (!sessionId) return;
     const classId = resolveRuntimeCourseId();
     const classIdParam = classId ? `&classId=${encodeURIComponent(classId)}` : '';
@@ -3974,7 +3980,15 @@ async function fetchDashboard() {
     const data = await res.json();
     if (!res.ok) {
       console.error("dashboard fetch failed:", data?.error || res.status, { sessionId, facultyId });
-      if (sessionId && (res.status === 404 || res.status === 410 || String(data?.error || "").toLowerCase().includes("session"))) {
+      const errorCode = String(data?.code || "").toLowerCase();
+      const errorText = String(data?.error || "").toLowerCase();
+      const invalidSession = res.status === 404
+        || res.status === 410
+        || errorCode === "session_not_found"
+        || errorCode === "session_expired"
+        || errorText === "session not found"
+        || errorText === "session expired";
+      if (sessionId && invalidSession) {
         resetRuntimeSessionState({ resetUi: true });
         renderLesson();
         loadPacingHeatmap();
@@ -4479,6 +4493,7 @@ function currentCourseForSync() {
 }
 
 function resolveRuntimeCourseId() {
+  // Course-bound sessions stay pinned to their opened course; faculty-tool sessions intentionally remain unbound.
   if (sessionId) return sessionCourseId || null;
   return currentCourseForSync();
 }
@@ -4615,6 +4630,7 @@ function debugLessonContext(label = "") {
     activeCourseId,
     activeUnitId,
     activeLessonId,
+    currentLessonId: currentLesson?.id || null,
     "currentLesson.id": currentLesson?.id || null,
     sessionLessonId,
     sessionCourseId,
@@ -4624,13 +4640,10 @@ function debugLessonContext(label = "") {
 }
 
 function syncCockpitContextLinks() {
-  const runtimeContext = getRuntimeLessonContext({ warnOnDrift: false });
   const courseId = resolveRuntimeCourseId();
-  const lessonId = runtimeContext.runtimeLessonId || resolveActiveLessonId();
+  const lessonId = resolveRuntimeLessonId();
   // Keep `unitId` in links for backward compatibility with unit-based routing.
-  const unitId = runtimeContext.runtimeBinding === "session-bound"
-    ? lessonId
-    : (activeUnitId || lessonId);
+  const unitId = resolveRuntimeUnitId();
   const toMacro1 = document.getElementById('toMacroCockpitBtn');
   const toMacro2 = document.getElementById('backToUnitsBtn');
   const toMicro = document.getElementById('toMicroCockpitBtn');
@@ -4685,6 +4698,14 @@ function syncActiveContextPersistence({ updateUrl = false } = {}) {
 
 function resolveRuntimeLessonId() {
   return getRuntimeLessonContext().runtimeLessonId;
+}
+
+function resolveRuntimeUnitId() {
+  const runtimeContext = getRuntimeLessonContext({ warnOnDrift: false });
+  // Session-bound mode intentionally ignores activeUnitId fallback to prevent UI drift from mutating runtime targets.
+  return runtimeContext.runtimeBinding === "session-bound"
+    ? runtimeContext.runtimeLessonId
+    : (activeUnitId || runtimeContext.runtimeLessonId);
 }
 
 function renderImportedUnits() {
