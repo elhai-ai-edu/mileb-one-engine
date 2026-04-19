@@ -731,6 +731,18 @@
     #lessonMain[data-mode="group"] #sprintStepper        { display: none !important; }
     #lessonMain[data-mode="group"] .stage-display        { display: none !important; }
 
+    /* Project Mode — data-mode="project" */
+    #lessonMain[data-mode="project"] .panel-head-bookshelf { display: none !important; }
+    #lessonMain[data-mode="project"] .panel-body-bookshelf { display: none !important; }
+    #lessonMain[data-mode="project"] .stage-hero           { display: none !important; }
+    #lessonMain[data-mode="project"] .stage-display        { display: none !important; }
+    #lessonMain[data-mode="project"] .comm-panel           { display: none !important; }
+    #lessonMain[data-mode="project"] #peerReviewPanel      { display: none !important; }
+    #lessonMain[data-mode="project"] #subSuccessBanner     { display: none !important; }
+    #lessonMain[data-mode="project"] #contextRail          { display: none !important; }
+    #lessonMain[data-mode="project"] #projectStepperWrap   { display: block !important; }
+    #lessonMain[data-mode="project"] #sprintStepper        { display: flex !important; }
+
     /* Group members left panel */
     .panel-group-members {
       display: none; flex-direction: column; overflow-y: auto;
@@ -945,6 +957,41 @@
 
     /* ══ Broadcast banner — full width when inside shell ══ */
     #broadcastBanner { border-radius: 0 !important; margin: 0 !important; }
+
+    /* ══ Peer Insight Panel (Layer 1) ══ */
+    .peer-insight-panel {
+      margin: 0; padding: 14px 18px; border-top: 1px solid #e2e8f0;
+      background: linear-gradient(180deg,#fffbeb,#fefce8); flex-shrink: 0;
+      display: none;
+    }
+    .peer-insight-panel.visible { display: block; }
+    .peer-insight-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .peer-insight-title { font-size: 14px; font-weight: 800; color: #92400e; }
+    .peer-count-badge {
+      font-size: 11px; padding: 2px 9px; border-radius: 999px;
+      background: #fde68a; color: #92400e; font-weight: 700;
+    }
+    .peer-examples { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .peer-example {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: #fff; border: 1px solid #fde68a;
+      border-radius: 10px; padding: 10px 12px;
+    }
+    .peer-avatar-sm {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg,#fbbf24,#f59e0b);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #fff;
+    }
+    .peer-example-text { font-size: 13px; color: var(--navy); line-height: 1.5; }
+    .peer-compare-prompt {
+      font-size: 13px; font-weight: 700; color: #92400e;
+      background: #fef9c3; border-right: 3px solid #fbbf24;
+      padding: 8px 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px;
+    }
   </style>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -1254,6 +1301,16 @@
             </div>
           </div>
         </div>
+        <!-- ─── Peer Insight Panel (Layer 1 — shown after submission) ─── -->
+        <div class="peer-insight-panel" id="peerInsightPanel">
+          <div class="peer-insight-head">
+            <span class="peer-insight-title">👥 מבט מהכיתה</span>
+            <span class="peer-count-badge" id="peerInsightCount"></span>
+          </div>
+          <div class="peer-examples" id="peerInsightList"></div>
+          <div class="peer-compare-prompt" id="peerComparePrompt" style="display:none;">💬 מה דומה ומה שונה בין הגישות הללו לגישה שלך?</div>
+        </div>
+
         <!-- ─── Peer Review Panel ─── -->
         <div class="peer-review-panel" id="peerReviewPanel">
           <div class="peer-review-head">📊 הערכת עמיתים</div>
@@ -2757,7 +2814,12 @@
         if (live.active_task !== undefined) lessonData.activeTask = live.active_task;
         const prevActiveSprint = lessonData.state?.active_sprint;
         const prevLivePhase = lessonData.state?.live_phase;
+        const prevMode = lessonData.state?.mode;
         if (live.state) lessonData.state = { ...lessonData.state, ...live.state };
+        // Lecturer pushed class to a different layout mode
+        if (live.state?.mode !== undefined && live.state.mode !== prevMode) {
+          setLessonMode(live.state.mode || "lesson");
+        }
         if (broadcastChanged) renderBroadcast();
         if (live.state?.active_sprint !== undefined && live.state.active_sprint !== prevActiveSprint) {
           renderContextRail();
@@ -2980,6 +3042,11 @@
       if (gEnter) gEnter.style.display = (mode === "lesson" && hasGroup) ? "flex" : "none";
       if (gExit)  gExit.style.display  = mode === "group" ? "flex" : "none";
       if (gBadge) gBadge.style.display = mode === "group" ? "flex" : "none";
+      // Project mode: show project stepper when lecturer pushes class to project mode
+      if (mode === "project") {
+        renderProjectStepper();
+        renderSprintStepper();
+      }
     }
 
     function enterGroupMode() {
@@ -3462,6 +3529,32 @@
       }
     }
 
+    // ── Peer Insight (Layer 1) ────────────────────────────────────────────────
+    async function loadPeerInsight() {
+      if (!sessionId || !studentId) return;
+      try {
+        const res = await callClassroom("GET", null, `action=peer_responses&sessionId=${encodeURIComponent(sessionId)}&studentId=${encodeURIComponent(studentId)}`);
+        if (res?.responses?.length) renderPeerInsight(res.responses);
+      } catch (_) { /* silent — peer insight is non-critical */ }
+    }
+
+    function renderPeerInsight(responses) {
+      const panel      = document.getElementById("peerInsightPanel");
+      const list       = document.getElementById("peerInsightList");
+      const badge      = document.getElementById("peerInsightCount");
+      const prompt     = document.getElementById("peerComparePrompt");
+      if (!panel || !list) return;
+      const avatarLetters = ["א", "ב", "ג", "ד", "ה"];
+      list.innerHTML = responses.slice(0, 3).map((text, i) => `
+        <div class="peer-example">
+          <div class="peer-avatar-sm">${avatarLetters[i] || "?"}</div>
+          <div class="peer-example-text">${escapeHtml(String(text).slice(0, 300))}</div>
+        </div>`).join("");
+      if (badge) badge.textContent = `${responses.length} תגובות`;
+      if (prompt) prompt.style.display = responses.length >= 2 ? "" : "none";
+      panel.classList.add("visible");
+    }
+
     function showPeerReviewPanel(reviewedText = null) {
       const panel = document.getElementById("peerReviewPanel");
       if (!panel) return;
@@ -3590,6 +3683,7 @@
         appendStudentBubble(text, "submission");
         document.getElementById("subSuccessBanner").style.display = "flex";
         document.getElementById("writePanel")?.classList.add("submitted");
+        loadPeerInsight();
         if (__classFeatures?.peerReview?.enabled !== false) {
           showPeerReviewPanel();
         }

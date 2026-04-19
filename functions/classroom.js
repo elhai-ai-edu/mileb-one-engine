@@ -2553,6 +2553,29 @@ export async function handler(event){
 
   }
 
+  // ── peer_responses — returns anonymised submissions from classmates ─────────
+  if(action === "peer_responses"){
+
+    if(!sessionId) return err("sessionId required");
+    const reqStudentId = String(params.studentId || body?.studentId || "").trim();
+
+    const answersSnap = await db.ref(`sessions/${sessionId}/answers`).once("value");
+    const answers = answersSnap.val() || {};
+
+    const pool = [];
+    for(const [sid, data] of Object.entries(answers)){
+      if(sid === reqStudentId) continue; // exclude own submission
+      const steps = data.steps ? Object.values(data.steps) : [];
+      const submission = steps.find(s => s.kind === "submission" && s.content);
+      if(submission) pool.push(String(submission.content).slice(0, 400));
+    }
+
+    // Shuffle and return up to 3 anonymous responses
+    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+    return ok({ responses: shuffled });
+
+  }
+
   if(action === "export_session"){
 
     const [taskLogSnap, studentsSnap] = await Promise.all([
