@@ -1323,7 +1323,7 @@ body { background: var(--bg) !important; }
     <!-- ── Step 1: Moodle Import ── -->
     <div id="ws-panel-1" class="ws-panel">
       <div class="mc-section">
-      <div class="mc-section-head">📥 טעינת יחידות הקורס מMoodle<span class="mc-sub">הדבק JSON מסקרייפר Moodle כדי למפות יחידות ומשאבים לקורס</span></div>
+      <div class="mc-section-head">📥 טעינת יחידות לימוד מ־Moodle<span class="mc-sub">הדבק JSON מסקרייפר Moodle כדי למפות יחידות לימוד ומשאבים לקורס</span></div>
       <div class="mc-section-body">
       <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:12px;">
         <div>
@@ -1338,12 +1338,12 @@ body { background: var(--bg) !important; }
         </div>
         <div style="display:grid;gap:8px;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-            <div style="font-size:14px;font-weight:700;color:#0f172a;">Playlist Manager</div>
-            <div id="playlistSelectionCount" style="font-size:12px;color:#64748b;">0 יחידות נבחרו</div>
+            <div style="font-size:14px;font-weight:700;color:#0f172a;">מנהל פלייליסט יחידות לימוד</div>
+            <div id="playlistSelectionCount" style="font-size:12px;color:#64748b;">0 יחידות לימוד נבחרו</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
             <div class="field" style="margin:0;flex:1;min-width:180px;">
-              <label>Lesson ID יעד</label>
+              <label>שיעור יעד (Lesson ID)</label>
               <input id="playlistLessonId" type="text" value="lesson_01" class="lp-input" style="margin:0;">
             </div>
             <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
@@ -1649,17 +1649,17 @@ body { background: var(--bg) !important; }
     <div id="ws-panel-4" class="ws-panel" style="display:none;">
       <!-- ─── Course Units (interactive) ─── -->
       <div class="mc-section">
-      <div class="mc-section-head">📋 יחידות הקורס<span class="mc-sub">עריכה בשדה הנושא שומרת אוטומטית</span></div>
+      <div class="mc-section-head">📋 מבנה שיעורים ויחידות לימוד<span class="mc-sub">עריכה בשדה הכותרת שומרת אוטומטית</span></div>
       <div class="mc-section-body">
       <div class="units-layout">
         <div class="units-card">
           <div class="units-pill">תצורה</div>
-          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">מבנה יחידות</div>
+          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">בחירת מבנה הבלוק</div>
           <div class="units-toggle">
-            <button class="units-toggle-btn active" id="macroModeSessionBtn" type="button" onclick="macroSetUnitsMode('Session')">Academic Sessions (1–14)</button>
-            <button class="units-toggle-btn" id="macroModeTopicBtn" type="button" onclick="macroSetUnitsMode('Topic')">Flexible Topics (עד 50)</button>
+            <button class="units-toggle-btn active" id="macroModeSessionBtn" type="button" onclick="macroSetUnitsMode('Session')">יחידות לימוד (Academic Sessions · 1–14)</button>
+            <button class="units-toggle-btn" id="macroModeTopicBtn" type="button" onclick="macroSetUnitsMode('Topic')">שיעורים (Flexible Topics · עד 50)</button>
           </div>
-          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">שנה מצב כדי לעבור בין 14 מפגשים מסודרים לנושאים גמישים עד 50.</p>
+          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">Academic Sessions מייצג יחידות לימוד. Flexible Topics מייצג שיעורים (דאבל־קליק על פריט שיעור פותח עיצוב שיעור).</p>
         </div>
 
         <div class="units-card">
@@ -1667,10 +1667,10 @@ body { background: var(--bg) !important; }
             <table class="units-table">
               <thead>
                 <tr>
-                  <th style="width:96px;">Unit ID</th>
-                  <th style="width:110px;">Type</th>
-                  <th>Topic Name</th>
-                  <th style="width:64px;">Status</th>
+                  <th style="width:120px;">פריט</th>
+                  <th style="width:120px;">סוג בלוק</th>
+                  <th>כותרת</th>
+                  <th style="width:64px;">סטטוס</th>
                 </tr>
               </thead>
               <tbody id="macro-units-tbody">
@@ -1962,7 +1962,7 @@ body { background: var(--bg) !important; }
     </div>
     <aside class="lesson-plan-sidebar" style="grid-template-columns:1fr;">
       <div class="lesson-plan-card">
-        <div class="lesson-plan-sidebar-title">📋 שיעורים</div>
+        <div class="lesson-plan-sidebar-title">📋 רשימת שיעורים</div>
         <div id="lessonPlanSidebarList" class="lesson-plan-list">
           <div class="thread-empty">בחר קורס כדי לראות שיעורים</div>
         </div>
@@ -3386,12 +3386,15 @@ function macroRenderUnits() {
   const unitIds = Array.from({ length: total }, (_, i) =>
     macroUnitsMode === "Session" ? macroToSessionUnitId(i + 1) : macroToTopicUnitId(i + 1)
   );
-  tbody.innerHTML = unitIds.map(unitId => {
+  tbody.innerHTML = unitIds.map((unitId, index) => {
     const row = macroUnitsMap[unitId] || {};
     const topicName = macroEscHtml(row.topicName || "");
+    const itemNumber = parseLessonNumber(unitId, index);
+    const itemLabel = macroUnitsMode === "Topic" ? `שיעור ${itemNumber}` : `יחידת לימוד ${itemNumber}`;
+    const rowHint = macroUnitsMode === "Topic" ? ' title="דאבל־קליק לפתיחה בעיצוב שיעור"' : "";
     return `<tr data-unit-id="${unitId}">
-      <td><strong>${unitId}</strong></td>
-      <td style="color:#475569;">${macroUnitsMode}</td>
+      <td${rowHint}><strong>${itemLabel}</strong><div style="font-size:11px;color:#64748b;margin-top:2px;">${unitId}</div></td>
+      <td style="color:#475569;">${macroUnitsMode === "Topic" ? "שיעורים" : "יחידות לימוד"}</td>
       <td><input type="text" data-role="topic" value="${topicName}" placeholder="הזן נושא" /></td>
       <td><span class="unit-row-status" data-role="status">מוכן</span></td>
     </tr>`;
@@ -3399,6 +3402,15 @@ function macroRenderUnits() {
   tbody.querySelectorAll("input[data-role='topic']").forEach(input => {
     input.addEventListener("change", () => macroAutoSaveUnitRow(input.closest("tr")));
     input.addEventListener("blur",   () => macroAutoSaveUnitRow(input.closest("tr")));
+  });
+  tbody.querySelectorAll("tr[data-unit-id]").forEach(row => {
+    row.addEventListener("dblclick", (event) => {
+      if (macroUnitsMode !== "Topic") return;
+      if (event.target && event.target.closest("input,textarea,select,button,label")) return;
+      const lessonId = row.getAttribute("data-unit-id");
+      if (!lessonId) return;
+      selectLesson(lessonId, { reloadMetadata: true });
+    });
   });
   renderLessonDesignNavigator();
 }
@@ -4694,7 +4706,7 @@ function renderImportedUnits() {
   const countEl = document.getElementById("playlistSelectionCount");
   if (!container || !countEl) return;
   const units = importedMetadataCache?.units || [];
-  countEl.textContent = `${selectedPlaylistUnitIds.size} יחידות נבחרו`;
+  countEl.textContent = `${selectedPlaylistUnitIds.size} יחידות לימוד נבחרו`;
   if (!units.length) {
     container.innerHTML = '<div class="thread-empty">טרם יובא JSON</div>';
     return;
@@ -4709,7 +4721,7 @@ function renderImportedUnits() {
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
           <div style="display:flex;align-items:center;gap:8px;">
             <input type="checkbox" data-playlist-unit="${escapeHtml(unit.unitId)}" ${checked}>
-            <strong>${escapeHtml(unit.name || unit.unitId)}</strong>
+            <strong>יחידת לימוד: ${escapeHtml(unit.name || unit.unitId)}</strong>
           </div>
           <span style="font-size:11px;color:#64748b;">${resources.length} משאבים${lecturerOnlyCount ? ` · ${lecturerOnlyCount} Lecturer Only` : ''}</span>
         </div>
