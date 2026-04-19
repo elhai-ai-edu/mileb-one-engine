@@ -668,13 +668,17 @@ export async function handler(event){
         ]);
       }
 
-      const courseId = session.courseId || session.classId || null;
+      // Prefer session-stored courseId; fall back to URL param so the page works
+      // even when the session record pre-dates the courseId field being written.
+      const urlCourseId = String(event.queryStringParameters?.courseId || "").trim();
+      const urlUnitId   = String(event.queryStringParameters?.unitId   || "").trim();
+      const courseId = session.courseId || session.classId || urlCourseId || null;
       const state = session.state || {
         current_unit: normalizeUnitId(session.unitId),
         active_sprint: null,
         door_status: session.active ? "auto" : "closed"
       };
-      const lessonId = normalizeUnitId(state.current_unit || session.unitId);
+      const lessonId = normalizeUnitId(state.current_unit || session.unitId || urlUnitId);
       const configCourses = await getConfigCourses();
       const courseConfig = courseId ? (configCourses?.[courseId] || null) : null;
       const courseSnap = courseId

@@ -2184,10 +2184,6 @@
         return `<div class="ctx-stage"><div class="ctx-stage-box ${cls}">${label}</div></div>${connector}`;
       }).join("");
 
-      // Empty state: hide when there's an active sprint or pushed resource
-      const emptyState = document.getElementById("activityEmptyState");
-      const hasActivity = !!(lessonData?.state?.active_sprint) || !!(lessonData?.state?.pushed_resource?.url);
-      if (emptyState) emptyState.classList.toggle("hidden", hasActivity);
     }
 
     function renderActiveSprint() {
@@ -2196,6 +2192,11 @@
       const heroCopy = document.querySelector(".hero-copy");
       const pushedResource = lessonData?.state?.pushed_resource || null;
       const activeSprint = findActiveSprint();
+
+      // Show empty state when there is no activity (sprint or pushed resource)
+      const emptyState = document.getElementById("activityEmptyState");
+      const hasActivity = !!activeSprint || !!(pushedResource?.url);
+      if (emptyState) emptyState.classList.toggle("hidden", hasActivity);
       const guidance = currentGuidance || null;
 
       if (pushedResource?.url) {
@@ -2628,6 +2629,8 @@
     async function refreshLesson() {
       if (!sessionId) return;
       const payloadQs = `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}` +
+        (courseIdFromUrl ? `&courseId=${encodeURIComponent(courseIdFromUrl)}` : "") +
+        (unitIdFromUrl   ? `&unitId=${encodeURIComponent(unitIdFromUrl)}`     : "") +
         (role === "student" && studentId ? `&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}` : "");
       lessonData = await callClassroom("GET", null, payloadQs);
 
