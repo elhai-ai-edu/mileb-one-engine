@@ -2523,8 +2523,8 @@ async function fetchWaitingPressureForSelectedCourse() {
   }
 
   try {
-    const unitIdParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : "";
-    const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}${unitIdParam}`);
+    const lessonAsUnitParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : "";
+    const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}${lessonAsUnitParam}`);
     if (!res.ok) return;
     const data = await res.json();
     updateWaitingPressure(data?.waitingStudentsCount || 0);
@@ -4491,12 +4491,14 @@ function debugLessonContext(label = "") {
     activeUnitId,
     activeLessonId,
     currentLessonId: currentLesson?.id || null,
-    sessionLessonId
+    sessionLessonId,
+    sessionCourseId
   });
 }
 
 function syncCockpitContextLinks() {
   const courseId = currentCourseForSync();
+  // Keep `unitId` in links for unit-level context; fallback keeps backward compatibility for lesson-only flows.
   const unitId = activeUnitId || resolveActiveLessonId();
   const lessonId = resolveActiveLessonId();
   const toMacro1 = document.getElementById('toMacroCockpitBtn');
@@ -4554,7 +4556,7 @@ function syncActiveContextPersistence({ updateUrl = false } = {}) {
 function resolveRuntimeLessonId() {
   const resolved = resolveActiveLessonId();
   if (sessionId && sessionLessonId && sessionLessonId !== resolved) {
-    console.warn("[lesson-context] session lesson differs from active selection; runtime keeps session lesson", {
+    console.warn("[lesson-context] session lesson differs from UI selection; runtime intentionally keeps the opened session lesson", {
       sessionLessonId,
       activeLessonId: resolved
     });
@@ -5394,6 +5396,7 @@ function renderLesson() {
   renderPreClass();
   renderResources();
   renderLessonSteps();
+  // Full lesson render already happened in this function; refresh DJ panel without re-entering renderLesson().
   renderDJBooth();
   syncActiveContextPersistence();
   debugLessonContext("render");
@@ -5411,7 +5414,7 @@ function ensureCurrentLessonForId(lessonId = resolveActiveLessonId()) {
   }
   if (activeLessonId !== normalizedId) {
     activeLessonId = normalizedId;
-    activeUnitId = normalizedId;
+    if (activeUnitId !== normalizedId) activeUnitId = normalizedId;
     persistLessonsStoreDebounced();
     syncActiveContextPersistence();
   }
