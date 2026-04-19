@@ -1133,14 +1133,20 @@ body { background: var(--bg) !important; }
   align-items: start;
 }
 .lesson-plan-sidebar {
-  border: 1.5px solid #dbeafe;
-  border-radius: 12px;
-  background: #f8fbff;
-  padding: 12px;
   position: sticky;
   top: calc(var(--cockpit-nav-top, 74px) + 16px);
   max-height: calc(100vh - var(--cockpit-nav-top, 74px) - 26px);
   overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.lesson-plan-card {
+  border: 1.5px solid #dbeafe;
+  border-radius: 12px;
+  background: #f8fbff;
+  padding: 12px;
+  min-width: 0;
 }
 .lesson-plan-sidebar-title {
   font-size: 13px;
@@ -1171,6 +1177,13 @@ body { background: var(--bg) !important; }
   background: #eef2ff;
   box-shadow: 0 0 0 2px rgba(99,102,241,.12);
 }
+.lesson-plan-item.readonly {
+  cursor: default;
+}
+.lesson-plan-item.readonly:hover {
+  border-color: #dbeafe;
+  background: #fff;
+}
 .lesson-plan-item-meta {
   font-size: 11px;
   color: #64748b;
@@ -1190,7 +1203,7 @@ body { background: var(--bg) !important; }
 }
 @media (max-width: 980px) {
   .lesson-design-layout { grid-template-columns: 1fr; }
-  .lesson-plan-sidebar { position: static; max-height: none; }
+  .lesson-plan-sidebar { position: static; max-height: none; grid-template-columns: 1fr; }
 }
 </style>
 <title>MilEd.One — Macro Cockpit</title>
@@ -1920,9 +1933,17 @@ body { background: var(--bg) !important; }
 
     </div>
     <aside class="lesson-plan-sidebar">
-      <div class="lesson-plan-sidebar-title">🧭 רשימת שיעורים מתוכננת</div>
-      <div id="lessonPlanSidebarList" class="lesson-plan-list">
-        <div class="thread-empty">בחר קורס כדי לראות שיעורים</div>
+      <div class="lesson-plan-card">
+        <div class="lesson-plan-sidebar-title">🧭 רשימת יחידות הלימוד</div>
+        <div id="lessonPlanSidebarList" class="lesson-plan-list">
+          <div class="thread-empty">בחר קורס כדי לראות יחידות</div>
+        </div>
+      </div>
+      <div class="lesson-plan-card">
+        <div class="lesson-plan-sidebar-title">🧭 רשימת השיעורים</div>
+        <div id="lessonSessionsSidebarList" class="lesson-plan-list">
+          <div class="thread-empty">בחר קורס כדי לראות שיעורים</div>
+        </div>
       </div>
     </aside>
     </div>
@@ -3079,6 +3100,26 @@ function buildPlannedLessonItems() {
     return { unitId, lessonNumber, title, date };
   });
 }
+function buildSessionSidebarItems() {
+  const playlists = importedMetadataCache?.playlists || {};
+  const metadataUnits = Array.isArray(importedMetadataCache?.units) ? importedMetadataCache.units : [];
+  const unitNames = new Map(metadataUnits.map(unit => {
+    const unitId = String(unit?.unitId || unit?.id || "").trim();
+    const unitName = String(unit?.name || unit?.title || unit?.label || unitId).trim();
+    return [unitId, unitName || unitId];
+  }));
+  return Array.from({ length: MAX_SESSION_LESSONS }, (_, index) => {
+    const lessonNumber = index + 1;
+    const lessonId = macroToSessionUnitId(lessonNumber);
+    const playlist = playlists?.[lessonId] || {};
+    const unitIds = Array.isArray(playlist?.unitIds) ? playlist.unitIds : [];
+    const row = macroUnitsMap?.[lessonId] || {};
+    const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
+    const unitsPreview = unitIds.slice(0, 3).map(unitId => escapeHtml(unitNames.get(unitId) || unitId)).join(" · ");
+    const extraUnits = unitIds.length > 3 ? ` +${unitIds.length - 3}` : "";
+    return { lessonId, lessonNumber, title, unitsCount: unitIds.length, unitsPreview, extraUnits };
+  });
+}
 function updateLessonDesignBanner() {
   const banner = document.getElementById("lessonDesignBanner");
   const numEl = document.getElementById("lessonDesignLessonNum");
@@ -3103,16 +3144,19 @@ function updateLessonDesignBanner() {
 }
 function renderLessonDesignNavigator() {
   const listEl = document.getElementById("lessonPlanSidebarList");
-  if (!listEl) return;
+  const sessionsEl = document.getElementById("lessonSessionsSidebarList");
+  if (!listEl || !sessionsEl) return;
   const courseId = currentCourseForSync();
   if (!courseId) {
-    listEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות שיעורים</div>';
+    listEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות יחידות</div>';
+    sessionsEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות שיעורים</div>';
     updateLessonDesignBanner();
     return;
   }
   const lessons = buildPlannedLessonItems();
   if (!lessons.length) {
-    listEl.innerHTML = '<div class="thread-empty">טרם הוגדרו שיעורים</div>';
+    listEl.innerHTML = '<div class="thread-empty">טרם הוגדרו יחידות לימוד</div>';
+    sessionsEl.innerHTML = '<div class="thread-empty">טרם הוגדרו שיעורים</div>';
     updateLessonDesignBanner();
     return;
   }
@@ -3136,6 +3180,14 @@ function renderLessonDesignNavigator() {
       selectLessonDesignUnit(unitId, { reloadMetadata: true });
     });
   });
+  const sessions = buildSessionSidebarItems();
+  sessionsEl.innerHTML = sessions.map(item => `
+    <div class="lesson-plan-item readonly">
+      <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.lessonId)}</div>
+      <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
+      <div class="lesson-plan-item-date">${item.unitsCount ? `🔗 ${item.unitsCount} יחידות · ${item.unitsPreview}${item.extraUnits}` : '🔗 ללא יחידות משויכות'}</div>
+    </div>
+  `).join("");
   updateLessonDesignBanner();
 }
 function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
