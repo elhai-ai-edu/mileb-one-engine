@@ -2376,7 +2376,7 @@ let pollTimer   = null;
 let currentBot  = null;
 let pushedSteps = []; // session-local memory of pushed lesson step numbers
 let CONFIG      = null;  // stored for openSession() lookup
-// State model: course = class container, unit = metadata/playlist context, lesson = pedagogy runtime.
+// State model: course/class = container, unit = metadata/playlist context, lesson = pedagogy runtime.
 let activeCourseId = null;
 let activeUnitId = presetUnitId || "unit_01";
 let activeLessonId = "";
@@ -3344,8 +3344,8 @@ function renderLessonDesignNavigator() {
 }
 function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
   if (!unitId) return;
-  activeUnitId = String(unitId || "").trim();
-  sessionStorage.setItem("miled_active_unit_id", unitId);
+  activeUnitId = String(unitId).trim();
+  sessionStorage.setItem("miled_active_unit_id", activeUnitId);
   const lessonId = deriveLessonIdFromUnit(activeUnitId);
   activeLessonId = lessonId;
   const lessonInput = document.getElementById("playlistLessonId");
@@ -3515,11 +3515,11 @@ function buildLessonResourcesFromMetadata(lessonId = resolveActiveLessonId()) {
     .filter(resource => resource.title);
 }
 
-function syncLessonResourcesFromMetadata(lessonId = resolveActiveLessonId(), { force = false } = {}) {
+function syncLessonResourcesFromMetadata(lessonId = resolveActiveLessonId(), { rebuildFromMetadata = false } = {}) {
   const lesson = ensureCurrentLessonForId(lessonId);
   if (!lesson) return [];
-  // Metadata/playlist builds the initial set, but currentLesson.resources remains runtime authority.
-  if (!force && Array.isArray(lesson.resources) && lesson.resources.length) {
+  // Metadata/playlist defines the initial resource set; lesson.resources is runtime source of truth after hydration.
+  if (!rebuildFromMetadata && Array.isArray(lesson.resources) && lesson.resources.length) {
     return lesson.resources;
   }
   const resources = buildLessonResourcesFromMetadata(lesson.id);
@@ -4465,12 +4465,12 @@ function deriveLessonIdFromUnit(unitId) {
 }
 
 function mapUnitToLessonDesignId(unitId) {
-  return String(unitId || "").trim() || "lesson_01";
+  return String(unitId || "").trim() || "unit_01";
 }
 
 // Single lesson resolver used by open/save/render/template/DJ flows.
 function resolveActiveLessonId() {
-  return activeLessonId || deriveLessonIdFromUnit(activeUnitId) || "lesson_01";
+  return activeLessonId || deriveLessonIdFromUnit(activeUnitId) || "unit_01";
 }
 
 function renderImportedUnits() {
@@ -4604,7 +4604,7 @@ async function importMoodleJson() {
 
   importedMetadataCache = res.metadata || null;
   selectedPlaylistUnitIds = new Set((importedMetadataCache?.units || []).map(unit => unit.unitId));
-  syncLessonResourcesFromMetadata(resolveActiveLessonId(), { force: true });
+  syncLessonResourcesFromMetadata(resolveActiveLessonId(), { rebuildFromMetadata: true });
   renderImportedUnits();
   renderResources();
   if (statusEl) statusEl.textContent = `יובאו ${importedMetadataCache?.unitCount || 0} יחידות ו-${importedMetadataCache?.resourceCount || 0} משאבים`;
@@ -4635,7 +4635,7 @@ async function saveLessonPlaylist() {
     if (statusEl) statusEl.textContent = res?.error || 'שגיאה בשמירה';
     return;
   }
-  syncLessonResourcesFromMetadata(lessonId, { force: true });
+  syncLessonResourcesFromMetadata(lessonId, { rebuildFromMetadata: true });
   renderResources();
   if (statusEl) statusEl.textContent = 'Playlist נשמר';
 }
@@ -5251,7 +5251,8 @@ function resolveLessonTitleById(lessonId) {
   return topicOrTitle || lessonId || "שיעור";
 }
 
-function hydrateCurrentLesson(id, title) {
+// Hydrates/normalizes a lesson record in store without phase switch or render side-effects.
+function loadLessonState(id, title) {
   const lessonId = mapUnitToLessonDesignId(id);
   if (!lessonId) return null;
   const lessonTitle = String(title || "").trim() || resolveLessonTitleById(lessonId);
@@ -5266,12 +5267,12 @@ function hydrateCurrentLesson(id, title) {
 
 // Only lesson activation entry point (resolve/hydrate/activate/render).
 function openLesson(id, title) {
-  const lessonId = mapUnitToLessonDesignId(id || resolveActiveLessonId());
-  if (!lessonId) return;
+  const explicitLessonId = String(id || "").trim();
+  const lessonId = explicitLessonId ? mapUnitToLessonDesignId(explicitLessonId) : resolveActiveLessonId();
   activeLessonId = lessonId;
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = lessonId;
-  hydrateCurrentLesson(lessonId, title);
+  loadLessonState(lessonId, title);
   switchPhase('lesson');
   renderLessonDesignNavigator();
   renderLesson();
@@ -5303,11 +5304,14 @@ function getCurrentLessonSteps() {
 
 function ensureCurrentLessonForId(lessonId = resolveActiveLessonId()) {
   const normalizedId = mapUnitToLessonDesignId(lessonId);
-  if (!normalizedId) return null;
+  // Intentional sync ensures lesson-bound forms/actions always target the active lesson record.
   if (!currentLesson || currentLesson.id !== normalizedId) {
-    return hydrateCurrentLesson(normalizedId, resolveLessonTitleById(normalizedId));
+    return loadLessonState(normalizedId, resolveLessonTitleById(normalizedId));
   }
-  activeLessonId = normalizedId;
+  if (activeLessonId !== normalizedId) {
+    activeLessonId = normalizedId;
+    persistLessonsStoreDebounced();
+  }
   return currentLesson;
 }
 
