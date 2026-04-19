@@ -3103,6 +3103,7 @@ function buildPlannedLessonItems() {
 function buildSessionSidebarItems() {
   const playlists = importedMetadataCache?.playlists || {};
   const metadataUnits = Array.isArray(importedMetadataCache?.units) ? importedMetadataCache.units : [];
+  const courseId = currentCourseForSync();
   const unitNames = new Map(metadataUnits.map(unit => {
     const unitId = String(unit?.unitId || unit?.id || "").trim();
     const unitName = String(unit?.name || unit?.title || unit?.label || unitId).trim();
@@ -3115,9 +3116,10 @@ function buildSessionSidebarItems() {
     const unitIds = Array.isArray(playlist?.unitIds) ? playlist.unitIds : [];
     const row = macroUnitsMap?.[lessonId] || {};
     const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
+    const date = getLessonDateValue(courseId, lessonId, row);
     const unitsPreview = unitIds.slice(0, 3).map(unitId => escapeHtml(unitNames.get(unitId) || unitId)).join(" · ");
     const extraUnits = unitIds.length > 3 ? ` +${unitIds.length - 3}` : "";
-    return { lessonId, lessonNumber, title, unitsCount: unitIds.length, unitsPreview, extraUnits };
+    return { lessonId, lessonNumber, title, date, unitsCount: unitIds.length, unitsPreview, extraUnits };
   });
 }
 function updateLessonDesignBanner() {
@@ -3131,12 +3133,20 @@ function updateLessonDesignBanner() {
     banner.style.display = "none";
     return;
   }
-  const lessons = buildPlannedLessonItems();
-  if (!lessons.length) {
+  const sessions = buildSessionSidebarItems();
+  if (!sessions.length) {
     banner.style.display = "none";
     return;
   }
-  const active = lessons.find(item => item.unitId === currentUnitId) || lessons[0];
+  const activeLessonId = currentLessonTargetId();
+  const matchedSession = sessions.find(item => item.lessonId === activeLessonId) || null;
+  const active = matchedSession || sessions[0];
+  if (!matchedSession) {
+    const lessonInput = document.getElementById("playlistLessonId");
+    if (lessonInput && lessonInput.value !== active.lessonId) {
+      lessonInput.value = active.lessonId;
+    }
+  }
   banner.style.display = "";
   numEl.textContent = `שיעור ${active.lessonNumber}`;
   titleEl.textContent = active.title;
@@ -3201,21 +3211,22 @@ function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
 }
 async function saveLessonDateForCurrentUnit() {
   const courseId = currentCourseForSync();
-  if (!courseId || !currentUnitId || !facultyId) return;
-  const unitData = macroUnitsMap[currentUnitId] || {};
-  const lessonDate = getLessonDateValue(courseId, currentUnitId, unitData);
+  const lessonId = currentLessonTargetId();
+  if (!courseId || !lessonId || !facultyId) return;
+  const lessonData = macroUnitsMap[lessonId] || {};
+  const lessonDate = getLessonDateValue(courseId, lessonId, lessonData);
   const res = await callClassroom({
     action: "unit_upsert",
     userId: facultyId,
     courseId,
-    unitId: currentUnitId,
-    topicName: String(unitData.topicName || "").trim(),
-    structureType: String(unitData.structureType || macroUnitsMode || "Session"),
+    unitId: lessonId,
+    topicName: String(lessonData.topicName || "").trim(),
+    structureType: String(lessonData.structureType || macroUnitsMode || "Session"),
     lessonDate
   });
   if (res?.ok) {
-    macroUnitsMap[currentUnitId] = {
-      ...(macroUnitsMap[currentUnitId] || {}),
+    macroUnitsMap[lessonId] = {
+      ...(macroUnitsMap[lessonId] || {}),
       lessonDate: lessonDate || null
     };
   }
@@ -5179,8 +5190,9 @@ document.getElementById("playlistLessonId")?.addEventListener("change", (event) 
 });
 document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (event) => {
   const courseId = currentCourseForSync();
-  if (!courseId || !currentUnitId) return;
-  setLessonDateValue(courseId, currentUnitId, event?.target?.value || "");
+  const lessonId = currentLessonTargetId();
+  if (!courseId || !lessonId) return;
+  setLessonDateValue(courseId, lessonId, event?.target?.value || "");
   saveLessonDateForCurrentUnit().catch(() => {});
   renderLessonDesignNavigator();
 });
