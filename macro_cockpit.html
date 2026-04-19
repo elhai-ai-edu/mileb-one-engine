@@ -2388,6 +2388,8 @@ let activeUnitId = presetUnitId || "unit_01";
 let activeLessonId = presetLessonId || "";
 let sessionLessonId = null;
 let sessionCourseId = null;
+const SESSION_RUNTIME_STORAGE_KEY = "miled_runtime_session_context_v1";
+let runtimeDriftWarningKey = "";
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 let openSessionInFlight = false;
 let openAllInFlight = false;
@@ -2504,6 +2506,7 @@ function startWaitingAttendeesListener(classId, unitId) {
     updateWaitingPressure(0);
     return;
   }
+  debugLessonContext("waiting-room:listener-start");
   const syncKey = `${classId}_${unitId}`;
   waitingAttendeesRef = db.ref(`sessions/${syncKey}/attendees`);
   waitingAttendeesListener = (snapshot) => {
@@ -2515,12 +2518,13 @@ function startWaitingAttendeesListener(classId, unitId) {
 }
 
 async function fetchWaitingPressureForSelectedCourse() {
-  const classId = activeCourseId || getSelectedTeachingContext().classId;
+  const classId = sessionCourseId || activeCourseId || getSelectedTeachingContext().classId;
   const lessonId = resolveRuntimeLessonId();
   if (!classId) {
     updateWaitingPressure(0);
     return;
   }
+  debugLessonContext("waiting-room:poll");
 
   try {
     const lessonAsUnitParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : "";
@@ -3715,6 +3719,7 @@ function getRealtimeDb() {
 async function writeActiveDoorState({ classId, unitId, sessionId, status, entryPolicy }) {
   const db = getRealtimeDb();
   if (!db || !classId || !unitId) return;
+  debugLessonContext("door-state:update");
   const doorKey = `${classId}_${unitId}`;
   const normalizedStatus = String(status || '').trim().toLowerCase() || 'active';
   const normalizedEntryPolicy = String(entryPolicy || (normalizedStatus === 'active' ? 'ticket_only' : 'closed')).trim().toLowerCase();
@@ -3787,26 +3792,29 @@ async function openSession() {
     sessionLessonId = lessonId;
     // TODO(BP-runtime): remove `unitId` transport alias once classroom endpoints are lessonId-native.
     const sessionUnitId = lessonId; // classroom API currently uses legacy `unitId` for session routing.
-    let botType, classId, studentURL;
+    let botType, classId;
     if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
       classId  = selectedClassId;
       botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
-      studentURL = `${location.origin}/waiting_lobby.html?courseId=${classId}&unitId=${encodeURIComponent(sessionUnitId)}&lessonId=${encodeURIComponent(lessonId)}&sessionId=SESSION_ID`;
       console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}_${sessionUnitId}`);
     } else {
       // Faculty tool — no classId, botType is the value directly
       botType    = selectedValue;
       classId    = null;
-      studentURL = `${location.origin}/waiting_lobby.html?sessionId=SESSION_ID`;
     }
 
     currentBot = botType;
     sessionCourseId = classId || null;
     pushedSteps = [];
+    runtimeDriftWarningKey = "";
 
     // Session ID must exist before student redirect signal is emitted.
     sessionId  = "ses_" + Date.now() + "_" + Math.random().toString(36).slice(2,6);
-    studentURL = studentURL.replace('SESSION_ID', sessionId);
+    const studentURL = buildWaitingLobbyUrl({
+      classId: sessionCourseId,
+      lessonId: sessionLessonId,
+      sessionId
+    });
 
     // Immediate atomic signal for student door listener.
     if (classId) {
@@ -3817,8 +3825,12 @@ async function openSession() {
 
     const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId: sessionUnitId, lessonId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
     if (!res.ok) {
+      sessionId = null;
       sessionLessonId = null;
       sessionCourseId = null;
+      runtimeDriftWarningKey = "";
+      pushedSteps = [];
+      persistRuntimeSessionContext();
       if (classId) {
         await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
       }
@@ -3829,6 +3841,7 @@ async function openSession() {
     document.getElementById('sessionInfo').style.display = "block";
     document.getElementById('sessionIdDisplay').textContent = sessionId;
     setSessionControls(true);
+    persistRuntimeSessionContext();
 
     // Share URL for students — now points to waiting_lobby.html
     document.getElementById('sessionIdDisplay').innerHTML =
@@ -3942,6 +3955,8 @@ async function closeSession() {
   sessionId = null;
   sessionLessonId = null;
   sessionCourseId = null;
+  runtimeDriftWarningKey = "";
+  persistRuntimeSessionContext();
   pushedSteps = [];
     renderLesson();
   loadPacingHeatmap();
@@ -3962,10 +3977,12 @@ async function fetchDashboard() {
   try {
     const classId = sessionCourseId || currentCourseForSync();
     const classIdParam = classId ? `&classId=${encodeURIComponent(classId)}` : '';
-    const lessonId = resolveRuntimeLessonId();
+    const runtimeContext = getRuntimeLessonContext();
+    const lessonId = runtimeContext.runtimeLessonId;
     const lessonIdParam = lessonId ? `&lessonId=${encodeURIComponent(lessonId)}` : '';
     const unitIdParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : '';
     const userIdParam = `&userId=${encodeURIComponent(facultyId)}`;
+    debugLessonContext("dashboard:fetch");
     const res = await fetch(
       `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}${classIdParam}${unitIdParam}${lessonIdParam}${userIdParam}`
     );
@@ -4484,15 +4501,114 @@ function resolveActiveLessonId() {
   return activeLessonId || deriveLessonIdFromUnit(activeUnitId) || "lesson_01";
 }
 
+function buildWaitingLobbyUrl({ classId = null, lessonId = "", sessionId: sid = "" } = {}) {
+  if (!sid) return `${location.origin}/waiting_lobby.html`;
+  if (!classId) {
+    return `${location.origin}/waiting_lobby.html?sessionId=${encodeURIComponent(sid)}`;
+  }
+  if (LESSON_CONTEXT_DEBUG && !String(lessonId || "").trim()) {
+    console.warn("[lesson-context] missing lessonId while building course-bound waiting link; falling back to lesson_01");
+  }
+  const normalizedLessonId = String(lessonId || "").trim() || "lesson_01";
+  const unitId = normalizedLessonId;
+  return `${location.origin}/waiting_lobby.html?courseId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(unitId)}&lessonId=${encodeURIComponent(normalizedLessonId)}&sessionId=${encodeURIComponent(sid)}`;
+}
+
+function getRuntimeLessonContext({ warnOnDrift = true } = {}) {
+  const uiLessonId = resolveActiveLessonId();
+  const hasSessionBinding = !!(sessionId && sessionLessonId);
+  const runtimeLessonId = sessionLessonId || uiLessonId;
+  const runtimeBinding = hasSessionBinding ? "session-bound" : "ui-bound";
+  if (warnOnDrift && hasSessionBinding && sessionLessonId !== uiLessonId) {
+    const driftKey = `${sessionId}::${sessionLessonId}::${uiLessonId}`;
+    if (runtimeDriftWarningKey !== driftKey) {
+      runtimeDriftWarningKey = driftKey;
+      console.warn("[lesson-context] session lesson differs from UI selection; runtime intentionally keeps the opened session lesson", {
+        sessionLessonId,
+        activeLessonId: uiLessonId
+      });
+    }
+  }
+  return { runtimeLessonId, runtimeBinding, uiLessonId };
+}
+
+function persistRuntimeSessionContext() {
+  if (sessionId && sessionLessonId) {
+    sessionStorage.setItem(SESSION_RUNTIME_STORAGE_KEY, JSON.stringify({
+      sessionId,
+      sessionCourseId: sessionCourseId || null,
+      sessionLessonId,
+      savedAt: Date.now()
+    }));
+    return;
+  }
+  // Partial runtime state is treated as invalid to avoid ambiguous restore payloads.
+  sessionStorage.removeItem(SESSION_RUNTIME_STORAGE_KEY);
+}
+
+function restoreRuntimeSessionContext() {
+  const raw = sessionStorage.getItem(SESSION_RUNTIME_STORAGE_KEY);
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw);
+    // Avoid overwriting a live in-memory session with possibly stale persisted storage.
+    if (sessionId && sessionLessonId) return false;
+    const restoredSessionId = String(parsed?.sessionId || "").trim();
+    const restoredLessonId = String(parsed?.sessionLessonId || "").trim();
+    const restoredCourseIdRaw = parsed?.sessionCourseId;
+    const restoredCourseId = (restoredCourseIdRaw === null || restoredCourseIdRaw === undefined)
+      ? null
+      : String(restoredCourseIdRaw).trim();
+    if (!restoredSessionId || !restoredLessonId) {
+      sessionStorage.removeItem(SESSION_RUNTIME_STORAGE_KEY);
+      return false;
+    }
+    sessionId = restoredSessionId;
+    sessionLessonId = restoredLessonId;
+    sessionCourseId = restoredCourseId;
+    runtimeDriftWarningKey = "";
+    const displayEl = document.getElementById('sessionIdDisplay');
+    const infoEl = document.getElementById('sessionInfo');
+    if (displayEl) {
+      const studentURL = buildWaitingLobbyUrl({
+        classId: sessionCourseId,
+        lessonId: sessionLessonId,
+        sessionId
+      });
+      displayEl.innerHTML = `<a href="${studentURL}" target="_blank" class="session-link">${studentURL}</a>`;
+    }
+    if (infoEl) infoEl.style.display = "block";
+    setSessionControls(true);
+    setOpenAllGateState(false);
+    if (sessionCourseId && sessionLessonId) {
+      startWaitingAttendeesListener(sessionCourseId, sessionLessonId);
+    }
+    // Keep dashboard polling active for both course sessions and faculty-tool sessions.
+    startPolling();
+    renderDJBooth();
+    debugLessonContext("session-restore");
+    return true;
+  } catch (error) {
+    if (LESSON_CONTEXT_DEBUG) {
+      console.warn("[lesson-context] session restore failed; clearing persisted runtime context", error);
+    }
+    sessionStorage.removeItem(SESSION_RUNTIME_STORAGE_KEY);
+    return false;
+  }
+}
+
 function debugLessonContext(label = "") {
   if (!LESSON_CONTEXT_DEBUG) return;
+  const runtimeContext = getRuntimeLessonContext({ warnOnDrift: false });
   console.log(`[lesson-context] ${label}`, {
     activeCourseId,
     activeUnitId,
     activeLessonId,
     currentLessonId: currentLesson?.id || null,
     sessionLessonId,
-    sessionCourseId
+    sessionCourseId,
+    runtimeLessonId: runtimeContext.runtimeLessonId,
+    runtimeBinding: runtimeContext.runtimeBinding
   });
 }
 
@@ -4554,15 +4670,7 @@ function syncActiveContextPersistence({ updateUrl = false } = {}) {
 }
 
 function resolveRuntimeLessonId() {
-  const resolved = resolveActiveLessonId();
-  if (sessionId && sessionLessonId && sessionLessonId !== resolved) {
-    console.warn("[lesson-context] session lesson differs from UI selection; runtime intentionally keeps the opened session lesson", {
-      sessionLessonId,
-      activeLessonId: resolved
-    });
-    return sessionLessonId;
-  }
-  return sessionLessonId || resolved;
+  return getRuntimeLessonContext().runtimeLessonId;
 }
 
 function renderImportedUnits() {
@@ -5678,6 +5786,7 @@ loadCourseMetadataWorkspace();
 renderLessonDesignNavigator();
 renderLesson();
 syncActiveContextPersistence({ updateUrl: !!currentCourseForSync() });
+restoreRuntimeSessionContext();
 debugLessonContext("initial-render");
 document.getElementById("playlistLessonId")?.addEventListener("change", (event) => {
   const lessonId = String(event?.target?.value || "").trim();
