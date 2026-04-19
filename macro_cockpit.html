@@ -3138,7 +3138,14 @@ function updateLessonDesignBanner() {
     return;
   }
   const activeLessonId = currentLessonTargetId();
-  const active = sessions.find(item => item.lessonId === activeLessonId) || sessions[0];
+  const matchedSession = sessions.find(item => item.lessonId === activeLessonId) || null;
+  const active = matchedSession || sessions[0];
+  if (!matchedSession) {
+    const lessonInput = document.getElementById("playlistLessonId");
+    if (lessonInput && lessonInput.value !== active.lessonId) {
+      lessonInput.value = active.lessonId;
+    }
+  }
   banner.style.display = "";
   numEl.textContent = `שיעור ${active.lessonNumber}`;
   titleEl.textContent = active.title;
