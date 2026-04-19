@@ -2818,7 +2818,14 @@
         if (live.state) lessonData.state = { ...lessonData.state, ...live.state };
         // Lecturer pushed class to a different layout mode
         if (live.state?.mode !== undefined && live.state.mode !== prevMode) {
-          setLessonMode(live.state.mode || "lesson");
+          const nextMode = live.state.mode || "lesson";
+          if (nextMode === "group") {
+            enterGroupMode();         // starts Firebase listeners + renders sidebar
+          } else if (nextMode === "lesson" && prevMode === "group") {
+            exitGroupMode();          // cleans up group listeners
+          } else {
+            setLessonMode(nextMode);  // project or any other mode
+          }
         }
         if (broadcastChanged) renderBroadcast();
         if (live.state?.active_sprint !== undefined && live.state.active_sprint !== prevActiveSprint) {
