@@ -2378,6 +2378,7 @@ let pushedSteps = []; // session-local memory of pushed lesson step numbers
 let CONFIG      = null;  // stored for openSession() lookup
 let currentLessonId = null; // selected courseId shared between Live/Prepare tabs
 let currentUnitId = presetUnitId;
+let currentLessonDesignId = presetUnitId || "unit_01"; // selected lesson for lesson-design state
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 let openSessionInFlight = false;
 let openAllInFlight = false;
@@ -2395,7 +2396,6 @@ let waitingStudentsSnapshot = 0;
 let waitingPressureTimer = null;
 let waitingAttendeesRef = null;
 let waitingAttendeesListener = null;
-let preSessionAudioDataUrl = "";
 let lecturerAvatarCropper = null;
 let importedMetadataCache = null;
 let selectedPlaylistUnitIds = new Set();
@@ -2522,7 +2522,7 @@ async function fetchWaitingPressureForSelectedCourse() {
 function startWaitingPressurePolling() {
   if (waitingPressureTimer) clearInterval(waitingPressureTimer);
   const classId = currentLessonId || getSelectedTeachingContext().classId || null;
-  const unitId = currentUnitId || 'unit_01';
+  const unitId = currentLessonTargetId();
   startWaitingAttendeesListener(classId, unitId);
 }
 
@@ -2530,13 +2530,15 @@ function renderPreSessionAudioPreview() {
   const holder = document.getElementById('preSessionAudioPreview');
   const hint = document.getElementById('preSessionAudioHint');
   if (!holder || !hint) return;
-  if (!preSessionAudioDataUrl) {
+  const mission = getCurrentPreClassItem();
+  const audioDataUrl = String(mission?.audioDataUrl || "");
+  if (!audioDataUrl) {
     holder.innerHTML = '';
     hint.textContent = 'לא נבחר קובץ';
     return;
   }
   hint.textContent = 'אודיו מוכן לשמירה';
-  holder.innerHTML = `<audio controls style="width:100%;max-width:360px;"><source src="${preSessionAudioDataUrl}" type="audio/webm"></audio>`;
+  holder.innerHTML = `<audio controls style="width:100%;max-width:360px;"><source src="${audioDataUrl}" type="audio/webm"></audio>`;
 }
 
 async function handlePreSessionAudioUpload(event) {
@@ -2547,7 +2549,9 @@ async function handlePreSessionAudioUpload(event) {
     reader.onloadend = () => resolve(String(reader.result || ''));
     reader.readAsDataURL(file);
   });
-  preSessionAudioDataUrl = String(dataUrl || '').startsWith('data:audio/') ? dataUrl : '';
+  const audioDataUrl = String(dataUrl || '').startsWith('data:audio/') ? dataUrl : '';
+  setCurrentPreClassItem({ audioDataUrl });
+  persistLessonsStoreDebounced();
   renderPreSessionAudioPreview();
   event.target.value = '';
 }
@@ -2563,16 +2567,111 @@ function updateEntranceTaskFields() {
   if (type === 'ticket') show('ticketLengthField');
 }
 
+function normalizePreClassItem(item = {}) {
+  const type = String(item?.type || 'ticket').trim() || 'ticket';
+  const options = Array.isArray(item?.options)
+    ? item.options.map(option => String(option || '').trim()).filter(Boolean)
+    : String(item?.options || '')
+        .split('\n')
+        .map(option => option.trim())
+        .filter(Boolean);
+  const pairs = Array.isArray(item?.pairs)
+    ? item.pairs
+        .map(pair => Array.isArray(pair) ? [String(pair[0] || '').trim(), String(pair[1] || '').trim()] : null)
+        .filter(Boolean)
+    : String(item?.pairs || '')
+        .split('\n')
+        .map(line => line.split('|').map(part => part.trim()))
+        .filter(parts => parts[0] && parts[1]);
+  const correctIndexRaw = Number(item?.correctIndex);
+  const correctIndex = Number.isFinite(correctIndexRaw) ? Math.max(0, correctIndexRaw) : 0;
+  const minLengthRaw = Number(item?.minLength);
+  const minLength = Number.isFinite(minLengthRaw) ? Math.max(0, minLengthRaw) : 20;
+  return {
+    type,
+    title: String(item?.title || '').trim(),
+    prompt: String(item?.prompt || item?.text || '').trim(),
+    videoUrl: String(item?.videoUrl || '').trim(),
+    options,
+    correctIndex,
+    pairs,
+    minLength,
+    audioDataUrl: String(item?.audioDataUrl || '').trim(),
+    updatedAt: Number(item?.updatedAt || 0) || 0
+  };
+}
+
+function getCurrentPreClassItem() {
+  const lesson = ensureCurrentLessonForId(currentLessonTargetId());
+  if (!lesson) return normalizePreClassItem();
+  lesson.preClass = Array.isArray(lesson.preClass) ? lesson.preClass : [];
+  if (!lesson.preClass.length) {
+    lesson.preClass = [normalizePreClassItem()];
+  } else {
+    lesson.preClass[0] = normalizePreClassItem(lesson.preClass[0]);
+  }
+  return lesson.preClass[0];
+}
+
+function setCurrentPreClassItem(partial = {}) {
+  const current = getCurrentPreClassItem();
+  const next = normalizePreClassItem({ ...current, ...partial, updatedAt: Date.now() });
+  if (currentLesson) currentLesson.preClass = [next];
+  return next;
+}
+
+function readPreClassFormState() {
+  return normalizePreClassItem({
+    type: document.getElementById('preSessionTaskType')?.value || 'ticket',
+    title: document.getElementById('preSessionTaskTitle')?.value || '',
+    prompt: document.getElementById('preSessionText')?.value || '',
+    videoUrl: document.getElementById('preSessionVideoUrl')?.value || '',
+    options: document.getElementById('preSessionQuizOptions')?.value || '',
+    correctIndex: (Number(document.getElementById('preSessionCorrectIndex')?.value || '1') || 1) - 1,
+    pairs: document.getElementById('preSessionVocabPairs')?.value || '',
+    minLength: document.getElementById('preSessionMinLength')?.value || '20',
+    audioDataUrl: getCurrentPreClassItem()?.audioDataUrl || '',
+    updatedAt: Date.now()
+  });
+}
+
+function updatePreClassFromForm() {
+  const next = readPreClassFormState();
+  if (currentLesson) currentLesson.preClass = [next];
+  persistLessonsStoreDebounced();
+  return next;
+}
+
+function renderPreClass() {
+  const preClass = getCurrentPreClassItem();
+  const typeEl = document.getElementById('preSessionTaskType');
+  const titleEl = document.getElementById('preSessionTaskTitle');
+  const textEl = document.getElementById('preSessionText');
+  const videoEl = document.getElementById('preSessionVideoUrl');
+  const optionsEl = document.getElementById('preSessionQuizOptions');
+  const correctEl = document.getElementById('preSessionCorrectIndex');
+  const pairsEl = document.getElementById('preSessionVocabPairs');
+  const minLenEl = document.getElementById('preSessionMinLength');
+  if (typeEl) typeEl.value = preClass.type || 'ticket';
+  if (titleEl) titleEl.value = preClass.title || '';
+  if (textEl) textEl.value = preClass.prompt || '';
+  if (videoEl) videoEl.value = preClass.videoUrl || '';
+  if (optionsEl) optionsEl.value = Array.isArray(preClass.options) ? preClass.options.join('\n') : '';
+  if (correctEl) correctEl.value = (Number(preClass.correctIndex) || 0) + 1;
+  if (pairsEl) pairsEl.value = Array.isArray(preClass.pairs) ? preClass.pairs.map(pair => `${pair[0]}|${pair[1]}`).join('\n') : '';
+  if (minLenEl) minLenEl.value = preClass.minLength || 20;
+  updateEntranceTaskFields();
+  renderPreSessionAudioPreview();
+}
+
 async function loadPreSessionMission() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
-  const unitId = currentUnitId || "unit_01";
+  const unitId = currentLessonTargetId();
   const statusEl = document.getElementById('preSessionStatus');
+  ensureCurrentLessonForId(unitId);
   if (!classId) {
-    const videoEl = document.getElementById('preSessionVideoUrl');
-    const textEl = document.getElementById('preSessionText');
-    if (videoEl) videoEl.value = '';
-    if (textEl) textEl.value = '';
-    preSessionAudioDataUrl = '';
+    if (currentLesson) currentLesson.preClass = [normalizePreClassItem()];
+    renderPreClass();
     renderPreSessionAudioPreview();
     if (statusEl) statusEl.textContent = 'בחר קורס כדי להגדיר מטלת כניסה';
     return;
@@ -2585,28 +2684,21 @@ async function loadPreSessionMission() {
     const mission = data?.mission || {};
     const et = data?.entranceTask || {};
 
-    const videoEl = document.getElementById('preSessionVideoUrl');
-    const textEl  = document.getElementById('preSessionText');
-    if (videoEl) videoEl.value = et.videoUrl || mission.videoUrl || '';
-    if (textEl)  textEl.value  = et.prompt   || mission.text     || '';
-    preSessionAudioDataUrl = mission.audioDataUrl || '';
-    renderPreSessionAudioPreview();
-
-    // Populate entrance task fields
-    const typeEl = document.getElementById('preSessionTaskType');
-    if (typeEl && et.type) typeEl.value = et.type;
-    const titleEl = document.getElementById('preSessionTaskTitle');
-    if (titleEl) titleEl.value = et.title || '';
-    const optionsEl = document.getElementById('preSessionQuizOptions');
-    if (optionsEl) optionsEl.value = Array.isArray(et.options) ? et.options.join('\n') : '';
-    const correctEl = document.getElementById('preSessionCorrectIndex');
-    if (correctEl) correctEl.value = et.correctIndex != null ? et.correctIndex + 1 : 1;
-    const pairsEl = document.getElementById('preSessionVocabPairs');
-    if (pairsEl) pairsEl.value = Array.isArray(et.pairs) ? et.pairs.map(p => p.join('|')).join('\n') : '';
-    const minLenEl = document.getElementById('preSessionMinLength');
-    if (minLenEl) minLenEl.value = et.minLength || 20;
-
-    updateEntranceTaskFields();
+    const normalized = normalizePreClassItem({
+      type: et.type || 'ticket',
+      title: et.title || '',
+      prompt: et.prompt || mission.text || '',
+      videoUrl: et.videoUrl || mission.videoUrl || '',
+      options: et.options || [],
+      correctIndex: et.correctIndex != null ? et.correctIndex : 0,
+      pairs: et.pairs || [],
+      minLength: et.minLength || 20,
+      audioDataUrl: mission.audioDataUrl || '',
+      updatedAt: Date.parse(et.updatedAt || mission.updatedAt || 0) || Date.now()
+    });
+    if (currentLesson) currentLesson.preClass = [normalized];
+    persistLessonsStoreDebounced();
+    renderPreClass();
     if (statusEl) statusEl.textContent = et.updatedAt ? `עודכן: ${new Date(et.updatedAt).toLocaleString('he-IL')}` : (mission.updatedAt ? `עודכן: ${new Date(mission.updatedAt).toLocaleString('he-IL')}` : 'אין מטלת כניסה שמורה');
   } catch (e) {
     if (statusEl) statusEl.textContent = 'שגיאה בטעינת מטלת כניסה';
@@ -2615,23 +2707,15 @@ async function loadPreSessionMission() {
 
 async function savePreSessionMission() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
-  const unitId = currentUnitId || "unit_01";
+  const unitId = currentLessonTargetId();
   const statusEl = document.getElementById('preSessionStatus');
+  ensureCurrentLessonForId(unitId);
   if (!classId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני שמירה';
     return;
   }
-
-  const taskType   = document.getElementById('preSessionTaskType')?.value || 'ticket';
-  const taskTitle  = document.getElementById('preSessionTaskTitle')?.value?.trim() || '';
-  const prompt     = document.getElementById('preSessionText')?.value?.trim() || '';
-  const videoUrl   = document.getElementById('preSessionVideoUrl')?.value?.trim() || '';
-  const options    = document.getElementById('preSessionQuizOptions')?.value?.trim() || '';
-  const correctIdx = document.getElementById('preSessionCorrectIndex')?.value || '1';
-  const vocabPairs = document.getElementById('preSessionVocabPairs')?.value?.trim() || '';
-  const minLength  = document.getElementById('preSessionMinLength')?.value || '20';
-
-  if (!prompt && !videoUrl && !preSessionAudioDataUrl) {
+  const preClass = updatePreClassFromForm();
+  if (!preClass.prompt && !preClass.videoUrl && !preClass.audioDataUrl) {
     if (statusEl) statusEl.textContent = 'הוסף לפחות הנחיה או קישור לסרטון';
     return;
   }
@@ -2644,16 +2728,16 @@ async function savePreSessionMission() {
     unitId,
     userId:       facultyId,
     facultyId,
-    taskType,
-    taskTitle,
-    prompt,
-    videoUrl,
-    options,
-    correctIndex: correctIdx,
-    pairs:        vocabPairs,
-    minLength,
-    audioDataUrl: preSessionAudioDataUrl || '',
-    text:         prompt
+    taskType: preClass.type,
+    taskTitle: preClass.title,
+    prompt: preClass.prompt,
+    videoUrl: preClass.videoUrl,
+    options: preClass.options.join('\n'),
+    correctIndex: String((Number(preClass.correctIndex) || 0) + 1),
+    pairs: preClass.pairs.map(pair => `${pair[0]}|${pair[1]}`).join('\n'),
+    minLength: String(preClass.minLength || 20),
+    audioDataUrl: preClass.audioDataUrl || '',
+    text: preClass.prompt
   });
 
   if (!res?.ok) {
@@ -2666,8 +2750,9 @@ async function savePreSessionMission() {
 
 async function clearPreSessionMission() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
-  const unitId = currentUnitId || "unit_01";
+  const unitId = currentLessonTargetId();
   const statusEl = document.getElementById('preSessionStatus');
+  ensureCurrentLessonForId(unitId);
   if (!classId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני ניקוי';
     return;
@@ -2679,18 +2764,15 @@ async function clearPreSessionMission() {
     return;
   }
 
-  const videoEl = document.getElementById('preSessionVideoUrl');
-  const textEl = document.getElementById('preSessionText');
-  if (videoEl) videoEl.value = '';
-  if (textEl) textEl.value = '';
-  preSessionAudioDataUrl = '';
-  renderPreSessionAudioPreview();
+  if (currentLesson) currentLesson.preClass = [normalizePreClassItem()];
+  persistLessonsStoreDebounced();
+  renderPreClass();
   if (statusEl) statusEl.textContent = 'נוקה ✓';
 }
 
 async function generateWarmup() {
   const classId = currentLessonId || getSelectedTeachingContext().classId;
-  const unitId = currentUnitId || "unit_01";
+  const unitId = currentLessonTargetId();
   const btn = document.getElementById('generateWarmupBtn');
   const statusEl = document.getElementById('preSessionStatus');
   if (!classId) {
@@ -3047,7 +3129,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     }
 
     const playlistLessonInput = document.getElementById("playlistLessonId");
-    if (playlistLessonInput) playlistLessonInput.value = currentUnitId || "unit_01";
+    if (playlistLessonInput) playlistLessonInput.value = currentLessonTargetId();
 
     fetchWaitingPressureForSelectedCourse();
     loadPreSessionMission();
@@ -3199,17 +3281,19 @@ function renderLessonDesignNavigator() {
     updateLessonDesignBanner();
     return;
   }
-  if (!lessons.some(item => item.unitId === currentUnitId)) {
-    currentUnitId = lessons[0].unitId;
-    sessionStorage.setItem("miled_active_unit_id", currentUnitId);
+  if (!lessons.some(item => item.unitId === currentLessonDesignId)) {
+    currentLessonDesignId = lessons[0].unitId;
   }
   const lessonInput = document.getElementById("playlistLessonId");
-  if (lessonInput) lessonInput.value = currentUnitId;
+  if (lessonInput) lessonInput.value = currentLessonDesignId;
   listEl.innerHTML = lessons.map(item => `
-    <button type="button" class="lesson-plan-item ${item.unitId === currentUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}" data-lesson-title="${macroEscHtml(item.title)}">
+    <button type="button" class="lesson-plan-item ${item.unitId === currentLessonDesignId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}" data-lesson-title="${macroEscHtml(item.title)}">
       <div class="lesson-plan-item-meta">יחידת לימוד ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       ${item.date ? `<div class="lesson-plan-item-date">📅 ${escapeHtml(item.date)}</div>` : ''}
+      <div style="margin-top:8px;text-align:left;">
+        <span class="btn btn-outline" data-open-lesson-unit="${macroEscHtml(item.unitId)}" data-open-lesson-title="${macroEscHtml(item.title)}" style="font-size:11px;padding:4px 8px;display:inline-block;">פתח שיעור</span>
+      </div>
     </button>
   `).join("");
   listEl.querySelectorAll("[data-lesson-nav-unit]").forEach(button => {
@@ -3218,9 +3302,12 @@ function renderLessonDesignNavigator() {
       if (!unitId) return;
       selectLessonDesignUnit(unitId, { reloadMetadata: true });
     });
-    button.addEventListener("dblclick", () => {
-      const unitId = button.getAttribute("data-lesson-nav-unit");
-      const unitTitle = button.getAttribute("data-lesson-title") || "";
+  });
+  listEl.querySelectorAll("[data-open-lesson-unit]").forEach(button => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const unitId = button.getAttribute("data-open-lesson-unit");
+      const unitTitle = button.getAttribute("data-open-lesson-title") || "";
       if (!unitId) return;
       openLesson(unitId, unitTitle);
     });
@@ -3231,6 +3318,9 @@ function renderLessonDesignNavigator() {
       <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.lessonId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       <div class="lesson-plan-item-date">${item.unitsCount ? `🔗 ${item.unitsCount} יחידות · ${item.unitsPreview}${item.extraUnits}` : '🔗 ללא יחידות משויכות'}</div>
+      <div style="margin-top:8px;text-align:left;">
+        <span class="btn btn-outline" data-open-lesson-session="${macroEscHtml(item.lessonId)}" data-open-lesson-title="${macroEscHtml(item.title)}" style="font-size:11px;padding:4px 8px;display:inline-block;">פתח שיעור</span>
+      </div>
     </button>
   `).join("");
   sessionsEl.querySelectorAll("[data-lesson-session]").forEach(button => {
@@ -3239,9 +3329,12 @@ function renderLessonDesignNavigator() {
       if (!lessonId) return;
       selectLessonDesignUnit(lessonId, { reloadMetadata: true });
     });
-    button.addEventListener("dblclick", () => {
-      const lessonId = button.getAttribute("data-lesson-session");
-      const lessonTitle = button.getAttribute("data-lesson-title") || "";
+  });
+  sessionsEl.querySelectorAll("[data-open-lesson-session]").forEach(button => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const lessonId = button.getAttribute("data-open-lesson-session");
+      const lessonTitle = button.getAttribute("data-open-lesson-title") || "";
       if (!lessonId) return;
       openLesson(lessonId, lessonTitle);
     });
@@ -3250,12 +3343,14 @@ function renderLessonDesignNavigator() {
 }
 function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
   if (!unitId) return;
+  const lessonId = mapUnitToLessonDesignId(unitId);
   currentUnitId = unitId;
   sessionStorage.setItem("miled_active_unit_id", unitId);
+  currentLessonDesignId = lessonId;
   const lessonInput = document.getElementById("playlistLessonId");
-  if (lessonInput && lessonInput.value !== unitId) lessonInput.value = unitId;
-  const lessonTitle = resolveLessonTitleById(unitId);
-  setCurrentLesson(unitId, lessonTitle);
+  if (lessonInput && lessonInput.value !== lessonId) lessonInput.value = lessonId;
+  const lessonTitle = resolveLessonTitleById(lessonId);
+  setCurrentLesson(lessonId, lessonTitle);
   renderLessonDesignNavigator();
   renderLesson();
   if (reloadMetadata) loadCourseMetadataWorkspace();
@@ -3355,10 +3450,12 @@ async function loadMacroBookshelf(courseId) {
   try {
     const payload = await fetch(`/.netlify/functions/classroom?action=course_metadata&courseId=${encodeURIComponent(courseId)}`).then(r => r.json());
     macroBookshelfUnits = macroNormalizeBookshelfUnits(payload?.metadata || null);
-    macroRenderBookshelf();
+    syncLessonResourcesFromMetadata();
+    renderResources();
   } catch {
     macroBookshelfUnits = [];
-    macroRenderBookshelf();
+    syncLessonResourcesFromMetadata();
+    renderResources();
   }
 }
 
@@ -3380,26 +3477,82 @@ function macroNormalizeBookshelfUnits(metadata) {
 }
 
 function macroRenderBookshelf() {
+  renderResources();
+}
+
+function normalizeLessonResourceItem(item = {}, index = 0, fallbackUnitId = "") {
+  return {
+    id: String(item?.id || `${fallbackUnitId || "lesson"}_res_${String(index + 1).padStart(2, "0")}`),
+    title: String(item?.title || item?.name || item?.label || `משאב ${index + 1}`).trim(),
+    url: String(item?.url || item?.link || item?.href || item?.externalUrl || item?.resourceUrl || "").trim(),
+    kind: String(item?.kind || item?.type || item?.modname || "resource").trim().toLowerCase(),
+    unitId: String(item?.unitId || fallbackUnitId || "").trim(),
+    unitName: String(item?.unitName || item?.unit || "").trim()
+  };
+}
+
+function buildLessonResourcesFromMetadata(lessonId = currentLessonTargetId()) {
+  const id = mapUnitToLessonDesignId(lessonId);
+  const units = Array.isArray(importedMetadataCache?.units) ? importedMetadataCache.units : [];
+  const playlists = importedMetadataCache?.playlists || {};
+  const selectedUnitIds = Array.isArray(playlists?.[id]?.unitIds) && playlists[id].unitIds.length
+    ? playlists[id].unitIds.map(unit => String(unit || "").trim()).filter(Boolean)
+    : [id];
+  const selectedSet = new Set(selectedUnitIds);
+  const fromMetadata = units
+    .map((unit, ui) => {
+      const unitId = String(unit?.unitId || unit?.id || `unit_${String(ui + 1).padStart(2, "0")}`).trim();
+      if (!selectedSet.has(unitId)) return [];
+      const unitName = String(unit?.name || unit?.title || unit?.label || unitId).trim();
+      const rawItems = (Array.isArray(unit?.resources) && unit.resources) || (Array.isArray(unit?.items) && unit.items) || (Array.isArray(unit?.modules) && unit.modules) || [];
+      return rawItems.map((item, ii) => normalizeLessonResourceItem({ ...item, unitId, unitName }, ii, unitId)).filter(resource => resource.title);
+    })
+    .flat();
+  if (fromMetadata.length) return fromMetadata;
+  return macroBookshelfUnits
+    .filter(unit => selectedSet.has(String(unit?.unitId || "").trim()))
+    .flatMap(unit => (Array.isArray(unit.resources) ? unit.resources : []).map((item, index) => normalizeLessonResourceItem(item, index, String(unit?.unitId || "").trim())))
+    .filter(resource => resource.title);
+}
+
+function syncLessonResourcesFromMetadata(lessonId = currentLessonTargetId()) {
+  const lesson = ensureCurrentLessonForId(lessonId);
+  if (!lesson) return [];
+  const resources = buildLessonResourcesFromMetadata(lesson.id);
+  lesson.resources = resources;
+  persistLessonsStoreDebounced();
+  return lesson.resources;
+}
+
+function renderResources() {
   const filter = document.getElementById("macro-resource-unit-filter");
   const list   = document.getElementById("macro-resource-list");
   const count  = document.getElementById("macro-resource-count");
   if (!filter || !list || !count) return;
-
-  if (!macroBookshelfUnits.length) {
+  const lesson = ensureCurrentLessonForId(currentLessonTargetId());
+  const resources = Array.isArray(lesson?.resources) ? lesson.resources : [];
+  if (!resources.length) {
     filter.innerHTML = '<option value="all">כל היחידות</option>';
     count.textContent = "0 משאבים";
-    list.innerHTML = '<div style="font-size:12px;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;">עדיין לא נטענו משאבים — ייבא Moodle JSON מהטאב הבא.</div>';
+    list.innerHTML = '<div style="font-size:12px;color:#64748b;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;">אין משאבים בשיעור הנוכחי — בחר יחידות ל-Playlist או ייבא Moodle JSON.</div>';
     return;
   }
+  const resourcesByUnit = resources.reduce((acc, item) => {
+    const unitId = String(item?.unitId || "").trim() || "unassigned";
+    if (!acc.has(unitId)) acc.set(unitId, String(item?.unitName || unitId).trim() || unitId);
+    return acc;
+  }, new Map());
   const cur = filter.value || "all";
-  filter.innerHTML = ['<option value="all">כל היחידות</option>', ...macroBookshelfUnits.map(u => `<option value="${macroEscHtml(u.unitId)}">${macroEscHtml(u.name)}</option>`)].join("");
-  filter.value = macroBookshelfUnits.some(u => u.unitId === cur) ? cur : "all";
-  filter.onchange = macroRenderBookshelf;
-  const visible = filter.value === "all" ? macroBookshelfUnits : macroBookshelfUnits.filter(u => u.unitId === filter.value);
-  const resources = visible.flatMap(u => u.resources);
-  count.textContent = `${resources.length} משאבים`;
-  list.innerHTML = resources.length
-    ? resources.map(r => `<div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+  filter.innerHTML = [
+    '<option value="all">כל היחידות</option>',
+    ...Array.from(resourcesByUnit.entries()).map(([unitId, unitName]) => `<option value="${macroEscHtml(unitId)}">${macroEscHtml(unitName)}</option>`)
+  ].join("");
+  filter.value = resourcesByUnit.has(cur) ? cur : "all";
+  filter.onchange = renderResources;
+  const visibleResources = filter.value === "all" ? resources : resources.filter(item => String(item?.unitId || "").trim() === filter.value);
+  count.textContent = `${visibleResources.length} משאבים`;
+  list.innerHTML = visibleResources.length
+    ? visibleResources.map(r => `<div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
         <div><div style="font-size:13px;font-weight:700;color:#111827;">${macroEscHtml(r.kind.toUpperCase())} · ${macroEscHtml(r.title)}</div><div style="font-size:11px;color:#64748b;margin-top:2px;">${macroEscHtml(r.unitName)}</div></div>
         ${r.url ? `<a href="${macroEscHtml(r.url)}" target="_blank" style="font-size:12px;color:#4f46e5;border:1px solid #c7d2fe;border-radius:8px;padding:5px 10px;text-decoration:none;background:#eef2ff;white-space:nowrap;">פתח</a>` : '<span style="font-size:12px;color:#94a3b8;">ללא קישור</span>'}
       </div>`).join("")
@@ -3474,7 +3627,7 @@ function applyCourseLockUI(courseId, courseName) {
   const url = new URL(location.href);
   url.searchParams.set('courseId', courseId);
   history.replaceState(null, '', url.toString());
-  const qs = `?courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(currentUnitId || 'unit_01')}`;
+  const qs = `?courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(currentLessonTargetId())}`;
   const toMacro1 = document.getElementById('toMacroCockpitBtn');
   const toMacro2 = document.getElementById('backToUnitsBtn');
   const toMicro  = document.getElementById('toMicroCockpitBtn');
@@ -3584,7 +3737,7 @@ async function openAllEntryPolicy() {
   if (!sessionId) { alert('פתח שיעור תחילה'); return; }
 
   const classId = currentLessonId || getSelectedTeachingContext().classId || null;
-  const unitId = currentUnitId || 'unit_01';
+  const unitId = currentLessonTargetId();
   if (!classId) { alert('נדרש קורס פעיל כדי לפתוח שערים'); return; }
 
   openAllInFlight = true;
@@ -3626,7 +3779,7 @@ async function openSession() {
 
   try {
     // Resolve botType + classId depending on selection type
-    const unitId = currentUnitId || "unit_01";
+    const unitId = currentLessonTargetId();
     let botType, classId, studentURL;
     if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
       classId  = selectedClassId;
@@ -3756,7 +3909,7 @@ async function broadcast() {
 async function closeSession() {
   if (!confirm("לסגור את השיעור?")) return;
   const closingClassId = currentLessonId || getSelectedTeachingContext().classId || null;
-  const closingUnitId = currentUnitId || "unit_01";
+  const closingUnitId = currentLessonTargetId();
   await callClassroom({ action: "close", sessionId, facultyId });
   if (closingClassId) {
     await writeActiveDoorState({
@@ -4302,9 +4455,13 @@ function currentCourseForSync() {
   return currentLessonId || getSelectedTeachingContext().classId || null;
 }
 
+function mapUnitToLessonDesignId(unitId) {
+  return String(unitId || "").trim() || "unit_01";
+}
+
 function currentLessonTargetId() {
   const input = document.getElementById("playlistLessonId");
-  return String(input?.value || currentUnitId || "unit_01").trim() || "unit_01";
+  return mapUnitToLessonDesignId(currentLessonDesignId || input?.value || currentUnitId || "unit_01");
 }
 
 function renderImportedUnits() {
@@ -4379,7 +4536,9 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     importedMetadataCache = null;
     selectedPlaylistUnitIds = new Set();
     sprintDrafts = [];
+    syncLessonResourcesFromMetadata();
     renderImportedUnits();
+    renderResources();
     renderSprintDrafts();
     renderLessonDesignNavigator();
     if (statusEl) statusEl.textContent = 'בחר קורס כדי לטעון מטא-דאטה';
@@ -4397,7 +4556,9 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     sprintDrafts = Array.isArray(sprintSet) ? sprintSet : [];
     currentUnitId = lessonId;
     sessionStorage.setItem("miled_active_unit_id", currentUnitId);
+    syncLessonResourcesFromMetadata(lessonId);
     renderImportedUnits();
+    renderResources();
     renderSprintDrafts();
     renderLessonDesignNavigator();
     if (statusEl) statusEl.textContent = importedMetadataCache ? `נטענו ${importedMetadataCache.unitCount || 0} יחידות מהמטא-דאטה` : 'אין מטא-דאטה לקורס זה';
@@ -4436,7 +4597,9 @@ async function importMoodleJson() {
 
   importedMetadataCache = res.metadata || null;
   selectedPlaylistUnitIds = new Set((importedMetadataCache?.units || []).map(unit => unit.unitId));
+  syncLessonResourcesFromMetadata();
   renderImportedUnits();
+  renderResources();
   if (statusEl) statusEl.textContent = `יובאו ${importedMetadataCache?.unitCount || 0} יחידות ו-${importedMetadataCache?.resourceCount || 0} משאבים`;
 }
 
@@ -4465,6 +4628,8 @@ async function saveLessonPlaylist() {
     if (statusEl) statusEl.textContent = res?.error || 'שגיאה בשמירה';
     return;
   }
+  syncLessonResourcesFromMetadata(lessonId);
+  renderResources();
   if (statusEl) statusEl.textContent = 'Playlist נשמר';
 }
 
@@ -4989,6 +5154,7 @@ window.addEventListener("load", () => {
 // LESSON PLANNER
 // ═══════════════════════════════════════════
 const LESSONS_STORAGE_KEY = "miled_macro_lessons_store_v1";
+const LESSONS_STORE_VERSION = 1;
 let currentLesson = null;
 let lessonsStore = {};
 
@@ -5003,10 +5169,45 @@ function createEmptyLesson(id, title) {
   };
 }
 
+function normalizeLessonRecord(record = {}, fallbackId = "") {
+  const id = mapUnitToLessonDesignId(record?.id || fallbackId);
+  const title = String(record?.title || "").trim() || resolveLessonTitleById(id);
+  const objectives = Array.isArray(record?.objectives) ? record.objectives.map(item => String(item || "").trim()).filter(Boolean) : [];
+  const steps = Array.isArray(record?.steps)
+    ? record.steps
+        .map(step => ({
+          title: String(step?.title || "").trim(),
+          instructions: String(step?.instructions || "").trim()
+        }))
+        .filter(step => step.title)
+    : [];
+  const preClass = Array.isArray(record?.preClass) ? record.preClass.map(item => normalizePreClassItem(item)) : [];
+  const resources = Array.isArray(record?.resources)
+    ? record.resources.map((item, index) => normalizeLessonResourceItem(item, index)).filter(item => item.title)
+    : [];
+  return { id, title, objectives, steps, preClass, resources };
+}
+
+function normalizeLessonsStorePayload(rawValue) {
+  const envelope = rawValue && typeof rawValue === "object" && !Array.isArray(rawValue) ? rawValue : {};
+  const version = Number(envelope.version || LESSONS_STORE_VERSION) || LESSONS_STORE_VERSION;
+  const lessonsCandidate = envelope.lessons && typeof envelope.lessons === "object"
+    ? envelope.lessons
+    : (envelope && !Array.isArray(envelope) ? envelope : {});
+  const lessons = {};
+  Object.entries(lessonsCandidate).forEach(([id, record]) => {
+    const normalized = normalizeLessonRecord(record, id);
+    lessons[normalized.id] = normalized;
+  });
+  return { version, lessons };
+}
+
 function hydrateLessonsStore() {
   try {
     const raw = localStorage.getItem(LESSONS_STORAGE_KEY);
-    lessonsStore = raw ? JSON.parse(raw) : {};
+    const parsed = raw ? JSON.parse(raw) : {};
+    const normalized = normalizeLessonsStorePayload(parsed);
+    lessonsStore = normalized.lessons;
   } catch (error) {
     console.warn("hydrateLessonsStore failed:", error);
     lessonsStore = {};
@@ -5015,7 +5216,11 @@ function hydrateLessonsStore() {
 
 function persistLessonsStore() {
   try {
-    localStorage.setItem(LESSONS_STORAGE_KEY, JSON.stringify(lessonsStore));
+    const payload = {
+      version: LESSONS_STORE_VERSION,
+      lessons: normalizeLessonsStorePayload({ lessons: lessonsStore }).lessons
+    };
+    localStorage.setItem(LESSONS_STORAGE_KEY, JSON.stringify(payload));
   } catch (error) {
     console.warn("persistLessonsStore failed:", error);
   }
@@ -5039,29 +5244,25 @@ function resolveLessonTitleById(lessonId) {
 }
 
 function setCurrentLesson(id, title) {
-  if (!id) return null;
-  const lessonTitle = String(title || "").trim() || resolveLessonTitleById(id);
-  if (!lessonsStore[id]) {
-    lessonsStore[id] = createEmptyLesson(id, lessonTitle);
-  } else {
-    lessonsStore[id].title = lessonTitle || id;
-    lessonsStore[id].objectives = Array.isArray(lessonsStore[id].objectives) ? lessonsStore[id].objectives : [];
-    lessonsStore[id].steps = Array.isArray(lessonsStore[id].steps) ? lessonsStore[id].steps : [];
-    lessonsStore[id].preClass = Array.isArray(lessonsStore[id].preClass) ? lessonsStore[id].preClass : [];
-    lessonsStore[id].resources = Array.isArray(lessonsStore[id].resources) ? lessonsStore[id].resources : [];
-  }
-  currentLesson = lessonsStore[id];
+  const lessonId = mapUnitToLessonDesignId(id);
+  if (!lessonId) return null;
+  const lessonTitle = String(title || "").trim() || resolveLessonTitleById(lessonId);
+  const existing = lessonsStore[lessonId] || createEmptyLesson(lessonId, lessonTitle);
+  const normalized = normalizeLessonRecord({ ...existing, id: lessonId, title: lessonTitle }, lessonId);
+  lessonsStore[lessonId] = normalized;
+  currentLesson = normalized;
+  currentLessonDesignId = lessonId;
   persistLessonsStore();
   return currentLesson;
 }
 
 function openLesson(id, title) {
   if (!id) return;
-  currentUnitId = id;
-  sessionStorage.setItem("miled_active_unit_id", id);
+  const lessonId = mapUnitToLessonDesignId(id);
+  currentLessonDesignId = lessonId;
   const lessonInput = document.getElementById("playlistLessonId");
-  if (lessonInput) lessonInput.value = id;
-  setCurrentLesson(id, title);
+  if (lessonInput) lessonInput.value = lessonId;
+  setCurrentLesson(lessonId, title);
   switchPhase('lesson');
   renderLessonDesignNavigator();
   renderLesson();
@@ -5081,6 +5282,8 @@ function renderLesson() {
       : "עיצוב שיעור: בחר שיעור";
   }
   renderObjectives();
+  renderPreClass();
+  renderResources();
   renderLessonSteps();
 }
 
@@ -5089,10 +5292,12 @@ function getCurrentLessonSteps() {
 }
 
 function ensureCurrentLessonForId(lessonId = currentLessonTargetId()) {
-  if (!lessonId) return null;
-  if (!currentLesson || currentLesson.id !== lessonId) {
-    return setCurrentLesson(lessonId, resolveLessonTitleById(lessonId));
+  const normalizedId = mapUnitToLessonDesignId(lessonId);
+  if (!normalizedId) return null;
+  if (!currentLesson || currentLesson.id !== normalizedId) {
+    return setCurrentLesson(normalizedId, resolveLessonTitleById(normalizedId));
   }
+  currentLessonDesignId = normalizedId;
   return currentLesson;
 }
 
@@ -5347,9 +5552,10 @@ switchWizardStep(1);
 hydrateLessonsStore();
 syncCockpitNavOffset();
 window.addEventListener('resize', syncCockpitNavOffset);
-renderPreSessionAudioPreview();
+renderPreClass();
 loadPreSessionMission();
 renderImportedUnits();
+renderResources();
 renderSprintDrafts();
 loadCourseMetadataWorkspace();
 renderLessonDesignNavigator();
@@ -5366,6 +5572,27 @@ document.getElementById("lesson-objectives")?.addEventListener("input", (event) 
   const text = String(event?.target?.value || "").trim();
   currentLesson.objectives = text ? text.split("\n") : [];
   persistLessonsStoreDebounced();
+});
+[
+  "preSessionTaskType",
+  "preSessionTaskTitle",
+  "preSessionText",
+  "preSessionVideoUrl",
+  "preSessionQuizOptions",
+  "preSessionCorrectIndex",
+  "preSessionVocabPairs",
+  "preSessionMinLength"
+].forEach(id => {
+  document.getElementById(id)?.addEventListener("input", () => {
+    ensureCurrentLessonForId(currentLessonTargetId());
+    updatePreClassFromForm();
+    if (id === "preSessionTaskType") updateEntranceTaskFields();
+  });
+  document.getElementById(id)?.addEventListener("change", () => {
+    ensureCurrentLessonForId(currentLessonTargetId());
+    updatePreClassFromForm();
+    if (id === "preSessionTaskType") updateEntranceTaskFields();
+  });
 });
 document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (event) => {
   const courseId = currentCourseForSync();
