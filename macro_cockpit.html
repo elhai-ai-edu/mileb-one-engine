@@ -1939,7 +1939,7 @@ body { background: var(--bg) !important; }
 
     <!-- ── Tool 4: Resource Shelf ── -->
     <div class="mc-section lesson-block-resources">
-    <div class="mc-section-head">📚  מדף משאבים<span class="mc-sub">משאבים ממופה מ-Moodle לפי יחידות</span></div>
+    <div class="mc-section-head">📚  מדף משאבים<span class="mc-sub">משאבים ממופים מ-Moodle לפי שיעורים</span></div>
     <div class="mc-section-body">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
       <select id="macro-resource-unit-filter" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1f2937;"></select>
@@ -1967,8 +1967,6 @@ body { background: var(--bg) !important; }
           <div class="thread-empty">בחר קורס כדי לראות שיעורים</div>
         </div>
       </div>
-      <!-- lessonSessionsSidebarList kept hidden for JS compatibility -->
-      <div id="lessonSessionsSidebarList" style="display:none;"></div>
     </aside>
     </div>
 
@@ -3213,16 +3211,17 @@ function inferMacroUnitsModeFromMap() {
 function buildPlannedLessonItems() {
   const mode = inferMacroUnitsModeFromMap();
   const total = mode === "Topic" ? MAX_TOPIC_LESSONS : MAX_SESSION_LESSONS;
-  const unitIds = Array.from({ length: total }, (_, i) => (
+  const lessonSourceIds = Array.from({ length: total }, (_, i) => (
     mode === "Topic" ? macroToTopicUnitId(i + 1) : macroToSessionUnitId(i + 1)
   ));
   const courseId = currentCourseForSync();
-  return unitIds.map((unitId, index) => {
-    const row = macroUnitsMap?.[unitId] || {};
-    const lessonNumber = parseLessonNumber(unitId, index);
+  return lessonSourceIds.map((sourceId, index) => {
+    const lessonId = normalizeLessonId(sourceId);
+    const row = macroUnitsMap?.[sourceId] || {};
+    const lessonNumber = parseLessonNumber(sourceId, index);
     const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
-    const date = getLessonDateValue(courseId, unitId, row);
-    return { unitId, lessonNumber, title, date };
+    const date = getLessonDateValue(courseId, lessonId, row);
+    return { lessonId, lessonNumber, title, date };
   });
 }
 function buildSessionSidebarItems() {
@@ -3280,8 +3279,7 @@ function updateLessonDesignBanner() {
 }
 function renderLessonDesignNavigator() {
   const listEl = document.getElementById("lessonPlanSidebarList");
-  const sessionsEl = document.getElementById("lessonSessionsSidebarList");
-  if (!listEl || !sessionsEl) return;
+  if (!listEl) return;
   const courseId = currentCourseForSync();
   if (!courseId) {
     listEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות שיעורים</div>';
@@ -3294,10 +3292,10 @@ function renderLessonDesignNavigator() {
     updateLessonDesignBanner();
     return;
   }
-  if (!lessons.some(item => item.unitId === activeUnitId)) {
-    activeUnitId = lessons[0].unitId;
+  if (!lessons.some(item => item.lessonId === activeUnitId)) {
+    activeUnitId = lessons[0].lessonId;
   }
-  if (activeLessonId && !lessons.some(item => mapUnitToLessonDesignId(item.unitId) === activeLessonId)) {
+  if (activeLessonId && !lessons.some(item => normalizeLessonId(item.lessonId) === activeLessonId)) {
     activeLessonId = "";
   }
   syncActiveContextPersistence();
@@ -3305,35 +3303,36 @@ function renderLessonDesignNavigator() {
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = activeLessonIdForUi;
   listEl.innerHTML = lessons.map(item => `
-    <button type="button" class="lesson-plan-item ${item.unitId === activeUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}" data-lesson-title="${macroEscHtml(item.title)}">
-      <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
+    <button type="button" class="lesson-plan-item ${item.lessonId === activeUnitId ? 'active' : ''}" data-lesson-id="${macroEscHtml(item.lessonId)}" data-lesson-title="${macroEscHtml(item.title)}">
+      <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.lessonId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       ${item.date ? `<div class="lesson-plan-item-date">📅 ${escapeHtml(item.date)}</div>` : ''}
     </button>
   `).join("");
-  listEl.querySelectorAll("[data-lesson-nav-unit]").forEach(button => {
+  listEl.querySelectorAll("[data-lesson-id]").forEach(button => {
     button.addEventListener("click", () => {
-      const unitId = button.getAttribute("data-lesson-nav-unit");
-      if (!unitId) return;
-      selectLessonDesignUnit(unitId, { reloadMetadata: true });
+      const lessonId = button.getAttribute("data-lesson-id");
+      if (!lessonId) return;
+      selectLesson(lessonId, { reloadMetadata: true });
     });
   });
   updateLessonDesignBanner();
 }
-function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
-  if (!unitId) return;
-  activeUnitId = String(unitId).trim();
-  // Clear explicit lesson selection so resolver derives lesson id from the newly selected unit context.
+function selectLesson(lessonId, { reloadMetadata = false } = {}) {
+  const normalizedLessonId = normalizeLessonId(lessonId);
+  if (!normalizedLessonId) return;
+  activeUnitId = normalizedLessonId;
+  // Clear explicit lesson selection so the resolver derives the resolved lesson ID from selected lesson context.
   activeLessonId = "";
-  const lessonId = resolveActiveLessonId();
+  const resolvedLessonId = resolveActiveLessonId();
   syncActiveContextPersistence({ updateUrl: true });
   const lessonInput = document.getElementById("playlistLessonId");
-  if (lessonInput && lessonInput.value !== lessonId) lessonInput.value = lessonId;
-  const lessonTitle = resolveLessonTitleById(lessonId);
-  openLesson(lessonId, lessonTitle);
+  if (lessonInput && lessonInput.value !== resolvedLessonId) lessonInput.value = resolvedLessonId;
+  const lessonTitle = resolveLessonTitleById(resolvedLessonId);
+  openLesson(resolvedLessonId, lessonTitle);
   renderLessonDesignNavigator();
   if (reloadMetadata) loadCourseMetadataWorkspace();
-  debugLessonContext("unit-select");
+  debugLessonContext("lesson-select");
 }
 async function saveLessonDateForCurrentUnit() {
   const courseId = currentCourseForSync();
@@ -3472,7 +3471,7 @@ function normalizeLessonResourceItem(item = {}, index = 0, fallbackUnitId = "") 
 }
 
 function buildLessonResourcesFromMetadata(lessonId = resolveActiveLessonId()) {
-  const id = mapUnitToLessonDesignId(lessonId);
+  const id = normalizeLessonId(lessonId);
   const units = Array.isArray(importedMetadataCache?.units) ? importedMetadataCache.units : [];
   const playlists = importedMetadataCache?.playlists || {};
   const selectedUnitIds = Array.isArray(playlists?.[id]?.unitIds) && playlists[id].unitIds.length
@@ -4476,13 +4475,13 @@ function resolveRuntimeCourseId() {
   return currentCourseForSync();
 }
 
-function mapUnitToLessonDesignId(unitId) {
-  return String(unitId || "").trim() || "lesson_01";
+function normalizeLessonId(lessonId) {
+  return String(lessonId || "").trim() || "lesson_01";
 }
 
 // Single lesson resolver used by open/save/render/template/DJ flows.
 function resolveActiveLessonId() {
-  return activeLessonId || mapUnitToLessonDesignId(activeUnitId) || "lesson_01";
+  return activeLessonId || normalizeLessonId(activeUnitId) || "lesson_01";
 }
 
 // `reason` is an optional debug label to trace why reset happened (logged only when LESSON_CONTEXT_DEBUG is on).
@@ -5395,7 +5394,7 @@ function createEmptyLesson(id, title) {
 }
 
 function normalizeLessonRecord(record = {}, fallbackId = "") {
-  const id = mapUnitToLessonDesignId(record?.id || fallbackId) || "lesson_01";
+  const id = normalizeLessonId(record?.id || fallbackId) || "lesson_01";
   const title = String(record?.title || "").trim() || resolveLessonTitleById(id);
   const objectives = Array.isArray(record?.objectives) ? record.objectives.map(item => String(item || "").trim()).filter(Boolean) : [];
   const steps = Array.isArray(record?.steps)
@@ -5471,7 +5470,7 @@ function resolveLessonTitleById(lessonId) {
 
 // Hydrates/normalizes a lesson record in store without phase switch or render side-effects.
 function loadLessonState(id, title) {
-  const lessonId = mapUnitToLessonDesignId(id);
+  const lessonId = normalizeLessonId(id);
   if (!lessonId) return null;
   const lessonTitle = String(title || "").trim() || resolveLessonTitleById(lessonId);
   const existing = lessonsStore[lessonId] || createEmptyLesson(lessonId, lessonTitle);
@@ -5485,7 +5484,7 @@ function loadLessonState(id, title) {
 
 // Only lesson activation entry point: resolves id, hydrates state, switches phase, renders once.
 function openLesson(id, title) {
-  const explicitLessonId = mapUnitToLessonDesignId(id);
+  const explicitLessonId = normalizeLessonId(id);
   activeLessonId = explicitLessonId || resolveActiveLessonId();
   activeUnitId = explicitLessonId || activeUnitId || activeLessonId;
   syncActiveContextPersistence({ updateUrl: true });
@@ -5544,7 +5543,7 @@ function setLessonTitleInput(el, title) {
 }
 
 function ensureCurrentLessonForId(lessonId = resolveActiveLessonId()) {
-  const normalizedId = mapUnitToLessonDesignId(lessonId);
+  const normalizedId = normalizeLessonId(lessonId);
   // Intentional sync ensures lesson-bound forms/actions always target the active lesson record.
   if (!currentLesson || currentLesson.id !== normalizedId) {
     return loadLessonState(normalizedId, resolveLessonTitleById(normalizedId));
@@ -5739,19 +5738,19 @@ async function exportSession() {
 // PHASE MANAGER — עיצוב קורס / עיצוב שיעור
 // ═══════════════════════════════════════════════════════════════
 
-let currentPhase = 'course';
+let currentView = 'course';
 let currentWizardStep = 1;
 const courseStepDone = { 1: false, 2: false, 3: false, 4: false, 5: false };
 
-function switchPhase(phase) {
-  currentPhase = phase;
-  document.getElementById('phase-card-course')?.classList.toggle('active', phase === 'course');
-  document.getElementById('phase-card-lesson')?.classList.toggle('active', phase === 'lesson');
+function switchPhase(view) {
+  currentView = view === 'lesson' ? 'lesson' : 'course';
+  document.getElementById('phase-card-course')?.classList.toggle('active', currentView === 'course');
+  document.getElementById('phase-card-lesson')?.classList.toggle('active', currentView === 'lesson');
   const courseBlock = document.getElementById('phase-course');
   const lessonBlock = document.getElementById('phase-lesson');
-  if (courseBlock) courseBlock.style.display = phase === 'course' ? '' : 'none';
-  if (lessonBlock) lessonBlock.style.display = phase === 'lesson' ? '' : 'none';
-  if (phase === 'lesson') checkLessonGate();
+  if (courseBlock) courseBlock.style.display = currentView === 'course' ? '' : 'none';
+  if (lessonBlock) lessonBlock.style.display = currentView === 'lesson' ? '' : 'none';
+  if (currentView === 'lesson') checkLessonGate();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -5820,8 +5819,7 @@ debugLessonContext("initial-render");
 document.getElementById("playlistLessonId")?.addEventListener("change", (event) => {
   const lessonId = String(event?.target?.value || "").trim();
   if (!lessonId) return;
-  openLesson(lessonId, resolveLessonTitleById(lessonId));
-  loadCourseMetadataWorkspace();
+  selectLesson(lessonId, { reloadMetadata: true });
 });
 document.getElementById("lesson-objectives")?.addEventListener("input", (event) => {
   const lessonId = resolveActiveLessonId();
