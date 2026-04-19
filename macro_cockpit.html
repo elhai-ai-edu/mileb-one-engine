@@ -1649,40 +1649,61 @@ body { background: var(--bg) !important; }
     <div id="ws-panel-4" class="ws-panel" style="display:none;">
       <!-- ─── Course Units (interactive) ─── -->
       <div class="mc-section">
-      <div class="mc-section-head">📋 מבנה שיעורים ויחידות לימוד<span class="mc-sub">עריכה בשדה הכותרת שומרת אוטומטית</span></div>
+      <div class="mc-section-head">📋 מבנה שיעורים ויחידות לימוד<span class="mc-sub">שכבת שיעורים נפרדת משכבת יחידות לימוד + שיוך מפורש ביניהן</span></div>
       <div class="mc-section-body">
       <div class="units-layout">
         <div class="units-card">
-          <div class="units-pill">תצורה</div>
-          <div style="font-size:12px;font-weight:700;margin-bottom:6px;">בחירת מבנה הבלוק</div>
-          <div class="units-toggle">
-            <button class="units-toggle-btn active" id="macroModeSessionBtn" type="button" onclick="macroSetUnitsMode('Session')">יחידות לימוד (Academic Sessions · 1–14)</button>
-            <button class="units-toggle-btn" id="macroModeTopicBtn" type="button" onclick="macroSetUnitsMode('Topic')">שיעורים (Flexible Topics · עד 50)</button>
-          </div>
-          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">Academic Sessions מייצג יחידות לימוד. Flexible Topics מייצג שיעורים (דאבל־קליק על פריט שיעור פותח עיצוב שיעור).</p>
-        </div>
-
-        <div class="units-card">
-          <div class="table-wrap" style="overflow-x:auto;">
+          <div class="units-pill">אזור 1 — מבנה שיעורים</div>
+          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">Academic Sessions (1–14) מייצר שכבת שיעורים בלבד. דאבל־קליק על שורה יפתח את עיצוב השיעור.</p>
+          <div class="table-wrap" style="overflow-x:auto;margin-top:8px;">
             <table class="units-table">
               <thead>
                 <tr>
-                  <th style="width:120px;">פריט</th>
-                  <th style="width:120px;">סוג בלוק</th>
-                  <th>כותרת</th>
+                  <th style="width:140px;">שיעור</th>
+                  <th style="width:150px;">תאריך</th>
+                  <th>כותרת שיעור</th>
+                  <th style="width:180px;">יחידות מקושרות</th>
                   <th style="width:64px;">סטטוס</th>
                 </tr>
               </thead>
-              <tbody id="macro-units-tbody">
-                <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">טוען...</td></tr>
+              <tbody id="macro-lessons-tbody">
+                <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:16px;">טוען...</td></tr>
               </tbody>
             </table>
           </div>
         </div>
 
         <div class="units-card">
-          <div class="units-pill">הסבר</div>
-          <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">כפתור Edit ביחידה יפתח קוקפיט בקונטקסט מלא: courseId + unitId. כך מישימות, missionData ו-entranceTickets נמשכות מהיחידה הנכונה.</p>
+          <div class="units-pill">אזור 2 — יחידות לימוד</div>
+          <p style="margin:0;font-size:12px;color:#64748b;line-height:1.5;">Flexible Topics (עד 50) מייצר שכבת יחידות לימוד בלבד.</p>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table class="units-table">
+              <thead>
+                <tr>
+                  <th style="width:140px;">יחידה</th>
+                  <th>כותרת יחידת לימוד</th>
+                  <th style="width:64px;">סטטוס</th>
+                </tr>
+              </thead>
+              <tbody id="macro-learning-units-tbody">
+                <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">טוען...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="units-card">
+          <div class="units-pill">אזור 3 — חיבור בין שיעורים ליחידות</div>
+          <p style="margin:0;color:#475569;font-size:13px;line-height:1.6;">בחר שיעור והגדר אילו יחידות לימוד מקושרות אליו. השיוך נשמר תחת linkedUnitIds של השיעור.</p>
+          <div style="display:grid;gap:8px;margin-top:10px;">
+            <label style="font-size:12px;color:#64748b;font-weight:700;">שיעור פעיל לשיוך</label>
+            <select id="macro-link-lesson-select" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;"></select>
+            <div id="macro-link-units-list" style="max-height:260px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;padding:8px;background:#f8fafc;">
+              <div style="font-size:12px;color:#94a3b8;">טוען יחידות...</div>
+            </div>
+            <button type="button" class="btn btn-blue" id="macro-link-save-btn" onclick="macroSaveLessonLinksFromUi()">שמור שיוך לשיעור</button>
+            <div id="macro-link-status" style="font-size:12px;min-height:16px;color:#64748b;"></div>
+          </div>
         </div>
       </div>
 
@@ -3176,8 +3197,11 @@ async function loadMacroCourseManagement(courseId) {
   await loadMacroLifecycle(courseId);
 }
 
-let macroUnitsMap = {};
-let macroUnitsMode = "Session";
+let lessonsMap = {};
+let learningUnitsMap = {};
+// Temporary bridge: keeps raw legacy mixed storage payload so migration fallbacks can copy titles safely.
+let legacyMixedUnitsMap = {};
+let macroLinkingLessonId = "";
 
 function macroToSessionUnitId(i) { return `session_${String(i).padStart(2,"0")}`; }
 function macroToTopicUnitId(i)   { return `topic_${String(i).padStart(2,"0")}`; }
@@ -3202,22 +3226,78 @@ function setLessonDateValue(courseId, unitId, value) {
   if (clean) localStorage.setItem(key, clean);
   else localStorage.removeItem(key);
 }
-function inferMacroUnitsModeFromMap() {
-  const keys = Object.keys(macroUnitsMap || {});
-  if (keys.some(key => key.startsWith("topic_"))) return "Topic";
-  if (keys.some(key => key.startsWith("session_"))) return "Session";
-  return macroUnitsMode;
+function normalizeLinkedUnitIds(rawValue) {
+  if (!Array.isArray(rawValue)) return [];
+  const seen = new Set();
+  return rawValue
+    .map(item => String(item || "").trim())
+    .filter(unitId => unitId.startsWith("topic_"))
+    .filter(unitId => {
+      if (seen.has(unitId)) return false;
+      seen.add(unitId);
+      return true;
+    });
+}
+function splitMacroUnitsMaps(rawMap = {}) {
+  const nextLessons = {};
+  const nextUnits = {};
+  Object.entries(rawMap || {}).forEach(([rawId, row]) => {
+    const unitId = String(rawId || "").trim();
+    if (!unitId) return;
+    const structureType = String(row?.structureType || "").trim();
+    if (unitId.startsWith("session_") || structureType === "Session") {
+      nextLessons[unitId] = {
+        ...(row || {}),
+        structureType: "Session",
+        linkedUnitIds: normalizeLinkedUnitIds(row?.linkedUnitIds)
+      };
+      return;
+    }
+    if (unitId.startsWith("topic_") || structureType === "Topic") {
+      nextUnits[unitId] = {
+        ...(row || {}),
+        structureType: "Topic"
+      };
+    }
+  });
+
+  // Temporary migration bridge from legacy mixed semantics:
+  // old Topic rows were used as lessons, old Session rows were used as learning-units.
+  // Assumption: session_XX/topic_XX keep aligned numeric indexes for the first 14 slots.
+  for (let i = 1; i <= MAX_SESSION_LESSONS; i += 1) {
+    const sessionId = macroToSessionUnitId(i);
+    const topicId = macroToTopicUnitId(i);
+    const legacyTopicRowAsLesson = nextUnits[topicId] || {};
+    const lessonRow = nextLessons[sessionId] || {};
+    if (!String(lessonRow.topicName || "").trim() && String(legacyTopicRowAsLesson.topicName || "").trim()) {
+      nextLessons[sessionId] = {
+        ...lessonRow,
+        topicName: legacyTopicRowAsLesson.topicName,
+        structureType: "Session",
+        linkedUnitIds: normalizeLinkedUnitIds(lessonRow.linkedUnitIds)
+      };
+    }
+    // Intentional: session_XX rows were historically reused as unit rows, so we bridge from session slots into topic slots.
+    const legacySessionRowAsUnit = nextLessons[sessionId] || {};
+    const learningUnitRow = nextUnits[topicId] || {};
+    if (!String(learningUnitRow.topicName || "").trim() && String(legacySessionRowAsUnit.topicName || "").trim()) {
+      nextUnits[topicId] = {
+        ...learningUnitRow,
+        topicName: legacySessionRowAsUnit.topicName,
+        structureType: "Topic"
+      };
+    }
+  }
+
+  lessonsMap = nextLessons;
+  learningUnitsMap = nextUnits;
 }
 function buildPlannedLessonItems() {
-  const mode = inferMacroUnitsModeFromMap();
-  const total = mode === "Topic" ? MAX_TOPIC_LESSONS : MAX_SESSION_LESSONS;
-  const lessonSourceIds = Array.from({ length: total }, (_, i) => (
-    mode === "Topic" ? macroToTopicUnitId(i + 1) : macroToSessionUnitId(i + 1)
-  ));
+  const lessonSourceIds = Array.from({ length: MAX_SESSION_LESSONS }, (_, i) => macroToSessionUnitId(i + 1));
   const courseId = currentCourseForSync();
   return lessonSourceIds.map((sourceId, index) => {
     const lessonId = normalizeLessonId(sourceId);
-    const row = macroUnitsMap?.[sourceId] || {};
+    const row = lessonsMap?.[sourceId] || {};
     const lessonNumber = parseLessonNumber(sourceId, index);
     const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
     const date = getLessonDateValue(courseId, lessonId, row);
@@ -3238,7 +3318,7 @@ function buildSessionSidebarItems() {
     const lessonId = macroToSessionUnitId(lessonNumber);
     const playlist = playlists?.[lessonId] || {};
     const unitIds = Array.isArray(playlist?.unitIds) ? playlist.unitIds : [];
-    const row = macroUnitsMap?.[lessonId] || {};
+    const row = lessonsMap?.[lessonId] || {};
     const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
     const date = getLessonDateValue(courseId, lessonId, row);
     const unitsPreview = unitIds.slice(0, 3).map(unitId => escapeHtml(unitNames.get(unitId) || unitId)).join(" · ");
@@ -3339,7 +3419,8 @@ async function saveLessonDateForCurrentUnit() {
   const courseId = currentCourseForSync();
   const lessonId = resolveActiveLessonId();
   if (!courseId || !lessonId || !facultyId) return;
-  const lessonData = macroUnitsMap[lessonId] || {};
+  const lessonData = lessonsMap[lessonId] || {};
+  const linkedUnitIds = normalizeLinkedUnitIds(lessonData.linkedUnitIds);
   const lessonDate = getLessonDateValue(courseId, lessonId, lessonData);
   const res = await callClassroom({
     action: "unit_upsert",
@@ -3347,87 +3428,179 @@ async function saveLessonDateForCurrentUnit() {
     courseId,
     unitId: lessonId,
     topicName: String(lessonData.topicName || "").trim(),
-    structureType: String(lessonData.structureType || macroUnitsMode || "Session"),
+    structureType: "Session",
+    linkedUnitIds,
     lessonDate
   });
   if (res?.ok) {
-    macroUnitsMap[lessonId] = {
-      ...(macroUnitsMap[lessonId] || {}),
+    lessonsMap[lessonId] = {
+      ...(lessonsMap[lessonId] || {}),
+      structureType: "Session",
+      linkedUnitIds,
       lessonDate: lessonDate || null
     };
   }
 }
 
 async function loadMacroCourseUnits(courseId) {
-  const tbody = document.getElementById("macro-units-tbody");
-  if (!tbody) return;
+  const lessonsTbody = document.getElementById("macro-lessons-tbody");
+  const unitsTbody = document.getElementById("macro-learning-units-tbody");
+  if (!lessonsTbody && !unitsTbody) return;
   try {
     const res = await fetch(`/.netlify/functions/classroom?action=units_list&userId=${encodeURIComponent(facultyId)}&courseId=${encodeURIComponent(courseId)}`);
-    macroUnitsMap = res.ok ? ((await res.json())?.units || {}) : {};
-  } catch { macroUnitsMap = {}; }
+    legacyMixedUnitsMap = res.ok ? ((await res.json())?.units || {}) : {};
+  } catch { legacyMixedUnitsMap = {}; }
+  splitMacroUnitsMaps(legacyMixedUnitsMap);
   macroRenderUnits();
 }
 
-function macroSetUnitsMode(mode) {
-  macroUnitsMode = mode;
-  document.getElementById("macroModeSessionBtn")?.classList.toggle("active", mode === "Session");
-  document.getElementById("macroModeTopicBtn")?.classList.toggle("active", mode === "Topic");
-  macroRenderUnits();
+function summarizeLinkedUnitTitles(linkedUnitIds = []) {
+  const normalized = normalizeLinkedUnitIds(linkedUnitIds);
+  if (!normalized.length) return "ללא שיוך";
+  const preview = normalized.slice(0, 2).map(unitId => {
+    const row = learningUnitsMap?.[unitId] || {};
+    const idx = parseLessonNumber(unitId, 0);
+    return String(row.topicName || row.title || "").trim() || `יחידה ${idx}`;
+  });
+  if (normalized.length > 2) preview.push(`+${normalized.length - 2}`);
+  return preview.join(" · ");
 }
-
-function macroRenderUnits() {
-  const tbody = document.getElementById("macro-units-tbody");
+function macroRenderLessonsTable() {
+  const tbody = document.getElementById("macro-lessons-tbody");
   if (!tbody) return;
   if (!macroCourseId) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:16px;">בחר קורס דרך ה-URL (courseId=...)</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:16px;">בחר קורס דרך ה-URL (courseId=...)</td></tr>`;
     return;
   }
-  const total = macroUnitsMode === "Session" ? MAX_SESSION_LESSONS : MAX_TOPIC_LESSONS;
-  const unitIds = Array.from({ length: total }, (_, i) =>
-    macroUnitsMode === "Session" ? macroToSessionUnitId(i + 1) : macroToTopicUnitId(i + 1)
-  );
-  tbody.innerHTML = unitIds.map((unitId, index) => {
-    const row = macroUnitsMap[unitId] || {};
+  const lessonIds = Array.from({ length: MAX_SESSION_LESSONS }, (_, i) => macroToSessionUnitId(i + 1));
+  tbody.innerHTML = lessonIds.map((lessonId, index) => {
+    const row = lessonsMap[lessonId] || {};
     const topicName = macroEscHtml(row.topicName || "");
-    const itemNumber = parseLessonNumber(unitId, index);
-    const itemLabel = macroUnitsMode === "Topic" ? `שיעור ${itemNumber}` : `יחידת לימוד ${itemNumber}`;
-    const rowHint = macroUnitsMode === "Topic" ? ' title="דאבל־קליק לפתיחה בעיצוב שיעור"' : "";
-    return `<tr data-unit-id="${unitId}">
-      <td${rowHint}><strong>${itemLabel}</strong><div style="font-size:11px;color:#64748b;margin-top:2px;">${unitId}</div></td>
-      <td style="color:#475569;">${macroUnitsMode === "Topic" ? "שיעורים" : "יחידות לימוד"}</td>
-      <td><input type="text" data-role="topic" value="${topicName}" placeholder="הזן נושא" /></td>
+    const linkedSummary = escapeHtml(summarizeLinkedUnitTitles(row.linkedUnitIds));
+    const lessonNumber = parseLessonNumber(lessonId, index);
+    const lessonDate = getLessonDateValue(macroCourseId, lessonId, row);
+    return `<tr data-lesson-id="${lessonId}" title="דאבל־קליק לפתיחה בעיצוב שיעור">
+      <td><strong>שיעור ${lessonNumber}</strong><div style="font-size:11px;color:#64748b;margin-top:2px;">${lessonId}</div></td>
+      <td><input type="date" data-role="lesson-date" value="${macroEscHtml(lessonDate)}" /></td>
+      <td><input type="text" data-role="lesson-title" value="${topicName}" placeholder="הזן כותרת שיעור" /></td>
+      <td style="color:#475569;font-size:12px;" data-role="linked-summary">${linkedSummary}</td>
       <td><span class="unit-row-status" data-role="status">מוכן</span></td>
     </tr>`;
   }).join("");
-  tbody.querySelectorAll("input[data-role='topic']").forEach(input => {
-    input.addEventListener("change", () => macroAutoSaveUnitRow(input.closest("tr")));
-    input.addEventListener("blur",   () => macroAutoSaveUnitRow(input.closest("tr")));
+  tbody.querySelectorAll("input[data-role='lesson-title'], input[data-role='lesson-date']").forEach(input => {
+    input.addEventListener("change", () => macroAutoSaveLessonRow(input.closest("tr")));
+    input.addEventListener("blur",   () => macroAutoSaveLessonRow(input.closest("tr")));
   });
-  tbody.querySelectorAll("tr[data-unit-id]").forEach(row => {
+  tbody.querySelectorAll("tr[data-lesson-id]").forEach(row => {
     row.addEventListener("dblclick", (event) => {
-      if (macroUnitsMode !== "Topic") return;
       if (event.target && event.target.closest("input,textarea,select,button,label")) return;
-      const lessonId = row.getAttribute("data-unit-id");
+      const lessonId = row.getAttribute("data-lesson-id");
       if (!lessonId) return;
       selectLesson(lessonId, { reloadMetadata: true });
     });
   });
+}
+function macroRenderLearningUnitsTable() {
+  const tbody = document.getElementById("macro-learning-units-tbody");
+  if (!tbody) return;
+  if (!macroCourseId) {
+    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:16px;">בחר קורס דרך ה-URL (courseId=...)</td></tr>`;
+    return;
+  }
+  const unitIds = Array.from({ length: MAX_TOPIC_LESSONS }, (_, i) => macroToTopicUnitId(i + 1));
+  tbody.innerHTML = unitIds.map((unitId, index) => {
+    const row = learningUnitsMap[unitId] || {};
+    const topicName = macroEscHtml(row.topicName || "");
+    const itemNumber = parseLessonNumber(unitId, index);
+    return `<tr data-learning-unit-id="${unitId}">
+      <td><strong>יחידה ${itemNumber}</strong><div style="font-size:11px;color:#64748b;margin-top:2px;">${unitId}</div></td>
+      <td><input type="text" data-role="unit-title" value="${topicName}" placeholder="הזן כותרת יחידת לימוד" /></td>
+      <td><span class="unit-row-status" data-role="status">מוכן</span></td>
+    </tr>`;
+  }).join("");
+  tbody.querySelectorAll("input[data-role='unit-title']").forEach(input => {
+    input.addEventListener("change", () => macroAutoSaveLearningUnitRow(input.closest("tr")));
+    input.addEventListener("blur",   () => macroAutoSaveLearningUnitRow(input.closest("tr")));
+  });
+}
+function resolveMacroLinkingLessonId() {
+  const lessonId = normalizeLessonId(macroLinkingLessonId || macroToSessionUnitId(1));
+  return lessonId.startsWith("session_") ? lessonId : macroToSessionUnitId(1);
+}
+function macroRenderLessonUnitLinking() {
+  const lessonSelect = document.getElementById("macro-link-lesson-select");
+  const unitsList = document.getElementById("macro-link-units-list");
+  const statusEl = document.getElementById("macro-link-status");
+  if (!lessonSelect || !unitsList) return;
+  if (!macroCourseId) {
+    lessonSelect.innerHTML = "";
+    unitsList.innerHTML = '<div style="font-size:12px;color:#94a3b8;">בחר קורס כדי לנהל שיוכים.</div>';
+    if (statusEl) statusEl.textContent = "";
+    return;
+  }
+  const lessonIds = Array.from({ length: MAX_SESSION_LESSONS }, (_, i) => macroToSessionUnitId(i + 1));
+  const selectedLessonId = lessonIds.includes(resolveMacroLinkingLessonId()) ? resolveMacroLinkingLessonId() : lessonIds[0];
+  macroLinkingLessonId = selectedLessonId;
+  lessonSelect.innerHTML = lessonIds.map((lessonId, index) => {
+    const row = lessonsMap?.[lessonId] || {};
+    const title = String(row.topicName || row.title || "").trim() || `שיעור ${index + 1}`;
+    return `<option value="${macroEscHtml(lessonId)}"${lessonId === selectedLessonId ? " selected" : ""}>שיעור ${index + 1} · ${escapeHtml(title)}</option>`;
+  }).join("");
+  lessonSelect.onchange = () => {
+    macroLinkingLessonId = lessonSelect.value || macroToSessionUnitId(1);
+    macroRenderLessonUnitLinking();
+  };
+  const linkedUnitIds = normalizeLinkedUnitIds(lessonsMap?.[selectedLessonId]?.linkedUnitIds);
+  const linkedSet = new Set(linkedUnitIds);
+  const learningUnitIds = Array.from({ length: MAX_TOPIC_LESSONS }, (_, i) => macroToTopicUnitId(i + 1));
+  unitsList.innerHTML = learningUnitIds.map((unitId, index) => {
+    const row = learningUnitsMap?.[unitId] || {};
+    const title = String(row.topicName || row.title || "").trim() || `יחידה ${index + 1}`;
+    const checked = linkedSet.has(unitId) ? "checked" : "";
+    return `<label style="display:flex;gap:8px;align-items:flex-start;padding:4px 2px;font-size:12px;color:#334155;">
+      <input type="checkbox" data-role="link-unit" value="${macroEscHtml(unitId)}" ${checked} />
+      <span><strong>${escapeHtml(unitId)}</strong> · ${escapeHtml(title)}</span>
+    </label>`;
+  }).join("");
+  if (statusEl) statusEl.textContent = `${linkedUnitIds.length} יחידות מקושרות לשיעור הנבחר`;
+}
+function macroRenderUnits() {
+  macroRenderLessonsTable();
+  macroRenderLearningUnitsTable();
+  macroRenderLessonUnitLinking();
   renderLessonDesignNavigator();
 }
-
-async function macroAutoSaveUnitRow(row) {
+async function macroAutoSaveLessonRow(row) {
   if (!row || !macroCourseId) return;
-  const unitId    = row.getAttribute("data-unit-id");
-  const topicInput = row.querySelector("input[data-role='topic']");
+  const lessonId = row.getAttribute("data-lesson-id");
+  const titleInput = row.querySelector("input[data-role='lesson-title']");
+  const dateInput = row.querySelector("input[data-role='lesson-date']");
   const statusEl  = row.querySelector("[data-role='status']");
-  const topicName = topicInput?.value?.trim() || "";
-  if (!unitId) return;
+  const topicName = titleInput?.value?.trim() || "";
+  const lessonDate = String(dateInput?.value || "").trim();
+  if (!lessonId) return;
   if (statusEl) { statusEl.textContent = "שומר..."; statusEl.className = "unit-row-status"; }
   try {
-    const lessonDate = getLessonDateValue(macroCourseId, unitId, macroUnitsMap[unitId] || {});
-    const res = await callClassroom({ action: "unit_upsert", userId: facultyId, courseId: macroCourseId, unitId, structureType: macroUnitsMode, topicName, lessonDate });
+    setLessonDateValue(macroCourseId, lessonId, lessonDate);
+    const linkedUnitIds = normalizeLinkedUnitIds(lessonsMap?.[lessonId]?.linkedUnitIds);
+    const res = await callClassroom({
+      action: "unit_upsert",
+      userId: facultyId,
+      courseId: macroCourseId,
+      unitId: lessonId,
+      structureType: "Session",
+      topicName,
+      linkedUnitIds,
+      lessonDate
+    });
     if (!res?.ok) throw new Error("not ok");
-    macroUnitsMap[unitId] = { ...(macroUnitsMap[unitId] || {}), topicName, structureType: macroUnitsMode, lessonDate: lessonDate || null };
+    lessonsMap[lessonId] = {
+      ...(lessonsMap[lessonId] || {}),
+      topicName,
+      structureType: "Session",
+      linkedUnitIds,
+      lessonDate: lessonDate || null
+    };
     if (statusEl) {
       statusEl.textContent = "נשמר"; statusEl.className = "unit-row-status ok";
       setTimeout(() => { statusEl.textContent = "מוכן"; statusEl.className = "unit-row-status"; }, 1400);
@@ -3435,6 +3608,74 @@ async function macroAutoSaveUnitRow(row) {
     renderLessonDesignNavigator();
   } catch {
     if (statusEl) { statusEl.textContent = "שגיאה"; statusEl.className = "unit-row-status err"; }
+  }
+}
+async function macroAutoSaveLearningUnitRow(row) {
+  if (!row || !macroCourseId) return;
+  const unitId = row.getAttribute("data-learning-unit-id");
+  const topicInput = row.querySelector("input[data-role='unit-title']");
+  const statusEl = row.querySelector("[data-role='status']");
+  const topicName = topicInput?.value?.trim() || "";
+  if (!unitId) return;
+  if (statusEl) { statusEl.textContent = "שומר..."; statusEl.className = "unit-row-status"; }
+  try {
+    const res = await callClassroom({
+      action: "unit_upsert",
+      userId: facultyId,
+      courseId: macroCourseId,
+      unitId,
+      structureType: "Topic",
+      topicName
+    });
+    if (!res?.ok) throw new Error("not ok");
+    learningUnitsMap[unitId] = { ...(learningUnitsMap[unitId] || {}), topicName, structureType: "Topic" };
+    if (statusEl) {
+      statusEl.textContent = "נשמר"; statusEl.className = "unit-row-status ok";
+      setTimeout(() => { statusEl.textContent = "מוכן"; statusEl.className = "unit-row-status"; }, 1400);
+    }
+    macroRenderLessonsTable();
+    macroRenderLessonUnitLinking();
+  } catch {
+    if (statusEl) { statusEl.textContent = "שגיאה"; statusEl.className = "unit-row-status err"; }
+  }
+}
+async function macroSaveLessonLinksFromUi() {
+  const lessonSelect = document.getElementById("macro-link-lesson-select");
+  const unitsList = document.getElementById("macro-link-units-list");
+  const statusEl = document.getElementById("macro-link-status");
+  if (!lessonSelect || !unitsList || !macroCourseId) return;
+  const lessonId = normalizeLessonId(lessonSelect.value || macroToSessionUnitId(1));
+  const linkedUnitIds = normalizeLinkedUnitIds(Array.from(
+    unitsList.querySelectorAll("input[data-role='link-unit']:checked")
+  ).map(input => input.value));
+  if (statusEl) statusEl.textContent = "שומר שיוך...";
+  try {
+    const lessonRow = lessonsMap?.[lessonId] || {};
+    const lessonDate = getLessonDateValue(macroCourseId, lessonId, lessonRow);
+    const topicName = String(lessonRow.topicName || "").trim();
+    const res = await callClassroom({
+      action: "unit_upsert",
+      userId: facultyId,
+      courseId: macroCourseId,
+      unitId: lessonId,
+      structureType: "Session",
+      topicName,
+      lessonDate,
+      linkedUnitIds
+    });
+    if (!res?.ok) throw new Error("not ok");
+    lessonsMap[lessonId] = {
+      ...(lessonsMap[lessonId] || {}),
+      structureType: "Session",
+      topicName,
+      lessonDate: lessonDate || null,
+      linkedUnitIds
+    };
+    if (statusEl) statusEl.textContent = `נשמר · ${linkedUnitIds.length} יחידות שויכו`;
+    macroRenderLessonsTable();
+    renderLessonDesignNavigator();
+  } catch {
+    if (statusEl) statusEl.textContent = "שגיאה בשמירת השיוך";
   }
 }
 
@@ -5476,7 +5717,7 @@ function resolveLessonTitleById(lessonId) {
   const sessions = buildSessionSidebarItems();
   const matched = sessions.find(item => item.lessonId === lessonId);
   if (matched?.title) return matched.title;
-  const row = macroUnitsMap?.[lessonId] || {};
+  const row = lessonsMap?.[lessonId] || legacyMixedUnitsMap?.[lessonId] || {};
   const topicOrTitle = String(row.topicName || row.title || "").trim();
   return topicOrTitle || lessonId || "שיעור";
 }
