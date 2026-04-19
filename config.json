@@ -372,6 +372,21 @@
       "bots": {
         "main": { "botType": "course_hebrew_advanced_companion", "label": "🤖 בוט הקורס" },
         "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      },
+      "lessonPlan": {
+        "unit_01": [
+          { "id": "warm_up",       "title": "חימום מוחי" },
+          { "id": "entry_ticket",  "title": "כרטיס כניסה" },
+          { "id": "main_activity", "title": "ניתוח פסקת פתיחה" },
+          { "id": "discussion",    "title": "דיון כיתתי" },
+          { "id": "summary",       "title": "סיכום ורפלקציה" }
+        ],
+        "_default": [
+          { "id": "warm_up",       "title": "חימום מוחי" },
+          { "id": "main_activity", "title": "פעילות מרכזית" },
+          { "id": "discussion",    "title": "דיון כיתתי" },
+          { "id": "summary",       "title": "סיכום" }
+        ]
       }
     },
 

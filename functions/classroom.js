@@ -700,6 +700,7 @@ export async function handler(event){
         selectedUnits: lessonBundle.selectedUnits,
         resources: lessonBundle.resources,
         sprintDefinitions: lessonBundle.sprintDefinitions,
+        lessonPlan: (courseConfig?.lessonPlan?.[normalizedLessonId] || courseConfig?.lessonPlan?.["_default"] || []),
         pacing: pacingSummary,
         activeTask: session.active_task || null,
         broadcast: session.broadcast || null,

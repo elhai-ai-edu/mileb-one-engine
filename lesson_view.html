@@ -990,7 +990,8 @@
     }
     .ctx-stage-box.done   { background: #f0fdf4; border-color: #86efac; color: #15803d; }
     .ctx-stage-box.active { background: linear-gradient(135deg,#eff6ff,#dbeafe); border-color: #93c5fd; color: #1e40af; font-weight: 800; box-shadow: 0 2px 8px rgba(29,78,216,.12); }
-    .ctx-stage-connector  { width: 20px; height: 2px; background: #cbd5e1; flex-shrink: 0; }
+    .ctx-stage-connector      { width: 22px; height: 2px; background: linear-gradient(90deg,#cbd5e1,#e2e8f0); flex-shrink: 0; }
+    .ctx-stage-connector.done { background: linear-gradient(90deg,#86efac,#cbd5e1); }
 
     /* ══ Activity Empty State ══ */
     #activityEmptyState {
@@ -2130,27 +2131,37 @@
     }
 
     function renderContextRail() {
-      const rail       = document.getElementById("contextRail");
-      const stagesEl   = document.getElementById("contextRailStages");
-      const emptyState = document.getElementById("activityEmptyState");
+      const rail     = document.getElementById("contextRail");
+      const stagesEl = document.getElementById("contextRailStages");
       if (!rail || !stagesEl) return;
 
-      const sprints      = lessonData?.sprints || [];
-      const activeSprint = lessonData?.state?.active_sprint || null;
+      // Lesson-plan stages (high-level) come from config via lesson_payload
+      const stages      = Array.isArray(lessonData?.lessonPlan) ? lessonData.lessonPlan : [];
+      const activeStage = lessonData?.state?.active_stage || null;
 
-      if (!sprints.length) { rail.classList.remove("visible"); return; }
+      if (!stages.length) { rail.classList.remove("visible"); return; }
       rail.classList.add("visible");
 
-      stagesEl.innerHTML = sprints.map((s, i) => {
-        const isDone   = s.status === "completed" || (activeSprint && sprints.findIndex(x => x.id === activeSprint) > i);
-        const isActive = s.id === activeSprint;
+      // Determine active index: use explicit active_stage if set, else first stage
+      const activeIdx = activeStage
+        ? stages.findIndex(s => s.id === activeStage)
+        : 0;
+
+      stagesEl.innerHTML = stages.map((s, i) => {
+        const isDone   = activeIdx > i;
+        const isActive = i === activeIdx;
         const cls      = isDone ? "done" : isActive ? "active" : "";
-        const connector = i < sprints.length - 1 ? '<div class="ctx-stage-connector"></div>' : "";
-        return `<div class="ctx-stage"><div class="ctx-stage-box ${cls}">${escapeHtml(s.title || s.id)}${isDone ? " ✓" : ""}</div></div>${connector}`;
+        const connectorCls = isDone ? "done" : "";
+        const connector = i < stages.length - 1
+          ? `<div class="ctx-stage-connector ${connectorCls}"></div>`
+          : "";
+        const label = escapeHtml(s.title || s.id) + (isDone ? " ✓" : "");
+        return `<div class="ctx-stage"><div class="ctx-stage-box ${cls}">${label}</div></div>${connector}`;
       }).join("");
 
-      // Show/hide activity empty state
-      const hasActivity = !!activeSprint || !!(lessonData?.state?.pushed_resource?.url);
+      // Empty state: hide when there's an active sprint or pushed resource
+      const emptyState = document.getElementById("activityEmptyState");
+      const hasActivity = !!(lessonData?.state?.active_sprint) || !!(lessonData?.state?.pushed_resource?.url);
       if (emptyState) emptyState.classList.toggle("hidden", hasActivity);
     }
 
@@ -2982,6 +2993,10 @@
           renderContextRail();
           renderActiveSprint();
           renderSprintStepper();
+        }
+        // Re-render context rail when lecturer advances the lesson stage
+        if (live.state?.active_stage !== undefined) {
+          renderContextRail();
         }
         // Re-render live meeting bar when phase or active task changes
         // Use pushedAt timestamp for task comparison to avoid reference-equality false positives
