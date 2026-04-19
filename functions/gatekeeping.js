@@ -382,6 +382,26 @@ async function handleSubmit(body) {
 
   await db.ref().update(updates);
 
+  // ─── MIRROR TO course_progress (phase-2 data layer) ───
+  // course_progress/{courseId}/{studentId} enables course-level queries
+  // without scanning every student's individual session path.
+  try {
+    const studentDisplayName = String(session?.studentName || "").trim() || null;
+    await db.ref(`course_progress/${courseId}/${studentId}`).update({
+      studentId,
+      ...(studentDisplayName ? { studentName: studentDisplayName } : {}),
+      [`stages/${unlockStageKey}`]: {
+        state: "pending_review",
+        stageId,
+        submittedAt,
+        submissionId
+      },
+      updatedAt: submittedAt
+    });
+  } catch (e) {
+    console.error("COURSE_PROGRESS SUBMIT MIRROR ERROR:", e.message);
+  }
+
   return json(200, {
     ok: true,
     action: "submit",
@@ -625,6 +645,30 @@ async function handleEvaluate(event, body) {
   }
 
   await db.ref().update(updates);
+
+  // ─── MIRROR TO course_progress (phase-2 data layer) ───
+  try {
+    const studentDisplayName = String(session?.studentName || "").trim() || null;
+    const stageProgressEntry = {
+      state: unlockStateValue,
+      stageId,
+      submissionId,
+      ...(requestedStatus === "approved" ? { approvedAt: evaluatedAt } : {}),
+      ...(requestedStatus === "rejected" ? { rejectedAt: evaluatedAt } : {})
+    };
+    const progressUpdate = {
+      studentId,
+      ...(studentDisplayName ? { studentName: studentDisplayName } : {}),
+      [`stages/${unlockStageKey}`]: stageProgressEntry,
+      updatedAt: evaluatedAt
+    };
+    if (requestedStatus === "approved") {
+      progressUpdate.currentStageId = unlockStageId;
+    }
+    await db.ref(`course_progress/${courseId}/${studentId}`).update(progressUpdate);
+  } catch (e) {
+    console.error("COURSE_PROGRESS EVALUATE MIRROR ERROR:", e.message);
+  }
 
   return json(200, {
     ok: true,
@@ -922,7 +966,86 @@ async function handleWebhookEvaluate(event, body) {
   return handleEvaluate(event, normalizedBody);
 }
 
-export async function handler(event) {
+async function handleCourseStageSummary(query) {
+  const courseId = normalizeCourseId(query.courseId || query.classId);
+  if (!courseId) return badRequest("courseId/classId required");
+
+  const db = getDB();
+  const snap = await db.ref(`course_progress/${courseId}`).get();
+  if (!snap.exists()) {
+    return json(200, {
+      ok: true,
+      students: [],
+      stageCounts: {},
+      pendingCount: 0
+    });
+  }
+
+  const progressRoot = snap.val() || {};
+  const students = [];
+  const stageCounts = {};
+  let pendingCount = 0;
+
+  for (const [studentId, entry] of Object.entries(progressRoot)) {
+    if (!entry || typeof entry !== "object") continue;
+
+    const stages = entry.stages || {};
+    const stageEntries = Object.values(stages);
+
+    // Determine active stage: prefer explicit currentStageId, else last submitted stage
+    const currentStageId = entry.currentStageId || null;
+
+    // Find pending stage (the one awaiting approval)
+    const pendingStage = stageEntries.find(s => s?.state === "pending_review") || null;
+    const hasPendingApproval = !!pendingStage;
+    if (hasPendingApproval) pendingCount++;
+
+    // Count per stage
+    const studentActiveStageId = currentStageId
+      || (stageEntries.length > 0
+        ? (stageEntries.sort((a, b) => {
+            const ta = Date.parse(a?.submittedAt || 0) || 0;
+            const tb = Date.parse(b?.submittedAt || 0) || 0;
+            return tb - ta;
+          })[0]?.stageId || null)
+        : null);
+
+    if (studentActiveStageId) {
+      stageCounts[studentActiveStageId] = (stageCounts[studentActiveStageId] || 0) + 1;
+    }
+
+    students.push({
+      studentId,
+      studentName: entry.studentName || null,
+      currentStageId: studentActiveStageId,
+      lastStage: entry.lastStage || null,
+      pendingApproval: hasPendingApproval,
+      pendingStageId: pendingStage?.stageId || null,
+      stages: Object.fromEntries(
+        Object.entries(stages).map(([key, s]) => [
+          key,
+          {
+            stageId: s?.stageId || key,
+            state: s?.state || null,
+            submittedAt: s?.submittedAt || null,
+            approvedAt: s?.approvedAt || null,
+            rejectedAt: s?.rejectedAt || null,
+            submissionId: s?.submissionId || null
+          }
+        ])
+      )
+    });
+  }
+
+  return json(200, {
+    ok: true,
+    students,
+    stageCounts,
+    pendingCount
+  });
+}
+
+
   if (event.httpMethod === "OPTIONS") {
     return { statusCode: 200, headers, body: "" };
   }
@@ -934,6 +1057,15 @@ export async function handler(event) {
       } catch (error) {
         console.error("GATEKEEPING QUEUE ERROR:", error.message);
         return json(500, { ok: false, error: "Gatekeeping queue unavailable" });
+      }
+    }
+
+    if (event.queryStringParameters?.action === "course_stage_summary") {
+      try {
+        return await handleCourseStageSummary(event.queryStringParameters || {});
+      } catch (error) {
+        console.error("GATEKEEPING STAGE SUMMARY ERROR:", error.message);
+        return json(500, { ok: false, error: "Course stage summary unavailable" });
       }
     }
 
