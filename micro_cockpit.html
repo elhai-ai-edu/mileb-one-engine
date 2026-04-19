@@ -836,15 +836,54 @@
   color: #b91c1c;
 }
 
-/* Panel background to match demo_student_view bg */
+/* ─── Topbar: match demo_student_view dark navy gradient ─── */
+.top-bar {
+  background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%) !important;
+  border-bottom: 2px solid #1e40af !important;
+  box-shadow: none !important;
+  padding: 12px 24px !important;
+}
+.top-bar .brand {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 18px !important;
+}
+.top-bar h1 {
+  color: #93c5fd !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+}
+.top-bar .btn-outline {
+  background: rgba(255,255,255,.10) !important;
+  color: #e2e8f0 !important;
+  border-color: rgba(255,255,255,.25) !important;
+}
+.top-bar .btn-outline:hover {
+  background: rgba(255,255,255,.20) !important;
+}
+#welcome-msg { color: #93c5fd !important; }
+#user-badge  { color: #e2e8f0 !important; }
+
+/* ─── Classroom grid: 2-column layout (matches demo l-layout pattern) ─── */
 .classroom-grid {
+  display: grid !important;
+  grid-template-columns: 340px 1fr !important;
+  gap: 20px !important;
+  padding: 20px !important;
   background: #f1f5f9;
   min-height: calc(100vh - 80px);
-  padding: 0 4px;
+  align-items: start !important;
+  max-width: 1500px;
+  margin: 0 auto;
 }
-[data-tab-panel] {
-  padding: 20px 4px 32px;
+@media (max-width: 960px) {
+  .classroom-grid { grid-template-columns: 1fr !important; }
 }
+/* Non-live tabs have only one panel — span both columns */
+[data-tab-panel] { padding: 0; }
+[data-tab-panel].active { grid-column: 1 / -1; }
+/* Live tab has two panels — each takes its natural column */
+[data-tab-panel="live"].active { grid-column: auto; }
 
 .avatar-crop-overlay {
   position: fixed;

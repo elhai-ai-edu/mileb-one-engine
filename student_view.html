@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MilEd.One — Student View</title>
+<link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --navy: #0f172a; --blue: #1e40af; --sky: #0ea5e9;
+  --green: #16a34a; --red: #dc2626; --amber: #d97706;
+  --line: #e2e8f0; --muted: #64748b; --bg: #f1f5f9;
+  --card: #ffffff; --radius: 14px;
+  --bordeaux: #7a1530; --bordeaux-dark: #4a0818; --bordeaux-light: #b83055;
+  font-family: 'Assistant', sans-serif;
+}
+body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
+
+/* ─── Screens ─── */
+.screen { display: none; min-height: 100vh; }
+.screen.active { display: block; }
+
+/* ════════════════════════════
+   WAITING ROOM
+════════════════════════════ */
+#waitingScreen {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 40%, #eff6ff 100%);
+  min-height: 100vh;
+  display: none; flex-direction: column; padding: 0 0 52px;
+}
+#waitingScreen.active { display: flex; }
+
+/* Waiting topbar — same dark blue as lesson topbar */
+.w-topbar {
+  background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%);
+  border-bottom: 2px solid #1e40af;
+  padding: 12px 28px; display: flex; align-items: center; justify-content: space-between;
+}
+.w-logo  { color: #fff; font-size: 18px; font-weight: 800; }
+.w-title-wrap { display: flex; align-items: center; gap: 10px; }
+.w-welcome { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -.2px; }
+.w-stars   { color: rgba(255,255,255,.35); font-size: 11px; letter-spacing: 2px; }
+.w-title   { color: #fff; font-size: 17px; font-weight: 800; letter-spacing: -.2px; }
+.w-badge {
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+  border-radius: 999px; padding: 4px 14px; color: #e2e8f0; font-size: 12px; font-weight: 600;
+}
+.w-hero { text-align: center; padding: 36px 20px 28px; }
+.w-hero h1 { color: var(--navy); font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.w-hero p  { color: var(--muted); font-size: 15px; }
+.w-project-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 20px; border-radius: 999px;
+  background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
+  border: 1.5px solid #2dd4bf; color: #0f766e;
+  font-size: 13px; font-weight: 700; text-decoration: none;
+  transition: all .15s; cursor: pointer; font-family: inherit;
+}
+.w-project-link:hover { background: linear-gradient(135deg,#ccfbf1,#99f6e4); box-shadow: 0 3px 12px rgba(13,148,136,.2); }
+.w-team-project-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 20px; border-radius: 999px;
+  background: linear-gradient(135deg,#eef2ff,#e0e7ff);
+  border: 1.5px solid #818cf8; color: #4338ca;
+  font-size: 13px; font-weight: 700; text-decoration: none;
+  transition: all .15s; cursor: pointer; font-family: inherit;
+}
+.w-team-project-link:hover { background: linear-gradient(135deg,#e0e7ff,#c7d2fe); box-shadow: 0 3px 12px rgba(99,102,241,.2); }
+.w-pulse {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: rgba(29,78,216,.15); margin: 0 auto 18px;
+  display: flex; align-items: center; justify-content: center;
+  animation: pulse 1.8s infinite;
+}
+.w-pulse svg { width: 28px; height: 28px; }
+@keyframes pulse {
+  0%,100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(29,78,216,.35); }
+  50%      { transform: scale(1.08); box-shadow: 0 0 0 14px rgba(29,78,216,0); }
+}
+.w-grid {
+  display: grid; grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 20px; padding: 0 28px; max-width: 1200px; margin: 0 auto; width: 100%;
+}
+@media (max-width: 800px) { .w-grid { grid-template-columns: 1fr; } }
+.w-card {
+  background: #fff; border: 1px solid #bfdbfe;
+  border-radius: 18px; padding: 22px;
+  box-shadow: 0 4px 20px rgba(29,78,216,.10);
+}
+.w-card-title {
+  color: var(--navy); font-size: 14px; font-weight: 800;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.quiz-q { color: var(--navy); font-size: 15px; font-weight: 600; margin-bottom: 14px; line-height: 1.5; }
+.quiz-opt {
+  width: 100%; text-align: right; padding: 10px 14px; margin-bottom: 8px;
+  border-radius: 10px; border: 1px solid #e2e8f0;
+  background: #f8fafc; color: var(--navy);
+  cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600;
+  transition: background .15s;
+}
+.quiz-opt:hover { background: #eff6ff; border-color: #bfdbfe; }
+.quiz-opt.correct { background: #f0fdf4; border-color: #22c55e; color: #166534; }
+.quiz-opt.wrong   { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
+.quiz-result { color: #16a34a; font-size: 13px; font-weight: 700; margin-top: 8px; text-align: center; }
+.ticket-instructions {
+  color: var(--navy); font-size: 13px; line-height: 1.7; margin-bottom: 14px;
+  border-right: 3px solid #6366f1; padding-right: 12px;
+}
+.ticket-ta {
+  width: 100%; background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 10px; color: var(--navy); font-family: inherit; font-size: 13px;
+  padding: 10px; resize: vertical; min-height: 80px;
+}
+.ticket-ta::placeholder { color: var(--muted); }
+.ticket-submit {
+  margin-top: 10px; width: 100%; padding: 10px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none; border-radius: 10px; color: #fff;
+  font-family: inherit; font-weight: 700; font-size: 14px; cursor: pointer;
+  transition: opacity .2s;
+}
+.ticket-submit:hover { opacity: .88; }
+.golden-ticket {
+  display: none; margin-top: 14px; padding: 14px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius: 12px; text-align: center;
+  animation: ticketPop .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes ticketPop { 0%{transform:scale(.6);opacity:0} 100%{transform:scale(1);opacity:1} }
+.golden-ticket .gt-emoji { font-size: 28px; }
+.golden-ticket .gt-text  { color: #78350f; font-weight: 800; font-size: 14px; margin-top: 4px; }
+.peer-count { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+.peer-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--line);
+}
+.peer-item:last-child { border-bottom: none; }
+.peer-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; background: #eff6ff; flex-shrink: 0;
+}
+.peer-name { color: var(--navy); font-size: 13px; font-weight: 600; }
+.peer-dot  { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; margin-right: auto; animation: dotPulse 2s infinite; }
+@keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Door animation */
+#doorAnim {
+  display: none; position: fixed; inset: 0; z-index: 8000;
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 40%, #eff6ff 100%);
+  align-items: center; justify-content: center; flex-direction: column;
+}
+#doorAnim.visible { display: flex; animation: doorFade .5s ease; }
+@keyframes doorFade { from{opacity:0} to{opacity:1} }
+.door-card {
+  background: #fff; border-radius: 24px; padding: 48px 56px; text-align: center;
+  animation: doorCardIn .6s .2s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes doorCardIn { from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+.door-emoji { font-size: 56px; margin-bottom: 16px; }
+.door-title { font-size: 26px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+.door-sub   { color: var(--muted); font-size: 15px; }
+
+/* ════════════════════════════
+   LESSON ROOM
+════════════════════════════ */
+#lessonScreen {
+  min-height: 100vh;
+  display: none; flex-direction: column; background: var(--bg);
+}
+#lessonScreen.active { display: flex; }
+
+/* Topbar */
+.l-topbar {
+  background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 60%, #0369a1 100%);
+  padding: 10px 20px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  border-bottom: 2px solid #1e40af; flex-shrink: 0;
+}
+.l-logo   { color: #fff; font-size: 16px; font-weight: 800; }
+.l-course { color: #93c5fd; font-size: 14px; font-weight: 600; }
+.l-chips  { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  border: 1px solid; white-space: nowrap;
+}
+.chip-default { background:#1e293b; color:#94a3b8; border-color:#334155; }
+.chip-green   { background:#f0fdf4; color:#166534; border-color:#bbf7d0; }
+.chip-purple  { background:#faf5ff; color:#6b21a8; border-color:#d8b4fe; }
+.topbar-spacer { flex: 1; }
+.project-enter-btn {
+  padding: 7px 16px; border-radius: 20px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  animation: projectPulse 2.5s infinite;
+}
+@keyframes projectPulse {
+  0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.5)} 50%{box-shadow:0 0 0 6px rgba(99,102,241,0)}
+}
+.group-enter-btn {
+  padding: 7px 16px; border-radius: 20px;
+  background: linear-gradient(135deg, #34d399, #059669);
+  color: #fff; border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: none; align-items: center; gap: 6px;
+}
+.group-exit-btn {
+  padding: 7px 16px; border-radius: 20px;
+  background: linear-gradient(135deg, #059669, #065f46);
+  color: #fff; border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: none; align-items: center; gap: 6px;
+}
+.group-mode-badge {
+  display: none; padding: 4px 12px; border-radius: 999px;
+  background: rgba(5,150,105,.2); border: 1px solid #6ee7b7;
+  color: #ecfdf5; font-size: 12px; font-weight: 700;
+}
+.project-exit-btn {
+  padding: 7px 16px; border-radius: 20px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border: none; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: none; align-items: center; gap: 6px;
+}
+.project-mode-badge {
+  display: none; padding: 4px 12px; border-radius: 999px;
+  background: rgba(99,102,241,.25); border: 1px solid #a5b4fc;
+  color: #c7d2fe; font-size: 12px; font-weight: 700;
+}
+
+/* Mode-driven visibility */
+#lessonScreen[data-mode="lesson"]  .project-enter-btn    { display: flex; }
+#lessonScreen[data-mode="lesson"]  .project-exit-btn     { display: none; }
+#lessonScreen[data-mode="lesson"]  .project-mode-badge   { display: none; }
+#lessonScreen[data-mode="lesson"]  .group-enter-btn      { display: flex; }
+#lessonScreen[data-mode="lesson"]  .group-exit-btn       { display: none; }
+#lessonScreen[data-mode="lesson"]  .group-mode-badge     { display: none; }
+#lessonScreen[data-mode="project"] .project-enter-btn    { display: none; }
+#lessonScreen[data-mode="project"] .project-exit-btn     { display: flex; }
+#lessonScreen[data-mode="project"] .project-mode-badge   { display: flex; align-items: center; }
+#lessonScreen[data-mode="project"] .group-enter-btn      { display: none; }
+#lessonScreen[data-mode="project"] .group-exit-btn       { display: none; }
+#lessonScreen[data-mode="project"] .group-mode-badge     { display: none; }
+#lessonScreen[data-mode="group"]   .project-enter-btn    { display: none; }
+#lessonScreen[data-mode="group"]   .project-exit-btn     { display: none; }
+#lessonScreen[data-mode="group"]   .project-mode-badge   { display: none; }
+#lessonScreen[data-mode="group"]   .group-enter-btn      { display: none; }
+#lessonScreen[data-mode="group"]   .group-exit-btn       { display: flex; }
+#lessonScreen[data-mode="group"]   .group-mode-badge     { display: flex; align-items: center; }
+#lessonScreen[data-mode="group"]   .peer-insight-panel   { display: none !important; }
+#lessonScreen[data-mode="lesson"]  .panel-bookshelf      { display: flex; }
+#lessonScreen[data-mode="lesson"]  .panel-project-stages { display: none; }
+#lessonScreen[data-mode="lesson"]  .sprint-stepper       { display: none; }
+#lessonScreen[data-mode="lesson"]  .project-guidance     { display: none; }
+#lessonScreen[data-mode="lesson"]  .bot-tabs             { display: none; }
+#lessonScreen[data-mode="lesson"]  .project-bot-direct   { display: none; }
+#lessonScreen[data-mode="lesson"]  .bot-activity-ctx     { display: none; }
+#lessonScreen[data-mode="lesson"]  .chat-panel           { display: none !important; }
+#lessonScreen[data-mode="lesson"]  .l-layout             { grid-template-columns: 240px 1fr; }
+#lessonScreen[data-mode="lesson"]  .bot-bubble           { display: flex; }
+#lessonScreen[data-mode="project"] .panel-bookshelf      { display: none; }
+#lessonScreen[data-mode="project"] .panel-project-stages { display: flex; }
+#lessonScreen[data-mode="project"] .sprint-stepper       { display: block; }
+#lessonScreen[data-mode="project"] .project-guidance     { display: block; }
+#lessonScreen[data-mode="project"] .bot-tabs             { display: none; }
+#lessonScreen[data-mode="project"] .project-bot-direct   { display: flex; }
+#lessonScreen[data-mode="project"] .l-layout             { grid-template-columns: 240px 1fr 320px; }
+#lessonScreen[data-mode="project"] .bot-bubble           { display: none !important; }
+/* Hide activity card in project mode, show project area */
+#lessonScreen[data-mode="project"] .activity-focus-area  { display: none; }
+
+#lessonScreen[data-mode="project"] .project-work-head    { display: block; }
+#lessonScreen[data-mode="lesson"]  .project-work-head    { display: none; }
+#lessonScreen[data-mode="project"] .context-rail         { display: none !important; }
+#lessonScreen[data-mode="project"] .topbar-system-label  { display: none; }
+#lessonScreen[data-mode="project"] .topbar-stars         { display: none; }
+
+/* ── Group mode visibility rules ── */
+#lessonScreen[data-mode="group"]  .panel-bookshelf        { display: none; }
+#lessonScreen[data-mode="group"]  .panel-project-stages   { display: none; }
+#lessonScreen[data-mode="group"]  .panel-group-members    { display: flex; }
+#lessonScreen[data-mode="group"]  .l-layout               { grid-template-columns: 220px 1fr 300px; }
+#lessonScreen[data-mode="group"]  .activity-focus-area    { display: none; }
+#lessonScreen[data-mode="group"]  .group-task-area        { display: flex; }
+#lessonScreen[data-mode="group"]  .submission-panel       { display: none; }
+#lessonScreen[data-mode="group"]  .waf-section            { display: none; }
+#lessonScreen[data-mode="group"]  .context-rail           { display: none !important; }
+#lessonScreen[data-mode="group"]  .project-work-head      { display: none !important; }
+#lessonScreen[data-mode="group"]  .sprint-stepper         { display: none !important; }
+#lessonScreen[data-mode="group"]  .project-guidance       { display: none !important; }
+#lessonScreen[data-mode="group"]  .bot-tabs               { display: none; }
+#lessonScreen[data-mode="group"]  .bot-activity-ctx       { display: none; }
+#lessonScreen[data-mode="group"]  .project-bot-direct     { display: none !important; }
+#lessonScreen[data-mode="group"]  .group-bot-direct       { display: flex; }
+#lessonScreen[data-mode="group"]  .chat-panel             { display: flex !important; }
+#lessonScreen[data-mode="group"]  .bot-bubble             { display: none !important; }
+#lessonScreen[data-mode="group"]  .topbar-system-label    { display: none; }
+#lessonScreen[data-mode="group"]  .topbar-stars           { display: none; }
+
+/* Banners */
+#broadcastBanner {
+  background: linear-gradient(90deg,#fff5f5,#fee2e2);
+  border-bottom: 2px solid #fca5a5; padding: 10px 20px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex-shrink: 0;
+}
+.broadcast-label { font-size: 11px; font-weight: 800; color: #dc2626; letter-spacing: .4px; }
+.broadcast-text  { font-size: 14px; color: #7f1d1d; font-weight: 600; flex: 1; }
+.broadcast-x { background: none; border: none; color: #64748b; cursor: pointer; font-size: 18px; }
+#recallBanner {
+  display: none; background: #fef2f2; border-bottom: 2px solid #fecaca;
+  padding: 10px 20px; align-items: center; gap: 10px; flex-shrink: 0;
+}
+#recallBanner.visible { display: flex; }
+.recall-dot  { width: 10px; height: 10px; background: #ef4444; border-radius: 50%; animation: dotPulse 1s infinite; }
+.recall-text { color: #991b1b; font-weight: 700; font-size: 14px; flex: 1; }
+.recall-ack  { padding: 5px 14px; background: #ef4444; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer; font-family: inherit; }
+
+/* Layout */
+.l-layout {
+  display: grid; grid-template-columns: 240px 1.5fr 320px;
+  gap: 0; flex: 1; overflow: hidden; min-height: 0;
+}
+@media (max-width: 1100px) { .l-layout { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px)  { .l-layout { grid-template-columns: 1fr; } }
+
+/* Panels */
+.panel {
+  border-left: 1px solid var(--line);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.panel:first-child { border-right: 1px solid var(--line); border-left: none; }
+.panel-head {
+  padding: 12px 16px; font-weight: 800; font-size: 13px; color: var(--navy);
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#f8fbff,#eef4ff);
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+
+/* ── Bookshelf ── */
+.panel-bookshelf { flex-direction: column; }
+.bookshelf-section { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.bookshelf-section h3 { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .5px; margin-bottom: 10px; }
+.resource-card {
+  background: #f8fafc; border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px; cursor: pointer;
+  transition: background .15s;
+}
+.resource-card:hover { background: #eff6ff; }
+.res-icon  { font-size: 18px; flex-shrink: 0; }
+.res-title { font-size: 13px; font-weight: 700; color: var(--navy); }
+.res-meta  { font-size: 11px; color: var(--muted); }
+.res-btn   {
+  margin-right: auto; padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--line); background: #fff; cursor: pointer;
+  font-size: 11px; font-weight: 700; color: var(--blue);
+}
+
+/* ── Project Stages (project mode left panel) ── */
+.panel-project-stages { flex-direction: column; }
+.pstage-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.pstage-wrap { display: flex; flex-direction: column; }
+.pstage-item {
+  width: 100%; text-align: right; padding: 10px 14px;
+  border-radius: 10px; border: 1px solid var(--line);
+  background: #f8fafc; cursor: pointer; font-family: inherit; font-size: 13px;
+  display: flex; align-items: center; gap: 10px; transition: all .15s;
+}
+.pstage-item:hover { background: #f0fdfa; border-color: #99f6e4; }
+.pstage-item.active { background: linear-gradient(135deg,#0d9488,#0f766e); color: #fff; border-color: #0d9488; }
+.pstage-item.completed { background: #f0fdf4; border-color: #bbf7d0; }
+.pstage-num {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(0,0,0,.08); display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800;
+}
+.pstage-item.active    .pstage-num { background: rgba(255,255,255,.22); color: #fff; }
+.pstage-item.completed .pstage-num { background: #dcfce7; color: #166534; }
+.pstage-label { font-weight: 700; flex: 1; }
+.pstage-item.active    .pstage-label { color: #fff; }
+.pstage-item.completed .pstage-label { color: #166534; }
+
+/* Stage description accordion */
+.pstage-desc {
+  display: none; margin: 0 4px 4px; padding: 10px 13px;
+  background: #f0fdfa; border: 1px solid #99f6e4; border-top: none;
+  border-radius: 0 0 10px 10px;
+  font-size: 12px; color: #134e4a; line-height: 1.6;
+  animation: descIn .2s ease;
+}
+.pstage-desc.open { display: block; }
+@keyframes descIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:none; } }
+
+/* ══════════════════════════════════════
+   CENTER COLUMN — Activity-focused
+══════════════════════════════════════ */
+
+/* 1. Context Rail — Lesson Stages */
+.context-rail {
+  padding: 10px 20px 10px; border-bottom: 1px solid var(--line);
+  background: #f8fafc; flex-shrink: 0;
+}
+.ctx-rail-label {
+  font-size: 13px; color: var(--navy); font-weight: 800;
+  letter-spacing: -.1px; margin-bottom: 9px; text-align: center;
+}
+.ctx-stages {
+  display: flex; align-items: center; gap: 0; justify-content: center;
+}
+.ctx-stage {
+  display: flex; align-items: center; gap: 0;
+  flex-shrink: 0;
+}
+.ctx-stage-box {
+  font-size: 12px; font-weight: 700; padding: 4px 14px;
+  border: 1.5px solid #cbd5e1; border-radius: 8px;
+  background: #fff; color: var(--muted);
+  cursor: default; white-space: nowrap;
+  transition: all .15s;
+}
+.ctx-stage-box.done  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+.ctx-stage-box.active {
+  background: linear-gradient(135deg,#eff6ff,#dbeafe);
+  border-color: #93c5fd; color: var(--blue); font-weight: 800;
+  box-shadow: 0 2px 8px rgba(29,78,216,.12);
+}
+.ctx-stage-connector {
+  width: 22px; height: 2px;
+  background: linear-gradient(90deg, #cbd5e1, #e2e8f0);
+  flex-shrink: 0;
+}
+.ctx-stage.done + .ctx-stage > .ctx-stage-connector { background: linear-gradient(90deg,#86efac,#cbd5e1); }
+
+/* 2. Activity Focus Area */
+.activity-focus-area { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; }
+
+/* Empty state */
+.activity-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 40px 20px; text-align: center; gap: 10px;
+}
+.activity-empty-icon { font-size: 40px; animation: emptyPulse 2s infinite; }
+@keyframes emptyPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.activity-empty-title { font-size: 16px; font-weight: 800; color: var(--navy); }
+.activity-empty-sub   { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 260px; }
+.activity-empty-hint  {
+  margin-top: 6px; font-size: 12px; color: #3b82f6;
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  padding: 6px 14px; border-radius: 10px;
+}
+
+/* Activity card */
+.activity-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px;
+  overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  animation: cardIn .3s ease;
+}
+@keyframes cardIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+.activity-card-header {
+  padding: 14px 18px 12px;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border-bottom: 1px solid #bfdbfe;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.activity-type-badge {
+  padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800;
+  background: #1d4ed8; color: #fff; white-space: nowrap; flex-shrink: 0;
+  margin-top: 3px;
+}
+.activity-title { font-size: 18px; font-weight: 800; color: var(--navy); line-height: 1.3; }
+.activity-goal  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.activity-blocks { padding: 0; }
+.activity-block {
+  padding: 14px 18px; border-bottom: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.activity-block:last-child { border-bottom: none; }
+.activity-block-label {
+  font-size: 11px; font-weight: 800; color: var(--muted);
+  letter-spacing: .4px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+}
+.activity-block-label::before {
+  content: ''; width: 3px; height: 14px; border-radius: 2px; background: #3b82f6;
+}
+.activity-block-text { font-size: 14px; color: var(--navy); line-height: 1.65; }
+.activity-block-tag  {
+  display: inline-block; margin-top: 4px; font-size: 11px; font-weight: 700;
+  background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;
+  padding: 3px 10px; border-radius: 999px;
+}
+
+/* 3. Sprint Stepper (project mode only) */
+.sprint-stepper { padding: 14px 20px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.sprint-stepper-label { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .4px; margin-bottom: 12px; }
+.sprint-steps { display: flex; align-items: center; }
+.sprint-step  { display: flex; flex-direction: column; align-items: center; flex: 1; }
+.sprint-bubble {
+  width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line);
+  background: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: var(--muted);
+  cursor: pointer; transition: all .2s; z-index: 1; position: relative;
+}
+.sprint-bubble.done   { background: #ede9fe; border-color: #a78bfa; color: #6d28d9; }
+.sprint-bubble.active { background: #7c3aed; border-color: #7c3aed; color: #fff; box-shadow: 0 0 0 4px rgba(124,58,237,.2); }
+.sprint-label { font-size: 10px; color: var(--muted); margin-top: 4px; text-align: center; max-width: 60px; }
+.sprint-connector { flex: 1; height: 2px; background: var(--line); margin: 0 -2px; position: relative; top: -14px; }
+.sprint-connector.done { background: #a78bfa; }
+
+/* Project guidance (project mode only) — purple center */
+.project-guidance {
+  margin: 14px 20px 0; padding: 14px; border-radius: 12px;
+  background: linear-gradient(135deg,#f5f3ff,#ede9fe);
+  border: 1px solid #ddd6fe; flex-shrink: 0;
+}
+.project-guidance-title { font-size: 11px; font-weight: 800; color: #7c3aed; margin-bottom: 6px; letter-spacing: .3px; }
+.project-guidance-text  { font-size: 13px; color: #4c1d95; line-height: 1.6; }
+
+/* Project work header (project mode center) — purple */
+.project-work-head {
+  padding: 14px 20px 10px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#f5f3ff,#ede9fe); flex-shrink: 0;
+}
+.project-work-title { font-size: 16px; font-weight: 800; color: #4c1d95; }
+.project-work-sub   { font-size: 12px; color: #7c3aed; margin-top: 2px; }
+
+/* ── WAF Stream ── */
+.waf-section {
+  border-top: 1px solid var(--line); display: flex; flex-direction: column; flex-shrink: 0;
+}
+.waf-section-head {
+  padding: 12px 18px 10px; font-size: 15px; font-weight: 800; color: var(--navy);
+  border-bottom: 1px solid var(--line);
+  background: #f8fafc; display: flex; align-items: center; gap: 8px;
+}
+.comm-stream {
+  min-height: 52px; max-height: 180px; overflow-y: auto;
+  padding: 10px 18px; display: flex; flex-direction: column; gap: 8px;
+}
+.waf-msg { max-width: 82%; border-radius: 14px; padding: 9px 13px; }
+.waf-msg.lecturer { background: #eff6ff; border: 1px solid #bfdbfe; align-self: flex-end; }
+.waf-msg.student  { background: #f0fdf4; border: 1px solid #bbf7d0; align-self: flex-start; }
+.waf-msg-text { font-size: 13px; color: var(--navy); line-height: 1.5; }
+.waf-msg-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* ── Submission Panel ── */
+.submission-panel { padding: 14px 18px; border-top: 1px solid var(--line); }
+.sub-panel-head {
+  font-size: 15px; font-weight: 800; color: var(--navy);
+  margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+}
+.sub-hint {
+  font-size: 12px; color: var(--muted); margin-bottom: 10px;
+  padding: 6px 10px; background: #f8fafc; border-radius: 8px;
+  border-right: 3px solid #bfdbfe;
+}
+.sub-ta {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px; font-family: inherit; font-size: 13px; resize: none;
+  background: #f8fafc; min-height: 72px;
+}
+.sub-ta:focus { outline: none; border-color: #93c5fd; background: #fff; }
+.sub-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; justify-content: flex-end; }
+.sub-btn {
+  padding: 10px 20px; border-radius: 12px; border: none; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 800;
+  display: flex; align-items: center; gap: 7px;
+  transition: transform .12s, box-shadow .12s, opacity .12s;
+  box-shadow: 0 2px 6px rgba(0,0,0,.10);
+}
+.sub-btn:hover  { transform: translateY(-2px); box-shadow: 0 5px 14px rgba(0,0,0,.14); }
+.sub-btn:active { transform: translateY(0);    box-shadow: 0 2px 4px rgba(0,0,0,.10); }
+/* Submit — deep blue */
+.sub-btn.primary   { background: linear-gradient(135deg,#1d4ed8,#2563eb); color: #fff; }
+/* Record — coral/red */
+.sub-btn.record    { background: linear-gradient(135deg,#e11d48,#f43f5e); color: #fff; }
+/* Upload — teal */
+.sub-btn.upload    { background: linear-gradient(135deg,#0d9488,#14b8a6); color: #fff; }
+/* WAF send — secondary style */
+.sub-btn.secondary { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; box-shadow: none; }
+.sub-btn.icon      { background: #f1f5f9; border: 1px solid var(--line); padding: 9px 12px; }
+
+/* ════ Layer 1 — Peer Insight Panel ════ */
+.peer-insight-panel {
+  margin: 0; padding: 14px 18px; border-top: 1px solid var(--line);
+  background: linear-gradient(180deg,#fffbeb,#fefce8); flex-shrink: 0;
+}
+.peer-insight-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.peer-insight-title { font-size: 14px; font-weight: 800; color: #92400e; }
+.peer-count-badge {
+  font-size: 11px; padding: 2px 9px; border-radius: 999px;
+  background: #fde68a; color: #92400e; font-weight: 700;
+}
+.peer-examples { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.peer-example {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #fff; border: 1px solid #fde68a;
+  border-radius: 10px; padding: 10px 12px;
+}
+.peer-avatar-sm {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#fbbf24,#f59e0b);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 800; color: #fff;
+}
+.peer-example-text { font-size: 13px; color: var(--navy); line-height: 1.5; }
+.peer-compare-prompt {
+  font-size: 13px; font-weight: 700; color: #92400e;
+  background: #fef9c3; border-right: 3px solid #fbbf24;
+  padding: 8px 12px; border-radius: 0 8px 8px 0; margin-bottom: 10px;
+}
+
+/* ════ Layer 2 — Peer Review Panel ════ */
+.peer-review-panel {
+  padding: 14px 18px; border-top: 2px solid #bfdbfe; flex-shrink: 0;
+  background: linear-gradient(180deg,#f0f7ff,#fff);
+}
+.peer-answer-card {
+  background: #f8fafc; border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px; margin: 8px 0 14px;
+}
+.peer-answer-label { font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 6px; letter-spacing: .3px; }
+.peer-answer-text  { font-size: 13px; color: var(--navy); line-height: 1.6; }
+
+/* Rubric — 4-level verbal scale */
+.peer-rubric { display: flex; flex-direction: column; gap: 12px; margin: 4px 0 14px; }
+.rubric-item { display: flex; flex-direction: column; gap: 6px; }
+.rubric-q    { font-size: 13px; font-weight: 700; color: var(--navy); }
+.rubric-scale { display: flex; gap: 4px; }
+.rubric-scale-pill {
+  flex: 1; font-size: 11px; font-weight: 700; padding: 6px 4px;
+  border-radius: 8px; border: 1.5px solid var(--line);
+  background: #f8fafc; color: var(--muted);
+  cursor: pointer; transition: all .14s; font-family: inherit;
+  text-align: center; line-height: 1.3;
+}
+.rubric-scale-pill:hover { border-color: #93c5fd; background: #eff6ff; color: var(--blue); }
+.rubric-scale-pill.sel[data-level="1"] { background: #fef2f2; border-color: #fca5a5; color: #dc2626; font-weight: 800; }
+.rubric-scale-pill.sel[data-level="2"] { background: #fefce8; border-color: #fde047; color: #854d0e; font-weight: 800; }
+.rubric-scale-pill.sel[data-level="3"] { background: #ecfdf5; border-color: #86efac; color: #15803d; font-weight: 800; }
+.rubric-scale-pill.sel[data-level="4"] { background: #f0fdf4; border-color: #4ade80; color: #15803d; font-weight: 900; box-shadow: 0 0 0 2px #bbf7d0; }
+
+/* Emoji bank */
+.emoji-bank-label { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 6px; }
+.emoji-bank { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.emoji-item {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1.5px solid var(--line); background: #f8fafc;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px; cursor: pointer; transition: all .12s; font-family: inherit;
+}
+.emoji-item:hover { background: #eff6ff; border-color: #93c5fd; transform: scale(1.15); }
+.emoji-item.sel   { background: #eff6ff; border-color: #3b82f6; box-shadow: 0 0 0 2px #bfdbfe; transform: scale(1.12); }
+
+/* Submission success banner */
+.sub-submitted-banner {
+  display: none; align-items: center; gap: 12px;
+  padding: 10px 14px; background: #f0fdf4; border: 1.5px solid #86efac;
+  border-radius: 10px; margin-top: 8px;
+}
+.submission-panel.submitted .sub-ta              { display: none; }
+.submission-panel.submitted .sub-actions         { display: none; }
+.submission-panel.submitted .sub-hint            { display: none; }
+.submission-panel.submitted .sub-submitted-banner { display: flex; }
+
+/* ════ Layer 3 — Group Mode ════ */
+:root { --emerald: #059669; --emerald-dark: #065f46; --emerald-light: #d1fae5; }
+
+/* Group members left panel */
+.panel-group-members { flex-direction: column; display: none; }
+.group-members-list  { padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
+.group-member {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: #f8fafc; transition: background .15s;
+}
+.group-member.typing { background: #f0fdf4; border-color: #bbf7d0; }
+.gm-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#34d399,#059669);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 800; color: #fff;
+}
+.gm-info { flex: 1; min-width: 0; }
+.gm-name { font-size: 13px; font-weight: 700; color: var(--navy); }
+.gm-role { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.gm-status {
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  background: #d1d5db;
+}
+.gm-status.online  { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
+.gm-status.writing { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; animation: statusPulse 1s infinite; }
+@keyframes statusPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* Group task center area */
+.group-task-area {
+  flex-direction: column; overflow-y: auto; display: none;
+}
+.group-task-head {
+  padding: 14px 20px 10px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#ecfdf5,#d1fae5);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+}
+.group-task-title { font-size: 15px; font-weight: 800; color: var(--emerald-dark); }
+.group-timer {
+  font-size: 18px; font-weight: 800; color: var(--emerald);
+  font-variant-numeric: tabular-nums; letter-spacing: .5px;
+}
+.group-timer.urgent { color: #dc2626; animation: timerPulse 1s infinite; }
+@keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.group-task-card {
+  margin: 14px 20px 0; padding: 14px 16px;
+  background: #fff; border: 1.5px solid #6ee7b7; border-radius: 12px;
+  flex-shrink: 0;
+}
+.group-task-label { font-size: 11px; font-weight: 800; color: var(--emerald); margin-bottom: 6px; letter-spacing: .3px; }
+.group-task-text  { font-size: 13px; color: var(--navy); line-height: 1.6; }
+.group-roles {
+  display: flex; gap: 8px; padding: 10px 20px 4px; flex-wrap: wrap; flex-shrink: 0;
+}
+.role-chip {
+  font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px;
+  background: #ecfdf5; border: 1px solid #6ee7b7; color: var(--emerald-dark);
+}
+.group-workspace {
+  margin: 10px 20px 14px; padding: 14px;
+  background: #fff; border: 1.5px solid #a7f3d0; border-radius: 12px;
+  display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;
+}
+.group-workspace-head {
+  font-size: 13px; font-weight: 800; color: var(--emerald-dark);
+}
+.group-typing-indicator {
+  font-size: 12px; color: var(--emerald); font-style: italic; min-height: 16px; margin-top: -4px;
+}
+
+/* Contribution feed */
+.group-contrib-feed {
+  display: flex; flex-direction: column; gap: 7px;
+  max-height: 190px; overflow-y: auto;
+  background: #f0fdf4; border: 1px solid #d1fae5; border-radius: 10px;
+  padding: 8px 10px;
+}
+.group-contrib-feed:empty { display: none; }
+.group-contrib-item {
+  background: #fff; border: 1px solid #a7f3d0; border-radius: 9px;
+  padding: 8px 10px;
+  animation: contribFadeIn .3s ease;
+}
+.group-contrib-item.mine { border-color: #059669; background: #f0fdf4; }
+.contrib-header {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+}
+.contrib-avatar {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; color: #fff;
+}
+.contrib-name { font-size: 12px; font-weight: 800; color: var(--navy); }
+.contrib-role { font-size: 10px; color: var(--muted); }
+.contrib-time { font-size: 10px; color: var(--muted); margin-right: auto; }
+.contrib-text { font-size: 12px; color: #334155; line-height: 1.55; }
+@keyframes contribFadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+
+/* My contribution lane */
+.group-my-contrib {
+  border-top: 1.5px dashed #6ee7b7; padding-top: 10px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.my-contrib-label { font-size: 12px; font-weight: 800; color: var(--emerald-dark); }
+
+/* ── Call teacher ── */
+.call-teacher-btn {
+  font-size: 11px; font-weight: 800; padding: 5px 11px; border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12);
+  color: #fff; cursor: pointer; font-family: inherit; transition: all .14s;
+}
+.call-teacher-btn:hover { background: rgba(255,255,255,.22); }
+.call-teacher-btn.called { background: #dc2626; border-color: #fca5a5; animation: callPulse 1s infinite; }
+@keyframes callPulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+/* ── Master draft ── */
+.master-draft {
+  border: 1.5px dashed #6ee7b7; border-radius: 10px; padding: 10px 12px;
+  background: #f0fdf4; margin-top: 6px;
+}
+.master-draft-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
+}
+.master-draft-title { font-size: 12px; font-weight: 800; color: var(--emerald-dark); }
+.draft-author-badge {
+  font-size: 10px; background: #d1fae5; border: 1px solid #6ee7b7;
+  border-radius: 999px; padding: 2px 8px; color: #065f46;
+}
+.master-draft-body {
+  font-size: 12px; color: var(--navy); line-height: 1.6; padding: 8px;
+  background: #fff; border-radius: 8px; border: 1px solid #a7f3d0; min-height: 36px;
+}
+.challenge-btn {
+  font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 999px;
+  border: 1px solid #fbbf24; background: #fefce8; color: #854d0e;
+  cursor: pointer; font-family: inherit; margin-top: 7px;
+}
+
+/* ── Veto panel ── */
+.veto-panel {
+  margin: 0 20px 14px; padding: 14px 16px;
+  background: #fff; border: 2px solid #6ee7b7; border-radius: 12px; display: none;
+}
+.veto-head { font-size: 13px; font-weight: 800; color: var(--emerald-dark); margin-bottom: 10px; }
+.veto-chips { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+.veto-chip {
+  display: flex; align-items: center; gap: 8px; padding: 7px 10px;
+  border-radius: 8px; border: 1px solid var(--line); background: #f8fafc;
+  font-size: 12px; transition: all .35s;
+}
+.veto-chip.approved { background: #f0fdf4; border-color: #86efac; }
+.vc-avatar {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #fff;
+}
+.vc-name { flex: 1; font-weight: 700; }
+.vc-status { font-size: 11px; color: var(--muted); }
+.veto-chip.approved .vc-status { color: #15803d; }
+.veto-final-btn {
+  width: 100%; padding: 9px; border-radius: 8px; border: none;
+  background: #e2e8f0; color: var(--muted); font-size: 13px; font-weight: 800;
+  cursor: not-allowed; font-family: inherit; transition: all .35s;
+}
+.veto-final-btn.ready { background: linear-gradient(135deg,#34d399,#059669); color: #fff; cursor: pointer; }
+.veto-hint { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+
+/* ════════════════ Team Project Screen ════════════════ */
+#teamProjectScreen { display: none; min-height: calc(100vh - 52px); flex-direction: column; }
+#teamProjectScreen.active { display: flex; }
+.tp-topbar {
+  background: linear-gradient(90deg,#0f172a 0%,#312e81 55%,#1e1b4b 100%);
+  border-bottom: 2px solid #4f46e5;
+  padding: 12px 24px; display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+}
+.tp-topbar-back {
+  color: #a5b4fc; font-size: 13px; font-weight: 700; background: none;
+  border: 1px solid rgba(165,180,252,.3); cursor: pointer; font-family: inherit;
+  padding: 6px 12px; border-radius: 999px; transition: all .14s;
+}
+.tp-topbar-back:hover { background: rgba(165,180,252,.12); }
+.tp-topbar-title { color: #fff; font-size: 16px; font-weight: 800; flex: 1; text-align: center; }
+.tp-topbar-stage {
+  color: #a5b4fc; font-size: 12px; font-weight: 700;
+  background: rgba(165,180,252,.15); border: 1px solid rgba(165,180,252,.3);
+  border-radius: 999px; padding: 4px 12px;
+}
+.tp-layout {
+  display: grid; grid-template-columns: 200px 1fr 280px;
+  flex: 1; overflow: hidden; min-height: 0;
+}
+/* TP Left */
+.tp-members { border-left: 1px solid var(--line); overflow-y: auto; background: #fafbff; display: flex; flex-direction: column; }
+.tp-members-head {
+  padding: 13px 14px 10px; font-size: 13px; font-weight: 800; color: #312e81;
+  border-bottom: 1px solid var(--line); background: linear-gradient(180deg,#eef2ff,#fafbff); flex-shrink: 0;
+}
+.tp-member-card { padding: 10px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: flex-start; gap: 8px; }
+.tp-member-card.me { background: #eef2ff; }
+.tp-mem-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff;
+}
+.tp-mem-info { flex: 1; min-width: 0; }
+.tp-mem-name { font-size: 12px; font-weight: 800; color: var(--navy); }
+.tp-mem-role { font-size: 10px; color: #6366f1; }
+.tp-mem-last { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.tp-mem-count {
+  font-size: 10px; background: #eef2ff; border: 1px solid #c7d2fe;
+  border-radius: 999px; padding: 2px 7px; color: #4f46e5; font-weight: 700; flex-shrink: 0;
+}
+.tp-baton-btn {
+  margin: auto 12px 12px; padding: 9px 14px; border-radius: 10px;
+  border: 1.5px solid #c7d2fe; background: #eef2ff; color: #4338ca;
+  font-size: 12px; font-weight: 800; cursor: pointer; font-family: inherit;
+  transition: all .14s; text-align: center; line-height: 1.5;
+}
+.tp-baton-btn:hover { background: #e0e7ff; }
+/* TP Center */
+.tp-center { display: flex; flex-direction: column; overflow: hidden; }
+.tp-tabs {
+  display: flex; border-bottom: 2px solid var(--line); background: #fff; flex-shrink: 0;
+}
+.tp-tab {
+  padding: 11px 16px; font-size: 13px; font-weight: 700; color: var(--muted);
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  border-bottom: 2.5px solid transparent; margin-bottom: -2px; transition: all .14s;
+}
+.tp-tab.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+.tp-tab-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.tp-tab-content.hidden { display: none; }
+/* Document sections */
+.doc-section { margin-bottom: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.doc-section-attr {
+  display: flex; align-items: center; gap: 8px; padding: 7px 12px;
+  background: #f8fafc; border-bottom: 1px solid var(--line); font-size: 11px;
+}
+.doc-attr-avatar {
+  width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 9px; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.doc-attr-name { font-weight: 700; color: var(--navy); }
+.doc-attr-time { color: var(--muted); margin-right: auto; }
+.doc-section-text { padding: 12px 14px; font-size: 13px; color: var(--navy); line-height: 1.7; }
+.doc-my-input {
+  padding: 14px 16px; background: #eef2ff;
+  border: 2px dashed #a5b4fc; border-radius: 10px; margin-top: 4px;
+}
+.doc-my-input-label { font-size: 12px; font-weight: 800; color: #4338ca; margin-bottom: 6px; }
+/* Sources / tasks */
+.source-card { padding: 12px 14px; background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+.source-title { font-size: 13px; font-weight: 700; color: var(--blue); }
+.source-meta  { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.task-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 6px; }
+.task-check {
+  width: 18px; height: 18px; border-radius: 5px; border: 2px solid var(--line); flex-shrink: 0;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 11px;
+}
+.task-check.done { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.task-text  { font-size: 13px; color: var(--navy); flex: 1; }
+.task-owner { font-size: 11px; color: var(--muted); }
+/* TP Right */
+.tp-right { border-right: 1px solid var(--line); display: flex; flex-direction: column; background: #fff; }
+.tp-digest { padding: 12px 14px; background: linear-gradient(180deg,#eef2ff,#f5f3ff); border-bottom: 1px solid #c7d2fe; flex-shrink: 0; }
+.tp-digest-head { font-size: 12px; font-weight: 800; color: #4338ca; margin-bottom: 8px; }
+.tp-digest-item {
+  display: flex; align-items: flex-start; gap: 6px; font-size: 11px; color: var(--navy);
+  margin-bottom: 4px; padding: 4px 7px; background: #fff; border-radius: 6px; border: 1px solid #e0e7ff;
+}
+.tp-digest-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 8000;
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #fff; border-radius: 20px; width: 440px; max-width: 90vw;
+  padding: 26px 26px 22px; box-shadow: 0 20px 60px rgba(0,0,0,.2);
+  animation: modalPop .3s cubic-bezier(.34,1.2,.64,1);
+}
+@keyframes modalPop { from{opacity:0;transform:scale(.92)} to{opacity:1;transform:scale(1)} }
+.modal-head { font-size: 18px; font-weight: 900; color: #1e1b4b; margin-bottom: 4px; }
+.modal-sub  { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+.digest-change {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 7px;
+}
+.digest-change-avatar {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff;
+}
+.digest-change-text { font-size: 13px; color: var(--navy); flex: 1; }
+.digest-change-time { font-size: 11px; color: var(--muted); }
+.modal-primary-btn {
+  width: 100%; padding: 12px; border-radius: 12px; border: none;
+  background: linear-gradient(135deg,#6366f1,#4f46e5); color: #fff;
+  font-size: 14px; font-weight: 800; cursor: pointer; font-family: inherit;
+}
+.modal-primary-btn:hover { opacity: .9; }
+
+/* Group bot panel header */
+.group-bot-direct {
+  padding: 12px 14px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#ecfdf5,#d1fae5);
+  align-items: center; gap: 10px; flex-shrink: 0; display: none;
+}
+.group-bot-icon {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#34d399,#059669);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.group-bot-name { font-size: 14px; font-weight: 800; color: var(--emerald-dark); }
+.group-bot-sub  { font-size: 11px; color: var(--emerald); }
+#lessonScreen[data-mode="group"] .chat-send { background: linear-gradient(135deg,#34d399,#059669); }
+
+/* ── Chat Panel ── */
+.chat-panel { display: flex; flex-direction: column; }
+.bot-tabs {
+  gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#f8fbff,#eef4ff); flex-wrap: wrap; flex-shrink: 0;
+}
+.bot-tab {
+  padding: 6px 14px; border-radius: 20px; border: 1px solid #bfdbfe;
+  background: #fff; color: #1e40af; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 700; transition: all .15s;
+}
+.bot-tab:hover { background: #eff6ff; }
+.bot-tab.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+
+/* Bot activity context line */
+.bot-activity-ctx {
+  padding: 8px 14px; border-bottom: 1px solid var(--line);
+  background: #fafafa; font-size: 12px; color: var(--muted);
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.bot-activity-ctx strong { color: var(--navy); }
+
+/* Project bot header (project mode) */
+.project-bot-direct {
+  padding: 12px 14px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg,#f0fdfa,#ccfbf1);
+  align-items: center; gap: 10px; flex-shrink: 0;
+}
+.project-bot-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg,#0d9488,#0f766e);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.project-bot-name { font-size: 14px; font-weight: 800; color: #0f766e; }
+.project-bot-sub  { font-size: 11px; color: #0d9488; }
+
+/* Chat Window */
+.chat-window {
+  flex: 1; overflow-y: auto; padding: 16px; display: flex;
+  flex-direction: column; gap: 12px; min-height: 200px;
+}
+.chat-bubble {
+  max-width: 85%; padding: 10px 14px; border-radius: 16px;
+  font-size: 13px; line-height: 1.6;
+}
+.chat-bubble.bot {
+  background: linear-gradient(135deg,#fdf2f5,#fce7ed);
+  border: 1px solid #f4c0cf; align-self: flex-end;
+}
+.chat-bubble.bot.project-style {
+  background: linear-gradient(135deg,#f0fdfa,#ccfbf1);
+  border: 1px solid #99f6e4;
+}
+.chat-bubble.user { background: #f0f9ff; border: 1px solid #bae6fd; align-self: flex-start; }
+.chat-input-row { padding: 12px 14px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+.mic-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--line);
+  background: #f8fafc; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all .15s; color: var(--muted);
+}
+.mic-btn:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+.mic-btn.recording { background: #dc2626; border-color: #dc2626; color: #fff; animation: micPulse 1s infinite; }
+@keyframes micPulse { 0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)} 50%{box-shadow:0 0 0 6px rgba(220,38,38,0)} }
+.chat-input {
+  flex: 1; border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 12px; font-family: inherit; font-size: 13px;
+}
+.chat-input:focus { outline: none; border-color: #93c5fd; }
+.chat-send {
+  padding: 9px 18px; background: #1d4ed8; color: #fff;
+  border: none; border-radius: 10px; cursor: pointer;
+  font-family: inherit; font-weight: 700; font-size: 13px;
+}
+#lessonScreen[data-mode="project"] .chat-send { background: linear-gradient(135deg,#0d9488,#0f766e); }
+#lessonScreen[data-mode="project"] .chat-send:hover { background: linear-gradient(135deg,#0f766e,#115e59); }
+.bot-float-panel .chat-send { background: linear-gradient(135deg, var(--bordeaux-light), var(--bordeaux)); }
+.bot-float-panel .chat-send:hover { background: linear-gradient(135deg, #c83060, var(--bordeaux-light)); }
+.bot-float-panel .chat-input:focus { outline: none; border-color: #d4889a; }
+
+/* ── Floating Bot Bubble — Bordeaux 3D Circle ── */
+.bot-bubble {
+  position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
+  z-index: 5000;
+  width: 66px; height: 66px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 32%, #c0607a 0%, #7a1530 48%, #3d0a14 100%);
+  color: #fff; border: none;
+  display: none; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 4px 18px rgba(122,21,48,.32),
+    0 1px 5px rgba(0,0,0,.22),
+    inset 0 -3px 8px rgba(0,0,0,.22);
+  transition: transform .18s cubic-bezier(.34,1.5,.64,1), box-shadow .18s;
+  animation: bubblePulse 5s ease-in-out infinite;
+  overflow: visible;
+  flex-direction: column; gap: 2px;
+  opacity: .88;
+}
+
+/* 3D highlight sheen */
+.bot-bubble::before {
+  content: '';
+  position: absolute;
+  top: 9px; left: 12px;
+  width: 30px; height: 14px;
+  background: radial-gradient(ellipse, rgba(255,255,255,.32) 0%, rgba(255,255,255,0) 100%);
+  border-radius: 50%;
+  transform: rotate(-20deg);
+  pointer-events: none;
+}
+
+.bot-bubble:hover {
+  transform: translateY(calc(-50% - 4px)) scale(1.06);
+  opacity: 1;
+  box-shadow: 0 8px 26px rgba(122,21,48,.48), 0 2px 8px rgba(0,0,0,.28), inset 0 -3px 8px rgba(0,0,0,.22);
+}
+
+@keyframes bubblePulse {
+  0%,100% { box-shadow: 0 4px 18px rgba(122,21,48,.32), 0 1px 5px rgba(0,0,0,.22), inset 0 -3px 8px rgba(0,0,0,.22); }
+  50%     { box-shadow: 0 4px 24px rgba(160,40,70,.44), 0 1px 5px rgba(0,0,0,.22), inset 0 -3px 8px rgba(0,0,0,.22); }
+}
+
+/* Bot face — CSS art inside bubble */
+.bot-face {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  position: relative; z-index: 1;
+}
+.bot-eyes {
+  display: flex; gap: 8px;
+}
+.bot-eye {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px rgba(255,255,255,.9), 0 0 12px rgba(255,220,220,.6);
+  animation: eyeGlow 3s ease-in-out infinite;
+}
+.bot-eye.right { animation-delay: .4s; }
+@keyframes eyeGlow {
+  0%,100% { opacity: 1; box-shadow: 0 0 6px rgba(255,255,255,.9); }
+  50%     { opacity: .7; box-shadow: 0 0 10px rgba(255,180,200,1); }
+}
+.bot-smile {
+  width: 18px; height: 8px;
+  border: 2.5px solid rgba(255,255,255,.85);
+  border-top: none;
+  border-radius: 0 0 22px 22px;
+}
+
+/* Tooltip label beside bubble */
+.bubble-label {
+  position: absolute;
+  left: 92px; top: 50%; transform: translateY(-50%);
+  background: var(--bordeaux-dark);
+  color: #fff; font-size: 12px; font-weight: 700;
+  padding: 6px 12px; border-radius: 20px;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0,0,0,.3);
+  opacity: 0; transition: opacity .2s;
+  pointer-events: none;
+}
+.bubble-label::after {
+  content: '';
+  position: absolute;
+  right: 100%; top: 50%; transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-right-color: var(--bordeaux-dark);
+}
+.bot-bubble:hover .bubble-label { opacity: 1; }
+
+/* ── Float Panel Overlay ── */
+.bot-float-overlay {
+  display: none; position: fixed; inset: 0; z-index: 4998;
+  background: rgba(0,0,0,.22);
+}
+.bot-float-overlay.open { display: block; }
+
+/* ── Float Panel — compact card that expands ── */
+.bot-float-panel {
+  position: fixed; left: 116px; top: 50%;
+  transform: translateY(-50%) scale(0.85);
+  transform-origin: left center;
+  width: 340px;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 12px 48px rgba(74,8,24,.22), 0 2px 12px rgba(0,0,0,.14);
+  z-index: 4999; display: flex; flex-direction: column;
+  max-height: 500px; min-height: 200px;
+  opacity: 0; pointer-events: none;
+  transition: transform .3s cubic-bezier(.34,1.2,.64,1), opacity .25s ease;
+  overflow: hidden;
+}
+.bot-float-panel.open {
+  transform: translateY(-50%) scale(1);
+  opacity: 1; pointer-events: all;
+}
+
+.bot-float-head {
+  padding: 14px 16px 12px; border-bottom: 1px solid #f0e0e4;
+  background: linear-gradient(135deg, var(--bordeaux) 0%, var(--bordeaux-dark) 100%);
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-shrink: 0; border-radius: 20px 20px 0 0;
+}
+.bot-float-name { font-size: 14px; font-weight: 800; color: #fff; }
+.bot-float-ctx  { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 3px; }
+.bot-float-close {
+  background: rgba(255,255,255,.15); border: none; font-size: 16px; color: #fff;
+  cursor: pointer; padding: 3px 7px; line-height: 1; border-radius: 8px;
+  transition: background .15s;
+}
+.bot-float-close:hover { background: rgba(255,255,255,.3); }
+</style>
+</head>
+<body>
+
+<!-- ════════════ WAITING ROOM ════════════ -->
+<div class="screen active" id="waitingScreen">
+  <div class="w-topbar">
+    <div class="w-logo">MilEd.One</div>
+    <div class="w-title-wrap">
+      <span class="w-welcome">ברוכים הבאים 👋</span>
+      <span class="w-stars">✦✦✦✦✦</span>
+      <span class="w-title" id="waitingCourseName">טוען...</span>
+    </div>
+    <div class="w-badge">⏳ ממתין לפתיחת שיעור</div>
+  </div>
+  <div class="w-hero">
+    <div class="w-pulse">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+      </svg>
+    </div>
+    <h1>ברוכים הבאים לכיתה</h1>
+    <p>המרצה עוד לא פתח את השיעור — בינתיים, בואו נתחמם 🧠</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+      <a href="/project_workspace.html?courseId=he_a2_arabic" class="w-project-link" onclick="return false;" title="נפתח בקרוב">
+        📁 פרויקט הגמר האישי שלי ←
+      </a>
+      <button class="w-team-project-link" onclick="enterTeamProject()">
+        👥 פרויקט הצוות המתמשך ←
+      </button>
+    </div>
+  </div>
+  <div class="w-grid">
+    <div class="w-card">
+      <div class="w-card-title">🧠 חימום מוחי</div>
+      <div class="quiz-q" id="warmupQuestion">טוען שאלת חימום...</div>
+      <div id="warmupAnswers"></div>
+      <div class="quiz-result" id="quizResult" style="display:none"></div>
+    </div>
+    <div class="w-card">
+      <div class="w-card-title">🎓 כרטיס כניסה</div>
+      <div class="ticket-instructions" id="ticketInstructions">
+        טוען משימת כניסה...
+      </div>
+      <div id="ticketForm">
+        <textarea class="ticket-ta" id="ticketText" placeholder="כתבו כאן (2–3 משפטים)..."></textarea>
+        <button class="ticket-submit" onclick="submitTicket()">📝 שלח כרטיס כניסה</button>
+      </div>
+      <div class="golden-ticket" id="goldenTicket">
+        <div class="gt-emoji">🎫✨</div>
+        <div class="gt-text">כרטיס הכניסה שלך נשלח!<br>אתה מוכן לשיעור</div>
+      </div>
+    </div>
+    <div class="w-card">
+      <div class="w-card-title">👥 מי כאן?</div>
+      <div class="peer-count" id="peerCount"></div>
+      <div id="peerList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ DOOR ANIMATION ════════════ -->
+<div id="doorAnim">
+  <div class="door-card">
+    <div class="door-emoji">🚪✅</div>
+    <div class="door-title">השיעור נפתח!</div>
+    <div class="door-sub">כניסה לכיתה...</div>
+  </div>
+</div>
+
+<!-- ════════════ LESSON ROOM ════════════ -->
+<div class="screen" id="lessonScreen" data-mode="lesson">
+
+  <!-- Topbar -->
+  <div class="l-topbar" style="position:relative;">
+    <div class="l-logo">MilEd.One</div>
+    <div style="position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;pointer-events:none;white-space:nowrap;">
+      <span class="topbar-system-label" style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;">מרחב למידה כיתתי</span>
+      <span class="topbar-stars" style="color:rgba(255,255,255,.35);font-size:11px;letter-spacing:2px;">✦✦✦✦✦</span>
+      <span style="color:#fff;font-size:17px;font-weight:800;letter-spacing:-.2px;" id="lessonCourseName">טוען...</span>
+    </div>
+    <div class="l-chips">
+      <span class="chip chip-default">👁️ סטודנט</span>
+      <span class="chip chip-purple">🎭 מנחה</span>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="project-mode-badge">📁 מצב פרויקט פעיל</div>
+    <div class="group-mode-badge">👥 עבודת צוות פעילה</div>
+    <button class="project-exit-btn" onclick="exitProjectMode()">← חזרה לשיעור</button>
+    <button class="group-exit-btn"   onclick="exitGroupMode()">← חזרה למרחב הכיתתי</button>
+    <button class="project-enter-btn" onclick="enterProjectMode()">📁 מרחב פרויקט גמר</button>
+    <button class="group-enter-btn"   onclick="enterGroupMode()">👥 מרחב עבודת צוות</button>
+  </div>
+
+  <!-- Broadcast Banner -->
+  <div id="broadcastBanner" style="display:none;">
+    <span class="broadcast-label">📡 הודעה מהמרצה · <span id="broadcastTime"></span></span>
+    <span class="broadcast-text" id="broadcastText"></span>
+    <button class="broadcast-x" onclick="document.getElementById('broadcastBanner').style.display='none'">✕</button>
+  </div>
+
+  <!-- Recall Banner -->
+  <div id="recallBanner">
+    <div class="recall-dot"></div>
+    <div class="recall-text">🔴 המרצה מבקש שכולם יחזרו לדיון הכיתתי עכשיו!</div>
+    <button class="recall-ack" onclick="ackRecall()">✓ הבנתי</button>
+  </div>
+
+  <!-- 3-column layout -->
+  <div class="l-layout">
+
+    <!-- LEFT: Bookshelf (lesson mode) -->
+    <aside class="panel panel-bookshelf">
+      <div class="panel-head">📚 חומרים לפעילות</div>
+      <div class="bookshelf-section">
+        <h3>פעילות נוכחית</h3>
+        <div style="font-size:12px;color:var(--muted);background:#f8fafc;border-radius:8px;padding:8px;border:1px solid var(--line);">
+          יחידה 1 — ניתוח פסקת פתיחה
+        </div>
+      </div>
+      <div class="bookshelf-section">
+        <h3>קשורים לפעילות הזאת</h3>
+        <div class="resource-card">
+          <div class="res-icon">📄</div>
+          <div><div class="res-title">טקסט לניתוח — פסקה א׳</div><div class="res-meta">PDF · יחידה 1</div></div>
+          <button class="res-btn">פתח</button>
+        </div>
+        <div class="resource-card">
+          <div class="res-icon">🎬</div>
+          <div><div class="res-title">הדגמה: זיהוי טענה מרכזית</div><div class="res-meta">וידאו · 4 דק׳</div></div>
+          <button class="res-btn">צפה</button>
+        </div>
+        <div class="resource-card">
+          <div class="res-icon">📋</div>
+          <div><div class="res-title">רשימת מושגים — ניתוח טקסט</div><div class="res-meta">מסמך עזר</div></div>
+          <button class="res-btn">פתח</button>
+        </div>
+      <div class="bookshelf-section">
+        <h3>משימות ממוקדות</h3>
+        <div class="resource-card" onclick="window.open('#','_blank')">
+          <div class="res-icon">📌</div>
+          <div><div class="res-title">לוח פדלט — תגובות לפסקה</div><div class="res-meta">Padlet · שיתופי</div></div>
+          <button class="res-btn">פתח</button>
+        </div>
+        <div class="resource-card" onclick="window.open('#','_blank')">
+          <div class="res-icon">📝</div>
+          <div><div class="res-title">שאלון — מה זיהיתי בפסקה?</div><div class="res-meta">Google Forms</div></div>
+          <button class="res-btn">מלא</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- LEFT: Project Stages (project mode) -->
+    <aside class="panel panel-project-stages">
+      <div class="panel-head">📋 שלבי הפרויקט</div>
+      <div class="pstage-list" id="pstageList">
+        <div class="pstage-wrap">
+          <button class="pstage-item completed" onclick="selectProjectStage(1)">
+            <div class="pstage-num">✓</div><div class="pstage-label">בחירת בעיה</div>
+          </button>
+          <div class="pstage-desc" id="pdesc-1">הגדרת הבעיה המקצועית שתרצה לפתור — תיאור הלקוח/ה, הקשר, והצורך.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item active" onclick="selectProjectStage(2)">
+            <div class="pstage-num">2</div><div class="pstage-label">ניסיונות קודמים</div>
+            <span style="font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;">פעיל</span>
+          </button>
+          <div class="pstage-desc open" id="pdesc-2">מה ניסו בעבר לפתור את הבעיה? מדוע הפתרונות לא הצליחו? ניתוח ביקורתי של הניסיונות.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(3)"><div class="pstage-num">3</div><div class="pstage-label">מקורות מידע</div></button>
+          <div class="pstage-desc" id="pdesc-3">איסוף וביקורת מקורות מידע רלוונטיים — בחינת מהימנות ורלוונטיות לבעיה.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(4)"><div class="pstage-num">4</div><div class="pstage-label">שתי אלטרנטיבות</div></button>
+          <div class="pstage-desc" id="pdesc-4">פיתוח שתי הצעות פתרון שונות, כולל יתרונות וחסרונות של כל אחת.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(5)"><div class="pstage-num">5</div><div class="pstage-label">בחירת פתרון</div></button>
+          <div class="pstage-desc" id="pdesc-5">בחירת הפתרון המועדף ונימוק מפורט מדוע הוא עדיף על האלטרנטיבה.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(6)"><div class="pstage-num">6</div><div class="pstage-label">כתיבת מסמך</div></button>
+          <div class="pstage-desc" id="pdesc-6">כתיבת המסמך המסכם — מבנה, שפה מקצועית, ציטוטים ומסקנות.</div>
+        </div>
+        <div class="pstage-wrap">
+          <button class="pstage-item" onclick="selectProjectStage(7)"><div class="pstage-num">7</div><div class="pstage-label">הצגה</div></button>
+          <div class="pstage-desc" id="pdesc-7">הכנה להצגה בפני הקהל — מבנה דקות, slide deck, ותרגול.</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- LEFT: Group Members (group mode) -->
+    <aside class="panel panel-group-members">
+      <div class="panel-head">👥 קבוצה שלי</div>
+      <div class="group-members-list">
+        <div class="group-member typing" id="gmYarin">
+          <div class="gm-avatar">י</div>
+          <div class="gm-info"><div class="gm-name">ירין כ.</div><div class="gm-role">⌨️ כותב/ת כרגע</div></div>
+          <div class="gm-status writing"></div>
+        </div>
+        <div class="group-member" id="gmNoor">
+          <div class="gm-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+          <div class="gm-info"><div class="gm-name">נור מ.</div><div class="gm-role">🔍 מחקר</div></div>
+          <div class="gm-status online"></div>
+        </div>
+        <div class="group-member" id="gmAmir">
+          <div class="gm-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+          <div class="gm-info"><div class="gm-name">אמיר ש.</div><div class="gm-role">🎤 מציג/ה</div></div>
+          <div class="gm-status online"></div>
+        </div>
+        <div class="group-member" style="border-color:#6ee7b7;background:#f0fdf4;">
+          <div class="gm-avatar" style="background:linear-gradient(135deg,#059669,#065f46);">את</div>
+          <div class="gm-info"><div class="gm-name">את עצמך</div><div class="gm-role">📋 מנסח/ת</div></div>
+          <div class="gm-status online" style="box-shadow:0 0 0 2px #6ee7b7;background:#059669;"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: Work Area -->
+    <section class="panel" style="overflow-y:auto;">
+
+      <!-- Layer 3: Group Task Area (group mode) -->
+      <div class="group-task-area" id="groupTaskArea">
+        <div class="group-task-head">
+          <div class="group-task-title">משימת צוות — השוואת גישות ניתוח</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="call-teacher-btn" onclick="callTeacher()">⚡ קרא/י למרצה</button>
+            <div class="group-timer" id="groupTimer">⏱ 10:00</div>
+          </div>
+        </div>
+        <div class="group-task-card">
+          <div class="group-task-label">מה הקבוצה צריכה לעשות</div>
+          <div class="group-task-text">
+            השוו בין שתי גישות לניתוח פסקת הפתיחה: <strong>גישה רטורית</strong> (פנייה לרגש ושכנוע) לעומת <strong>גישה תוכנית</strong> (מה הפסקה אומרת). גבשו עמדה קבוצתית אחת ונמקו בשלושה משפטים.
+          </div>
+        </div>
+        <div class="group-roles">
+          <div class="role-chip">⌨️ מנסח/ת: ירין</div>
+          <div class="role-chip">🔍 מחקר: נור</div>
+          <div class="role-chip">🎤 מציג/ה: אמיר</div>
+          <div class="role-chip" style="background:#ecfdf5;border-color:#059669;color:#065f46;">📋 את: ריכוז</div>
+        </div>
+        <div class="group-workspace">
+          <div class="group-workspace-head">📝 תרומות הקבוצה</div>
+          <div class="group-typing-indicator" id="groupTypingIndicator"></div>
+
+          <!-- Contribution feed — one block per member -->
+          <div class="group-contrib-feed" id="groupContribFeed"></div>
+
+          <!-- My contribution lane -->
+          <div class="group-my-contrib">
+            <div class="my-contrib-label">✏️ הוסיפי את חלקך — 📋 ריכוז</div>
+            <textarea class="sub-ta" id="groupMyContrib" placeholder="כתבי את נקודת המבט שלך לתוצר הקבוצתי..." style="min-height:60px;" oninput="onGroupType()"></textarea>
+            <div class="sub-actions">
+              <button class="sub-btn primary" onclick="addMyContrib()" style="background:linear-gradient(135deg,#34d399,#059669);">+ הוסיפי</button>
+              <button class="sub-btn secondary" onclick="submitGroupWork()">הגישו תשובת קבוצה</button>
+            </div>
+          </div>
+
+          <!-- Master draft (role-gated: מנסח writes, others can challenge) -->
+          <div class="master-draft" id="masterDraft">
+            <div class="master-draft-head">
+              <span class="master-draft-title">📄 טיוטת הצוות הסופית</span>
+              <span class="draft-author-badge">✍️ ירין כ. — מנסח/ת</span>
+            </div>
+            <div class="master-draft-body" id="masterDraftBody">
+              <span style="font-style:italic;color:var(--muted);">הטיוטה הסופית תנוסח כאן ע"י ירין לאחר קריאת התרומות...</span>
+            </div>
+            <button class="challenge-btn" onclick="addChallenge()">🧐 הוסיפי הערה ביקורתית</button>
+          </div>
+        </div>
+
+        <!-- Veto panel (shown after clicking "הגישו") -->
+        <div class="veto-panel" id="vetoPanel">
+          <div class="veto-head">⏳ ממתין לאישור כל הצוות</div>
+          <div class="veto-chips">
+            <div class="veto-chip" id="vc-yarin">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+              <span class="vc-name">ירין כ.</span>
+              <span class="vc-status">⏳ ממתין/ה</span>
+            </div>
+            <div class="veto-chip" id="vc-noor">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+              <span class="vc-name">נור מ.</span>
+              <span class="vc-status">⏳ ממתין/ה</span>
+            </div>
+            <div class="veto-chip" id="vc-amir">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+              <span class="vc-name">אמיר ש.</span>
+              <span class="vc-status">⏳ ממתין/ה</span>
+            </div>
+            <div class="veto-chip approved" id="vc-me">
+              <div class="vc-avatar" style="background:linear-gradient(135deg,#059669,#065f46);">את</div>
+              <span class="vc-name">את עצמך</span>
+              <span class="vc-status">✅ אישרת</span>
+            </div>
+          </div>
+          <button class="veto-final-btn" id="vetoFinalBtn" disabled onclick="finalSubmitGroup()">הגשה סופית (ממתין לאישורים...)</button>
+          <div class="veto-hint" id="vetoHint">הגשה תתאפשר לאחר שכולם יאשרו</div>
+        </div>
+      </div>
+
+      <!-- Context Rail — Lesson Stages -->
+      <div class="context-rail" id="contextRail">
+        <div class="ctx-rail-label">שלבים מתוכננים של השיעור</div>
+        <div class="ctx-stages">
+          <div class="ctx-stage">
+            <div class="ctx-stage-box done">חימום מוחי ✓</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box done">כרטיס כניסה ✓</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box active" id="ctxCurrentLabel">ניתוח פסקת פתיחה</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box">דיון כיתתי</div>
+          </div>
+          <div class="ctx-stage-connector"></div>
+          <div class="ctx-stage">
+            <div class="ctx-stage-box">סיכום ורפלקציה</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project mode header -->
+      <div class="project-work-head">
+        <div class="project-work-title">פרויקט גמר — פתרון בעיה מקצועית</div>
+        <div class="project-work-sub" id="projectWorkSub">שלב פעיל: ניסיונות קודמים וסיבות לאי הצלחה</div>
+      </div>
+
+      <!-- Sprint Stepper (project mode) -->
+      <div class="sprint-stepper">
+        <div class="sprint-stepper-label">⚡ שלבי ביצוע — שלב 2</div>
+        <div class="sprint-steps">
+          <div class="sprint-step">
+            <div class="sprint-bubble done" onclick="selectSprint(1)">✓</div>
+            <div class="sprint-label">פתיחה</div>
+          </div>
+          <div class="sprint-connector done"></div>
+          <div class="sprint-step">
+            <div class="sprint-bubble active" onclick="selectSprint(2)">2</div>
+            <div class="sprint-label">ניסוח</div>
+          </div>
+          <div class="sprint-connector"></div>
+          <div class="sprint-step">
+            <div class="sprint-bubble" onclick="selectSprint(3)">3</div>
+            <div class="sprint-label">פתרונות</div>
+          </div>
+          <div class="sprint-connector"></div>
+          <div class="sprint-step">
+            <div class="sprint-bubble" onclick="selectSprint(4)">4</div>
+            <div class="sprint-label">סיכום</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project guidance (project mode) -->
+      <div class="project-guidance">
+        <div class="project-guidance-title">📌 ספרינט פעיל — ניסוח הבעיה</div>
+        <div class="project-guidance-text" id="projectGuidanceText">
+          תאר את הבעיה שבחרת: מי הלקוח? מהי הבעיה הספציפית?<br>
+          השתמש בבוט הפרויקט מימין לסיוע בניסוח.
+        </div>
+      </div>
+
+      <!-- ── ACTIVITY FOCUS AREA (lesson mode) ── -->
+      <div class="activity-focus-area" id="activityFocusArea">
+
+        <!-- Empty State -->
+        <div class="activity-empty" id="activityEmpty">
+          <div class="activity-empty-icon">⏳</div>
+          <div class="activity-empty-title">ממתין להנחיה מהמרצה</div>
+          <div class="activity-empty-sub">השיעור פתוח, אבל עדיין לא הוגדרה פעילות.<br>ניתן לעיין בחומרים בינתיים.</div>
+          <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;justify-content:center;">
+            <button class="sub-btn secondary" onclick="document.querySelector('.bookshelf-section').scrollIntoView({behavior:'smooth'})" style="font-size:12px;padding:7px 14px;">📚 עיין בחומרים</button>
+            <button class="sub-btn secondary" onclick="document.getElementById('msgInput').focus()" style="font-size:12px;padding:7px 14px;">📩 שלח שאלה למרצה</button>
+          </div>
+        </div>
+
+        <!-- Activity Card -->
+        <div class="activity-card" id="activityCard" style="display:none">
+          <div class="activity-card-header">
+            <div style="width:100%;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;">
+              <span style="font-size:16px;font-weight:900;color:#1e3a8a;letter-spacing:-.2px;">משימה לביצוע</span>
+              <span style="color:#93c5fd;font-size:14px;">←</span>
+              <span style="font-size:15px;font-weight:400;color:#334155;" id="activityTitle">ניתוח פסקת פתיחה</span>
+            </div>
+          </div>
+          <div class="activity-blocks">
+            <div class="activity-block">
+              <div class="activity-block-label">מה עושים עכשיו</div>
+              <div class="activity-block-text" id="activityInstructions">
+                קרא את הפסקה המצורפת וכתוב 3–5 משפטים שמזהים את הטענה המרכזית ואת הדרך שבה היא מנוסחת.
+              </div>
+            </div>
+            <div class="activity-block">
+              <div class="activity-block-label">מה מגישים</div>
+              <div class="activity-block-text" id="activityExpected">
+                תשובה קצרה של 3–5 משפטים — בעברית תקנית
+                <span class="activity-block-tag">⏱ 10 דקות</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:10px 18px 14px;display:flex;align-items:center;gap:8px;background:#fafbff;border-top:1px solid var(--line);">
+            <span style="font-size:12px;color:var(--muted);">צריך עזרה?</span>
+            <span style="font-size:12px;color:#1d4ed8;font-weight:700;">השתמש בבוט מימין ←</span>
+          </div>
+        </div>
+
+      </div><!-- /activity-focus-area -->
+
+      <!-- Layer 1: Peer Insight Panel (visible when activity is active) -->
+      <div class="peer-insight-panel" id="peerInsightPanel" style="display:none">
+        <div class="peer-insight-head">
+          <span class="peer-insight-title">👥 מבט מהכיתה</span>
+          <span class="peer-count-badge">4 תגובות</span>
+        </div>
+        <div class="peer-examples">
+          <div class="peer-example">
+            <div class="peer-avatar-sm">א</div>
+            <div class="peer-example-text">"הטענה המרכזית היא שהמחבר מנסה לשכנע שהבעיה קיימת לפני שהוא מציע פתרון — האסטרטגיה היא לבנות מחויבות רגשית תחילה."</div>
+          </div>
+          <div class="peer-example">
+            <div class="peer-avatar-sm">ב</div>
+            <div class="peer-example-text">"אפשר לקרוא את הפסקה גם כפנייה רטורית מהסוף — הטענה מופיעה רק לאחר שהקורא כבר מזדהה עם הבעיה."</div>
+          </div>
+        </div>
+        <div class="peer-compare-prompt">💬 מה דומה ומה שונה בין שתי הגישות הללו?</div>
+        <button class="sub-btn secondary" style="font-size:12px;padding:7px 14px;" onclick="startPeerCompare()">השווה לתשובה שלך ←</button>
+      </div>
+
+      <!-- Submission Panel — FIRST -->
+      <div class="submission-panel">
+        <div class="sub-panel-head">📄 הגשת הפעילות</div>
+        <div class="sub-hint" id="subHint">כתוב כאן את תשובתך לפעילות הנוכחית</div>
+        <textarea class="sub-ta" id="writeTa" placeholder="כתוב כאן את תשובתך לפעילות הנוכחית..."></textarea>
+        <div class="sub-actions">
+          <button class="sub-btn primary" onclick="sendSubmit()">📄 הגש פעילות</button>
+          <button class="sub-btn record"  onclick="startRecord(this)">🎙️ הקליטו</button>
+          <button class="sub-btn upload"  onclick="triggerUpload()">📎 העלו קובץ</button>
+        </div>
+        <!-- Success banner (shown after submit) -->
+        <div class="sub-submitted-banner">
+          <div style="font-size:22px;">✅</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#15803d;">הפעילות הוגשה!</div>
+            <div style="font-size:12px;color:var(--muted);">עכשיו העריכו תשובת עמית למטה ↓</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 2: Peer Review Panel (revealed inline after submission) -->
+      <div class="peer-review-panel" id="peerReviewPanel" style="display:none">
+        <div class="sub-panel-head">📊 הערכת עמיתים — ניתוח טקסט</div>
+        <div class="sub-hint">קראו את התשובה הבאה והעריכו אותה לפי הקריטריונים</div>
+
+        <div class="peer-answer-card">
+          <div class="peer-answer-label">תשובה אנונימית מהכיתה</div>
+          <div class="peer-answer-text">"הטענה המרכזית בפסקה היא שהמחבר מציב שאלה רטורית כדי למשוך את הקורא. הוא משתמש בשפה רגשית לצד נתונים כדי לבסס את הטיעון. לדעתי, האסטרטגיה הרטורית כאן היא שכנוע דרך פאתוס — פנייה לרגש לפני פנייה לשכל."</div>
+        </div>
+
+        <!-- 4-level verbal scale per criterion -->
+        <div class="peer-rubric">
+          <div class="rubric-item">
+            <div class="rubric-q">עד כמה הטענה המרכזית זוהתה?</div>
+            <div class="rubric-scale">
+              <button class="rubric-scale-pill" data-group="q1" data-level="1" onclick="selectRubric(this)">כלל לא</button>
+              <button class="rubric-scale-pill" data-group="q1" data-level="2" onclick="selectRubric(this)">במידה מועטה</button>
+              <button class="rubric-scale-pill" data-group="q1" data-level="3" onclick="selectRubric(this)">ברובה</button>
+              <button class="rubric-scale-pill" data-group="q1" data-level="4" onclick="selectRubric(this)">בהחלט ✓</button>
+            </div>
+          </div>
+          <div class="rubric-item">
+            <div class="rubric-q">עד כמה ההסבר מבוסס על הטקסט?</div>
+            <div class="rubric-scale">
+              <button class="rubric-scale-pill" data-group="q2" data-level="1" onclick="selectRubric(this)">כלל לא</button>
+              <button class="rubric-scale-pill" data-group="q2" data-level="2" onclick="selectRubric(this)">במידה מועטה</button>
+              <button class="rubric-scale-pill" data-group="q2" data-level="3" onclick="selectRubric(this)">ברובה</button>
+              <button class="rubric-scale-pill" data-group="q2" data-level="4" onclick="selectRubric(this)">בהחלט ✓</button>
+            </div>
+          </div>
+          <div class="rubric-item">
+            <div class="rubric-q">עד כמה נעשה שימוש במושגים מקצועיים?</div>
+            <div class="rubric-scale">
+              <button class="rubric-scale-pill" data-group="q3" data-level="1" onclick="selectRubric(this)">כלל לא</button>
+              <button class="rubric-scale-pill" data-group="q3" data-level="2" onclick="selectRubric(this)">במידה מועטה</button>
+              <button class="rubric-scale-pill" data-group="q3" data-level="3" onclick="selectRubric(this)">ברובה</button>
+              <button class="rubric-scale-pill" data-group="q3" data-level="4" onclick="selectRubric(this)">בהחלט ✓</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Emoji bank (20 elements) -->
+        <div class="emoji-bank-label">🎨 צרפו אלמנט לתגובה (בחרו אחד)</div>
+        <div class="emoji-bank" id="emojiBank">
+          <button class="emoji-item" onclick="selectEmoji(this)">💡</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🌟</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">✅</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🎯</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">👏</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">💪</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🌱</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">✨</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🎉</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">👍</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🔍</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🤔</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">💬</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🧐</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🔑</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">⚠️</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">❓</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">📝</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">🔄</button>
+          <button class="emoji-item" onclick="selectEmoji(this)">📚</button>
+        </div>
+
+        <textarea class="sub-ta" id="peerFeedbackTa" placeholder="הערה (רשות) — הוסיפו פרט או נימוק..."></textarea>
+        <div class="sub-actions">
+          <button class="sub-btn primary" onclick="sendPeerReview()">שלח משוב</button>
+          <button class="sub-btn secondary" onclick="skipPeerReview()">דלג</button>
+        </div>
+      </div>
+
+      <!-- WAF Stream — SECOND -->
+      <div class="waf-section">
+        <div class="waf-section-head">📩 עדכונים ושאלות למרצה</div>
+        <div class="comm-stream" id="commStream">
+          <div class="waf-msg" id="wafEmptyHint" style="color:var(--muted);font-size:13px;padding:8px 0;font-style:italic;">אין עדיין עדכונים. שלח שאלה למרצה.</div>
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;">
+          <input id="msgInput" type="text"
+            style="flex:1;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-family:inherit;font-size:13px;"
+            placeholder="שלח שאלה או הערה למרצה..."
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg();}">
+          <button class="sub-btn secondary" onclick="sendMsg()">💬 שלח שאלה למרצה</button>
+        </div>
+      </div>
+
+    </section><!-- /center -->
+
+    <!-- RIGHT: Chat Panel -->
+    <aside class="panel chat-panel">
+
+      <!-- Bot Tabs (lesson mode) -->
+      <div class="bot-tabs">
+        <button class="bot-tab active" onclick="switchBot(this,'main')">🤖 בוט הקורס</button>
+      </div>
+
+      <!-- Bot Activity Context Line -->
+      <div class="bot-activity-ctx" id="botActivityCtx">
+        ליווי למשימה: <strong id="botActivityLabel">ניתוח פסקת פתיחה</strong>
+      </div>
+
+      <!-- Group Bot Header (group mode) -->
+      <div class="group-bot-direct">
+        <div class="group-bot-icon">👥</div>
+        <div>
+          <div class="group-bot-name">בוט קבוצתי</div>
+          <div class="group-bot-sub">מלווה את הדיון הקבוצתי</div>
+        </div>
+      </div>
+
+      <!-- Project Bot Header (project mode) -->
+      <div class="project-bot-direct">
+        <div class="project-bot-icon">📝</div>
+        <div>
+          <div class="project-bot-name">בוט פרויקט הגמר</div>
+          <div class="project-bot-sub" id="projectBotSub">שלב 2 — ניסיונות קודמים</div>
+        </div>
+      </div>
+
+      <!-- Chat Window / iframe -->
+      <div class="chat-window" id="chatWindow" style="flex:1;overflow:hidden;padding:0;">
+        <iframe id="chatFrame"
+          style="width:100%;height:100%;border:none;border-radius:0;"
+          title="lesson-chat"></iframe>
+      </div>
+
+      <!-- Fallback inline chat (shown when no courseId/botType available) -->
+      <div id="chatFallback" style="display:none;flex:1;overflow-y:auto;padding:10px 14px;">
+        <div class="chat-bubble bot">שלום! כדי לדבר עם הבוט, פתח את הדף דרך קישור הקורס עם courseId תקין.</div>
+      </div>
+
+      <!-- Chat Input (shown in fallback mode only) -->
+      <div class="chat-input-row" id="chatInputRowFallback" style="display:none;">
+        <input class="chat-input" id="chatInput" placeholder="שאל שאלה על הפעילות..." onkeydown="handleChatKey(event)">
+        <button class="chat-send" onclick="sendChat()">שלח</button>
+      </div>
+    </aside>
+
+  </div><!-- /l-layout -->
+
+  <!-- Floating Bot Bubble (lesson mode only) -->
+  <button class="bot-bubble" id="botBubble" onclick="openBotFloat()">
+    <div class="bot-face">
+      <div class="bot-eyes">
+        <div class="bot-eye left"></div>
+        <div class="bot-eye right"></div>
+      </div>
+      <div class="bot-smile"></div>
+    </div>
+    <div class="bubble-label" id="bubbleText">צריך עזרה בניתוח?</div>
+  </button>
+
+  <!-- Float Panel Overlay -->
+  <div class="bot-float-overlay" id="botFloatOverlay" onclick="closeBotFloat()"></div>
+
+  <!-- Float Panel -->
+  <div class="bot-float-panel" id="botFloatPanel">
+    <div class="bot-float-head">
+      <div>
+        <div class="bot-float-name">✦ בוט הקורס</div>
+        <div class="bot-float-ctx" id="botFloatCtx">ליווי למשימה: ניתוח פסקת פתיחה</div>
+      </div>
+      <button class="bot-float-close" onclick="closeBotFloat()">✕</button>
+    </div>
+    <div class="chat-window" id="chatWindowFloat" style="flex:1;overflow:hidden;padding:0;">
+      <iframe id="chatFrameFloat"
+        style="width:100%;height:100%;border:none;"
+        title="float-chat"></iframe>
+    </div>
+    <div class="chat-input-row" style="display:none;"></div>
+  </div>
+
+</div><!-- /lessonScreen -->
+
+<!-- ═══════════════════════════════════════════
+     TEAM PROJECT SCREEN  (async, multi-session)
+════════════════════════════════════════════ -->
+<div id="teamProjectScreen" class="screen">
+  <div class="tp-topbar">
+    <button class="tp-topbar-back" onclick="exitTeamProject()">← חזרה להמתנה</button>
+    <div class="tp-topbar-title">
+      <span style="color:rgba(255,255,255,.45);font-size:11px;letter-spacing:1px;display:block;margin-bottom:1px;">פרויקט צוות מתמשך</span>
+      עברית מתקדמים א׳ — אופטיקה
+    </div>
+    <div class="tp-topbar-stage">שלב 2 / 7</div>
+  </div>
+
+  <div class="tp-layout">
+    <!-- LEFT: async member status -->
+    <aside class="tp-members">
+      <div class="tp-members-head">👥 הצוות שלנו</div>
+      <div class="tp-member-card">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">ירין כ.</div>
+          <div class="tp-mem-role">✍️ מנסח/ת</div>
+          <div class="tp-mem-last">לפני 12 דקות</div>
+        </div>
+        <div class="tp-mem-count">5 קטעים</div>
+      </div>
+      <div class="tp-member-card">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">נור מ.</div>
+          <div class="tp-mem-role">🔍 חוקר/ת</div>
+          <div class="tp-mem-last">לפני 2 שעות</div>
+        </div>
+        <div class="tp-mem-count">3 מקורות</div>
+      </div>
+      <div class="tp-member-card">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">אמיר ש.</div>
+          <div class="tp-mem-role">🎤 מציג/ה</div>
+          <div class="tp-mem-last">אתמול 20:15</div>
+        </div>
+        <div class="tp-mem-count">1 קטע</div>
+      </div>
+      <div class="tp-member-card me">
+        <div class="tp-mem-avatar" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">את</div>
+        <div class="tp-mem-info">
+          <div class="tp-mem-name">את (ריכוז)</div>
+          <div class="tp-mem-role">📋 מרכז/ת</div>
+          <div class="tp-mem-last" style="color:#4f46e5;font-weight:700;">כאן עכשיו</div>
+        </div>
+        <div class="tp-mem-count">2 קטעים</div>
+      </div>
+      <button class="tp-baton-btn" onclick="showBatonModal()">
+        📌 העבירי מקל<br>
+        <span style="font-size:10px;font-weight:600;opacity:.7;">הצהירי מה השלמת היום</span>
+      </button>
+    </aside>
+
+    <!-- CENTER: tabbed document -->
+    <section class="tp-center">
+      <div class="tp-tabs">
+        <button class="tp-tab active" onclick="switchTpTab(this,'doc')">📄 מסמך</button>
+        <button class="tp-tab" onclick="switchTpTab(this,'sources')">📚 מקורות</button>
+        <button class="tp-tab" onclick="switchTpTab(this,'tasks')">✅ משימות</button>
+      </div>
+
+      <div class="tp-tab-content" id="tpTabDoc">
+        <div class="doc-section">
+          <div class="doc-section-attr">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+            <span class="doc-attr-name">ירין כ.</span>
+            <span class="doc-attr-time">לפני 12 דקות</span>
+          </div>
+          <div class="doc-section-text"><strong>פסקה 1 — הגישה הרטורית:</strong><br>
+            הגישה הרטורית מתמקדת בדרך שבה טקסט משפיע על הקורא. הפסקה נפתחת בשאלה רטורית שנועדה לזמן את הקורא לפנות פנימה לפני שהוא מתנגד — אסטרטגיה של פאתוס לפני לוגוס.</div>
+        </div>
+        <div class="doc-section">
+          <div class="doc-section-attr">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span>
+            <span class="doc-attr-time">לפני 2 שעות</span>
+          </div>
+          <div class="doc-section-text"><strong>פסקה 2 — הגישה התוכנית:</strong><br>
+            הגישה התוכנית שואלת "מה הפסקה אומרת?" הטענה המרכזית: "אנשים נוטים לתעדף מידע חדש על פני ידע קיים." ההנמקה ליניארית: הצגת בעיה → ראיות → מסקנה.</div>
+        </div>
+        <div class="doc-section">
+          <div class="doc-section-attr">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">את</div>
+            <span class="doc-attr-name">את עצמך</span>
+            <span class="doc-attr-time">3 ימים אחורה</span>
+          </div>
+          <div class="doc-section-text"><strong>פסקה 3 — הסינתזה:</strong><br>
+            שתי הגישות משלימות. הרטורית מסבירה <em>למה</em> הקורא מושפע; התוכנית מסבירה <em>מה</em> הקורא מבין. טקסט איכותי פועל על שני המישורים בו-זמנית.</div>
+        </div>
+        <div class="doc-my-input" id="tpMyInputBlock">
+          <div class="doc-my-input-label">✏️ הוסיפי קטע חדש — 📋 ריכוז</div>
+          <textarea class="sub-ta" id="tpMyContrib" placeholder="כתבי את הקטע שלך..." style="min-height:70px;"></textarea>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="sub-btn primary" onclick="addTpContrib()" style="background:linear-gradient(135deg,#818cf8,#4f46e5);">+ הוסיפי קטע</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tp-tab-content hidden" id="tpTabSources">
+        <div class="source-card">
+          <div class="doc-section-attr" style="padding:0 0 8px;background:none;border:none;">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span><span class="doc-attr-time">אתמול</span>
+          </div>
+          <div class="source-title">Aristotle, Rhetoric — Book I, Chapter 2</div>
+          <div class="source-meta">על שלושת יסודות השכנוע: אתוס, פאתוס, לוגוס</div>
+        </div>
+        <div class="source-card">
+          <div class="doc-section-attr" style="padding:0 0 8px;background:none;border:none;">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span><span class="doc-attr-time">לפני 2 שעות</span>
+          </div>
+          <div class="source-title">Fahnestock & Secor (2004) — A Rhetoric of Argument</div>
+          <div class="source-meta">הבחנה בין ניתוח סמנטי לניתוח רטורי של טקסטים אקדמיים</div>
+        </div>
+        <div class="source-card">
+          <div class="doc-section-attr" style="padding:0 0 8px;background:none;border:none;">
+            <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+            <span class="doc-attr-name">נור מ.</span><span class="doc-attr-time">לפני 2 שעות</span>
+          </div>
+          <div class="source-title">מדריך לכתיבה אקדמית — אוניברסיטת בן-גוריון (2022)</div>
+          <div class="source-meta">פרק 3: זיהוי טענות מרכזיות בטקסטים מורכבים</div>
+        </div>
+        <div class="doc-my-input" style="margin-top:8px;">
+          <div class="doc-my-input-label">📎 הוסיפי מקור</div>
+          <input type="text" class="sub-ta" placeholder="שם המקור, מחבר, שנה..." style="padding:8px 12px;">
+          <div style="margin-top:8px;"><button class="sub-btn primary" style="background:linear-gradient(135deg,#818cf8,#4f46e5);">+ הוסיפי מקור</button></div>
+        </div>
+      </div>
+
+      <div class="tp-tab-content hidden" id="tpTabTasks">
+        <div class="task-item">
+          <div class="task-check done">✓</div>
+          <div class="task-text">לנסח את הגדרת הגישה הרטורית</div>
+          <div class="task-owner">ירין</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check done">✓</div>
+          <div class="task-text">לאתר 3 מקורות אקדמיים</div>
+          <div class="task-owner">נור</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+          <div class="task-text">לכתוב את פסקת הסינתזה</div>
+          <div class="task-owner">את</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+          <div class="task-text">להכין סיכום מצגת — 5 שקפים</div>
+          <div class="task-owner">אמיר</div>
+        </div>
+        <div class="task-item">
+          <div class="task-check" onclick="this.classList.toggle('done');this.textContent=this.classList.contains('done')?'✓':''"></div>
+          <div class="task-text">לבדוק את כל המסמך יחד — שיעור הבא</div>
+          <div class="task-owner">כולם</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: digest + bot -->
+    <aside class="tp-right">
+      <div class="tp-digest">
+        <div class="tp-digest-head">⚡ מה השתנה</div>
+        <div class="tp-digest-item">
+          <div class="tp-digest-dot" style="background:#34d399;"></div>
+          <span>ירין עדכנ/ה 2 פסקאות — לפני 12 דק'</span>
+        </div>
+        <div class="tp-digest-item">
+          <div class="tp-digest-dot" style="background:#6ee7b7;"></div>
+          <span>נור הוסיפ/ה מקור חדש — לפני שעתיים</span>
+        </div>
+        <div class="tp-digest-item">
+          <div class="tp-digest-dot" style="background:#94a3b8;"></div>
+          <span>אמיר עיין/ה — אתמול, ללא עדכון</span>
+        </div>
+      </div>
+      <div class="project-bot-direct" style="display:flex;background:linear-gradient(180deg,#eef2ff,#f5f3ff);border-bottom:1px solid #c7d2fe;">
+        <div class="project-bot-icon" style="background:linear-gradient(135deg,#818cf8,#4f46e5);">🤖</div>
+        <div>
+          <div class="project-bot-name" style="color:#312e81;">בוט הפרויקט</div>
+          <div class="project-bot-sub" style="color:#6366f1;">מלווה את תהליך הסינתזה</div>
+        </div>
+      </div>
+      <div class="chat-window" id="tpChatWindow">
+        <div class="chat-bubble bot" style="background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-color:#c7d2fe;">
+          ברוכה השבה! ירין הוסיפ/ה 2 פסקאות מאז הביקור האחרון שלך. 📚<br>
+          <strong>שאלה לחשיבה:</strong> איך תקשרי את הקטעים שלהם לסינתזה שלך?
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="tpChatInput" placeholder="שאלי את הבוט..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendTpChat();}">
+        <button class="chat-send" onclick="sendTpChat()">שלח</button>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- ══ AI Digest Modal ══ -->
+<div class="modal-overlay" id="digestModal">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="modal-head">👋 ברוכה השבה!</div>
+    <div class="modal-sub">הנה מה שהשתנה מאז הביקור האחרון שלך (לפני יומיים):</div>
+    <div class="digest-change">
+      <div class="digest-change-avatar" style="background:linear-gradient(135deg,#34d399,#059669);">י</div>
+      <div class="digest-change-text">ירין הוסיפ/ה 2 פסקאות לגישה הרטורית</div>
+      <div class="digest-change-time">12 דק'</div>
+    </div>
+    <div class="digest-change">
+      <div class="digest-change-avatar" style="background:linear-gradient(135deg,#6ee7b7,#059669);">נ</div>
+      <div class="digest-change-text">נור הוסיפ/ה מקור אקדמי חדש</div>
+      <div class="digest-change-time">2 שע'</div>
+    </div>
+    <div class="digest-change" style="margin-bottom:16px;">
+      <div class="digest-change-avatar" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">א</div>
+      <div class="digest-change-text">אמיר עיין/ה ולא עדכנ/ה — סטטוס: "ממתין"</div>
+      <div class="digest-change-time">אתמול</div>
+    </div>
+    <button class="modal-primary-btn" onclick="closeDigestModal()">✓ הבנתי — כניסה לפרויקט</button>
+  </div>
+</div>
+
+<!-- ══ Pass-the-Baton Modal ══ -->
+<div class="modal-overlay" id="batonModal">
+  <div class="modal-box" style="max-width:380px;">
+    <div class="modal-head">📌 העברת מקל</div>
+    <div class="modal-sub">לפני יציאה — השאירי סטטוס קצר לחברי הצוות</div>
+    <textarea class="sub-ta" id="batonText" placeholder='למשל: "השלמתי את פסקת הסינתזה. נשאר לבדוק קישור למקורות של נור."' style="min-height:80px;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="sub-btn primary" onclick="submitBaton()" style="background:linear-gradient(135deg,#818cf8,#4f46e5);flex:1;">שמרי וצאי</button>
+      <button class="sub-btn secondary" onclick="document.getElementById('batonModal').classList.remove('open')">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="/firebase-init.js"></script>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   MiledState — Single State Machine for all lesson modes
+   Each state is the single source of truth for:
+   - which screen is active
+   - which data-mode is set (drives all CSS structural rules)
+   - which within-lesson panels are visible
+   - bot bubble text + float panel context
+   CSS data-mode rules handle structural layout/visibility.
+   JS handles only fine-grained panel state within lesson mode.
+══════════════════════════════════════════════════════ */
+const MiledState = {
+  current: 'waiting',
+
+  config: {
+    waiting: {
+      screen: 'waiting',
+    },
+    lesson_empty: {
+      screen: 'lesson', mode: 'lesson',
+      activityEmpty: true,  activityCard: false,
+      submission: false, peerInsight: false, peerReview: false,
+      bubbleText: 'שאל שאלה חופשית',
+      floatCtx:   'שאלות חופשיות — אין פעילות פעילה',
+      botLabel:   'שאלות חופשיות',
+      onEnter() { setChatFrameForBot(); },
+    },
+    lesson_activity: {
+      screen: 'lesson', mode: 'lesson',
+      activityEmpty: false, activityCard: true,
+      submission: true, peerInsight: true, peerReview: false,
+      bubbleText: 'צריך עזרה?',
+      floatCtx:   'ליווי למשימה הנוכחית',
+      botLabel:   'פעילות נוכחית',
+      onEnter() {
+        // Reset submission panel to fresh state
+        document.querySelector('.submission-panel')?.classList.remove('submitted');
+        const wta = document.getElementById('writeTa');
+        if (wta) wta.value = '';
+        // Hide peer review, reset rubric + emoji
+        const pr = document.getElementById('peerReviewPanel');
+        if (pr) pr.style.display = 'none';
+        document.querySelectorAll('.rubric-scale-pill').forEach(b => b.classList.remove('sel'));
+        document.querySelectorAll('.emoji-item').forEach(b => b.classList.remove('sel'));
+        const pft = document.getElementById('peerFeedbackTa');
+        if (pft) pft.value = '';
+        setChatFrameForBot();
+      },
+    },
+    project: {
+      screen: 'lesson', mode: 'project',
+      onEnter() { setChatFrameForBot('project'); },
+    },
+    group: {
+      screen: 'lesson', mode: 'group',
+      onEnter() {
+        // Reset veto + workspace state
+        document.querySelector('.group-workspace').style.display = '';
+        document.getElementById('vetoPanel').style.display = 'none';
+        document.querySelectorAll('.veto-chip').forEach(c => c.classList.remove('approved'));
+        document.querySelector('#vc-me')?.classList.add('approved');
+        document.querySelectorAll('.veto-chip .vc-status').forEach((s,i) => {
+          s.textContent = i === 3 ? '✅ אישרת' : '⏳ ממתין/ה';
+        });
+        const vfb = document.getElementById('vetoFinalBtn');
+        if (vfb) { vfb.classList.remove('ready'); vfb.disabled = true; vfb.textContent = 'הגשה סופית (ממתין לאישורים...)'; }
+        const mdb = document.getElementById('masterDraftBody');
+        if (mdb) mdb.innerHTML = '<span style="font-style:italic;color:var(--muted);">הטיוטה הסופית תנוסח כאן לאחר קריאת התרומות...</span>';
+        startGroupTimer();
+      },
+    },
+    team_project: {
+      screen: 'team_project',
+      onEnter() { setTimeout(() => showDigestModal(), 350); },
+    },
+  },
+
+  go(name) {
+    const s = this.config[name];
+    if (!s) return;
+    const prev = this.current;
+    this.current = name;
+
+    // ── Screen ──
+    document.getElementById('waitingScreen').classList.toggle('active',     s.screen === 'waiting');
+    document.getElementById('lessonScreen').classList.toggle('active',      s.screen === 'lesson');
+    document.getElementById('teamProjectScreen').classList.toggle('active', s.screen === 'team_project');
+
+    // ── data-mode → drives all CSS structural rules ──
+    if (s.mode) document.getElementById('lessonScreen').dataset.mode = s.mode;
+
+    // ── Within-lesson fine-grained panel visibility ──
+    if (s.activityEmpty !== undefined) {
+      document.getElementById('activityEmpty').style.display    = s.activityEmpty ? 'flex'  : 'none';
+      document.getElementById('activityCard').style.display     = s.activityCard  ? 'block' : 'none';
+      document.querySelector('.submission-panel').style.display  = s.submission    ? 'block' : 'none';
+      document.getElementById('peerInsightPanel').style.display  = s.peerInsight   ? 'block' : 'none';
+      document.getElementById('peerReviewPanel').style.display   = s.peerReview    ? 'block' : 'none';
+    }
+
+    // ── Bot context labels ──
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.textContent = val; };
+    set('botActivityLabel', s.botLabel);
+    set('bubbleText',       s.bubbleText);
+    set('botFloatCtx',      s.floatCtx);
+
+    // ── Cleanup: close float panel when leaving lesson mode ──
+    if (s.mode !== 'lesson' || s.screen !== 'lesson') {
+      document.getElementById('botFloatPanel')?.classList.remove('open');
+      document.getElementById('botFloatOverlay')?.classList.remove('open');
+    }
+
+    // ── Cleanup: stop group timer when leaving group ──
+    if (prev === 'group' && name !== 'group') stopGroupTimer();
+
+    // ── Bot tab reset on entering lesson mode ──
+    if (s.mode === 'lesson') {
+      document.querySelectorAll('.bot-tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.bot-tab')[0]?.classList.add('active');
+    }
+
+    // ── onEnter callback ──
+    if (s.onEnter) s.onEnter();
+  },
+
+  bubbleAllowed() {
+    return ['lesson_empty','lesson_activity'].includes(this.current);
+  },
+};
+
+/* ════════════════════════════════════════════════════
+   API LAYER — real Netlify + Firebase integration
+════════════════════════════════════════════════════ */
+
+// ── URL Params & Student Identity ──
+const _params    = new URLSearchParams(location.search);
+const courseId   = String(_params.get('courseId') || _params.get('classId') || '').trim();
+const unitId     = String(_params.get('unitId')   || 'unit_01').trim() || 'unit_01';
+let   sessionId  = String(_params.get('sessionId') || '').trim();
+const _sidKey    = `miled_student_id_${courseId || 'global'}`;
+const _snameKey  = `miled_student_name_${courseId || 'global'}`;
+let   studentId  = localStorage.getItem(_sidKey) || ('stu_' + Math.random().toString(36).slice(2, 10));
+localStorage.setItem(_sidKey, studentId);
+let   _sessionFbRef = null;
+let   _wafFbRef     = null;
+let   _pollTimer    = null;
+let   _currentRecallId = null;
+let   _lessonData   = null;
+let   _activeBotType = null;
+let   _wasWaiting   = true;
+
+function escHtml(v) {
+  return String(v || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function getStudentName() {
+  return String(localStorage.getItem(_snameKey) || studentId.slice(0,8)).trim() || studentId.slice(0,8);
+}
+
+// ── Classroom API ──
+async function callClassroom(method, payload = null, query = '') {
+  if (method === 'GET') {
+    const res = await fetch(`/.netlify/functions/classroom${query}`);
+    return res.json();
+  }
+  const res = await fetch('/.netlify/functions/classroom', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload || {})
+  });
+  return res.json();
+}
+
+// ── Firebase ──
+function getRealtimeDb() {
+  if (!window.firebase || !window.MILED_FIREBASE_CONFIG) return null;
+  if (!firebase.apps.length) firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+  if (typeof firebase.database !== 'function') return null;
+  return firebase.database();
+}
+
+// ── Chat iframe ──
+function setChatFrameForBot(forceType) {
+  if (!courseId) {
+    document.getElementById('chatFrame').style.display = 'none';
+    document.getElementById('chatFallback').style.display = 'block';
+    return;
+  }
+  const botType = forceType || _activeBotType || (_lessonData?.botType) || null;
+  const q = new URLSearchParams();
+  q.set('classId', courseId);
+  if (botType)   q.set('botType', botType);
+  if (sessionId) q.set('sessionId', sessionId);
+  const src = `/chat.html?${q.toString()}`;
+  const frame = document.getElementById('chatFrame');
+  if (frame.getAttribute('data-loaded-src') !== src) {
+    frame.setAttribute('data-loaded-src', src);
+    frame.src = src;
+  }
+  // Float panel mirror
+  const floatFrame = document.getElementById('chatFrameFloat');
+  if (floatFrame && floatFrame.getAttribute('data-loaded-src') !== src) {
+    floatFrame.setAttribute('data-loaded-src', src);
+    floatFrame.src = src;
+  }
+}
+
+// ── Door animation ──
+function openDoor() {
+  const anim = document.getElementById('doorAnim');
+  anim.classList.add('visible');
+  setTimeout(() => { anim.classList.remove('visible'); MiledState.go('lesson_empty'); }, 2200);
+}
+
+// ── Recall ──
+async function ackRecall() {
+  document.getElementById('recallBanner').classList.remove('visible');
+  if (!sessionId || !_currentRecallId) return;
+  try {
+    await callClassroom('POST', { action: 'recall_ack', sessionId, studentId, recallId: _currentRecallId });
+  } catch { /* non-fatal */ }
+}
+
+function checkRecall(live) {
+  if (!live?.recall_all) return;
+  const recall = live.recall_all;
+  const recallId = recall.recallId || recall.ts || '';
+  if (!recallId || recallId === _currentRecallId) return;
+  const acks = recall.acks || {};
+  if (acks[studentId]) return;
+  _currentRecallId = recallId;
+  document.getElementById('recallBanner').classList.add('visible');
+}
+
+// ── Broadcast ──
+function renderBroadcast(live) {
+  const banner = document.getElementById('broadcastBanner');
+  const textEl = document.getElementById('broadcastText');
+  const timeEl = document.getElementById('broadcastTime');
+  if (!banner || !textEl) return;
+  const text = live?.broadcast || '';
+  if (!text) { banner.style.display = 'none'; return; }
+  textEl.textContent = text;
+  if (timeEl && live?.broadcastedAt) {
+    timeEl.textContent = new Date(live.broadcastedAt).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  }
+  banner.style.display = 'flex';
+}
+
+// ── Active Task → Activity Card ──
+function renderActiveTask(task) {
+  if (!task || !task.title) {
+    MiledState.go('lesson_empty');
+    return;
+  }
+  const titleEl  = document.getElementById('activityTitle');
+  const instrEl  = document.getElementById('activityInstructions');
+  const expectEl = document.getElementById('activityExpected');
+  const hintEl   = document.getElementById('subHint');
+  const labelEl  = document.getElementById('botActivityLabel');
+  const ctxEl    = document.getElementById('ctxCurrentLabel');
+  if (titleEl)  titleEl.textContent  = task.title;
+  if (instrEl)  instrEl.textContent  = task.instructions || '';
+  if (expectEl) expectEl.textContent = task.expected     || '';
+  if (hintEl)   hintEl.textContent   = `כתוב כאן את תשובתך לפעילות: ${task.title}`;
+  if (labelEl)  labelEl.textContent  = task.title;
+  if (ctxEl)    ctxEl.textContent    = task.title;
+  // Update MiledState dynamic float context
+  if (MiledState.config.lesson_activity) {
+    MiledState.config.lesson_activity.floatCtx  = `ליווי למשימה: ${task.title}`;
+    MiledState.config.lesson_activity.bubbleText = `צריך עזרה ב${task.title}?`;
+    MiledState.config.lesson_activity.botLabel   = task.title;
+  }
+  MiledState.go('lesson_activity');
+}
+
+// ── Firebase Session Listener ──
+function startSessionListener() {
+  if (!sessionId) return;
+  const db = getRealtimeDb();
+  if (!db) return;
+  _sessionFbRef = db.ref(`sessions/${sessionId}`);
+  _sessionFbRef.on('value', snap => {
+    const live = snap.val();
+    if (!live) return;
+    // Broadcast
+    renderBroadcast(live);
+    // Recall
+    checkRecall(live);
+    // Door / active state
+    const liveDoor   = String(live.state?.door_status || 'auto').toLowerCase();
+    const liveActive = !!live.active;
+    const stillWaiting = !liveActive || liveDoor === 'closed';
+    if (!stillWaiting && _wasWaiting) {
+      openDoor();
+    } else if (stillWaiting && !_wasWaiting) {
+      MiledState.go('waiting');
+    }
+    _wasWaiting = stillWaiting;
+    // Active task
+    if (!stillWaiting && live.active_task) {
+      renderActiveTask(live.active_task);
+    } else if (!stillWaiting && !live.active_task) {
+      MiledState.go('lesson_empty');
+    }
+  });
+}
+
+function stopSessionListener() {
+  if (_sessionFbRef) { _sessionFbRef.off(); _sessionFbRef = null; }
+}
+
+// ── WAF Listener (lecturer replies) ──
+function startWafListener() {
+  if (!sessionId || !studentId) return;
+  const db = getRealtimeDb();
+  if (!db) return;
+  _wafFbRef = db.ref(`sessions/${sessionId}/students/${studentId}/lecturer_replies`);
+  _wafFbRef.on('child_added', snap => {
+    const reply = snap.val();
+    if (!reply) return;
+    appendWafMessage(reply);
+  });
+}
+
+function appendWafMessage(reply) {
+  const raw = String(reply?.text || '').trim();
+  if (!raw) return;
+  const time = reply?.ts ? new Date(reply.ts).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'}) : '';
+  const stream = document.getElementById('commStream');
+  const hint   = document.getElementById('wafEmptyHint');
+  if (hint) hint.remove();
+  const d = document.createElement('div');
+  d.className = 'waf-msg lecturer';
+  d.innerHTML = `<div class="waf-msg-text">${escHtml(raw)}</div><div class="waf-msg-meta">מהמרצה${time ? ' · ' + time : ''}</div>`;
+  stream.appendChild(d);
+  stream.scrollTop = stream.scrollHeight;
+}
+
+// ── Ping waiting room ──
+async function pingWaitingRoom(waiting = true) {
+  if (!courseId) return;
+  try {
+    await callClassroom('POST', {
+      action: 'waiting_ping', classId: courseId,
+      sessionId: sessionId || null, studentId,
+      studentName: getStudentName(),
+      waiting, status: waiting ? 'waiting' : 'joined'
+    });
+  } catch { /* non-fatal */ }
+}
+
+// ── Pre-Session Load ──
+async function loadPreSession() {
+  if (!courseId) {
+    document.getElementById('ticketInstructions').textContent = 'לא התקבל courseId. פתח את הדף דרך קישור הקורס.';
+    document.getElementById('warmupQuestion').textContent = 'אין שאלת חימום זמינה.';
+    return;
+  }
+  try {
+    const data = await callClassroom('GET', null,
+      `?action=pre_session&classId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}&studentId=${encodeURIComponent(studentId)}&sessionId=${encodeURIComponent(sessionId)}`
+    );
+    const discoveredSessionId = String(data?.activeSessionId || '').trim();
+    if (!sessionId && discoveredSessionId) { sessionId = discoveredSessionId; }
+
+    // Mission / ticket instructions
+    const mission = data?.mission?.text || 'לפני הכניסה לשיעור — כתוב/י מחשבה קצרה על הנושא.';
+    document.getElementById('ticketInstructions').textContent = mission;
+
+    // Warmup
+    const warmup = data?.warmup;
+    if (warmup?.question) {
+      document.getElementById('warmupQuestion').textContent = warmup.question;
+      if (Array.isArray(warmup.answers) && warmup.answers.length) {
+        const box = document.getElementById('warmupAnswers');
+        box.innerHTML = warmup.answers.map((ans, idx) => {
+          const isCorrect = idx === (warmup.correctIndex ?? -1);
+          return `<button class="quiz-opt" onclick="answerQuiz(this,${isCorrect})">${escHtml(ans)}</button>`;
+        }).join('');
+      }
+    } else {
+      document.getElementById('warmupQuestion').textContent = 'כתוב מחשבה קצרה על הנושא לפני תחילת השיעור.';
+    }
+
+    // Peer list from waiting students
+    if (Array.isArray(data?.waitingStudents)) {
+      renderPeerList(data.waitingStudents);
+    }
+
+    // If session is already open — go to lesson immediately
+    if (data?.lessonOpen || data?.door_status === 'open') {
+      await loadLesson();
+    }
+  } catch (e) {
+    console.warn('pre_session failed', e);
+  }
+}
+
+function renderPeerList(students) {
+  const list  = document.getElementById('peerList');
+  const count = document.getElementById('peerCount');
+  if (!list) return;
+  const emojis = ['🙂','😊','🙃','😄','🤩','😎','🧐','😃','🎓','✨'];
+  list.innerHTML = students.map((s, i) => {
+    const name = String(s.name || s.studentId || '').trim() || `תלמיד ${i+1}`;
+    return `<div class="peer-item"><div class="peer-avatar">${emojis[i % emojis.length]}</div><div class="peer-name">${escHtml(name)}</div><div class="peer-dot"></div></div>`;
+  }).join('');
+  if (count) count.textContent = `${students.length} תלמידים ממתינים`;
+}
+
+// ── Lesson Payload Load ──
+async function loadLesson() {
+  if (!sessionId) return;
+  try {
+    const data = await callClassroom('GET', null, `?action=lesson_payload&sessionId=${encodeURIComponent(sessionId)}`);
+    _lessonData = data;
+    // Course name
+    const cname = data?.courseName || data?.courseId || courseId || '';
+    const lessonNameEl   = document.getElementById('lessonCourseName');
+    const waitingNameEl  = document.getElementById('waitingCourseName');
+    if (lessonNameEl  && cname) lessonNameEl.textContent  = cname;
+    if (waitingNameEl && cname) waitingNameEl.textContent = cname;
+    // Bot type
+    if (data?.botType) _activeBotType = data.botType;
+    // Determine initial state
+    const door   = String(data?.state?.door_status || 'auto').toLowerCase();
+    const active = !!data?.active;
+    if (!active || door === 'closed') {
+      MiledState.go('waiting');
+    } else if (data?.active_task?.title) {
+      renderActiveTask(data.active_task);
+    } else {
+      MiledState.go('lesson_empty');
+    }
+    // Start Firebase listener + WAF
+    startSessionListener();
+    startWafListener();
+    setChatFrameForBot();
+    // Poll every 6 s for lesson updates
+    if (_pollTimer) clearInterval(_pollTimer);
+    _pollTimer = setInterval(loadLesson, 6000);
+  } catch (e) {
+    console.warn('lesson_payload failed', e);
+  }
+}
+
+// ── Config Title ──
+async function loadConfigTitle() {
+  if (!courseId) return;
+  try {
+    const cfg    = await fetch(`/config.json?ts=${Date.now()}`).then(r => r.json());
+    const course = cfg?.my_courses?.[courseId];
+    const cname  = course?.name || '';
+    if (cname) {
+      const lessonNameEl  = document.getElementById('lessonCourseName');
+      const waitingNameEl = document.getElementById('waitingCourseName');
+      if (lessonNameEl)  lessonNameEl.textContent  = cname;
+      if (waitingNameEl) waitingNameEl.textContent = cname;
+    }
+  } catch { /* non-fatal */ }
+}
+
+// ── WAF / Messages ──
+function sendMsg() {
+  const inp  = document.getElementById('msgInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  inp.value = '';
+  // Optimistic append
+  const stream = document.getElementById('commStream');
+  const hint   = document.getElementById('wafEmptyHint');
+  if (hint) hint.remove();
+  const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const d = document.createElement('div');
+  d.className = 'waf-msg student';
+  d.innerHTML = `<div class="waf-msg-text">${escHtml(text)}</div><div class="waf-msg-meta">שלחת · ${now}</div>`;
+  stream.appendChild(d);
+  stream.scrollTop = stream.scrollHeight;
+  // API call
+  if (sessionId) {
+    callClassroom('POST', {
+      action: 'submit', sessionId, studentId,
+      studentName: getStudentName(), content: text, type: 'message', tag: 'general'
+    }).catch(() => {});
+  }
+}
+
+function sendSubmit() {
+  const ta   = document.getElementById('writeTa');
+  const text = ta.value.trim();
+  if (!text) return;
+  // Optimistic UI
+  const stream = document.getElementById('commStream');
+  const hint   = document.getElementById('wafEmptyHint');
+  if (hint) hint.remove();
+  const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const d = document.createElement('div');
+  d.className = 'waf-msg student';
+  d.innerHTML = `<div class="waf-msg-text">${escHtml(text)}</div><div class="waf-msg-meta">הגשה · ${now} ✓</div>`;
+  stream.appendChild(d);
+  stream.scrollTop = stream.scrollHeight;
+  ta.value = '';
+  // Mark as submitted
+  const btn = document.querySelector('.sub-btn.primary');
+  if (btn) { btn.textContent = '✅ הוגש!'; btn.style.background = '#16a34a'; }
+  setTimeout(() => {
+    document.querySelector('.submission-panel')?.classList.add('submitted');
+    const pr = document.getElementById('peerReviewPanel');
+    if (pr) { pr.style.display = 'block'; pr.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  }, 1400);
+  // API call
+  if (sessionId) {
+    callClassroom('POST', {
+      action: 'submit', sessionId, studentId,
+      studentName: getStudentName(), content: text, type: 'submission', tag: 'task'
+    }).catch(() => {});
+  }
+}
+
+// ── Ticket submit ──
+function submitTicket() {
+  const ta = document.getElementById('ticketText');
+  if (!ta.value.trim()) { ta.style.borderColor = '#ef4444'; return; }
+  ta.style.borderColor = '';
+  document.getElementById('ticketForm').style.display  = 'none';
+  document.getElementById('goldenTicket').style.display = 'block';
+  // API call
+  if (sessionId) {
+    callClassroom('POST', {
+      action: 'submit', sessionId, studentId,
+      studentName: getStudentName(), content: ta.value.trim(), type: 'ticket', tag: 'entry'
+    }).catch(() => {});
+  }
+}
+
+// ── Bot Switching ──
+function switchBot(btn, type) {
+  document.querySelectorAll('.bot-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _activeBotType = type === 'main' ? null : type;
+  setChatFrameForBot(_activeBotType);
+}
+
+// ── sendChat (fallback only) ──
+function sendChat() {}
+function handleChatKey(e) { if (e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();} }
+function sendFloatChat() {}
+
+// ── Bootstrap ──
+async function bootstrapApp() {
+  await loadConfigTitle();
+  await loadPreSession();
+  // Heartbeat
+  pingWaitingRoom(true);
+  setInterval(() => pingWaitingRoom(true), 30000);
+  // If sessionId already known from URL — go straight to lesson
+  if (sessionId) { await loadLesson(); }
+}
+
+bootstrapApp();
+
+/* ════════════════ Group: Call Teacher ════════════════ */
+function callTeacher() {
+  const btn = document.querySelector('.call-teacher-btn');
+  btn.textContent = '📡 קריאה נשלחה!';
+  btn.classList.add('called');
+  setTimeout(() => { btn.textContent = '⚡ קרא/י למרצה'; btn.classList.remove('called'); }, 4000);
+}
+
+/* ════════════════ Group: Master Draft ════════════════ */
+function addChallenge() {
+  const body = document.getElementById('masterDraftBody');
+  if (!body) return;
+  const note = document.createElement('div');
+  note.style.cssText = 'font-size:11px;background:#fefce8;border:1px solid #fde047;border-radius:6px;padding:5px 8px;margin-top:6px;color:#854d0e;font-weight:700;';
+  note.textContent = '🧐 הערת ריכוז: האם ההשוואה מאוזנת? כדאי לתת משקל שווה לשתי הגישות.';
+  body.appendChild(note);
+}
+
+/* ════════════════ Group: Veto Mechanism ════════════════ */
+function showVetoPanel() {
+  document.querySelector('.group-workspace').style.display = 'none';
+  document.getElementById('vetoPanel').style.display = 'block';
+  // Simulate member approvals sequentially
+  setTimeout(() => approveVetoChip('vc-yarin'), 2400);
+  setTimeout(() => approveVetoChip('vc-noor'),  4500);
+  setTimeout(() => approveVetoChip('vc-amir'),  6800);
+}
+function approveVetoChip(id) {
+  const chip = document.getElementById(id);
+  if (!chip) return;
+  chip.classList.add('approved');
+  chip.querySelector('.vc-status').textContent = '✅ אישר/ה';
+  const allApproved = ['vc-yarin','vc-noor','vc-amir','vc-me'].every(i => document.getElementById(i)?.classList.contains('approved'));
+  if (allApproved) {
+    const btn = document.getElementById('vetoFinalBtn');
+    btn.classList.add('ready'); btn.disabled = false;
+    btn.textContent = '🎉 כולם אישרו — הגש/י עכשיו';
+    document.getElementById('vetoHint').textContent = 'כל חברי הצוות אישרו!';
+  }
+}
+function finalSubmitGroup() {
+  document.getElementById('vetoPanel').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;padding:16px;gap:8px;text-align:center;">
+      <div style="font-size:28px;">🎉</div>
+      <div style="font-size:15px;font-weight:800;color:#065f46;">תשובת הקבוצה הוגשה!</div>
+      <div style="font-size:13px;color:var(--muted);">המרצה יקבל את תשובתכם בקרוב.</div>
+      <button class="sub-btn secondary" onclick="exitGroupMode()" style="margin-top:6px;font-size:12px;">← חזרה למליאה</button>
+    </div>`;
+}
+
+/* ════════════════ Team Project Screen ════════════════ */
+function enterTeamProject() { MiledState.go('team_project'); }
+function exitTeamProject()  { showBatonModal(); }
+
+function sendTpChat() {
+  const input = document.getElementById('tpChatInput');
+  const text = input.value.trim(); if (!text) return;
+  const cw = document.getElementById('tpChatWindow');
+  const u = document.createElement('div'); u.className = 'chat-bubble user'; u.textContent = text;
+  cw.appendChild(u); input.value = ''; cw.scrollTop = cw.scrollHeight;
+  const replies = [
+    'שאלה מעניינת! איך זה מתקשר למה שנור כתב/ה על הגישה התוכנית?',
+    'כל הכבוד. האם תוכלי לתמוך בזה עם ציטוט ממקורות הצוות?',
+    'מה לדעתך ירין תחשוב/יחשוב על הנקודה הזו?',
+    'יפה! שלבי את זה בפסקת הסינתזה שלך.',
+  ];
+  setTimeout(() => {
+    const b = document.createElement('div');
+    b.className = 'chat-bubble bot';
+    b.style.cssText = 'background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-color:#c7d2fe;';
+    b.textContent = replies[replyIdx % replies.length]; replyIdx++;
+    cw.appendChild(b); cw.scrollTop = cw.scrollHeight;
+  }, 700);
+}
+
+function switchTpTab(btn, tab) {
+  document.querySelectorAll('.tp-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const map = { doc: 'tpTabDoc', sources: 'tpTabSources', tasks: 'tpTabTasks' };
+  document.querySelectorAll('.tp-tab-content').forEach(el => el.classList.add('hidden'));
+  document.getElementById(map[tab])?.classList.remove('hidden');
+}
+
+function addTpContrib() {
+  const ta = document.getElementById('tpMyContrib');
+  const text = ta.value.trim(); if (!text) { ta.style.borderColor = '#ef4444'; return; }
+  ta.style.borderColor = '';
+  const now = new Date().toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});
+  const section = document.createElement('div');
+  section.className = 'doc-section';
+  section.innerHTML = `
+    <div class="doc-section-attr">
+      <div class="doc-attr-avatar" style="background:linear-gradient(135deg,#6366f1,#4f46e5);">את</div>
+      <span class="doc-attr-name">את עצמך</span>
+      <span class="doc-attr-time">עכשיו · ${now}</span>
+    </div>
+    <div class="doc-section-text">${text}</div>`;
+  document.getElementById('tpMyInputBlock').before(section);
+  ta.value = '';
+}
+
+function showDigestModal()  { document.getElementById('digestModal').classList.add('open'); }
+function closeDigestModal() { document.getElementById('digestModal').classList.remove('open'); }
+function showBatonModal()   { document.getElementById('batonModal').classList.add('open'); }
+
+function submitBaton() {
+  const ta = document.getElementById('batonText');
+  if (!ta.value.trim()) { ta.style.borderColor = '#ef4444'; return; }
+  ta.style.borderColor = '';
+  document.getElementById('batonModal').classList.remove('open');
+  MiledState.go('waiting');
+}
+
+/* ════════════════ Project Mode ════════════════ */
+/* ── Float Bot ── */
+function openBotFloat() {
+  document.getElementById('botFloatPanel').classList.add('open');
+  document.getElementById('botFloatOverlay').classList.add('open');
+  document.getElementById('botBubble').style.display = 'none';
+  setTimeout(() => document.getElementById('chatInputFloat').focus(), 320);
+}
+function closeBotFloat() {
+  document.getElementById('botFloatPanel').classList.remove('open');
+  document.getElementById('botFloatOverlay').classList.remove('open');
+  if (MiledState.bubbleAllowed()) {
+    document.getElementById('botBubble').style.display = 'flex';
+  }
+}
+function enterProjectMode() { MiledState.go('project'); }
+function exitProjectMode()  { MiledState.go('lesson_empty'); }
+
+const stageLabels = ['','בחירת בעיה','ניסיונות קודמים וסיבות לאי הצלחה','מקורות מידע ובחינת מהימנות','שתי אלטרנטיבות — יתרונות/חסרונות','בחירת פתרון ונימוקים','כתיבת המסמך המסכם','הצגה בפני הקהל'];
+
+function selectProjectStage(n) {
+  document.querySelectorAll('.pstage-item').forEach((el, i) => {
+    el.classList.remove('active','completed');
+    el.style.borderRadius = '';
+    const badges = el.querySelectorAll('span:not(.pstage-num):not(.pstage-label)');
+    badges.forEach(b => b.remove());
+    const num = el.querySelector('.pstage-num');
+    if (i + 1 < n) { el.classList.add('completed'); num.textContent = '✓'; }
+    else            { num.textContent = i + 1; }
+    if (i + 1 === n) {
+      el.classList.add('active');
+      el.style.borderRadius = '10px 10px 0 0';
+      const badge = document.createElement('span');
+      badge.style.cssText = 'font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:999px;color:#fff;';
+      badge.textContent = 'פעיל';
+      el.appendChild(badge);
+    }
+  });
+  // Toggle description panels
+  for (let i = 1; i <= 7; i++) {
+    const desc = document.getElementById('pdesc-' + i);
+    if (desc) desc.classList.toggle('open', i === n);
+  }
+  document.getElementById('projectGuidanceText').innerHTML =
+    'אנחנו בשלב ' + n + ': <strong>' + stageLabels[n] + '</strong><br>השתמש בבוט הפרויקט מימין לסיוע.';
+  document.getElementById('projectWorkSub').textContent = 'שלב פעיל: ' + stageLabels[n];
+  document.getElementById('projectBotSub').textContent  = 'שלב ' + n + ' — ' + stageLabels[n];
+}
+
+function selectSprint(n) {
+  document.querySelectorAll('.sprint-bubble').forEach((b, i) => {
+    b.classList.remove('active','done');
+    if (i + 1 < n) b.classList.add('done');
+    if (i + 1 === n) b.classList.add('active');
+  });
+  document.querySelectorAll('.sprint-connector').forEach((c, i) => {
+    c.classList.toggle('done', i + 1 < n);
+  });
+}
+
+/* ════════════════ Bot Switching ════════════════ */
+
+function selectSprint(n) {
+  const feed = document.getElementById('groupContribFeed');
+  if (!feed) return;
+  const now  = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const item = document.createElement('div');
+  item.className = 'group-contrib-item' + (isMine ? ' mine' : '');
+  item.innerHTML = `
+    <div class="contrib-header">
+      <div class="contrib-avatar" style="background:${avatarBg};">${initial}</div>
+      <span class="contrib-name">${name}</span>
+      <span class="contrib-role">${role}</span>
+      <span class="contrib-time">${now}</span>
+    </div>
+    <div class="contrib-text">${text}</div>`;
+  feed.appendChild(item);
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function addMyContrib() {
+  const ta = document.getElementById('groupMyContrib');
+  const text = ta.value.trim();
+  if (!text) { ta.style.borderColor = '#ef4444'; return; }
+  ta.style.borderColor = '';
+  addContrib('את', 'את עצמך', '📋 ריכוז', 'linear-gradient(135deg,#059669,#065f46)', text, true);
+  ta.value = '';
+  document.getElementById('groupTypingIndicator').textContent = '';
+}
+
+function enterGroupMode() { MiledState.go('group'); }
+function exitGroupMode()  { MiledState.go('lesson_activity'); }
+
+function startGroupTimer() {
+  stopGroupTimer();
+  _groupSeconds = 600;
+  updateTimerDisplay();
+  _groupTimer = setInterval(() => {
+    _groupSeconds--;
+    if (_groupSeconds <= 0) { stopGroupTimer(); _groupSeconds = 0; }
+    updateTimerDisplay();
+  }, 1000);
+}
+function stopGroupTimer() { clearInterval(_groupTimer); _groupTimer = null; }
+function updateTimerDisplay() {
+  const el = document.getElementById('groupTimer');
+  if (!el) return;
+  const m = Math.floor(_groupSeconds / 60).toString().padStart(2,'0');
+  const s = (_groupSeconds % 60).toString().padStart(2,'0');
+  el.textContent = `⏱ ${m}:${s}`;
+  el.classList.toggle('urgent', _groupSeconds <= 60);
+}
+function onGroupType() {
+  document.getElementById('groupTypingIndicator').textContent = '';
+  const myTa = document.getElementById('groupMyContrib');
+  if (myTa) myTa.style.borderColor = '';
+}
+function submitGroupWork() {
+  const feed  = document.getElementById('groupContribFeed');
+  const myTa  = document.getElementById('groupMyContrib');
+  const hasContribs = feed && feed.children.length > 0;
+  const hasMine     = myTa && myTa.value.trim();
+  if (!hasContribs && !hasMine) { if (myTa) myTa.style.borderColor = '#ef4444'; return; }
+  if (hasMine) addMyContrib();
+  stopGroupTimer();
+  showVetoPanel();
+}
+
+/* ════════════════ Waiting Room ════════════════ */
+function answerQuiz(btn, correct) {
+  document.querySelectorAll('.quiz-opt').forEach(el => { el.disabled=true; el.classList.remove('correct','wrong'); });
+  btn.classList.add(correct?'correct':'wrong');
+  // Mark the correct option if user got it wrong
+  if (!correct) {
+    document.querySelectorAll('.quiz-opt').forEach(el => {
+      if (el.onclick && el.onclick.toString().includes('true')) el.classList.add('correct');
+    });
+  }
+  const r = document.getElementById('quizResult');
+  r.style.display = 'block';
+  r.textContent = correct ? '✅ נכון!' : '❌ לא בדיוק. הסתכל על התשובה הנכונה.';
+}
+</script>
+</body>
+</html>
