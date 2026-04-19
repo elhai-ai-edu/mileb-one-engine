@@ -55,7 +55,16 @@
       color: #fff;
       border-bottom: 2px solid #1e40af;
       flex-shrink: 0;
+      position: relative;
     }
+    .topbar-center {
+      position: absolute; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 10px;
+      pointer-events: none; white-space: nowrap;
+    }
+    .topbar-system-label { color: #fff; font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
+    .topbar-stars { color: rgba(255,255,255,.35); font-size: 11px; letter-spacing: 2px; }
+    .topbar-course-name { color: #fff; font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
     .topbar-title { display: grid; gap: 4px; }
     .topbar-title strong { font-size: 1.3rem; }
     .topbar-sub { color: rgba(255,255,255,0.82); font-size: 0.86rem; }
@@ -712,6 +721,34 @@
       color: #ecfdf5; font-size: 12px; font-weight: 700; display: none;
     }
 
+    /* ── Lesson mode: 2-column, hide chat-shell ── */
+    #lessonMain[data-mode="lesson"] { grid-template-columns: 240px 1fr; }
+    #lessonMain[data-mode="lesson"] > aside.chat-shell { display: none; }
+    /* Bot float: clicking bot bubble makes chat-shell a fixed left panel */
+    #lessonMain.bot-float[data-mode="lesson"] > aside.chat-shell {
+      display: grid;
+      position: fixed; left: 0; top: 52px; bottom: 0; width: 340px;
+      z-index: 4999; box-shadow: 4px 0 20px rgba(0,0,0,.12);
+      border-right: 1px solid var(--line);
+    }
+
+    /* Bot Bubble — visible only in lesson mode */
+    .bot-bubble {
+      position: fixed; left: 24px; top: 50%; transform: translateY(-50%);
+      z-index: 5000; width: 56px; height: 56px; border-radius: 50%;
+      background: radial-gradient(circle at 38% 32%,#c0607a 0%,#7a1530 48%,#3d0a14 100%);
+      color: #fff; border: none; display: none;
+      align-items: center; justify-content: center; flex-direction: column; gap: 1px;
+      cursor: pointer; font-size: 22px;
+      box-shadow: 0 4px 18px rgba(122,21,48,.32), 0 1px 5px rgba(0,0,0,.22);
+      animation: bubblePulse 5s ease-in-out infinite;
+      transition: transform .18s cubic-bezier(.34,1.5,.64,1), box-shadow .18s;
+    }
+    .bot-bubble:hover { transform: translateY(-50%) scale(1.1); }
+    .bot-bubble.bubble-open { background: radial-gradient(circle at 38% 32%,#6366f1 0%,#3730a3 100%); }
+    .bot-bubble-label { font-size: 8px; font-weight: 800; letter-spacing: .5px; }
+    #lessonMain[data-mode="lesson"] ~ .bot-bubble { display: flex; }
+
     /* Mode-driven layout selectors */
     #lessonMain[data-mode="group"] .panel-group-members  { display: flex !important; }
     #lessonMain[data-mode="group"] .panel-head-bookshelf { display: none !important; }
@@ -1022,8 +1059,13 @@
   <div class="shell">
     <header class="topbar">
       <div class="topbar-title">
-        <strong id="lessonTitle">שיעור חי</strong>
-        <div class="topbar-sub" id="lessonSubtitle">טוען נתוני שיעור...</div>
+        <strong>MilEd.One</strong>
+        <div id="lessonSubtitle" style="display:none;"></div>
+      </div>
+      <div class="topbar-center">
+        <span class="topbar-system-label">מרחב למידה כיתתי</span>
+        <span class="topbar-stars">✦✦✦✦✦</span>
+        <span class="topbar-course-name" id="lessonTitle">שיעור חי</span>
       </div>
       <div class="topbar-chips">
         <div class="chip" id="roleChip">Student View</div>
@@ -1453,6 +1495,12 @@
         <iframe id="teamProjectFrame" title="team-project" allow="microphone"></iframe>
       </div>
     </main>
+
+    <!-- Floating bot bubble — lesson mode only -->
+    <button class="bot-bubble" id="botBubble" onclick="toggleBotFloat()" title="פתח בוט הקורס">
+      <span>🤖</span>
+      <span class="bot-bubble-label">בוט</span>
+    </button>
   </div>
 
   <!-- ─── Team Role Assignment Overlay ─── -->
@@ -3077,6 +3125,11 @@
     function setLessonMode(mode) {
       const main = document.getElementById("lessonMain");
       if (main) main.dataset.mode = mode;
+      // Close bot float panel whenever mode changes
+      if (mode !== "lesson") {
+        main?.classList.remove("bot-float");
+        document.getElementById("botBubble")?.classList.remove("bubble-open");
+      }
       const gEnter = document.getElementById("groupEnterBtn");
       const gExit  = document.getElementById("groupExitBtn");
       const gBadge = document.getElementById("groupModeBadge");
@@ -3089,6 +3142,13 @@
         renderProjectStepper();
         renderSprintStepper();
       }
+    }
+
+    function toggleBotFloat() {
+      const main   = document.getElementById("lessonMain");
+      const bubble = document.getElementById("botBubble");
+      main?.classList.toggle("bot-float");
+      bubble?.classList.toggle("bubble-open");
     }
 
     // ── Team Project Mode ─────────────────────────────────────────────────────
