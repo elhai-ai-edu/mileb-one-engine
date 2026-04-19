@@ -4461,7 +4461,9 @@ function mapUnitToLessonDesignId(unitId) {
 
 function currentLessonTargetId() {
   const input = document.getElementById("playlistLessonId");
-  return mapUnitToLessonDesignId(currentLessonDesignId || input?.value || currentUnitId || "unit_01");
+  const preferredLessonId = String(currentLessonDesignId || "").trim();
+  const inputLessonId = String(input?.value || "").trim();
+  return mapUnitToLessonDesignId(preferredLessonId || inputLessonId || "unit_01");
 }
 
 function renderImportedUnits() {
@@ -4554,8 +4556,6 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     selectedPlaylistUnitIds = new Set(Array.isArray(existingPlaylist?.unitIds) ? existingPlaylist.unitIds : []);
     const sprintSet = data?.sprintDefinitions?.[lessonId]?.items || [];
     sprintDrafts = Array.isArray(sprintSet) ? sprintSet : [];
-    currentUnitId = lessonId;
-    sessionStorage.setItem("miled_active_unit_id", currentUnitId);
     syncLessonResourcesFromMetadata(lessonId);
     renderImportedUnits();
     renderResources();
@@ -5583,11 +5583,6 @@ document.getElementById("lesson-objectives")?.addEventListener("input", (event) 
   "preSessionVocabPairs",
   "preSessionMinLength"
 ].forEach(id => {
-  document.getElementById(id)?.addEventListener("input", () => {
-    ensureCurrentLessonForId(currentLessonTargetId());
-    updatePreClassFromForm();
-    if (id === "preSessionTaskType") updateEntranceTaskFields();
-  });
   document.getElementById(id)?.addEventListener("change", () => {
     ensureCurrentLessonForId(currentLessonTargetId());
     updatePreClassFromForm();
