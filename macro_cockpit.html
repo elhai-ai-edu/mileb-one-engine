@@ -3205,15 +3205,15 @@ async function saveLessonDateForCurrentUnit() {
   const courseId = currentCourseForSync();
   const lessonId = currentLessonTargetId();
   if (!courseId || !lessonId || !facultyId) return;
-  const unitData = macroUnitsMap[lessonId] || {};
-  const lessonDate = getLessonDateValue(courseId, lessonId, unitData);
+  const lessonData = macroUnitsMap[lessonId] || {};
+  const lessonDate = getLessonDateValue(courseId, lessonId, lessonData);
   const res = await callClassroom({
     action: "unit_upsert",
     userId: facultyId,
     courseId,
     unitId: lessonId,
-    topicName: String(unitData.topicName || "").trim(),
-    structureType: String(unitData.structureType || macroUnitsMode || "Session"),
+    topicName: String(lessonData.topicName || "").trim(),
+    structureType: String(lessonData.structureType || macroUnitsMode || "Session"),
     lessonDate
   });
   if (res?.ok) {
