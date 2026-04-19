@@ -2366,6 +2366,7 @@ if (queryUnitId) sessionStorage.setItem("miled_active_unit_id", presetUnitId);
 // ── Preserve courseId context in cross-cockpit navigation link ──
 (function() {
   if (!presetCourseId) return;
+  // Backward-compatible deep link priority: explicit lessonId, then legacy unitId, then default lesson shell.
   const initialLessonId = presetLessonId || presetUnitId || "lesson_01";
   const qs = `?courseId=${encodeURIComponent(presetCourseId)}&unitId=${encodeURIComponent(presetUnitId)}&lessonId=${encodeURIComponent(initialLessonId)}`;
   const btn = document.getElementById('toMicroCockpitBtn');
@@ -2681,6 +2682,7 @@ async function loadPreSessionMission() {
   }
 
   try {
+    // Transitional compatibility: classroom APIs still route by `unitId`, while macro runtime resolves lesson ids.
     const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}&userId=${encodeURIComponent(facultyId)}`);
     if (!res.ok) return;
     const data = await res.json();
@@ -3289,6 +3291,9 @@ function renderLessonDesignNavigator() {
     activeUnitId = lessons[0].unitId;
     sessionStorage.setItem("miled_active_unit_id", activeUnitId);
   }
+  if (activeLessonId && !lessons.some(item => deriveLessonIdFromUnit(item.unitId) === activeLessonId)) {
+    activeLessonId = "";
+  }
   const activeLessonIdForUi = resolveActiveLessonId();
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = activeLessonIdForUi;
@@ -3355,12 +3360,13 @@ function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
   if (!unitId) return;
   activeUnitId = String(unitId).trim();
   sessionStorage.setItem("miled_active_unit_id", activeUnitId);
+  // Clear explicit lesson selection so resolver derives lesson id from the newly selected unit context.
   activeLessonId = "";
   const lessonId = resolveActiveLessonId();
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput && lessonInput.value !== lessonId) lessonInput.value = lessonId;
   const lessonTitle = resolveLessonTitleById(lessonId);
-  openLesson(undefined, lessonTitle);
+  openLesson(lessonId, lessonTitle);
   renderLessonDesignNavigator();
   if (reloadMetadata) loadCourseMetadataWorkspace();
 }
@@ -3795,6 +3801,7 @@ async function openSession() {
   try {
     // Resolve botType + classId depending on selection type
     const lessonId = resolveActiveLessonId();
+    // TODO(BP-runtime): remove `unitId` transport alias once classroom endpoints are lessonId-native.
     const sessionUnitId = lessonId; // classroom API currently uses legacy `unitId` for session routing.
     let botType, classId, studentURL;
     if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
@@ -3931,7 +3938,6 @@ async function closeSession() {
     await writeActiveDoorState({
       classId: closingClassId,
       unitId: closingLessonId,
-      lessonId: closingLessonId,
       sessionId: null,
       status: "closed",
       entryPolicy: "closed"
@@ -4479,7 +4485,7 @@ function deriveLessonIdFromUnit(unitId) {
 }
 
 function mapUnitToLessonDesignId(unitId) {
-  return String(unitId || "").trim() || "";
+  return String(unitId || "").trim() || "lesson_01";
 }
 
 // Single lesson resolver used by open/save/render/template/DJ flows.
@@ -5284,9 +5290,8 @@ function loadLessonState(id, title) {
 // Only lesson activation entry point: resolves id, hydrates state, switches phase, renders once.
 function openLesson(id, title) {
   const explicitLessonId = mapUnitToLessonDesignId(id);
-  if (explicitLessonId) activeLessonId = explicitLessonId;
-  const lessonId = resolveActiveLessonId();
-  activeLessonId = lessonId;
+  activeLessonId = explicitLessonId || resolveActiveLessonId();
+  const lessonId = activeLessonId;
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = lessonId;
   loadLessonState(lessonId, title);
