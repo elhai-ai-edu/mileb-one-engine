@@ -617,6 +617,16 @@ export async function handler(event){
       });
     }
 
+    if(action === "lesson_plan"){
+      const courseId = String(event.queryStringParameters?.courseId || event.queryStringParameters?.classId || "").trim();
+      const unitId   = normalizeUnitId(event.queryStringParameters?.unitId || "unit_01");
+      if(!courseId) return err("courseId required");
+      const configCourses = await getConfigCourses();
+      const courseConfig  = configCourses?.[courseId] || null;
+      const plan = courseConfig?.lessonPlan?.[unitId] || courseConfig?.lessonPlan?.["_default"] || [];
+      return ok({ courseId, unitId, lessonPlan: plan });
+    }
+
     if(action === "course_metadata"){
       const courseId = String(event.queryStringParameters?.courseId || event.queryStringParameters?.classId || "").trim();
       if(!courseId) return err("courseId required");
