@@ -1344,7 +1344,7 @@ body { background: var(--bg) !important; }
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;">
             <div class="field" style="margin:0;flex:1;min-width:180px;">
               <label>Lesson ID יעד</label>
-              <input id="playlistLessonId" type="text" value="unit_01" class="lp-input" style="margin:0;">
+              <input id="playlistLessonId" type="text" value="lesson_01" class="lp-input" style="margin:0;">
             </div>
             <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
             <span id="playlistStatus" style="font-size:12px;color:#475569;"></span>
@@ -2354,17 +2354,20 @@ const cockpitParams = new URLSearchParams(location.search);
 const queryCourseId = cockpitParams.get("courseId");
 const queryClassId = cockpitParams.get("classId");
 const queryUnitId = cockpitParams.get("unitId");
+const queryLessonId = cockpitParams.get("lessonId");
 const fallbackCourseId = sessionStorage.getItem("miled_active_course_id") || "";
 const fallbackUnitId = sessionStorage.getItem("miled_active_unit_id") || "";
 const presetCourseId = queryCourseId || queryClassId || fallbackCourseId;
 const presetUnitId = queryUnitId || fallbackUnitId || "unit_01";
+const presetLessonId = String(queryLessonId || "").trim();
 if (queryCourseId || queryClassId) sessionStorage.setItem("miled_active_course_id", presetCourseId);
 if (queryUnitId) sessionStorage.setItem("miled_active_unit_id", presetUnitId);
 
 // ── Preserve courseId context in cross-cockpit navigation link ──
 (function() {
   if (!presetCourseId) return;
-  const qs = `?courseId=${encodeURIComponent(presetCourseId)}&unitId=${encodeURIComponent(presetUnitId)}`;
+  const initialLessonId = presetLessonId || presetUnitId || "lesson_01";
+  const qs = `?courseId=${encodeURIComponent(presetCourseId)}&unitId=${encodeURIComponent(presetUnitId)}&lessonId=${encodeURIComponent(initialLessonId)}`;
   const btn = document.getElementById('toMicroCockpitBtn');
   const roleMacro = document.getElementById('roleMacroCockpitLink');
   if (btn) btn.href = `/micro_cockpit.html${qs}`;
@@ -2376,10 +2379,10 @@ let pollTimer   = null;
 let currentBot  = null;
 let pushedSteps = []; // session-local memory of pushed lesson step numbers
 let CONFIG      = null;  // stored for openSession() lookup
-// State model: course/class = container, unit = metadata/playlist context, lesson = pedagogy runtime.
+// State model: keep course/class, unit, and lesson separate so each flow updates one role only.
 let activeCourseId = null;
 let activeUnitId = presetUnitId || "unit_01";
-let activeLessonId = "";
+let activeLessonId = presetLessonId || "";
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 let openSessionInFlight = false;
 let openAllInFlight = false;
@@ -2523,8 +2526,8 @@ async function fetchWaitingPressureForSelectedCourse() {
 function startWaitingPressurePolling() {
   if (waitingPressureTimer) clearInterval(waitingPressureTimer);
   const classId = activeCourseId || getSelectedTeachingContext().classId || null;
-  const unitId = resolveActiveLessonId();
-  startWaitingAttendeesListener(classId, unitId);
+  const lessonId = resolveActiveLessonId();
+  startWaitingAttendeesListener(classId, lessonId);
 }
 
 function renderPreSessionAudioPreview() {
@@ -2667,19 +2670,18 @@ function renderPreClass() {
 
 async function loadPreSessionMission() {
   const classId = activeCourseId || getSelectedTeachingContext().classId;
-  const unitId = resolveActiveLessonId();
+  const lessonId = resolveActiveLessonId();
   const statusEl = document.getElementById('preSessionStatus');
-  ensureCurrentLessonForId(unitId);
+  ensureCurrentLessonForId(lessonId);
   if (!classId) {
     if (currentLesson) currentLesson.preClass = [normalizePreClassItem()];
-    renderPreClass();
-    renderPreSessionAudioPreview();
+    renderLesson();
     if (statusEl) statusEl.textContent = 'בחר קורס כדי להגדיר מטלת כניסה';
     return;
   }
 
   try {
-    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(unitId)}&userId=${encodeURIComponent(facultyId)}`);
+    const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}&userId=${encodeURIComponent(facultyId)}`);
     if (!res.ok) return;
     const data = await res.json();
     const mission = data?.mission || {};
@@ -2699,7 +2701,7 @@ async function loadPreSessionMission() {
     });
     if (currentLesson) currentLesson.preClass = [normalized];
     persistLessonsStoreDebounced();
-    renderPreClass();
+    renderLesson();
     if (statusEl) statusEl.textContent = et.updatedAt ? `עודכן: ${new Date(et.updatedAt).toLocaleString('he-IL')}` : (mission.updatedAt ? `עודכן: ${new Date(mission.updatedAt).toLocaleString('he-IL')}` : 'אין מטלת כניסה שמורה');
   } catch (e) {
     if (statusEl) statusEl.textContent = 'שגיאה בטעינת מטלת כניסה';
@@ -2708,9 +2710,9 @@ async function loadPreSessionMission() {
 
 async function savePreSessionMission() {
   const classId = activeCourseId || getSelectedTeachingContext().classId;
-  const unitId = resolveActiveLessonId();
+  const lessonId = resolveActiveLessonId();
   const statusEl = document.getElementById('preSessionStatus');
-  ensureCurrentLessonForId(unitId);
+  ensureCurrentLessonForId(lessonId);
   if (!classId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני שמירה';
     return;
@@ -2726,7 +2728,8 @@ async function savePreSessionMission() {
     action:       'pre_session_save',
     classId,
     courseId:     classId,
-    unitId,
+    unitId: lessonId,
+    lessonId,
     userId:       facultyId,
     facultyId,
     taskType: preClass.type,
@@ -2751,15 +2754,15 @@ async function savePreSessionMission() {
 
 async function clearPreSessionMission() {
   const classId = activeCourseId || getSelectedTeachingContext().classId;
-  const unitId = resolveActiveLessonId();
+  const lessonId = resolveActiveLessonId();
   const statusEl = document.getElementById('preSessionStatus');
-  ensureCurrentLessonForId(unitId);
+  ensureCurrentLessonForId(lessonId);
   if (!classId) {
     if (statusEl) statusEl.textContent = 'בחר קורס לפני ניקוי';
     return;
   }
 
-  const res = await callClassroom({ action: 'pre_session_clear', classId, courseId: classId, unitId, userId: facultyId, facultyId });
+  const res = await callClassroom({ action: 'pre_session_clear', classId, courseId: classId, unitId: lessonId, lessonId, userId: facultyId, facultyId });
   if (!res?.ok) {
     if (statusEl) statusEl.textContent = 'שגיאה בניקוי';
     return;
@@ -2767,13 +2770,13 @@ async function clearPreSessionMission() {
 
   if (currentLesson) currentLesson.preClass = [normalizePreClassItem()];
   persistLessonsStoreDebounced();
-  renderPreClass();
+  renderLesson();
   if (statusEl) statusEl.textContent = 'נוקה ✓';
 }
 
 async function generateWarmup() {
   const classId = activeCourseId || getSelectedTeachingContext().classId;
-  const unitId = resolveActiveLessonId();
+  const lessonId = resolveActiveLessonId();
   const btn = document.getElementById('generateWarmupBtn');
   const statusEl = document.getElementById('preSessionStatus');
   if (!classId) {
@@ -2783,7 +2786,7 @@ async function generateWarmup() {
   if (btn) btn.disabled = true;
   if (statusEl) statusEl.textContent = '⏳ מייצר שאלת חימום...';
   try {
-    const res = await callClassroom({ action: 'generate_warmup', classId, courseId: classId, unitId, userId: facultyId, facultyId, warmupType: 'memory_match' });
+    const res = await callClassroom({ action: 'generate_warmup', classId, courseId: classId, unitId: lessonId, lessonId, userId: facultyId, facultyId, warmupType: 'memory_match' });
     if (!res?.ok) {
       if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביצירת חימום';
     } else {
@@ -3282,13 +3285,15 @@ function renderLessonDesignNavigator() {
     updateLessonDesignBanner();
     return;
   }
-  if (!lessons.some(item => item.unitId === activeLessonId)) {
-    activeLessonId = lessons[0].unitId;
+  if (!lessons.some(item => item.unitId === activeUnitId)) {
+    activeUnitId = lessons[0].unitId;
+    sessionStorage.setItem("miled_active_unit_id", activeUnitId);
   }
+  const activeLessonIdForUi = resolveActiveLessonId();
   const lessonInput = document.getElementById("playlistLessonId");
-  if (lessonInput) lessonInput.value = activeLessonId;
+  if (lessonInput) lessonInput.value = activeLessonIdForUi;
   listEl.innerHTML = lessons.map(item => `
-    <button type="button" class="lesson-plan-item ${item.unitId === activeLessonId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}" data-lesson-title="${macroEscHtml(item.title)}">
+    <button type="button" class="lesson-plan-item ${item.unitId === activeUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}" data-lesson-title="${macroEscHtml(item.title)}">
       <div class="lesson-plan-item-meta">יחידת לימוד ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       ${item.date ? `<div class="lesson-plan-item-date">📅 ${escapeHtml(item.date)}</div>` : ''}
@@ -3311,6 +3316,7 @@ function renderLessonDesignNavigator() {
       const unitTitle = button.getAttribute("data-open-lesson-title") || "";
       if (!unitId) return;
       openLesson(unitId, unitTitle);
+      loadCourseMetadataWorkspace();
     });
   });
   const sessions = buildSessionSidebarItems();
@@ -3327,8 +3333,10 @@ function renderLessonDesignNavigator() {
   sessionsEl.querySelectorAll("[data-lesson-session]").forEach(button => {
     button.addEventListener("click", () => {
       const lessonId = button.getAttribute("data-lesson-session");
+      const lessonTitle = button.getAttribute("data-lesson-title") || "";
       if (!lessonId) return;
-      selectLessonDesignUnit(lessonId, { reloadMetadata: true });
+      openLesson(lessonId, lessonTitle);
+      loadCourseMetadataWorkspace();
     });
   });
   sessionsEl.querySelectorAll("[data-open-lesson-session]").forEach(button => {
@@ -3338,6 +3346,7 @@ function renderLessonDesignNavigator() {
       const lessonTitle = button.getAttribute("data-open-lesson-title") || "";
       if (!lessonId) return;
       openLesson(lessonId, lessonTitle);
+      loadCourseMetadataWorkspace();
     });
   });
   updateLessonDesignBanner();
@@ -3346,12 +3355,12 @@ function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
   if (!unitId) return;
   activeUnitId = String(unitId).trim();
   sessionStorage.setItem("miled_active_unit_id", activeUnitId);
-  const lessonId = deriveLessonIdFromUnit(activeUnitId);
-  activeLessonId = lessonId;
+  activeLessonId = "";
+  const lessonId = resolveActiveLessonId();
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput && lessonInput.value !== lessonId) lessonInput.value = lessonId;
   const lessonTitle = resolveLessonTitleById(lessonId);
-  openLesson(lessonId, lessonTitle);
+  openLesson(undefined, lessonTitle);
   renderLessonDesignNavigator();
   if (reloadMetadata) loadCourseMetadataWorkspace();
 }
@@ -3451,11 +3460,11 @@ async function loadMacroBookshelf(courseId) {
     const payload = await fetch(`/.netlify/functions/classroom?action=course_metadata&courseId=${encodeURIComponent(courseId)}`).then(r => r.json());
     macroBookshelfUnits = macroNormalizeBookshelfUnits(payload?.metadata || null);
     syncLessonResourcesFromMetadata();
-    renderResources();
+    renderLesson();
   } catch {
     macroBookshelfUnits = [];
     syncLessonResourcesFromMetadata();
-    renderResources();
+    renderLesson();
   }
 }
 
@@ -3477,7 +3486,7 @@ function macroNormalizeBookshelfUnits(metadata) {
 }
 
 function macroRenderBookshelf() {
-  renderResources();
+  renderLesson();
 }
 
 function normalizeLessonResourceItem(item = {}, index = 0, fallbackUnitId = "") {
@@ -3631,7 +3640,8 @@ function applyCourseLockUI(courseId, courseName) {
   const url = new URL(location.href);
   url.searchParams.set('courseId', courseId);
   history.replaceState(null, '', url.toString());
-  const qs = `?courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(resolveActiveLessonId())}`;
+  const lessonId = resolveActiveLessonId();
+  const qs = `?courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}`;
   const toMacro1 = document.getElementById('toMacroCockpitBtn');
   const toMacro2 = document.getElementById('backToUnitsBtn');
   const toMicro  = document.getElementById('toMicroCockpitBtn');
@@ -3742,20 +3752,20 @@ async function openAllEntryPolicy() {
   if (!sessionId) { alert('פתח שיעור תחילה'); return; }
 
   const classId = activeCourseId || getSelectedTeachingContext().classId || null;
-  const unitId = resolveActiveLessonId();
+  const lessonId = resolveActiveLessonId();
   if (!classId) { alert('נדרש קורס פעיל כדי לפתוח שערים'); return; }
 
   openAllInFlight = true;
   setOpenAllGateState(true);
 
   try {
-    await writeActiveDoorState({
-      classId,
-      unitId,
-      sessionId,
-      status: 'active',
-      entryPolicy: 'open_all'
-    });
+      await writeActiveDoorState({
+        classId,
+        unitId: lessonId,
+        sessionId,
+        status: 'active',
+        entryPolicy: 'open_all'
+      });
     await callClassroom({
       action: 'session_state_update',
       sessionId,
@@ -3784,13 +3794,14 @@ async function openSession() {
 
   try {
     // Resolve botType + classId depending on selection type
-    const unitId = resolveActiveLessonId();
+    const lessonId = resolveActiveLessonId();
+    const sessionUnitId = lessonId; // classroom API currently uses legacy `unitId` for session routing.
     let botType, classId, studentURL;
     if (selType === 'course' && CONFIG?.my_courses?.[selectedValue] && selectedClassId) {
       classId  = selectedClassId;
       botType  = CONFIG.my_courses[selectedValue].bots?.main?.botType || selectedValue;
-      studentURL = `${location.origin}/waiting_lobby.html?courseId=${classId}&unitId=${encodeURIComponent(unitId)}&sessionId=SESSION_ID`;
-      console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}_${unitId}`);
+      studentURL = `${location.origin}/waiting_lobby.html?courseId=${classId}&unitId=${encodeURIComponent(sessionUnitId)}&lessonId=${encodeURIComponent(lessonId)}&sessionId=SESSION_ID`;
+      console.info(`[openSession] Active session index path: ${ACTIVE_SESSIONS_NODE}/${classId}_${sessionUnitId}`);
     } else {
       // Faculty tool — no classId, botType is the value directly
       botType    = selectedValue;
@@ -3808,14 +3819,14 @@ async function openSession() {
     // Immediate atomic signal for student door listener.
     if (classId) {
       // Canonical session signal key: active_sessions/{courseId}_{unitId}
-      await writeActiveDoorState({ classId, unitId, sessionId, status: 'active', entryPolicy: 'open_all' });
-      startWaitingAttendeesListener(classId, unitId);
+      await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId, status: 'active', entryPolicy: 'open_all' });
+      startWaitingAttendeesListener(classId, sessionUnitId);
     }
 
-    const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
+    const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId: sessionUnitId, lessonId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
     if (!res.ok) {
       if (classId) {
-        await writeActiveDoorState({ classId, unitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
+        await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
       }
       alert("שגיאה בפתיחת שיעור");
       return;
@@ -3914,12 +3925,13 @@ async function broadcast() {
 async function closeSession() {
   if (!confirm("לסגור את השיעור?")) return;
   const closingClassId = activeCourseId || getSelectedTeachingContext().classId || null;
-  const closingUnitId = resolveActiveLessonId();
+  const closingLessonId = resolveActiveLessonId();
   await callClassroom({ action: "close", sessionId, facultyId });
   if (closingClassId) {
     await writeActiveDoorState({
       classId: closingClassId,
-      unitId: closingUnitId,
+      unitId: closingLessonId,
+      lessonId: closingLessonId,
       sessionId: null,
       status: "closed",
       entryPolicy: "closed"
@@ -3935,7 +3947,7 @@ async function closeSession() {
   setOpenAllGateState(false);
   sessionId = null;
   pushedSteps = [];
-  renderDJBooth();
+    renderLesson();
   loadPacingHeatmap();
 }
 
@@ -3953,10 +3965,12 @@ function startPolling() {
 async function fetchDashboard() {
   try {
     const classIdParam = activeCourseId ? `&classId=${encodeURIComponent(activeCourseId)}` : '';
-    const unitIdParam = resolveActiveLessonId() ? `&unitId=${encodeURIComponent(resolveActiveLessonId())}` : '';
+    const lessonId = resolveActiveLessonId();
+    const lessonIdParam = lessonId ? `&lessonId=${encodeURIComponent(lessonId)}` : '';
+    const unitIdParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : '';
     const userIdParam = `&userId=${encodeURIComponent(facultyId)}`;
     const res = await fetch(
-      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}${classIdParam}${unitIdParam}${userIdParam}`
+      `/.netlify/functions/classroom?action=dashboard&sessionId=${sessionId}&facultyId=${facultyId}${classIdParam}${unitIdParam}${lessonIdParam}${userIdParam}`
     );
     const data = await res.json();
     if (!res.ok) {
@@ -4465,12 +4479,12 @@ function deriveLessonIdFromUnit(unitId) {
 }
 
 function mapUnitToLessonDesignId(unitId) {
-  return String(unitId || "").trim() || "unit_01";
+  return String(unitId || "").trim() || "";
 }
 
 // Single lesson resolver used by open/save/render/template/DJ flows.
 function resolveActiveLessonId() {
-  return activeLessonId || deriveLessonIdFromUnit(activeUnitId) || "unit_01";
+  return activeLessonId || deriveLessonIdFromUnit(activeUnitId) || "lesson_01";
 }
 
 function renderImportedUnits() {
@@ -4547,7 +4561,7 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     sprintDrafts = [];
     syncLessonResourcesFromMetadata();
     renderImportedUnits();
-    renderResources();
+    renderLesson();
     renderSprintDrafts();
     renderLessonDesignNavigator();
     if (statusEl) statusEl.textContent = 'בחר קורס כדי לטעון מטא-דאטה';
@@ -4565,7 +4579,7 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     sprintDrafts = Array.isArray(sprintSet) ? sprintSet : [];
     syncLessonResourcesFromMetadata(lessonId);
     renderImportedUnits();
-    renderResources();
+    renderLesson();
     renderSprintDrafts();
     renderLessonDesignNavigator();
     if (statusEl) statusEl.textContent = importedMetadataCache ? `נטענו ${importedMetadataCache.unitCount || 0} יחידות מהמטא-דאטה` : 'אין מטא-דאטה לקורס זה';
@@ -4606,7 +4620,7 @@ async function importMoodleJson() {
   selectedPlaylistUnitIds = new Set((importedMetadataCache?.units || []).map(unit => unit.unitId));
   syncLessonResourcesFromMetadata(resolveActiveLessonId(), { rebuildFromMetadata: true });
   renderImportedUnits();
-  renderResources();
+  renderLesson();
   if (statusEl) statusEl.textContent = `יובאו ${importedMetadataCache?.unitCount || 0} יחידות ו-${importedMetadataCache?.resourceCount || 0} משאבים`;
 }
 
@@ -4636,7 +4650,7 @@ async function saveLessonPlaylist() {
     return;
   }
   syncLessonResourcesFromMetadata(lessonId, { rebuildFromMetadata: true });
-  renderResources();
+  renderLesson();
   if (statusEl) statusEl.textContent = 'Playlist נשמר';
 }
 
@@ -5162,7 +5176,9 @@ window.addEventListener("load", () => {
 // ═══════════════════════════════════════════
 const LESSONS_STORAGE_KEY = "miled_macro_lessons_store_v1";
 const LESSONS_STORE_VERSION = 1;
+// Runtime lesson pointer; all lesson UI/actions read from this object only.
 let currentLesson = null;
+// Persistent lesson dictionary keyed by lesson id (not by unit id).
 let lessonsStore = {};
 
 function createEmptyLesson(id, title) {
@@ -5177,7 +5193,7 @@ function createEmptyLesson(id, title) {
 }
 
 function normalizeLessonRecord(record = {}, fallbackId = "") {
-  const id = mapUnitToLessonDesignId(record?.id || fallbackId);
+  const id = mapUnitToLessonDesignId(record?.id || fallbackId) || "lesson_01";
   const title = String(record?.title || "").trim() || resolveLessonTitleById(id);
   const objectives = Array.isArray(record?.objectives) ? record.objectives.map(item => String(item || "").trim()).filter(Boolean) : [];
   const steps = Array.isArray(record?.steps)
@@ -5265,10 +5281,11 @@ function loadLessonState(id, title) {
   return currentLesson;
 }
 
-// Only lesson activation entry point (resolve/hydrate/activate/render).
+// Only lesson activation entry point: resolves id, hydrates state, switches phase, renders once.
 function openLesson(id, title) {
-  const explicitLessonId = String(id || "").trim();
-  const lessonId = explicitLessonId ? mapUnitToLessonDesignId(explicitLessonId) : resolveActiveLessonId();
+  const explicitLessonId = mapUnitToLessonDesignId(id);
+  if (explicitLessonId) activeLessonId = explicitLessonId;
+  const lessonId = resolveActiveLessonId();
   activeLessonId = lessonId;
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = lessonId;
@@ -5295,7 +5312,7 @@ function renderLesson() {
   renderPreClass();
   renderResources();
   renderLessonSteps();
-  renderDJBooth();
+  renderLesson();
 }
 
 function getCurrentLessonSteps() {
@@ -5565,18 +5582,17 @@ switchWizardStep(1);
 hydrateLessonsStore();
 syncCockpitNavOffset();
 window.addEventListener('resize', syncCockpitNavOffset);
-renderPreClass();
 loadPreSessionMission();
 renderImportedUnits();
-renderResources();
 renderSprintDrafts();
 loadCourseMetadataWorkspace();
 renderLessonDesignNavigator();
 renderLesson();
 document.getElementById("playlistLessonId")?.addEventListener("change", (event) => {
-  const unitId = String(event?.target?.value || "").trim();
-  if (!unitId) return;
-  selectLessonDesignUnit(unitId, { reloadMetadata: true });
+  const lessonId = String(event?.target?.value || "").trim();
+  if (!lessonId) return;
+  openLesson(lessonId, resolveLessonTitleById(lessonId));
+  loadCourseMetadataWorkspace();
 });
 document.getElementById("lesson-objectives")?.addEventListener("input", (event) => {
   const lessonId = resolveActiveLessonId();
