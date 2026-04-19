@@ -2357,11 +2357,13 @@ const queryUnitId = cockpitParams.get("unitId");
 const queryLessonId = cockpitParams.get("lessonId");
 const fallbackCourseId = sessionStorage.getItem("miled_active_course_id") || "";
 const fallbackUnitId = sessionStorage.getItem("miled_active_unit_id") || "";
+const fallbackLessonId = sessionStorage.getItem("miled_active_lesson_id") || "";
 const presetCourseId = queryCourseId || queryClassId || fallbackCourseId;
 const presetUnitId = queryUnitId || fallbackUnitId || "unit_01";
-const presetLessonId = String(queryLessonId || "").trim();
+const presetLessonId = String(queryLessonId || fallbackLessonId || "").trim();
 if (queryCourseId || queryClassId) sessionStorage.setItem("miled_active_course_id", presetCourseId);
 if (queryUnitId) sessionStorage.setItem("miled_active_unit_id", presetUnitId);
+if (queryLessonId) sessionStorage.setItem("miled_active_lesson_id", presetLessonId);
 
 // ── Preserve courseId context in cross-cockpit navigation link ──
 (function() {
@@ -2384,6 +2386,8 @@ let CONFIG      = null;  // stored for openSession() lookup
 let activeCourseId = null;
 let activeUnitId = presetUnitId || "unit_01";
 let activeLessonId = presetLessonId || "";
+let sessionLessonId = null;
+let sessionCourseId = null;
 const ACTIVE_SESSIONS_NODE = "active_sessions";
 let openSessionInFlight = false;
 let openAllInFlight = false;
@@ -2406,6 +2410,7 @@ let importedMetadataCache = null;
 let selectedPlaylistUnitIds = new Set();
 let sprintDrafts = [];
 let pacingHeatmapTimer = null;
+const LESSON_CONTEXT_DEBUG = /[?&]debugLessonContext=1(?:&|$)/.test(location.search) || localStorage.getItem("miled_debug_lesson_context") === "1";
 
 function safeAvatar(avatar) {
   const value = String(avatar || "").trim();
@@ -2511,13 +2516,15 @@ function startWaitingAttendeesListener(classId, unitId) {
 
 async function fetchWaitingPressureForSelectedCourse() {
   const classId = activeCourseId || getSelectedTeachingContext().classId;
+  const lessonId = resolveRuntimeLessonId();
   if (!classId) {
     updateWaitingPressure(0);
     return;
   }
 
   try {
-    const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}`);
+    const lessonAsUnitParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : "";
+    const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}${lessonAsUnitParam}`);
     if (!res.ok) return;
     const data = await res.json();
     updateWaitingPressure(data?.waitingStudentsCount || 0);
@@ -2526,8 +2533,8 @@ async function fetchWaitingPressureForSelectedCourse() {
 
 function startWaitingPressurePolling() {
   if (waitingPressureTimer) clearInterval(waitingPressureTimer);
-  const classId = activeCourseId || getSelectedTeachingContext().classId || null;
-  const lessonId = resolveActiveLessonId();
+  const classId = sessionCourseId || activeCourseId || getSelectedTeachingContext().classId || null;
+  const lessonId = resolveRuntimeLessonId();
   startWaitingAttendeesListener(classId, lessonId);
 }
 
@@ -3136,6 +3143,8 @@ fetch('/config.json').then(r => r.json()).then(config => {
 
     const playlistLessonInput = document.getElementById("playlistLessonId");
     if (playlistLessonInput) playlistLessonInput.value = resolveActiveLessonId();
+    syncActiveContextPersistence({ updateUrl: true });
+    debugLessonContext("course-select");
 
     fetchWaitingPressureForSelectedCourse();
     loadPreSessionMission();
@@ -3289,11 +3298,11 @@ function renderLessonDesignNavigator() {
   }
   if (!lessons.some(item => item.unitId === activeUnitId)) {
     activeUnitId = lessons[0].unitId;
-    sessionStorage.setItem("miled_active_unit_id", activeUnitId);
   }
   if (activeLessonId && !lessons.some(item => deriveLessonIdFromUnit(item.unitId) === activeLessonId)) {
     activeLessonId = "";
   }
+  syncActiveContextPersistence();
   const activeLessonIdForUi = resolveActiveLessonId();
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = activeLessonIdForUi;
@@ -3359,16 +3368,17 @@ function renderLessonDesignNavigator() {
 function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
   if (!unitId) return;
   activeUnitId = String(unitId).trim();
-  sessionStorage.setItem("miled_active_unit_id", activeUnitId);
   // Clear explicit lesson selection so resolver derives lesson id from the newly selected unit context.
   activeLessonId = "";
   const lessonId = resolveActiveLessonId();
+  syncActiveContextPersistence({ updateUrl: true });
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput && lessonInput.value !== lessonId) lessonInput.value = lessonId;
   const lessonTitle = resolveLessonTitleById(lessonId);
   openLesson(lessonId, lessonTitle);
   renderLessonDesignNavigator();
   if (reloadMetadata) loadCourseMetadataWorkspace();
+  debugLessonContext("unit-select");
 }
 async function saveLessonDateForCurrentUnit() {
   const courseId = currentCourseForSync();
@@ -3642,22 +3652,8 @@ function applyCourseLockUI(courseId, courseName) {
     el.innerHTML = indicatorHtml;
     el.style.display = '';
   });
-  sessionStorage.setItem("miled_active_course_id", courseId);
-  const url = new URL(location.href);
-  url.searchParams.set('courseId', courseId);
-  history.replaceState(null, '', url.toString());
-  const lessonId = resolveActiveLessonId();
-  const qs = `?courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}`;
-  const toMacro1 = document.getElementById('toMacroCockpitBtn');
-  const toMacro2 = document.getElementById('backToUnitsBtn');
-  const toMicro  = document.getElementById('toMicroCockpitBtn');
-  const roleMicro = document.getElementById('roleMicroCockpitLink');
-  const roleMacro = document.getElementById('roleMacroCockpitLink');
-  if (toMacro1) toMacro1.href = `/macro_cockpit.html${qs}`;
-  if (toMacro2) toMacro2.href = `/macro_cockpit.html${qs}`;
-  if (toMicro)  toMicro.href  = `/micro_cockpit.html${qs}`;
-  if (roleMicro) roleMicro.href = `/micro_cockpit.html${qs}`;
-  if (roleMacro) roleMacro.href = `/macro_cockpit.html${qs}`;
+  syncActiveContextPersistence({ updateUrl: true });
+  debugLessonContext("course-select");
 }
 
 function clearCourseLockUI() {
@@ -3677,25 +3673,11 @@ function clearCourseLockUI() {
   macroCourseId = "";
   activeUnitId = macroToSessionUnitId(1);
   activeLessonId = "";
-  sessionStorage.removeItem("miled_active_course_id");
-  sessionStorage.removeItem("miled_active_unit_id");
-  const url = new URL(location.href);
-  url.searchParams.delete('courseId');
-  url.searchParams.delete('classId');
-  history.replaceState(null, '', url.toString());
-  const toMacro1 = document.getElementById('toMacroCockpitBtn');
-  const toMacro2 = document.getElementById('backToUnitsBtn');
-  const toMicro  = document.getElementById('toMicroCockpitBtn');
-  const roleMicro = document.getElementById('roleMicroCockpitLink');
-  const roleMacro = document.getElementById('roleMacroCockpitLink');
-  if (toMacro1) toMacro1.href = '/macro_cockpit.html';
-  if (toMacro2) toMacro2.href = '/macro_cockpit.html';
-  if (toMicro)  toMicro.href  = '/micro_cockpit.html';
-  if (roleMicro) roleMicro.href = '/micro_cockpit.html';
-  if (roleMacro) roleMacro.href = '/macro_cockpit.html';
+  syncActiveContextPersistence({ updateUrl: true });
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = resolveActiveLessonId();
   renderLessonDesignNavigator();
+  debugLessonContext("course-clear");
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -3757,8 +3739,8 @@ async function openAllEntryPolicy() {
   if (openAllInFlight) return;
   if (!sessionId) { alert('פתח שיעור תחילה'); return; }
 
-  const classId = activeCourseId || getSelectedTeachingContext().classId || null;
-  const lessonId = resolveActiveLessonId();
+  const classId = sessionCourseId || activeCourseId || getSelectedTeachingContext().classId || null;
+  const lessonId = resolveRuntimeLessonId();
   if (!classId) { alert('נדרש קורס פעיל כדי לפתוח שערים'); return; }
 
   openAllInFlight = true;
@@ -3799,8 +3781,10 @@ async function openSession() {
   setOpenSessionBusy(true);
 
   try {
+    debugLessonContext("session-open:start");
     // Resolve botType + classId depending on selection type
     const lessonId = resolveActiveLessonId();
+    sessionLessonId = lessonId;
     // TODO(BP-runtime): remove `unitId` transport alias once classroom endpoints are lessonId-native.
     const sessionUnitId = lessonId; // classroom API currently uses legacy `unitId` for session routing.
     let botType, classId, studentURL;
@@ -3817,6 +3801,7 @@ async function openSession() {
     }
 
     currentBot = botType;
+    sessionCourseId = classId || null;
     pushedSteps = [];
 
     // Session ID must exist before student redirect signal is emitted.
@@ -3832,6 +3817,8 @@ async function openSession() {
 
     const res = await callClassroom({ action: "open", sessionId, facultyId, userId: facultyId, courseId: classId, unitId: sessionUnitId, lessonId, botType, classId, facultyAvatar: safeAvatar(facultyAvatar) });
     if (!res.ok) {
+      sessionLessonId = null;
+      sessionCourseId = null;
       if (classId) {
         await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
       }
@@ -3851,6 +3838,7 @@ async function openSession() {
     setOpenAllGateState(false);
     renderDJBooth();
     startPolling();
+    debugLessonContext("session-open:ready");
   } finally {
     openSessionInFlight = false;
     setOpenSessionBusy(false);
@@ -3931,8 +3919,8 @@ async function broadcast() {
 // ─────────────────────────────────────────
 async function closeSession() {
   if (!confirm("לסגור את השיעור?")) return;
-  const closingClassId = activeCourseId || getSelectedTeachingContext().classId || null;
-  const closingLessonId = resolveActiveLessonId();
+  const closingClassId = sessionCourseId || activeCourseId || getSelectedTeachingContext().classId || null;
+  const closingLessonId = resolveRuntimeLessonId();
   await callClassroom({ action: "close", sessionId, facultyId });
   if (closingClassId) {
     await writeActiveDoorState({
@@ -3952,6 +3940,8 @@ async function closeSession() {
   setSessionControls(false);
   setOpenAllGateState(false);
   sessionId = null;
+  sessionLessonId = null;
+  sessionCourseId = null;
   pushedSteps = [];
     renderLesson();
   loadPacingHeatmap();
@@ -3970,8 +3960,9 @@ function startPolling() {
 
 async function fetchDashboard() {
   try {
-    const classIdParam = activeCourseId ? `&classId=${encodeURIComponent(activeCourseId)}` : '';
-    const lessonId = resolveActiveLessonId();
+    const classId = sessionCourseId || currentCourseForSync();
+    const classIdParam = classId ? `&classId=${encodeURIComponent(classId)}` : '';
+    const lessonId = resolveRuntimeLessonId();
     const lessonIdParam = lessonId ? `&lessonId=${encodeURIComponent(lessonId)}` : '';
     const unitIdParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : '';
     const userIdParam = `&userId=${encodeURIComponent(facultyId)}`;
@@ -4491,6 +4482,87 @@ function mapUnitToLessonDesignId(unitId) {
 // Single lesson resolver used by open/save/render/template/DJ flows.
 function resolveActiveLessonId() {
   return activeLessonId || deriveLessonIdFromUnit(activeUnitId) || "lesson_01";
+}
+
+function debugLessonContext(label = "") {
+  if (!LESSON_CONTEXT_DEBUG) return;
+  console.log(`[lesson-context] ${label}`, {
+    activeCourseId,
+    activeUnitId,
+    activeLessonId,
+    currentLessonId: currentLesson?.id || null,
+    sessionLessonId,
+    sessionCourseId
+  });
+}
+
+function syncCockpitContextLinks() {
+  const courseId = currentCourseForSync();
+  // Keep `unitId` in links for unit-level context; fallback keeps backward compatibility for lesson-only flows.
+  const unitId = activeUnitId || resolveActiveLessonId();
+  const lessonId = resolveActiveLessonId();
+  const toMacro1 = document.getElementById('toMacroCockpitBtn');
+  const toMacro2 = document.getElementById('backToUnitsBtn');
+  const toMicro = document.getElementById('toMicroCockpitBtn');
+  const roleMicro = document.getElementById('roleMicroCockpitLink');
+  const roleMacro = document.getElementById('roleMacroCockpitLink');
+  if (!courseId) {
+    if (toMacro1) toMacro1.href = '/macro_cockpit.html';
+    if (toMacro2) toMacro2.href = '/macro_cockpit.html';
+    if (toMicro) toMicro.href = '/micro_cockpit.html';
+    if (roleMicro) roleMicro.href = '/micro_cockpit.html';
+    if (roleMacro) roleMacro.href = '/macro_cockpit.html';
+    return;
+  }
+  const qs = `?courseId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}&lessonId=${encodeURIComponent(lessonId)}`;
+  if (toMacro1) toMacro1.href = `/macro_cockpit.html${qs}`;
+  if (toMacro2) toMacro2.href = `/macro_cockpit.html${qs}`;
+  if (toMicro) toMicro.href = `/micro_cockpit.html${qs}`;
+  if (roleMicro) roleMicro.href = `/micro_cockpit.html${qs}`;
+  if (roleMacro) roleMacro.href = `/macro_cockpit.html${qs}`;
+}
+
+function syncActiveContextPersistence({ updateUrl = false } = {}) {
+  const courseId = currentCourseForSync();
+  const lessonId = resolveActiveLessonId();
+  if (courseId) {
+    sessionStorage.setItem("miled_active_course_id", courseId);
+    if (activeUnitId) sessionStorage.setItem("miled_active_unit_id", activeUnitId);
+    else sessionStorage.removeItem("miled_active_unit_id");
+    if (lessonId) sessionStorage.setItem("miled_active_lesson_id", lessonId);
+    else sessionStorage.removeItem("miled_active_lesson_id");
+  } else {
+    sessionStorage.removeItem("miled_active_course_id");
+    sessionStorage.removeItem("miled_active_unit_id");
+    sessionStorage.removeItem("miled_active_lesson_id");
+  }
+  if (updateUrl) {
+    const url = new URL(location.href);
+    if (courseId) {
+      url.searchParams.set("courseId", courseId);
+      url.searchParams.set("unitId", activeUnitId || lessonId);
+      url.searchParams.set("lessonId", lessonId);
+    } else {
+      url.searchParams.delete("courseId");
+      url.searchParams.delete("classId");
+      url.searchParams.delete("unitId");
+      url.searchParams.delete("lessonId");
+    }
+    history.replaceState(null, "", url.toString());
+  }
+  syncCockpitContextLinks();
+}
+
+function resolveRuntimeLessonId() {
+  const resolved = resolveActiveLessonId();
+  if (sessionId && sessionLessonId && sessionLessonId !== resolved) {
+    console.warn("[lesson-context] session lesson differs from UI selection; runtime intentionally keeps the opened session lesson", {
+      sessionLessonId,
+      activeLessonId: resolved
+    });
+    return sessionLessonId;
+  }
+  return sessionLessonId || resolved;
 }
 
 function renderImportedUnits() {
@@ -5291,6 +5363,8 @@ function loadLessonState(id, title) {
 function openLesson(id, title) {
   const explicitLessonId = mapUnitToLessonDesignId(id);
   activeLessonId = explicitLessonId || resolveActiveLessonId();
+  activeUnitId = explicitLessonId || activeUnitId || activeLessonId;
+  syncActiveContextPersistence({ updateUrl: true });
   const lessonId = activeLessonId;
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = lessonId;
@@ -5298,6 +5372,7 @@ function openLesson(id, title) {
   switchPhase('lesson');
   renderLessonDesignNavigator();
   renderLesson();
+  debugLessonContext("lesson-open");
 }
 
 function renderObjectives() {
@@ -5307,17 +5382,24 @@ function renderObjectives() {
 }
 
 function renderLesson() {
+  const lessonId = resolveActiveLessonId();
+  const lesson = ensureCurrentLessonForId(lessonId);
+  const lessonInput = document.getElementById("playlistLessonId");
+  if (lessonInput && lessonInput.value !== lessonId) lessonInput.value = lessonId;
   const titleEl = document.getElementById("lesson-title");
   if (titleEl) {
-    titleEl.innerText = currentLesson?.title
-      ? "עיצוב שיעור: " + currentLesson.title
+    titleEl.innerText = lesson?.title
+      ? "עיצוב שיעור: " + lesson.title
       : "עיצוב שיעור: בחר שיעור";
   }
   renderObjectives();
   renderPreClass();
   renderResources();
   renderLessonSteps();
-  renderLesson();
+  // Full lesson render already happened in this function; refresh DJ panel without re-entering renderLesson().
+  renderDJBooth();
+  syncActiveContextPersistence();
+  debugLessonContext("render");
 }
 
 function getCurrentLessonSteps() {
@@ -5332,7 +5414,9 @@ function ensureCurrentLessonForId(lessonId = resolveActiveLessonId()) {
   }
   if (activeLessonId !== normalizedId) {
     activeLessonId = normalizedId;
+    if (activeUnitId !== normalizedId) activeUnitId = normalizedId;
     persistLessonsStoreDebounced();
+    syncActiveContextPersistence();
   }
   return currentLesson;
 }
@@ -5377,7 +5461,7 @@ function renderLessonSteps() {
 }
 
 async function saveTemplate() {
-  const classId = activeCourseId;
+  const classId = currentCourseForSync();
   if (!classId) { alert("בחר קורס לפני שמירת תבנית"); return; }
   const steps = getCurrentLessonSteps();
   if (!steps.length) { alert("הוסף שלבים לפני השמירה"); return; }
@@ -5593,6 +5677,8 @@ renderSprintDrafts();
 loadCourseMetadataWorkspace();
 renderLessonDesignNavigator();
 renderLesson();
+syncActiveContextPersistence({ updateUrl: !!currentCourseForSync() });
+debugLessonContext("initial-render");
 document.getElementById("playlistLessonId")?.addEventListener("change", (event) => {
   const lessonId = String(event?.target?.value || "").trim();
   if (!lessonId) return;
