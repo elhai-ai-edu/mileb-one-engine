@@ -706,6 +706,7 @@ export async function handler(event){
         broadcastedAt: session.broadcastedAt || null,
         currentStep: session.currentStep || 1,
         projectStages: courseConfig?.course_units?.semester_a?.project?.stages || [],
+        teamProjectId: courseConfig?.teamProject?.projectId || null,
         liveMeeting,
         speakerFocus
       });

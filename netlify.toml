@@ -21,6 +21,11 @@
     X-Frame-Options = "SAMEORIGIN"
 
 [[headers]]
+  for = "/team_project.html"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+
+[[headers]]
   for = "/api/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
