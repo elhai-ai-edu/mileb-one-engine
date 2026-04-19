@@ -126,6 +126,20 @@ function normalizeUnitId(value, fallback = "unit_01") {
   return unit || fallback;
 }
 
+function normalizeLinkedUnitIds(value) {
+  if(!Array.isArray(value)) return [];
+  const seen = new Set();
+  return value
+    .map(item => String(item || "").trim())
+    .filter(unitId => unitId.startsWith("topic_"))
+    .filter(unitId => {
+      if(seen.has(unitId)) return false;
+      seen.add(unitId);
+      return true;
+    })
+    .slice(0, 50);
+}
+
 function normalizeConfigUnitId(value, fallbackIndex = 1) {
   const raw = String(value ?? "").trim();
   if(/^unit_\d+$/i.test(raw)) return normalizeUnitId(raw.toLowerCase());
@@ -1690,6 +1704,9 @@ export async function handler(event){
       entranceTickets: body.entranceTickets || null,
       updatedAt: Date.now()
     };
+    if (Object.prototype.hasOwnProperty.call(body, "linkedUnitIds")) {
+      payload.linkedUnitIds = normalizeLinkedUnitIds(body.linkedUnitIds);
+    }
     if (Object.prototype.hasOwnProperty.call(body, "lessonDate")) {
       payload.lessonDate = String(body.lessonDate || "").trim() || null;
     }
