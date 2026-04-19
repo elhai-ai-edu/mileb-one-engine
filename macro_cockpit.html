@@ -3829,6 +3829,7 @@ async function openSession() {
       sessionLessonId = null;
       sessionCourseId = null;
       runtimeDriftWarningKey = "";
+      pushedSteps = [];
       persistRuntimeSessionContext();
       if (classId) {
         await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
@@ -4505,6 +4506,9 @@ function buildWaitingLobbyUrl({ classId = null, lessonId = "", sessionId: sid = 
   if (!classId) {
     return `${location.origin}/waiting_lobby.html?sessionId=${encodeURIComponent(sid)}`;
   }
+  if (LESSON_CONTEXT_DEBUG && !String(lessonId || "").trim()) {
+    console.warn("[lesson-context] missing lessonId while building course-bound waiting link; falling back to lesson_01");
+  }
   const normalizedLessonId = String(lessonId || "").trim() || "lesson_01";
   const unitId = normalizedLessonId;
   return `${location.origin}/waiting_lobby.html?courseId=${encodeURIComponent(classId)}&unitId=${encodeURIComponent(unitId)}&lessonId=${encodeURIComponent(normalizedLessonId)}&sessionId=${encodeURIComponent(sid)}`;
@@ -4513,7 +4517,7 @@ function buildWaitingLobbyUrl({ classId = null, lessonId = "", sessionId: sid = 
 function getRuntimeLessonContext({ warnOnDrift = true } = {}) {
   const uiLessonId = resolveActiveLessonId();
   const hasSessionBinding = !!(sessionId && sessionLessonId);
-  const runtimeLessonId = hasSessionBinding ? sessionLessonId : (sessionLessonId || uiLessonId);
+  const runtimeLessonId = sessionLessonId || uiLessonId;
   const runtimeBinding = hasSessionBinding ? "session-bound" : "ui-bound";
   if (warnOnDrift && hasSessionBinding && sessionLessonId !== uiLessonId) {
     const driftKey = `${sessionId}::${sessionLessonId}::${uiLessonId}`;
@@ -4538,17 +4542,23 @@ function persistRuntimeSessionContext() {
     }));
     return;
   }
+  // Partial runtime state is treated as invalid to avoid ambiguous restore payloads.
   sessionStorage.removeItem(SESSION_RUNTIME_STORAGE_KEY);
 }
 
 function restoreRuntimeSessionContext() {
   const raw = sessionStorage.getItem(SESSION_RUNTIME_STORAGE_KEY);
-  if (!raw || sessionId) return false;
+  if (!raw) return false;
   try {
     const parsed = JSON.parse(raw);
+    // Avoid overwriting a live in-memory session with possibly stale persisted storage.
+    if (sessionId && sessionLessonId) return false;
     const restoredSessionId = String(parsed?.sessionId || "").trim();
     const restoredLessonId = String(parsed?.sessionLessonId || "").trim();
-    const restoredCourseId = String(parsed?.sessionCourseId || "").trim() || null;
+    const restoredCourseIdRaw = parsed?.sessionCourseId;
+    const restoredCourseId = (restoredCourseIdRaw === null || restoredCourseIdRaw === undefined)
+      ? null
+      : String(restoredCourseIdRaw).trim();
     if (!restoredSessionId || !restoredLessonId) {
       sessionStorage.removeItem(SESSION_RUNTIME_STORAGE_KEY);
       return false;
@@ -4573,11 +4583,15 @@ function restoreRuntimeSessionContext() {
     if (sessionCourseId && sessionLessonId) {
       startWaitingAttendeesListener(sessionCourseId, sessionLessonId);
     }
+    // Keep dashboard polling active for both course sessions and faculty-tool sessions.
     startPolling();
     renderDJBooth();
     debugLessonContext("session-restore");
     return true;
-  } catch {
+  } catch (error) {
+    if (LESSON_CONTEXT_DEBUG) {
+      console.warn("[lesson-context] session restore failed; clearing persisted runtime context", error);
+    }
     sessionStorage.removeItem(SESSION_RUNTIME_STORAGE_KEY);
     return false;
   }
