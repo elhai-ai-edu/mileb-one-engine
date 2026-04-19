@@ -653,7 +653,44 @@ export async function handler(event){
       if(!sessionId) return err("sessionId required");
       const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
       const session = sessionSnap.val() || null;
-      if(!session) return err("session not found");
+
+      // When the session doesn't exist in Firebase but a courseId URL param was
+      // provided, return config-based data so the page can render the lesson plan
+      // and default sprint even in preview / test scenarios.
+      if(!session){
+        const fbCourseId = String(event.queryStringParameters?.courseId || "").trim();
+        const fbUnitId   = normalizeUnitId(event.queryStringParameters?.unitId || "unit_01");
+        if(!fbCourseId) return err("session not found");
+        const configCourses2 = await getConfigCourses();
+        const courseConfig2   = configCourses2?.[fbCourseId] || null;
+        const configBundle2   = courseConfig2 ? buildConfigCourseBundle(courseConfig2, fbUnitId) : null;
+        return ok({
+          sessionId,
+          courseId: fbCourseId,
+          courseName: configBundle2?.courseName || courseConfig2?.name || fbCourseId,
+          lessonId: fbUnitId,
+          botType: null,
+          hebrewLevel: courseConfig2?.hebrew_level || null,
+          roleAssignment: courseConfig2?.roleAssignment || null,
+          facultyId: null,
+          active: false,
+          state: { current_unit: fbUnitId, active_sprint: null, active_stage: null, door_status: "preview", pushed_resource: null, live_phase: null, phase_source: null, updatedAt: null },
+          playlist: null,
+          selectedUnits: configBundle2?.selectedUnits || [],
+          resources: configBundle2?.resources || [],
+          sprintDefinitions: configBundle2?.sprintDefinitions || [],
+          lessonPlan: (courseConfig2?.lessonPlan?.[fbUnitId] || courseConfig2?.lessonPlan?.["_default"] || []),
+          pacing: {},
+          activeTask: null,
+          broadcast: null,
+          broadcastedAt: null,
+          currentStep: 1,
+          projectStages: [],
+          teamProjectId: null,
+          liveMeeting: null,
+          speakerFocus: null
+        });
+      }
 
       // Write student presence so lecturer dashboard sees them immediately
       const payloadStudentId = String(event.queryStringParameters?.studentId || "").trim();

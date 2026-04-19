@@ -2631,7 +2631,10 @@
       lessonData = await callClassroom("GET", null, payloadQs);
 
       // If session is gone or closed, redirect student to lobby to discover the current active session
-      if (role === "student" && courseIdFromUrl) {
+      // "preview" door_status means the session doesn't exist in Firebase but
+      // we returned config-based data — treat as a read-only preview, never redirect.
+      const isPreviewMode = lessonData?.state?.door_status === "preview";
+      if (!isPreviewMode && role === "student" && courseIdFromUrl) {
         const sessionGone = lessonData?.error || !lessonData?.active;
         if (sessionGone) {
           clearInterval(refreshTimer);
@@ -2659,7 +2662,8 @@
       const writePanel = document.getElementById("writePanel");
       if (writePanel) writePanel.style.display = role === "lecturer" ? "none" : "";
       // Show waiting screen if session not yet open for students
-      if (role === "student") {
+      // In preview mode the session doesn't exist — show the lesson view anyway
+      if (role === "student" && !isPreviewMode) {
         const doorStatus = String(lessonData?.state?.door_status || "auto").toLowerCase();
         const sessionActive = !!lessonData?.active;
         const showWaiting = !sessionActive || doorStatus === "closed";
