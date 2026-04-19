@@ -1939,7 +1939,7 @@ body { background: var(--bg) !important; }
 
     <!-- ── Tool 4: Resource Shelf ── -->
     <div class="mc-section lesson-block-resources">
-    <div class="mc-section-head">📚  מדף משאבים<span class="mc-sub">משאבים ממופה מ-Moodle לפי שיעורים</span></div>
+    <div class="mc-section-head">📚  מדף משאבים<span class="mc-sub">משאבים ממופים מ-Moodle לפי שיעורים</span></div>
     <div class="mc-section-body">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
       <select id="macro-resource-unit-filter" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1f2937;"></select>
@@ -3322,7 +3322,7 @@ function selectLesson(lessonId, { reloadMetadata = false } = {}) {
   const normalizedLessonId = normalizeLessonId(lessonId);
   if (!normalizedLessonId) return;
   activeUnitId = normalizedLessonId;
-  // Clear explicit lesson selection so resolver derives lesson id from the newly selected lesson context.
+  // Clear explicit lesson selection so the resolver derives the resolved lesson ID from selected lesson context.
   activeLessonId = "";
   const resolvedLessonId = resolveActiveLessonId();
   syncActiveContextPersistence({ updateUrl: true });
@@ -5742,8 +5742,8 @@ let currentView = 'course';
 let currentWizardStep = 1;
 const courseStepDone = { 1: false, 2: false, 3: false, 4: false, 5: false };
 
-function switchPhase(phase) {
-  currentView = phase === 'lesson' ? 'lesson' : 'course';
+function switchPhase(view) {
+  currentView = view === 'lesson' ? 'lesson' : 'course';
   document.getElementById('phase-card-course')?.classList.toggle('active', currentView === 'course');
   document.getElementById('phase-card-lesson')?.classList.toggle('active', currentView === 'lesson');
   const courseBlock = document.getElementById('phase-course');
