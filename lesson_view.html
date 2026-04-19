@@ -112,9 +112,32 @@
       flex-direction: column;
     }
     /* Bookshelf (right in RTL) gets right border instead */
-    aside.panel:first-child { border-left: none; border-right: 1px solid #e2e8f0; }
+    aside.panel:first-child { border-left: none; border-right: 1px solid #e2e8f0; overflow-y: auto; }
     /* Chat (left in RTL) gets both borders */
     aside.panel.chat-shell  { border-left: 1px solid #e2e8f0; }
+
+    /* ── Bookshelf sections (demo style) ── */
+    .bookshelf-section { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .bookshelf-section:last-child { border-bottom: none; }
+    .bookshelf-section-head { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: .5px; margin-bottom: 10px; text-transform: uppercase; }
+    .bookshelf-current-unit {
+      font-size: 12px; color: var(--navy); background: #f8fafc;
+      border-radius: 8px; padding: 8px 10px; border: 1px solid var(--line); line-height: 1.5;
+    }
+    .bs-resource-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: 10px;
+      border: 1px solid var(--line); background: #f8fafc;
+      margin-bottom: 8px; cursor: pointer; transition: background .15s;
+      text-decoration: none; color: inherit;
+    }
+    .bs-resource-card:hover { background: #eff6ff; border-color: #bfdbfe; }
+    .bs-res-icon { font-size: 18px; flex-shrink: 0; }
+    .bs-res-body { flex: 1; min-width: 0; }
+    .bs-res-title { font-size: 13px; font-weight: 700; color: var(--navy); line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bs-res-meta  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .bs-res-btn   { flex-shrink: 0; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--line); background: #fff; cursor: pointer; font-size: 11px; font-weight: 700; color: var(--blue); font-family: inherit; white-space: nowrap; }
+    .bs-res-btn:hover { background: #eff6ff; }
     .panel-head {
       padding: 12px 16px;
       border-bottom: 1px solid var(--line);
@@ -1211,14 +1234,29 @@
           <div id="groupMembersList"></div>
         </div>
         <!-- Bookshelf — hidden in group mode -->
-        <div class="panel-head panel-head-bookshelf">Bookshelf</div>
-        <div class="panel-body panel-body-bookshelf">
-          <div class="state-strip">
-            <strong id="bookshelfLessonId">lessonId: --</strong>
-            <div class="resource-meta" id="selectedUnitsMeta">אין יחידות משויכות</div>
+        <div class="panel-head panel-head-bookshelf">📚 חומרים לפעילות</div>
+        <div class="panel-body-bookshelf" style="display:flex;flex-direction:column;overflow-y:auto;flex:1;">
+          <!-- Section: current unit -->
+          <div class="bookshelf-section">
+            <div class="bookshelf-section-head">פעילות נוכחית</div>
+            <div class="bookshelf-current-unit" id="bsCurrentUnit">טוען...</div>
           </div>
-          <div id="adminLinks" class="admin-links" style="display:none;"></div>
-          <div id="resourceList" class="resource-list"></div>
+          <!-- Section: knowledge resources -->
+          <div class="bookshelf-section" id="bsResourcesSection">
+            <div class="bookshelf-section-head">קשורים לפעילות הזאת</div>
+            <div id="bsResourceList"></div>
+          </div>
+          <!-- Section: digital tasks -->
+          <div class="bookshelf-section" id="bsTasksSection" style="display:none;">
+            <div class="bookshelf-section-head">משימות ממוקדות</div>
+            <div id="bsTaskList"></div>
+          </div>
+          <!-- Admin controls (lecturer only) -->
+          <div id="adminLinks" class="admin-links bookshelf-section" style="display:none;"></div>
+          <!-- Hidden legacy IDs for JS compatibility -->
+          <span id="bookshelfLessonId" style="display:none;"></span>
+          <span id="selectedUnitsMeta" style="display:none;"></span>
+          <div id="resourceList" style="display:none;"></div>
         </div>
       </aside>
 
@@ -1675,11 +1713,46 @@
     }
 
     function iconForResource(kind) {
-      if (kind === "pdf") return "PDF";
-      if (kind === "link") return "LINK";
-      if (kind === "task") return "TASK";
-      if (kind === "file") return "FILE";
-      return "ITEM";
+      if (kind === "pdf")   return "📄";
+      if (kind === "video") return "🎬";
+      if (kind === "task")  return "📝";
+      if (kind === "link")  return "📌";
+      if (kind === "file")  return "📁";
+      if (kind === "page")  return "📋";
+      return "📎";
+    }
+
+    const DIGITAL_TASK_DOMAINS = ["forms.gle", "docs.google.com/forms", "padlet.com", "quizlet.com", "kahoot.it", "mentimeter.com", "wooclap.com", "miro.com", "jamboard.google"];
+    function isDigitalTask(resource) {
+      if (resource.kind === "task") return true;
+      if (resource.sourceType && /assign|quiz|forum|choice/i.test(resource.sourceType)) return true;
+      if (resource.url && DIGITAL_TASK_DOMAINS.some(d => resource.url.includes(d))) return true;
+      const t = String(resource.title || "").toLowerCase();
+      if (/שאלון|ממלא|פדלט|קהות|kahoot|padlet|quizlet/i.test(t)) return true;
+      return false;
+    }
+
+    function buildBsCard(resource) {
+      const icon = iconForResource(resource.kind);
+      const meta = [resource.kind?.toUpperCase(), resource.unitName].filter(Boolean).join(" · ");
+      const btnLabel = resource.kind === "task" ? "מלא" : "פתח";
+      if (resource.url) {
+        return `<a class="bs-resource-card" href="${escapeHtml(resource.url)}" target="_blank" rel="noopener">
+          <span class="bs-res-icon">${icon}</span>
+          <span class="bs-res-body">
+            <span class="bs-res-title">${escapeHtml(resource.title)}</span>
+            <span class="bs-res-meta">${escapeHtml(meta)}</span>
+          </span>
+          <button class="bs-res-btn" onclick="event.preventDefault();window.open('${escapeHtml(resource.url)}','_blank')">${btnLabel}</button>
+        </a>`;
+      }
+      return `<div class="bs-resource-card" style="cursor:default;opacity:.65;">
+        <span class="bs-res-icon">${icon}</span>
+        <span class="bs-res-body">
+          <span class="bs-res-title">${escapeHtml(resource.title)}</span>
+          <span class="bs-res-meta">${escapeHtml(meta)}</span>
+        </span>
+      </div>`;
     }
 
     async function callClassroom(method, payload = null, query = "") {
@@ -1898,52 +1971,34 @@
       }
     }
 
-    function buildResourceCard(resource) {
-      const linkAction = resource.url
-        ? `<a class="mini-btn ghost" href="${resource.url}" target="_blank" rel="noopener">פתח</a>`
-        : `<span class="mini-btn ghost" style="opacity:.55;cursor:default;">ללא קישור</span>`;
-      const pushAction = role === "lecturer"
-        ? `<button class="mini-btn push" type="button" data-push-id="${escapeHtml(resource.id)}">Push to Students</button>`
-        : "";
-      return `
-        <div class="resource-card">
-          <div class="resource-row">
-            <div>
-              <div class="resource-title">${escapeHtml(iconForResource(resource.kind))} · ${escapeHtml(resource.title)}</div>
-              <div class="resource-meta">${escapeHtml(resource.unitName || resource.unitId || "יחידה לא מזוהה")}${resource.lecturerOnly ? ' · Lecturer Only' : ''}</div>
-            </div>
-            <div style="display:grid;gap:6px;justify-items:end;">${linkAction}${pushAction}</div>
-          </div>
-        </div>`;
-    }
-
     function renderResources() {
       const resources = Array.isArray(lessonData?.resources) ? lessonData.resources : [];
-      const visible = role === "lecturer" ? resources : resources.filter(resource => !resource.lecturerOnly);
-      const list = document.getElementById("resourceList");
-      const selectedUnitsMeta = document.getElementById("selectedUnitsMeta");
-      const lessonIdLabel = document.getElementById("bookshelfLessonId");
+      const visible = role === "lecturer" ? resources : resources.filter(r => !r.lecturerOnly);
       const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
 
-      lessonIdLabel.textContent = `lessonId: ${lessonData?.lessonId || "--"}`;
-      selectedUnitsMeta.textContent = selectedUnits.length
-        ? selectedUnits.map(unit => unit.name || unit.unitId).join(" | ")
-        : "אין יחידות משויכות";
-      list.innerHTML = visible.length ? visible.map(buildResourceCard).join("") : '<div class="resource-meta">אין משאבים זמינים ליחידה הפעילה.</div>';
+      // Current unit label
+      const unitLabel = selectedUnits.length
+        ? selectedUnits.map(u => u.name || u.unitId).join(" · ")
+        : (lessonData?.lessonId || "—");
+      const bsUnit = document.getElementById("bsCurrentUnit");
+      if (bsUnit) bsUnit.textContent = unitLabel;
 
-      list.querySelectorAll("[data-push-id]").forEach(button => {
-        button.addEventListener("click", async () => {
-          const resource = resources.find(item => String(item.id) === String(button.dataset.pushId));
-          if (!resource) return;
-          await callClassroom("POST", {
-            action: "resource_push",
-            sessionId,
-            facultyId: resolveFacultyActorId(),
-            resource
-          });
-          await refreshLesson();
-        });
-      });
+      // Split resources
+      const knowledge = visible.filter(r => !isDigitalTask(r));
+      const tasks = visible.filter(r => isDigitalTask(r));
+
+      const bsRes  = document.getElementById("bsResourceList");
+      const bsTask = document.getElementById("bsTaskList");
+      const bsTaskSection = document.getElementById("bsTasksSection");
+      const bsResSection  = document.getElementById("bsResourcesSection");
+
+      if (bsRes) bsRes.innerHTML = knowledge.length
+        ? knowledge.map(buildBsCard).join("")
+        : '<div class="bs-res-meta" style="font-size:12px;color:var(--muted);">אין חומרים זמינים לפעילות הנוכחית.</div>';
+
+      if (bsTask) bsTask.innerHTML = tasks.map(buildBsCard).join("");
+      if (bsTaskSection) bsTaskSection.style.display = tasks.length ? "" : "none";
+      if (bsResSection)  bsResSection.style.display  = "";
     }
 
     function renderAdminLinks() {
