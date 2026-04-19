@@ -3321,6 +3321,7 @@ function renderLessonDesignNavigator() {
 function selectLesson(lessonId, { reloadMetadata = false } = {}) {
   const normalizedLessonId = normalizeLessonId(lessonId);
   if (!normalizedLessonId) return;
+  // Keep unitId alias synced to lesson selection for legacy unitId URL/storage/runtime compatibility.
   activeUnitId = normalizedLessonId;
   // Clear explicit lesson selection so the resolver derives the resolved lesson ID from selected lesson context.
   activeLessonId = "";
