@@ -690,6 +690,7 @@ export async function handler(event){
         state: {
           current_unit: lessonId,
           active_sprint: state.active_sprint || null,
+          active_stage: state.active_stage || null,
           door_status: String(state.door_status || "auto").toLowerCase(),
           pushed_resource: state.pushed_resource || null,
           live_phase: state.live_phase || null,
@@ -700,7 +701,7 @@ export async function handler(event){
         selectedUnits: lessonBundle.selectedUnits,
         resources: lessonBundle.resources,
         sprintDefinitions: lessonBundle.sprintDefinitions,
-        lessonPlan: (courseConfig?.lessonPlan?.[normalizedLessonId] || courseConfig?.lessonPlan?.["_default"] || []),
+        lessonPlan: (courseConfig?.lessonPlan?.[lessonId] || courseConfig?.lessonPlan?.["_default"] || []),
         pacing: pacingSummary,
         activeTask: session.active_task || null,
         broadcast: session.broadcast || null,
