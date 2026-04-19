@@ -369,6 +369,7 @@
       "hebrew_level": "he_a2_arabic",
       "semester": "2025-B",
       "status": "active",
+      "waiting_lobby": true,
       "bots": {
         "main": { "botType": "course_hebrew_advanced_companion", "label": "🤖 בוט הקורס" },
         "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
@@ -382,6 +383,7 @@
       "hebrew_level": "he_a2_arabic",
       "semester": "2025-B",
       "status": "active",
+      "waiting_lobby": true,
       "bots": {
         "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
         "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }

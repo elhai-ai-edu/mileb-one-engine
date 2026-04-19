@@ -625,6 +625,7 @@
         <div class="chip" id="roleChip">Student View</div>
         <div class="chip" id="previewChip" style="display:none;background:#fff7ed;color:#9a3412;border-color:#fdba74;">Student Preview</div>
         <button id="previewExitBtn" class="preview-exit-btn" type="button">חזרה לתצוגה הרגילה</button>
+        <div class="chip" id="livePhaseChip" style="display:none;background:#dbeafe;color:#1e40af;border-color:#93c5fd;"></div>
         <div class="chip" id="doorChip">Door: --</div>
         <div class="chip" id="sessionChip">sessionId: --</div>
         <div class="chip" id="hebrewLevelChip" style="display:none;background:#f0fdf4;color:#166534;border-color:#bbf7d0;"></div>
@@ -1804,6 +1805,7 @@
       document.getElementById("sessionChip").textContent = `sessionId: ${sessionId}`;
       document.getElementById("doorChip").textContent = `Door: ${String(lessonData?.state?.door_status || "auto").toUpperCase()}`;
       document.getElementById("roleChip").textContent = role === "lecturer" ? "Lecturer View" : "Student View";
+      renderLivePhaseChip();
       const writePanel = document.getElementById("writePanel");
       if (writePanel) writePanel.style.display = role === "lecturer" ? "none" : "";
       // Show waiting screen if session not yet open for students
@@ -1890,18 +1892,11 @@
 
       // Live-phase badge
       const livePhase = lessonData?.state?.live_phase || null;
-      const phaseLabels = {
-        listening:   "🎧 מקשיבים",
-        interactive: "💬 דיון פעיל",
-        solo:        "✍️ עבודה עצמאית",
-        pairs:       "👥 עבודה בזוגות",
-        plenary:     "🏛️ מליאה"
-      };
       if (phaseEl) {
-        if (livePhase && phaseLabels[livePhase]) {
+        if (livePhase && _LIVE_PHASE_LABELS[livePhase]) {
           phaseEl.style.display = "";
           phaseEl.innerHTML = `<span style="display:inline-block;padding:4px 10px;border-radius:20px;
-            background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700;">${phaseLabels[livePhase]}</span>`;
+            background:#dbeafe;color:#1e40af;font-size:12px;font-weight:700;">${_LIVE_PHASE_LABELS[livePhase]}</span>`;
         } else {
           phaseEl.style.display = "none";
         }
@@ -1911,7 +1906,7 @@
       const activeTask = lessonData?.activeTask || null;
       if (activeTaskEl && activeTask?.title && !isEnded) {
         activeTaskEl.style.display = "";
-        const taskPhaseLabel = phaseLabels[activeTask.suggestedPhase] || null;
+        const taskPhaseLabel = _LIVE_PHASE_LABELS[activeTask.suggestedPhase] || null;
         const phaseHint = taskPhaseLabel
           ? ` <span style="font-size:11px;color:#64748b;">(${taskPhaseLabel})</span>` : "";
         activeTaskEl.innerHTML = `<strong>📝 עכשיו:</strong> ${escapeHtml(activeTask.title)}${phaseHint}`;
@@ -2086,6 +2081,27 @@
       });
     }
 
+    const _LIVE_PHASE_LABELS = {
+      listening:   "🎧 מקשיבים",
+      interactive: "💬 דיון פעיל",
+      solo:        "✍️ עבודה עצמאית",
+      pairs:       "👥 עבודה בזוגות",
+      plenary:     "🏛️ מליאה"
+    };
+
+    function renderLivePhaseChip() {
+      const chip = document.getElementById("livePhaseChip");
+      if (!chip) return;
+      const phase = lessonData?.state?.live_phase || null;
+      const label = phase ? _LIVE_PHASE_LABELS[phase] : null;
+      if (label) {
+        chip.textContent = label;
+        chip.style.display = "";
+      } else {
+        chip.style.display = "none";
+      }
+    }
+
     function dismissBroadcast() {
       const banner = document.getElementById("broadcastBanner");
       if (banner) banner.style.display = "none";
@@ -2192,6 +2208,7 @@
         const activeTaskChanged = live.active_task !== undefined && nextTaskTs !== prevTaskTs;
         if (livePhaseChanged || activeTaskChanged) {
           renderLiveMeetingBar(lessonData.liveMeeting);
+          if (livePhaseChanged) renderLivePhaseChip();
         }
         // Show/hide waiting screen based on live door state
         if (role === "student") {

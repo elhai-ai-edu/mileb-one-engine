@@ -293,6 +293,7 @@
           <strong>משימת פתיחה</strong>
           <div class="small-note" id="missionText">טוען...</div>
         </div>
+        <div class="small-note" id="peerCountNote" style="display:none;"></div>
       </article>
 
       <article class="grid-card">
@@ -523,6 +524,17 @@
       } catch {}
     }
 
+    function updatePeerCount(count) {
+      const el = document.getElementById("peerCountNote");
+      if (!el) return;
+      if (count > 0) {
+        el.textContent = `👥 ${count} סטודנט${count === 1 ? "" : "ים"} ממתינ${count === 1 ? "" : "ים"} יחד איתך`;
+        el.style.display = "";
+      } else {
+        el.style.display = "none";
+      }
+    }
+
     async function loadPreSession() {
       if (!courseId) {
         document.getElementById("missionText").textContent = "לא התקבל courseId. פתח את הדף דרך קישור הקורס.";
@@ -541,6 +553,7 @@
       document.getElementById("missionText").textContent = missionText;
 
       renderLiveMeetingCard(data?.liveMeeting || null);
+      updatePeerCount(Number(data?.waitingStudentsCount) || 0);
 
       const warmup = data?.warmup || null;
       const warmupQuestion = document.getElementById("warmupQuestion");
@@ -708,6 +721,13 @@
       // changes saved by the faculty (joinUrl, status, etc.) are visible to
       // students within one poll interval without a page reload.
       renderLiveMeetingCard(data?.liveMeeting || null);
+
+      // Refresh peer waiting count (lightweight; skipped in pass-through mode)
+      if (!skipLobbyUI && courseId) {
+        callClassroom("GET", null, `?action=waiting_count&classId=${encodeURIComponent(courseId)}&unitId=${encodeURIComponent(unitId)}`)
+          .then(wc => updatePeerCount(Number(wc?.waitingStudentsCount) || 0))
+          .catch(() => null);
+      }
 
       // Pass-through mode (no waiting_lobby UI): redirect as soon as session is open
       if (skipLobbyUI && !lobbyMode && (doorStatus === "open" || doorStatus === "auto")) {
