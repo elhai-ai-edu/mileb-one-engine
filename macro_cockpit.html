@@ -1132,6 +1132,16 @@ body { background: var(--bg) !important; }
   gap: 14px;
   align-items: start;
 }
+.lesson-design-main {
+  display: flex;
+  flex-direction: column;
+}
+.lesson-block-overview { order: 1; }
+.lesson-block-flow { order: 2; }
+.lesson-block-preclass { order: 3; }
+.lesson-block-resources { order: 4; }
+.lesson-block-dj { order: 5; }
+.lesson-block-sprint { order: 6; }
 .lesson-plan-sidebar {
   position: sticky;
   top: calc(var(--cockpit-nav-top, 74px) + 16px);
@@ -1756,9 +1766,19 @@ body { background: var(--bg) !important; }
     <div class="lesson-design-layout">
     <div class="lesson-design-main">
 
+    <div class="mc-section lesson-block-overview">
+    <div class="mc-section-head">🧭  עיצוב שיעור<span class="mc-sub">שיעור → זרימה → זמן אמת</span></div>
+    <div class="mc-section-body">
+      <h2 id="lesson-title" style="margin:0 0 12px;font-size:22px;">עיצוב שיעור: בחר שיעור</h2>
+      <div class="field" style="margin:0;">
+        <label for="lesson-objectives">מטרות השיעור</label>
+        <textarea id="lesson-objectives" class="lp-textarea" rows="4" placeholder="מטרה בכל שורה"></textarea>
+      </div>
+    </div></div>
+
     <!-- ── Tool 1: Pre-session Missions ── -->
-    <div class="mc-section">
-    <div class="mc-section-head">🎬 משימות קדם שיעור<span class="mc-sub">הכן תוכן פתיחה לפני תחילת השיעור: וידאו, אודיו או טקסט</span></div>
+    <div class="mc-section lesson-block-preclass">
+    <div class="mc-section-head">🎬  משימות קדם שיעור<span class="mc-sub">הכן תוכן פתיחה לפני תחילת השיעור: וידאו, אודיו או טקסט</span></div>
     <div class="mc-section-body">
 
     <div style="margin:0 0 16px;padding:12px;border:1px solid #e2e8f0;border-radius:12px;background:#f8fafc;">
@@ -1838,8 +1858,8 @@ body { background: var(--bg) !important; }
     </div></div>
 
     <!-- ── Tool 2: Teaching Templates ── -->
-    <div class="mc-section">
-    <div class="mc-section-head">📝 תבניות הוראה<span class="mc-sub">הגדר שלבי שיעור לפני הכיתה — שמור לשימוש חוזר</span></div>
+    <div class="mc-section lesson-block-flow">
+    <div class="mc-section-head">📝  מה קורה בשיעור<span class="mc-sub">הגדר רצף שלבים לשיעור הפעיל ושמור תבנית לשימוש חוזר</span></div>
     <div class="mc-section-body">
 
     <div style="display:flex;gap:8px;margin-bottom:10px;">
@@ -1867,8 +1887,8 @@ body { background: var(--bg) !important; }
     </div></div>
 
     <!-- ── Tool 3: Hybrid Sprint Engine ── -->
-    <div class="mc-section">
-    <div class="mc-section-head">⚡ מנוע ספרינט היברידי<span class="mc-sub">הגדר סבבי AI, תחנה פיזית ומליאה — כולל Proof of Work</span></div>
+    <div class="mc-section lesson-block-sprint">
+    <div class="mc-section-head">⚡  מנוע ספרינט היברידי<span class="mc-sub">הגדר סבבי AI, תחנה פיזית ומליאה — כולל Proof of Work</span></div>
     <div class="mc-section-body">
 
     <div style="padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:10px;">
@@ -1916,8 +1936,8 @@ body { background: var(--bg) !important; }
     </div></div>
 
     <!-- ── Tool 4: Resource Shelf ── -->
-    <div class="mc-section">
-    <div class="mc-section-head">📚 מדף משאבים<span class="mc-sub">משאבים ממופה מ-Moodle לפי יחידות</span></div>
+    <div class="mc-section lesson-block-resources">
+    <div class="mc-section-head">📚  מדף משאבים<span class="mc-sub">משאבים ממופה מ-Moodle לפי יחידות</span></div>
     <div class="mc-section-body">
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;">
       <select id="macro-resource-unit-filter" style="flex:1;min-width:180px;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;background:#fff;color:#1f2937;"></select>
@@ -1925,6 +1945,15 @@ body { background: var(--bg) !important; }
     </div>
     <div id="macro-resource-list" style="display:grid;gap:10px;"></div>
 
+    </div></div>
+
+    <div class="mc-section lesson-block-dj">
+    <div class="mc-section-head">🎛️  ניהול שיעור בזמן אמת<span class="mc-sub">דחיפת שלבים מתוך השיעור הפעיל לסטודנטים</span></div>
+    <div class="mc-section-body">
+      <p class="panel-sub" id="dj-booth-status">DJ Booth הוא כלי אופציונלי לדחיפת שלבים מתוך תבנית שיעור</p>
+      <div id="dj-booth-steps" class="dj-booth-steps">
+        <div class="dj-empty">לא הוגדרו שלבים — אפשר להמשיך לעבוד עם הודעה מהירה ושידור טקסט רגיל</div>
+      </div>
     </div></div>
 
     <div style="padding:16px 0 24px;text-align:center;">
@@ -3177,7 +3206,7 @@ function renderLessonDesignNavigator() {
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput) lessonInput.value = currentUnitId;
   listEl.innerHTML = lessons.map(item => `
-    <button type="button" class="lesson-plan-item ${item.unitId === currentUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}">
+    <button type="button" class="lesson-plan-item ${item.unitId === currentUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}" data-lesson-title="${macroEscHtml(item.title)}">
       <div class="lesson-plan-item-meta">יחידת לימוד ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       ${item.date ? `<div class="lesson-plan-item-date">📅 ${escapeHtml(item.date)}</div>` : ''}
@@ -3189,15 +3218,34 @@ function renderLessonDesignNavigator() {
       if (!unitId) return;
       selectLessonDesignUnit(unitId, { reloadMetadata: true });
     });
+    button.addEventListener("dblclick", () => {
+      const unitId = button.getAttribute("data-lesson-nav-unit");
+      const unitTitle = button.getAttribute("data-lesson-title") || "";
+      if (!unitId) return;
+      openLesson(unitId, unitTitle);
+    });
   });
   const sessions = buildSessionSidebarItems();
   sessionsEl.innerHTML = sessions.map(item => `
-    <div class="lesson-plan-item readonly">
+    <button type="button" class="lesson-plan-item readonly" data-lesson-session="${macroEscHtml(item.lessonId)}" data-lesson-title="${macroEscHtml(item.title)}">
       <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.lessonId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       <div class="lesson-plan-item-date">${item.unitsCount ? `🔗 ${item.unitsCount} יחידות · ${item.unitsPreview}${item.extraUnits}` : '🔗 ללא יחידות משויכות'}</div>
-    </div>
+    </button>
   `).join("");
+  sessionsEl.querySelectorAll("[data-lesson-session]").forEach(button => {
+    button.addEventListener("click", () => {
+      const lessonId = button.getAttribute("data-lesson-session");
+      if (!lessonId) return;
+      selectLessonDesignUnit(lessonId, { reloadMetadata: true });
+    });
+    button.addEventListener("dblclick", () => {
+      const lessonId = button.getAttribute("data-lesson-session");
+      const lessonTitle = button.getAttribute("data-lesson-title") || "";
+      if (!lessonId) return;
+      openLesson(lessonId, lessonTitle);
+    });
+  });
   updateLessonDesignBanner();
 }
 function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
@@ -3206,7 +3254,10 @@ function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
   sessionStorage.setItem("miled_active_unit_id", unitId);
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput && lessonInput.value !== unitId) lessonInput.value = unitId;
+  const lessonTitle = resolveLessonTitleById(unitId);
+  setCurrentLesson(unitId, lessonTitle);
   renderLessonDesignNavigator();
+  renderLesson();
   if (reloadMetadata) loadCourseMetadataWorkspace();
 }
 async function saveLessonDateForCurrentUnit() {
@@ -4937,30 +4988,142 @@ window.addEventListener("load", () => {
 // ═══════════════════════════════════════════
 // LESSON PLANNER
 // ═══════════════════════════════════════════
-let lessonSteps = [];
+const LESSONS_STORAGE_KEY = "miled_macro_lessons_store_v1";
+let currentLesson = null;
+let lessonsStore = {};
+
+function createEmptyLesson(id, title) {
+  return {
+    id,
+    title,
+    objectives: [],
+    steps: [],
+    preClass: [],
+    resources: []
+  };
+}
+
+function hydrateLessonsStore() {
+  try {
+    const raw = localStorage.getItem(LESSONS_STORAGE_KEY);
+    lessonsStore = raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn("hydrateLessonsStore failed:", error);
+    lessonsStore = {};
+  }
+}
+
+function persistLessonsStore() {
+  try {
+    localStorage.setItem(LESSONS_STORAGE_KEY, JSON.stringify(lessonsStore));
+  } catch (error) {
+    console.warn("persistLessonsStore failed:", error);
+  }
+}
+let lessonObjectivesPersistTimer = null;
+function persistLessonsStoreDebounced(delay = 250) {
+  if (lessonObjectivesPersistTimer) clearTimeout(lessonObjectivesPersistTimer);
+  lessonObjectivesPersistTimer = setTimeout(() => {
+    persistLessonsStore();
+    lessonObjectivesPersistTimer = null;
+  }, delay);
+}
+
+function resolveLessonTitleById(lessonId) {
+  const sessions = buildSessionSidebarItems();
+  const matched = sessions.find(item => item.lessonId === lessonId);
+  if (matched?.title) return matched.title;
+  const row = macroUnitsMap?.[lessonId] || {};
+  const topicOrTitle = String(row.topicName || row.title || "").trim();
+  return topicOrTitle || lessonId || "שיעור";
+}
+
+function setCurrentLesson(id, title) {
+  if (!id) return null;
+  const lessonTitle = String(title || "").trim() || resolveLessonTitleById(id);
+  if (!lessonsStore[id]) {
+    lessonsStore[id] = createEmptyLesson(id, lessonTitle);
+  } else {
+    lessonsStore[id].title = lessonTitle || id;
+    lessonsStore[id].objectives = Array.isArray(lessonsStore[id].objectives) ? lessonsStore[id].objectives : [];
+    lessonsStore[id].steps = Array.isArray(lessonsStore[id].steps) ? lessonsStore[id].steps : [];
+    lessonsStore[id].preClass = Array.isArray(lessonsStore[id].preClass) ? lessonsStore[id].preClass : [];
+    lessonsStore[id].resources = Array.isArray(lessonsStore[id].resources) ? lessonsStore[id].resources : [];
+  }
+  currentLesson = lessonsStore[id];
+  persistLessonsStore();
+  return currentLesson;
+}
+
+function openLesson(id, title) {
+  if (!id) return;
+  currentUnitId = id;
+  sessionStorage.setItem("miled_active_unit_id", id);
+  const lessonInput = document.getElementById("playlistLessonId");
+  if (lessonInput) lessonInput.value = id;
+  setCurrentLesson(id, title);
+  switchPhase('lesson');
+  renderLessonDesignNavigator();
+  renderLesson();
+}
+
+function renderObjectives() {
+  const objEl = document.getElementById("lesson-objectives");
+  if (!objEl) return;
+  objEl.value = Array.isArray(currentLesson?.objectives) ? currentLesson.objectives.join("\n") : "";
+}
+
+function renderLesson() {
+  const titleEl = document.getElementById("lesson-title");
+  if (titleEl) {
+    titleEl.innerText = currentLesson?.title
+      ? "עיצוב שיעור: " + currentLesson.title
+      : "עיצוב שיעור: בחר שיעור";
+  }
+  renderObjectives();
+  renderLessonSteps();
+}
+
+function getCurrentLessonSteps() {
+  return Array.isArray(currentLesson?.steps) ? currentLesson.steps : [];
+}
+
+function ensureCurrentLessonForId(lessonId = currentLessonTargetId()) {
+  if (!lessonId) return null;
+  if (!currentLesson || currentLesson.id !== lessonId) {
+    return setCurrentLesson(lessonId, resolveLessonTitleById(lessonId));
+  }
+  return currentLesson;
+}
 
 function addLessonStep() {
+  const lessonId = currentLessonTargetId();
+  ensureCurrentLessonForId(lessonId);
   const title = document.getElementById("step-title-input").value.trim();
   const instructions = document.getElementById("step-instructions-input").value.trim();
   if (!title) { alert("הוסף כותרת לשלב"); return; }
-  lessonSteps.push({ title, instructions });
+  currentLesson.steps.push({ title, instructions });
   document.getElementById("step-title-input").value = "";
   document.getElementById("step-instructions-input").value = "";
+  persistLessonsStore();
   renderLessonSteps();
 }
 
 function removeLessonStep(i) {
-  lessonSteps.splice(i, 1);
+  if (!currentLesson) return;
+  currentLesson.steps.splice(i, 1);
+  persistLessonsStore();
   renderLessonSteps();
 }
 
 function renderLessonSteps() {
   const container = document.getElementById("lesson-steps-list");
   if (!container) return;
-  if (!lessonSteps.length) {
+  const steps = getCurrentLessonSteps();
+  if (!steps.length) {
     container.innerHTML = '<div class="lesson-steps-empty">טרם הוגדרו שלבים</div>';
   } else {
-    container.innerHTML = lessonSteps.map((s, i) => `
+    container.innerHTML = steps.map((s, i) => `
       <div class="lesson-step-item">
         <div class="lesson-step-num">${i + 1}</div>
         <div class="lesson-step-content">
@@ -4976,10 +5139,11 @@ function renderLessonSteps() {
 async function saveTemplate() {
   const classId = currentLessonId;
   if (!classId) { alert("בחר קורס לפני שמירת תבנית"); return; }
-  if (!lessonSteps.length) { alert("הוסף שלבים לפני השמירה"); return; }
+  const steps = getCurrentLessonSteps();
+  if (!steps.length) { alert("הוסף שלבים לפני השמירה"); return; }
   const name = document.getElementById("template-name-input").value.trim() ||
     `שיעור ${new Date().toLocaleDateString("he-IL")}`;
-  const res = await callClassroom({ action: "save_template", classId, templateName: name, steps: lessonSteps, facultyId });
+  const res = await callClassroom({ action: "save_template", classId, templateName: name, steps, facultyId });
   if (res.ok) {
     document.getElementById("template-name-input").value = "";
     loadTemplates(classId);
@@ -5015,7 +5179,10 @@ function loadSelectedTemplate() {
   const opt = sel?.options[sel.selectedIndex];
   if (!opt?.value) { alert("בחר תבנית"); return; }
   try {
-    lessonSteps = JSON.parse(opt.dataset.steps || "[]");
+    const lessonId = currentLessonTargetId();
+    ensureCurrentLessonForId(lessonId);
+    currentLesson.steps = JSON.parse(opt.dataset.steps || "[]");
+    persistLessonsStore();
     renderLessonSteps();
   } catch(e) { alert("שגיאה בטעינת התבנית"); }
 }
@@ -5028,15 +5195,16 @@ function renderDJBooth() {
   const container = document.getElementById("dj-booth-steps");
   if (!container) return;
   const statusEl = document.getElementById("dj-booth-status");
-  if (!lessonSteps.length) {
+  const djSteps = getCurrentLessonSteps();
+  if (!djSteps.length) {
     container.innerHTML = '<div class="dj-empty">לא הוגדרו שלבים — אפשר להמשיך לעבוד עם הודעה מהירה ושידור טקסט רגיל</div>';
     if (statusEl) statusEl.textContent = "DJ Booth אופציונלי: הוסף שלבים רק אם השיעור דורש רצף משימות";
     return;
   }
   if (statusEl) statusEl.textContent = sessionId
-    ? `${lessonSteps.length} שלבים מוכנים — לחץ 🚀 לדחיפת משימה לסטודנטים`
-    : `${lessonSteps.length} שלבים — פתח שיעור כדי להפעיל את הדחיפה`;
-  container.innerHTML = lessonSteps.map((s, i) => `
+    ? `${djSteps.length} שלבים מוכנים — לחץ 🚀 לדחיפת משימה לסטודנטים`
+    : `${djSteps.length} שלבים — פתח שיעור כדי להפעיל את הדחיפה`;
+  container.innerHTML = djSteps.map((s, i) => `
     ${(() => {
       const stepNum = i + 1;
       const isPushed = pushedSteps.includes(stepNum);
@@ -5062,7 +5230,8 @@ function renderDJBooth() {
 
 async function pushTask(stepIdx) {
   if (!sessionId) { alert("פתח שיעור תחילה"); return; }
-  const step = lessonSteps[stepIdx];
+  const djSteps = getCurrentLessonSteps();
+  const step = djSteps[stepIdx];
   if (!step) return;
   const stepNum = stepIdx + 1;
   if (pushedSteps.includes(stepNum)) return;
@@ -5175,6 +5344,7 @@ function checkLessonGate() {
 
 switchPhase('course');
 switchWizardStep(1);
+hydrateLessonsStore();
 syncCockpitNavOffset();
 window.addEventListener('resize', syncCockpitNavOffset);
 renderPreSessionAudioPreview();
@@ -5183,10 +5353,19 @@ renderImportedUnits();
 renderSprintDrafts();
 loadCourseMetadataWorkspace();
 renderLessonDesignNavigator();
+renderLesson();
 document.getElementById("playlistLessonId")?.addEventListener("change", (event) => {
   const unitId = String(event?.target?.value || "").trim();
   if (!unitId) return;
   selectLessonDesignUnit(unitId, { reloadMetadata: true });
+});
+document.getElementById("lesson-objectives")?.addEventListener("input", (event) => {
+  const lessonId = currentLessonTargetId();
+  ensureCurrentLessonForId(lessonId);
+  if (!currentLesson) return;
+  const text = String(event?.target?.value || "").trim();
+  currentLesson.objectives = text ? text.split("\n") : [];
+  persistLessonsStoreDebounced();
 });
 document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (event) => {
   const courseId = currentCourseForSync();
