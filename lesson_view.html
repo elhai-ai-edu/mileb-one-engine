@@ -62,6 +62,7 @@
       display: flex; align-items: center; gap: 10px;
       pointer-events: none; white-space: nowrap;
     }
+    .topbar-logo { font-size: 18px; font-weight: 800; color: #fff; letter-spacing: -.3px; flex-shrink: 0; }
     .topbar-system-label { color: #fff; font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
     .topbar-stars { color: rgba(255,255,255,.35); font-size: 11px; letter-spacing: 2px; }
     .topbar-course-name { color: #fff; font-size: 15px; font-weight: 800; letter-spacing: -.2px; }
@@ -1080,10 +1081,11 @@
 <body>
   <div class="shell">
     <header class="topbar">
+      <div class="topbar-logo">MilEd</div>
       <div class="topbar-center">
         <span class="topbar-system-label">מרחב למידה כיתתי</span>
         <span class="topbar-stars">✦✦✦✦✦</span>
-        <span class="topbar-course-name" id="lessonTitle">שיעור חי</span>
+        <span class="topbar-course-name" id="lessonTitle"></span>
         <span class="topbar-lesson-sep" id="topbarLessonSep" style="display:none;">—</span>
         <span class="topbar-lesson-name" id="topbarLessonName"></span>
       </div>
@@ -1575,6 +1577,18 @@
     const unitIdFromUrl = String(params.get("unitId") || "unit_01").trim() || "unit_01";
     const gatewayRedirect = `/index.html${params.toString() ? `?${params.toString()}` : ""}`;
     const lessonViewAccessReady = window.MiledAccess?.enforcePageAccess(["student", "lecturer", "institution_admin", "system_admin"], gatewayRedirect);
+
+    // Initialize topbar immediately from URL params (before lesson data arrives)
+    (function initTopbar() {
+      const titleEl = document.getElementById("lessonTitle");
+      const nameEl  = document.getElementById("topbarLessonName");
+      const sepEl   = document.getElementById("topbarLessonSep");
+      if (titleEl && courseIdFromUrl) titleEl.textContent = courseIdFromUrl;
+      if (nameEl && unitIdFromUrl && unitIdFromUrl !== courseIdFromUrl) {
+        nameEl.textContent = unitIdFromUrl;
+        if (sepEl) sepEl.style.display = "";
+      }
+    })();
     let sessionUser = null;
     let canonicalRole = "";
     let isStudentPreview = false;
@@ -2561,17 +2575,15 @@
 
       syncLessonUrlContext();
       const selectedUnits = Array.isArray(lessonData?.selectedUnits) ? lessonData.selectedUnits : [];
-      const primaryUnitName = selectedUnits[0]?.name || lessonData?.lessonId || "יחידה פעילה";
-      const courseName = lessonData?.courseName || lessonData?.courseId || "שיעור חי";
+      const primaryUnitName = selectedUnits[0]?.name || lessonData?.lessonId || unitIdFromUrl || "יחידה פעילה";
+      const courseName = lessonData?.courseName || lessonData?.courseId || courseIdFromUrl || "—";
       const courseLabel = lessonData?.courseId ? `courseId: ${lessonData.courseId}` : "Faculty Tool";
+      const lessonUnitName = selectedUnits[0]?.name || lessonData?.lessonId || unitIdFromUrl || "";
       document.getElementById("lessonTitle").textContent = courseName;
-      // Lesson/unit name next to course name
       const lessonNameEl = document.getElementById("topbarLessonName");
       const lessonSepEl  = document.getElementById("topbarLessonSep");
-      if (lessonNameEl && primaryUnitName && primaryUnitName !== courseName) {
-        lessonNameEl.textContent = primaryUnitName;
-        if (lessonSepEl) lessonSepEl.style.display = "";
-      }
+      if (lessonNameEl) lessonNameEl.textContent = lessonUnitName;
+      if (lessonSepEl)  lessonSepEl.style.display = lessonUnitName ? "" : "none";
       // Debug chip updates (elements remain hidden from students)
       document.getElementById("sessionChip").textContent = `sessionId: ${sessionId}`;
       document.getElementById("doorChip").textContent = `Door: ${String(lessonData?.state?.door_status || "auto").toUpperCase()}`;
