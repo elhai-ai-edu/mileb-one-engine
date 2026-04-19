@@ -1004,8 +1004,33 @@
     .activity-empty-title { font-size: 15px; font-weight: 800; color: #0f172a; }
     .activity-empty-sub   { font-size: 13px; color: #64748b; line-height: 1.6; max-width: 240px; }
 
-    /* ══ Active sprint box → slim card ══ */
+    /* ══ Active sprint box → task card ══ */
     .active-sprint-box { border-radius: 12px !important; padding: 14px !important; }
+    .active-sprint-box.has-task-card { padding: 0 !important; overflow: hidden; }
+
+    /* ── Task Card sections ── */
+    .task-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 16px;
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+      border-bottom: 1px solid #bbf7d0;
+    }
+    .task-card-label { font-size: 11px; font-weight: 800; letter-spacing: .6px; color: #166534; text-transform: uppercase; }
+    .task-card-arrow { font-size: 14px; color: #16a34a; }
+    .task-card-body  { padding: 14px 16px; display: grid; gap: 12px; }
+    .task-card-name  { font-size: 17px; font-weight: 800; color: var(--navy); line-height: 1.35; }
+    .task-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin-bottom: 4px; }
+    .task-section-text  { font-size: 13px; color: var(--navy); line-height: 1.65; }
+    .task-duration { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; font-size: 12px; color: var(--muted); font-weight: 700; }
+    .task-help {
+      padding: 10px 16px 12px;
+      background: linear-gradient(135deg, #eff6ff, #f0f9ff);
+      border-top: 1px solid #bfdbfe;
+    }
+    .task-help-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: #3b82f6; margin-bottom: 2px; }
+    .task-help-text  { font-size: 12px; font-weight: 700; color: #1d4ed8; }
+    .task-controls   { padding: 10px 16px; border-top: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; }
+    .task-extra      { padding: 0 16px 14px; display: grid; gap: 10px; }
 
     /* ══ WAF section header (injected above wafMessages) ══ */
     .waf-section-head {
@@ -2168,6 +2193,7 @@
     function renderActiveSprint() {
       const box = document.getElementById("activeSprintBox");
       const frame = document.getElementById("presentationFrame");
+      const heroCopy = document.querySelector(".hero-copy");
       const pushedResource = lessonData?.state?.pushed_resource || null;
       const activeSprint = findActiveSprint();
       const guidance = currentGuidance || null;
@@ -2175,22 +2201,29 @@
       if (pushedResource?.url) {
         frame.src = pushedResource.url;
         document.getElementById("stageTitle").textContent = pushedResource.title || "משאב דחוף";
-        document.getElementById("stageSubtitle").textContent = "המרצה דחף משאב לכל הכיתה. הוא מוצג גם במרכז הבמה.";
+        document.getElementById("stageSubtitle").textContent = "המרצה דחף משאב לכל הכיתה.";
         document.getElementById("clearPushBtn").style.display = role === "lecturer" ? "" : "none";
+        if (heroCopy) heroCopy.style.display = "";
       } else {
         frame.removeAttribute("src");
         frame.srcdoc = '<div style="height:100%;display:flex;align-items:center;justify-content:center;font-family:Assistant,sans-serif;color:#475569;background:linear-gradient(180deg,#ffffff,#f8fbff);padding:24px;text-align:center;">אין כרגע משאב דחוף. התוכן הפעיל יוצג כאן כשהמרצה ידחוף קובץ, קישור או מצגת.</div>';
-        document.getElementById("stageTitle").textContent = activeSprint?.title || "מרחב מצגת וספרינט";
-        document.getElementById("stageSubtitle").textContent = activeSprint?.instructions || "בחר ספרינט פעיל או דחוף משאב מה-Bookshelf.";
         document.getElementById("clearPushBtn").style.display = "none";
+        // Hide hero-copy when task card is showing (avoids duplicate title)
+        if (heroCopy) heroCopy.style.display = activeSprint ? "none" : "";
+        if (!activeSprint) {
+          document.getElementById("stageTitle").textContent = "ממתין להנחיה מהמרצה";
+          document.getElementById("stageSubtitle").textContent = "השיעור פתוח — הפעילות הנוכחית תוצג כאן כשהמרצה יפעיל אותה.";
+        }
       }
 
+      // Reset task-card mode
+      box.classList.remove("has-task-card");
+
       if (!activeSprint) {
-        box.innerHTML = '<div class="resource-meta">לא הוגדרו סבבים ליחידה הפעילה.</div>';
+        box.innerHTML = "";
         return;
       }
 
-      const stationClass = sprintTypeClass(activeSprint.stationType);
       const guidanceBox = guidance ? `<div class="guidance-box ${guidance.pathDecision === "fast" ? "fast" : ""}">${escapeHtml(guidance.guidance)}</div>` : "";
       const plenaryNote = String(activeSprint.stationType || "").toUpperCase() === "PLENARY_STATION"
         ? '<div class="guidance-box">Plenary Station: המסך ממוקד בשיח כיתתי. הסטודנטים אמורים להקשיב, להשוות, ולחזור לשיחה בהמשך.</div>'
@@ -2235,24 +2268,48 @@
             <div id="gateStatusBox"></div>
           </div>`;
 
-      const controls = role === "student"
-        ? `
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      const studentControls = role === "student"
+        ? `<div class="task-controls">
             <button class="action-btn primary" id="startSprintBtn" type="button">התחל ספרינט</button>
             <button class="action-btn good" id="completeSprintBtn" type="button">סיימתי ספרינט</button>
           </div>`
         : "";
 
+      const submissionSection = activeSprint.submissionDescription
+        ? `<div class="task-section">
+            <div class="task-section-label">מה מגישים</div>
+            <div class="task-section-text">${escapeHtml(activeSprint.submissionDescription)}</div>
+            ${activeSprint.duration ? `<div class="task-duration">⏱ ${escapeHtml(String(activeSprint.duration))}</div>` : ""}
+          </div>`
+        : "";
+
+      const extrasHtml = [guidanceBox, plenaryNote, evidenceBox, gatekeepingBox].filter(Boolean).join("");
+
+      box.classList.add("has-task-card");
       box.innerHTML = `
-        <div class="station-badge ${stationClass}">${escapeHtml(activeSprint.stationType || "AI_STATION")}</div>
-        <strong>${escapeHtml(activeSprint.title || "Sprint")}</strong>
-        <div class="resource-meta">${escapeHtml(activeSprint.instructions || "")}</div>
-        ${guidanceBox}
-        ${plenaryNote}
-        ${controls}
-        ${evidenceBox}
-        ${gatekeepingBox}
+        <div class="task-card-header">
+          <span class="task-card-label">משימה לביצוע</span>
+          <span class="task-card-arrow">←</span>
+        </div>
+        <div class="task-card-body">
+          <div class="task-card-name">${escapeHtml(activeSprint.title || "")}</div>
+          ${activeSprint.instructions ? `
+          <div>
+            <div class="task-section-label">מה עושים עכשיו</div>
+            <div class="task-section-text">${escapeHtml(activeSprint.instructions)}</div>
+          </div>` : ""}
+          ${submissionSection}
+        </div>
+        <div class="task-help">
+          <div class="task-help-label">צריך עזרה?</div>
+          <div class="task-help-text">השתמש בבוט מימין ←</div>
+        </div>
+        ${studentControls}
+        ${extrasHtml ? `<div class="task-extra">${extrasHtml}</div>` : ""}
       `;
+
+      // keep stationType on dataset for any downstream JS that reads it
+      box.dataset.stationType = activeSprint.stationType || "AI_STATION";
 
       bindSprintActions(activeSprint);
     }

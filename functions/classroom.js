@@ -184,7 +184,9 @@ function buildConfigCourseBundle(courseConfig = {}, lessonId) {
       id: `${normalizedLessonId}_focus`,
       title: activeUnit.name,
       stationType: "AI_STATION",
-      instructions: `עובדים כעת על היחידה "${activeUnit.name}". השתמשו בשיחה ובמשאבים הזמינים כדי להתקדם במשימה.`,
+      instructions: `עובדים כעת על היחידה "${activeUnit.name}". קראו את החומרים, השתמשו בבוט לשאלות, והתקדמו במשימה.`,
+      submissionDescription: `סיכום קצר של 3–5 משפטים בעברית תקנית על עיקרי היחידה.`,
+      duration: "10 דקות",
       order: 1
     }] : []
   };
