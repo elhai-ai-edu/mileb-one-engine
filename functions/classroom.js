@@ -41,6 +41,7 @@ function err(msg){
 }
 
 const ALLOWED_LIVE_PHASES = ["listening", "interactive", "solo", "pairs", "plenary"];
+const MAX_LINKED_UNITS = 50;
 
 // Normalise and validate a raw phase string. Returns the validated phase or null.
 function validateLivePhase(raw) {
@@ -127,17 +128,17 @@ function normalizeUnitId(value, fallback = "unit_01") {
 }
 
 function normalizeLinkedUnitIds(value) {
-  if(!Array.isArray(value)) return [];
+  if (!Array.isArray(value)) return [];
   const seen = new Set();
   return value
     .map(item => String(item || "").trim())
     .filter(unitId => unitId.startsWith("topic_"))
     .filter(unitId => {
-      if(seen.has(unitId)) return false;
+      if (seen.has(unitId)) return false;
       seen.add(unitId);
       return true;
     })
-    .slice(0, 50);
+    .slice(0, MAX_LINKED_UNITS);
 }
 
 function normalizeConfigUnitId(value, fallbackIndex = 1) {

@@ -1659,7 +1659,7 @@ body { background: var(--bg) !important; }
             <table class="units-table">
               <thead>
                 <tr>
-                  <th style="width:140px;">שיעור / מפגש</th>
+                  <th style="width:140px;">שיעור</th>
                   <th style="width:150px;">תאריך</th>
                   <th>כותרת שיעור</th>
                   <th style="width:180px;">יחידות מקושרות</th>
@@ -3200,7 +3200,7 @@ async function loadMacroCourseManagement(courseId) {
 let lessonsMap = {};
 let learningUnitsMap = {};
 // Temporary bridge: keeps raw legacy mixed storage payload so migration fallbacks can copy titles safely.
-let macroLegacyMixedUnitsMap = {};
+let legacyMixedUnitsMap = {};
 let macroLinkingLessonId = "";
 
 function macroToSessionUnitId(i) { return `session_${String(i).padStart(2,"0")}`; }
@@ -3263,25 +3263,27 @@ function splitMacroUnitsMaps(rawMap = {}) {
 
   // Temporary migration bridge from legacy mixed semantics:
   // old Topic rows were used as lessons, old Session rows were used as learning-units.
+  // Assumption: session_XX/topic_XX keep aligned numeric indexes for the first 14 slots.
   for (let i = 1; i <= MAX_SESSION_LESSONS; i += 1) {
     const sessionId = macroToSessionUnitId(i);
     const topicId = macroToTopicUnitId(i);
-    const legacyLessonRow = nextUnits[topicId] || {};
+    const legacyTopicRowAsLesson = nextUnits[topicId] || {};
     const lessonRow = nextLessons[sessionId] || {};
-    if (!String(lessonRow.topicName || "").trim() && String(legacyLessonRow.topicName || "").trim()) {
+    if (!String(lessonRow.topicName || "").trim() && String(legacyTopicRowAsLesson.topicName || "").trim()) {
       nextLessons[sessionId] = {
         ...lessonRow,
-        topicName: legacyLessonRow.topicName,
+        topicName: legacyTopicRowAsLesson.topicName,
         structureType: "Session",
         linkedUnitIds: normalizeLinkedUnitIds(lessonRow.linkedUnitIds)
       };
     }
-    const legacyUnitRow = nextLessons[sessionId] || {};
+    // Intentional: session_XX rows were historically reused as unit rows, so we bridge from session slots into topic slots.
+    const legacySessionRowAsUnit = nextLessons[sessionId] || {};
     const learningUnitRow = nextUnits[topicId] || {};
-    if (!String(learningUnitRow.topicName || "").trim() && String(legacyUnitRow.topicName || "").trim()) {
+    if (!String(learningUnitRow.topicName || "").trim() && String(legacySessionRowAsUnit.topicName || "").trim()) {
       nextUnits[topicId] = {
         ...learningUnitRow,
-        topicName: legacyUnitRow.topicName,
+        topicName: legacySessionRowAsUnit.topicName,
         structureType: "Topic"
       };
     }
@@ -3289,9 +3291,6 @@ function splitMacroUnitsMaps(rawMap = {}) {
 
   lessonsMap = nextLessons;
   learningUnitsMap = nextUnits;
-  if (!macroLinkingLessonId || !macroLinkingLessonId.startsWith("session_")) {
-    macroLinkingLessonId = macroToSessionUnitId(1);
-  }
 }
 function buildPlannedLessonItems() {
   const lessonSourceIds = Array.from({ length: MAX_SESSION_LESSONS }, (_, i) => macroToSessionUnitId(i + 1));
@@ -3449,9 +3448,9 @@ async function loadMacroCourseUnits(courseId) {
   if (!lessonsTbody && !unitsTbody) return;
   try {
     const res = await fetch(`/.netlify/functions/classroom?action=units_list&userId=${encodeURIComponent(facultyId)}&courseId=${encodeURIComponent(courseId)}`);
-    macroLegacyMixedUnitsMap = res.ok ? ((await res.json())?.units || {}) : {};
-  } catch { macroLegacyMixedUnitsMap = {}; }
-  splitMacroUnitsMaps(macroLegacyMixedUnitsMap);
+    legacyMixedUnitsMap = res.ok ? ((await res.json())?.units || {}) : {};
+  } catch { legacyMixedUnitsMap = {}; }
+  splitMacroUnitsMaps(legacyMixedUnitsMap);
   macroRenderUnits();
 }
 
@@ -3547,13 +3546,10 @@ function macroRenderLessonUnitLinking() {
     const title = String(row.topicName || row.title || "").trim() || `שיעור ${index + 1}`;
     return `<option value="${macroEscHtml(lessonId)}"${lessonId === selectedLessonId ? " selected" : ""}>שיעור ${index + 1} · ${escapeHtml(title)}</option>`;
   }).join("");
-  if (!lessonSelect.dataset.bound) {
-    lessonSelect.addEventListener("change", () => {
-      macroLinkingLessonId = lessonSelect.value || macroToSessionUnitId(1);
-      macroRenderLessonUnitLinking();
-    });
-    lessonSelect.dataset.bound = "1";
-  }
+  lessonSelect.onchange = () => {
+    macroLinkingLessonId = lessonSelect.value || macroToSessionUnitId(1);
+    macroRenderLessonUnitLinking();
+  };
   const linkedUnitIds = normalizeLinkedUnitIds(lessonsMap?.[selectedLessonId]?.linkedUnitIds);
   const linkedSet = new Set(linkedUnitIds);
   const learningUnitIds = Array.from({ length: MAX_TOPIC_LESSONS }, (_, i) => macroToTopicUnitId(i + 1));
@@ -5721,7 +5717,7 @@ function resolveLessonTitleById(lessonId) {
   const sessions = buildSessionSidebarItems();
   const matched = sessions.find(item => item.lessonId === lessonId);
   if (matched?.title) return matched.title;
-  const row = lessonsMap?.[lessonId] || macroLegacyMixedUnitsMap?.[lessonId] || {};
+  const row = lessonsMap?.[lessonId] || legacyMixedUnitsMap?.[lessonId] || {};
   const topicOrTitle = String(row.topicName || row.title || "").trim();
   return topicOrTitle || lessonId || "שיעור";
 }
