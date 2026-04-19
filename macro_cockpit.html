@@ -1753,12 +1753,15 @@ body { background: var(--bg) !important; }
     <div id="lessonDesignBanner" class="lesson-design-banner" style="display:none;">
       <div class="lesson-design-banner-top">
         <div class="lesson-design-banner-index">📍 <span id="lessonDesignLessonNum">בחר שיעור</span></div>
-        <div class="lesson-design-banner-date">
-          <label for="lessonDesignLessonDate">תאריך (לא חובה)</label>
-          <input id="lessonDesignLessonDate" type="date" class="lp-input" style="margin:0;min-width:160px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div class="lesson-design-banner-date">
+            <label for="lessonDesignLessonDate">תאריך (לא חובה)</label>
+            <input id="lessonDesignLessonDate" type="date" class="lp-input" style="margin:0;min-width:160px;">
+          </div>
+          <button class="btn btn-outline" onclick="switchPhase('course')" style="font-size:12px;padding:6px 12px;white-space:nowrap;">&#x2190; עיצוב קורס</button>
         </div>
       </div>
-      <div id="lessonDesignLessonTitle" class="lesson-design-banner-title">בחר שיעור מהרשימה</div>
+      <input id="lessonDesignLessonTitle" type="text" aria-label="כותרת שיעור" class="lesson-design-banner-title" placeholder="כותרת שיעור" oninput="onLessonTitleInput(this.value)" style="background:transparent;border:1px solid transparent;border-radius:6px;width:100%;font:inherit;padding:2px 4px;box-sizing:border-box;">
     </div>
 
     </div></div>
@@ -1769,7 +1772,6 @@ body { background: var(--bg) !important; }
     <div class="mc-section lesson-block-overview">
     <div class="mc-section-head">🧭  עיצוב שיעור<span class="mc-sub">שיעור → זרימה → זמן אמת</span></div>
     <div class="mc-section-body">
-      <h2 id="lesson-title" style="margin:0 0 12px;font-size:22px;">עיצוב שיעור: בחר שיעור</h2>
       <div class="field" style="margin:0;">
         <label for="lesson-objectives">מטרות השיעור</label>
         <textarea id="lesson-objectives" class="lp-textarea" rows="4" placeholder="מטרה בכל שורה"></textarea>
@@ -1956,24 +1958,17 @@ body { background: var(--bg) !important; }
       </div>
     </div></div>
 
-    <div style="padding:16px 0 24px;text-align:center;">
-      <button class="btn btn-outline" onclick="switchPhase('course')">&#x2190; חזרה לעיצוב קורס</button>
-    </div>
 
     </div>
-    <aside class="lesson-plan-sidebar">
+    <aside class="lesson-plan-sidebar" style="grid-template-columns:1fr;">
       <div class="lesson-plan-card">
-        <div class="lesson-plan-sidebar-title">🧭 רשימת יחידות הלימוד</div>
+        <div class="lesson-plan-sidebar-title">📋 שיעורים</div>
         <div id="lessonPlanSidebarList" class="lesson-plan-list">
-          <div class="thread-empty">בחר קורס כדי לראות יחידות</div>
-        </div>
-      </div>
-      <div class="lesson-plan-card">
-        <div class="lesson-plan-sidebar-title">🧭 רשימת השיעורים</div>
-        <div id="lessonSessionsSidebarList" class="lesson-plan-list">
           <div class="thread-empty">בחר קורס כדי לראות שיעורים</div>
         </div>
       </div>
+      <!-- lessonSessionsSidebarList kept hidden for JS compatibility -->
+      <div id="lessonSessionsSidebarList" style="display:none;"></div>
     </aside>
     </div>
 
@@ -3279,7 +3274,8 @@ function updateLessonDesignBanner() {
   }
   banner.style.display = "";
   numEl.textContent = `שיעור ${active.lessonNumber}`;
-  titleEl.textContent = active.title;
+  // currentLesson.title is the live state; active.title is the fallback from persisted sessions data.
+  setLessonTitleInput(titleEl, currentLesson?.title || active.title);
   dateInput.value = active.date || "";
 }
 function renderLessonDesignNavigator() {
@@ -3288,15 +3284,13 @@ function renderLessonDesignNavigator() {
   if (!listEl || !sessionsEl) return;
   const courseId = currentCourseForSync();
   if (!courseId) {
-    listEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות יחידות</div>';
-    sessionsEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות שיעורים</div>';
+    listEl.innerHTML = '<div class="thread-empty">בחר קורס כדי לראות שיעורים</div>';
     updateLessonDesignBanner();
     return;
   }
   const lessons = buildPlannedLessonItems();
   if (!lessons.length) {
-    listEl.innerHTML = '<div class="thread-empty">טרם הוגדרו יחידות לימוד</div>';
-    sessionsEl.innerHTML = '<div class="thread-empty">טרם הוגדרו שיעורים</div>';
+    listEl.innerHTML = '<div class="thread-empty">טרם הוגדרו שיעורים</div>';
     updateLessonDesignBanner();
     return;
   }
@@ -3312,12 +3306,9 @@ function renderLessonDesignNavigator() {
   if (lessonInput) lessonInput.value = activeLessonIdForUi;
   listEl.innerHTML = lessons.map(item => `
     <button type="button" class="lesson-plan-item ${item.unitId === activeUnitId ? 'active' : ''}" data-lesson-nav-unit="${macroEscHtml(item.unitId)}" data-lesson-title="${macroEscHtml(item.title)}">
-      <div class="lesson-plan-item-meta">יחידת לימוד ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
+      <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.unitId)}</div>
       <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
       ${item.date ? `<div class="lesson-plan-item-date">📅 ${escapeHtml(item.date)}</div>` : ''}
-      <div style="margin-top:8px;text-align:left;">
-        <span class="btn btn-outline" data-open-lesson-unit="${macroEscHtml(item.unitId)}" data-open-lesson-title="${macroEscHtml(item.title)}" style="font-size:11px;padding:4px 8px;display:inline-block;">פתח שיעור</span>
-      </div>
     </button>
   `).join("");
   listEl.querySelectorAll("[data-lesson-nav-unit]").forEach(button => {
@@ -3325,46 +3316,6 @@ function renderLessonDesignNavigator() {
       const unitId = button.getAttribute("data-lesson-nav-unit");
       if (!unitId) return;
       selectLessonDesignUnit(unitId, { reloadMetadata: true });
-    });
-  });
-  listEl.querySelectorAll("[data-open-lesson-unit]").forEach(button => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const unitId = button.getAttribute("data-open-lesson-unit");
-      const unitTitle = button.getAttribute("data-open-lesson-title") || "";
-      if (!unitId) return;
-      openLesson(unitId, unitTitle);
-      loadCourseMetadataWorkspace();
-    });
-  });
-  const sessions = buildSessionSidebarItems();
-  sessionsEl.innerHTML = sessions.map(item => `
-    <button type="button" class="lesson-plan-item readonly" data-lesson-session="${macroEscHtml(item.lessonId)}" data-lesson-title="${macroEscHtml(item.title)}">
-      <div class="lesson-plan-item-meta">שיעור ${item.lessonNumber} · ${escapeHtml(item.lessonId)}</div>
-      <div class="lesson-plan-item-title">${escapeHtml(item.title)}</div>
-      <div class="lesson-plan-item-date">${item.unitsCount ? `🔗 ${item.unitsCount} יחידות · ${item.unitsPreview}${item.extraUnits}` : '🔗 ללא יחידות משויכות'}</div>
-      <div style="margin-top:8px;text-align:left;">
-        <span class="btn btn-outline" data-open-lesson-session="${macroEscHtml(item.lessonId)}" data-open-lesson-title="${macroEscHtml(item.title)}" style="font-size:11px;padding:4px 8px;display:inline-block;">פתח שיעור</span>
-      </div>
-    </button>
-  `).join("");
-  sessionsEl.querySelectorAll("[data-lesson-session]").forEach(button => {
-    button.addEventListener("click", () => {
-      const lessonId = button.getAttribute("data-lesson-session");
-      const lessonTitle = button.getAttribute("data-lesson-title") || "";
-      if (!lessonId) return;
-      openLesson(lessonId, lessonTitle);
-      loadCourseMetadataWorkspace();
-    });
-  });
-  sessionsEl.querySelectorAll("[data-open-lesson-session]").forEach(button => {
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const lessonId = button.getAttribute("data-open-lesson-session");
-      const lessonTitle = button.getAttribute("data-open-lesson-title") || "";
-      if (!lessonId) return;
-      openLesson(lessonId, lessonTitle);
-      loadCourseMetadataWorkspace();
     });
   });
   updateLessonDesignBanner();
@@ -5559,12 +5510,9 @@ function renderLesson() {
   const lesson = ensureCurrentLessonForId(lessonId);
   const lessonInput = document.getElementById("playlistLessonId");
   if (lessonInput && lessonInput.value !== lessonId) lessonInput.value = lessonId;
-  const titleEl = document.getElementById("lesson-title");
-  if (titleEl) {
-    titleEl.innerText = lesson?.title
-      ? "עיצוב שיעור: " + lesson.title
-      : "עיצוב שיעור: בחר שיעור";
-  }
+  // Update banner title input from currentLesson
+  const bannerTitleEl = document.getElementById("lessonDesignLessonTitle");
+  if (bannerTitleEl) setLessonTitleInput(bannerTitleEl, lesson?.title || "");
   renderObjectives();
   renderPreClass();
   renderResources();
@@ -5577,6 +5525,22 @@ function renderLesson() {
 
 function getCurrentLessonSteps() {
   return Array.isArray(currentLesson?.steps) ? currentLesson.steps : [];
+}
+
+function onLessonTitleInput(value) {
+  if (!currentLesson) return;
+  // Keep value unsanitized during typing; trim only on persist (persistLessonsStoreDebounced handles save)
+  currentLesson.title = String(value);
+  const lid = activeLessonId || currentLesson.id;
+  if (lid && Object.prototype.hasOwnProperty.call(lessonsStore, lid)) {
+    lessonsStore[lid].title = currentLesson.title;
+  }
+  persistLessonsStoreDebounced();
+}
+// Only update the title input when it is not focused, to avoid interrupting the user while typing.
+function setLessonTitleInput(el, title) {
+  if (!el || document.activeElement === el) return;
+  el.value = title;
 }
 
 function ensureCurrentLessonForId(lessonId = resolveActiveLessonId()) {
