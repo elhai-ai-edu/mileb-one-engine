@@ -1053,6 +1053,26 @@
   gap: 10px;
   margin-top: 12px;
 }
+/* Stage-tracking tab */
+.stage-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+.stage-row.state-unlocked { background:#f0fdf4; border-color:#bbf7d0; color:#166534; }
+.stage-row.state-pending  { background:#fffbeb; border-color:#fde68a; color:#92400e; }
+.stage-row.state-relocked { background:#fef2f2; border-color:#fecaca; color:#991b1b; }
+.stage-row.state-none     { background:#f8fafc; border-color:#e2e8f0; color:#64748b; }
+.stage-row-name  { font-weight: 700; }
+.stage-row-stage { font-size: 12px; }
+.stage-row-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
+.stage-row-actions { display: flex; gap: 6px; align-items: center; }
 </style>
 <title>MilEd.One — Micro Cockpit</title>
 
@@ -1105,6 +1125,7 @@
 <div id="cockpit-nav">
   <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>📚 לפני השיעור</span></button>
   <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>🎛️ בתוך השיעור</span></button>
+  <button class="cockpit-tab-btn" data-tab-target="stages" onclick="switchCockpitTab('stages', this)"><span>📍 מעקב שלבים</span></button>
   <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>📓 לאחר השיעור</span></button>
 </div>
 <script>(function(){
@@ -1571,6 +1592,40 @@
 
     </div><!-- /.mc-card-body syllabus 2 -->
     </div><!-- /.mc-card איזון -->
+  </div>
+
+  <div class="panel" data-tab-panel="stages">
+
+    <div class="mc-card">
+    <div class="mc-card-head">📍 מעקב שלבים — פרויקט גמר
+      <span style="margin-right:auto;">
+        <button class="btn btn-outline" type="button" onclick="loadStageSummary()" style="font-size:12px;padding:7px 12px;">🔄 עדכן</button>
+      </span>
+    </div>
+    <div class="mc-card-body">
+
+      <!-- Summary strip -->
+      <div id="stageSummaryStrip" style="display:none;padding:12px 16px;border-radius:12px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;font-weight:700;color:#166534;margin-bottom:16px;line-height:1.7;"></div>
+
+      <!-- Filter row -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
+        <input id="stagesStageFilter" class="lp-input" style="margin:0;max-width:220px;" placeholder="🔍 סינון לפי שלב (Stage ID)">
+        <select id="stagesStatusFilter" class="lp-input" style="margin:0;max-width:180px;">
+          <option value="">כל הסטטוסים</option>
+          <option value="pending_review">ממתין לאישור</option>
+          <option value="unlocked">מאושר</option>
+          <option value="relocked">נדחה</option>
+          <option value="none">לא התחיל</option>
+        </select>
+      </div>
+
+      <!-- Students table -->
+      <div id="stageSummaryTable" style="display:grid;gap:6px;">
+        <div class="thread-empty">בחר קורס ולחץ "עדכן" לטעינת נתוני שלבים</div>
+      </div>
+
+    </div><!-- /.mc-card-body -->
+    </div><!-- /.mc-card -->
   </div>
 
   <div class="panel" data-tab-panel="journal">
@@ -5061,8 +5116,135 @@ document.getElementById("gatekeepingSelectAll")?.addEventListener("change", (eve
 });
 loadGatekeepingQueue();
 
-document.addEventListener("click", (event) => {
-  const avatarEl = event.target?.closest?.(".thread-msg-avatar");
+// ─── Stage Summary (מעקב שלבים) ───
+let _stageSummaryData = [];
+
+async function loadStageSummary() {
+  const container = document.getElementById("stageSummaryTable");
+  const strip = document.getElementById("stageSummaryStrip");
+  if (!container) return;
+
+  const courseId = document.getElementById("botSelect")?.value || currentLessonId;
+  if (!courseId) {
+    container.innerHTML = '<div class="thread-empty">בחר קורס מהתפריט בלשונית "בתוך השיעור" תחילה</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="thread-empty">טוען נתונים...</div>';
+
+  try {
+    const res = await fetch(`/.netlify/functions/gatekeeping?action=course_stage_summary&courseId=${encodeURIComponent(courseId)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Unknown error");
+
+    _stageSummaryData = data.students || [];
+    renderStageSummaryTable();
+
+    // Summary strip
+    const stageCountParts = Object.entries(data.stageCounts || {})
+      .map(([stageId, count]) => `${count} בשלב ${escapeHtml(stageId)}`)
+      .join(" · ");
+    const stripText = [
+      stageCountParts || `${_stageSummaryData.length} סטודנטים`,
+      `${data.pendingCount} ממתינים לאישורך`
+    ].filter(Boolean).join(" · ");
+    if (strip) {
+      strip.textContent = stripText;
+      strip.style.display = "";
+    }
+  } catch (e) {
+    container.innerHTML = `<div class="thread-empty">שגיאה: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderStageSummaryTable() {
+  const container = document.getElementById("stageSummaryTable");
+  if (!container) return;
+
+  const stageFilter = (document.getElementById("stagesStageFilter")?.value || "").trim().toLowerCase();
+  const statusFilter = (document.getElementById("stagesStatusFilter")?.value || "").trim().toLowerCase();
+
+  const students = _stageSummaryData.filter(student => {
+    if (stageFilter && !(student.currentStageId || "").toLowerCase().includes(stageFilter)) return false;
+    if (statusFilter === "none") return !student.currentStageId;
+    if (statusFilter === "pending_review") return student.pendingApproval;
+    if (statusFilter) {
+      const stageEntries = Object.values(student.stages || {});
+      const hasStatus = stageEntries.some(s => (s?.state || "").toLowerCase() === statusFilter);
+      if (!hasStatus) return false;
+    }
+    return true;
+  });
+
+  if (!students.length) {
+    container.innerHTML = '<div class="thread-empty">לא נמצאו סטודנטים לפי הפילטר הנוכחי</div>';
+    return;
+  }
+
+  const STATE_LABELS = {
+    "unlocked":       "🟢 מאושר",
+    "pending_review": "🟡 ממתין",
+    "relocked":       "🔴 נדחה"
+  };
+
+  container.innerHTML = students.map(student => {
+    const name = escapeHtml(student.studentName || student.studentId || "—");
+    const activeStage = escapeHtml(student.currentStageId || "לא התחיל");
+    const lastStage = student.lastStage ? escapeHtml(student.lastStage) : null;
+
+    // Find highest-priority stage state for this student
+    const stageEntries = Object.values(student.stages || {});
+    const pendingEntry = stageEntries.find(s => s?.state === "pending_review");
+    const rejectedEntry = stageEntries.find(s => s?.state === "relocked");
+    const approvedEntry = stageEntries.filter(s => s?.state === "unlocked").sort((a, b) =>
+      Date.parse(b?.approvedAt || 0) - Date.parse(a?.approvedAt || 0))[0] || null;
+
+    let rowState = "none";
+    let badgeLabel = "⚪ לא התחיל";
+    if (pendingEntry)       { rowState = "pending";  badgeLabel = "🟡 ממתין"; }
+    else if (rejectedEntry) { rowState = "relocked"; badgeLabel = "🔴 נדחה"; }
+    else if (approvedEntry) { rowState = "unlocked"; badgeLabel = "🟢 מאושר"; }
+
+    const pendingStageId = student.pendingStageId || pendingEntry?.stageId || null;
+    const submissionId = pendingEntry?.submissionId || null;
+
+    const approveBtn = pendingEntry && submissionId
+      ? `<button class="btn btn-outline" style="font-size:11px;padding:4px 9px;color:#166534;border-color:#bbf7d0;" 
+          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','approved')">✔ אשר</button>
+         <button class="btn btn-outline" style="font-size:11px;padding:4px 9px;color:#991b1b;border-color:#fecaca;"
+          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','rejected')">✖ דחה</button>`
+      : "";
+
+    return `<div class="stage-row state-${rowState}">
+      <div class="stage-row-name">${name}${lastStage ? `<span style="font-size:11px;font-weight:400;color:inherit;opacity:.7;margin-right:6px;">· ${lastStage}</span>` : ""}</div>
+      <div class="stage-row-stage">${activeStage}</div>
+      <span class="stage-row-badge" style="background:rgba(0,0,0,.06);">${badgeLabel}</span>
+      <div class="stage-row-actions">${approveBtn}</div>
+    </div>`;
+  }).join("");
+}
+
+async function quickEvaluate(studentId, submissionId, status) {
+  const courseId = document.getElementById("botSelect")?.value || currentLessonId;
+  if (!courseId || !studentId || !submissionId || !status) return;
+  try {
+    const res = await fetch("/.netlify/functions/gatekeeping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "evaluate", studentId, courseId, submissionId, status })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "שגיאה בביצוע הפעולה");
+    await loadStageSummary();
+  } catch (e) {
+    alert(`שגיאה: ${e.message}`);
+  }
+}
+
+document.getElementById("stagesStageFilter")?.addEventListener("input", renderStageSummaryTable);
+document.getElementById("stagesStatusFilter")?.addEventListener("change", renderStageSummaryTable);
+
+
   if (avatarEl && avatarEl.getAttribute("src")) {
     openAvatarLightbox(avatarEl.getAttribute("src"));
   }

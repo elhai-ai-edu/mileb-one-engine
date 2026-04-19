@@ -527,6 +527,32 @@ export async function handler(event) {
         .filter(Boolean).join("\n\n");
     }
     
+    // ─── SERVER-SIDE STAGE LOCK ───
+    // If the bot is invoked with an active project step, check whether that step's
+    // unlock state allows further interaction. States that block: "pending_review"
+    // (submitted, awaiting lecturer approval) and "relocked" (rejected, resubmit required).
+    // "unlocked" (approved) and null/undefined (step not yet submitted) are allowed through.
+    // __INIT__ always passes so the opening sequence is never blocked.
+    if (currentStep != null && message !== "__INIT__") {
+      const stageKeyForLock = normalizeStageStorageKey(currentStep);
+      const stepUnlockState = stageKeyForLock
+        ? sessionCtx?.continuity?.unlockStates?.[stageKeyForLock]
+        : null;
+      if (stepUnlockState?.state && stepUnlockState.state !== "unlocked") {
+        const lockReply = stepUnlockState.state === "pending_review"
+          ? "ההגשה שלך התקבלה ✅ — ממתינים לאישור המרצה לפני שניתן להמשיך לשלב הבא."
+          : "שלב זה נעול כרגע ⛔ — ממתינים לאישור המרצה לפני שניתן להמשיך.";
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            reply: lockReply,
+            botType, botName: botConfig.name, model: "stage-lock-guard", isThinking: false
+          })
+        };
+      }
+    }
+
     // ─── GENDER GATE ───
     // If gender is not yet confirmed, block academic messages and redirect to opening.
     // Short messages (≤ 6 words) are allowed — the student is answering the bot's questions.
@@ -709,6 +735,18 @@ export async function handler(event) {
       logMessage(sessionId, "user",      message),
       logMessage(sessionId, "assistant", reply)
     ]);
+
+    // ─── MIRROR lastStage TO course_progress (fire-and-forget) ───
+    // Keeps course_progress/{courseId}/{studentId}/lastStage in sync so the
+    // lecturer's course_stage_summary endpoint can read it without scanning sessions/.
+    const lastStageToMirror = tokenMetadata?.lastStage || sessionUpdate?.lastStage;
+    if (lastStageToMirror && studentId && studentId !== "anonymous" && courseId) {
+      getDB().ref(`course_progress/${courseId}/${studentId}`).update({
+        studentId,
+        lastStage: lastStageToMirror,
+        lastStageUpdatedAt: Date.now()
+      }).catch(e => console.error("COURSE_PROGRESS LAST_STAGE ERROR:", e.message));
+    }
 
     // ─── WRITE skill_signal to skills_mastery (fire-and-forget) ─────
     if (skillSignal && studentId && studentId !== "anonymous") {
