@@ -3115,9 +3115,10 @@ function buildSessionSidebarItems() {
     const unitIds = Array.isArray(playlist?.unitIds) ? playlist.unitIds : [];
     const row = macroUnitsMap?.[lessonId] || {};
     const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
+    const date = getLessonDateValue(currentCourseForSync(), lessonId, row);
     const unitsPreview = unitIds.slice(0, 3).map(unitId => escapeHtml(unitNames.get(unitId) || unitId)).join(" · ");
     const extraUnits = unitIds.length > 3 ? ` +${unitIds.length - 3}` : "";
-    return { lessonId, lessonNumber, title, unitsCount: unitIds.length, unitsPreview, extraUnits };
+    return { lessonId, lessonNumber, title, date, unitsCount: unitIds.length, unitsPreview, extraUnits };
   });
 }
 function updateLessonDesignBanner() {
@@ -3131,12 +3132,13 @@ function updateLessonDesignBanner() {
     banner.style.display = "none";
     return;
   }
-  const lessons = buildPlannedLessonItems();
-  if (!lessons.length) {
+  const sessions = buildSessionSidebarItems();
+  if (!sessions.length) {
     banner.style.display = "none";
     return;
   }
-  const active = lessons.find(item => item.unitId === currentUnitId) || lessons[0];
+  const activeLessonId = currentLessonTargetId();
+  const active = sessions.find(item => item.lessonId === activeLessonId) || sessions[0];
   banner.style.display = "";
   numEl.textContent = `שיעור ${active.lessonNumber}`;
   titleEl.textContent = active.title;
@@ -3201,21 +3203,22 @@ function selectLessonDesignUnit(unitId, { reloadMetadata = false } = {}) {
 }
 async function saveLessonDateForCurrentUnit() {
   const courseId = currentCourseForSync();
-  if (!courseId || !currentUnitId || !facultyId) return;
-  const unitData = macroUnitsMap[currentUnitId] || {};
-  const lessonDate = getLessonDateValue(courseId, currentUnitId, unitData);
+  const lessonId = currentLessonTargetId();
+  if (!courseId || !lessonId || !facultyId) return;
+  const unitData = macroUnitsMap[lessonId] || {};
+  const lessonDate = getLessonDateValue(courseId, lessonId, unitData);
   const res = await callClassroom({
     action: "unit_upsert",
     userId: facultyId,
     courseId,
-    unitId: currentUnitId,
+    unitId: lessonId,
     topicName: String(unitData.topicName || "").trim(),
     structureType: String(unitData.structureType || macroUnitsMode || "Session"),
     lessonDate
   });
   if (res?.ok) {
-    macroUnitsMap[currentUnitId] = {
-      ...(macroUnitsMap[currentUnitId] || {}),
+    macroUnitsMap[lessonId] = {
+      ...(macroUnitsMap[lessonId] || {}),
       lessonDate: lessonDate || null
     };
   }
@@ -5179,8 +5182,9 @@ document.getElementById("playlistLessonId")?.addEventListener("change", (event) 
 });
 document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (event) => {
   const courseId = currentCourseForSync();
-  if (!courseId || !currentUnitId) return;
-  setLessonDateValue(courseId, currentUnitId, event?.target?.value || "");
+  const lessonId = currentLessonTargetId();
+  if (!courseId || !lessonId) return;
+  setLessonDateValue(courseId, lessonId, event?.target?.value || "");
   saveLessonDateForCurrentUnit().catch(() => {});
   renderLessonDesignNavigator();
 });
