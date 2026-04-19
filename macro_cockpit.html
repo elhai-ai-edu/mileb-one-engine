@@ -3103,6 +3103,7 @@ function buildPlannedLessonItems() {
 function buildSessionSidebarItems() {
   const playlists = importedMetadataCache?.playlists || {};
   const metadataUnits = Array.isArray(importedMetadataCache?.units) ? importedMetadataCache.units : [];
+  const courseId = currentCourseForSync();
   const unitNames = new Map(metadataUnits.map(unit => {
     const unitId = String(unit?.unitId || unit?.id || "").trim();
     const unitName = String(unit?.name || unit?.title || unit?.label || unitId).trim();
@@ -3115,7 +3116,7 @@ function buildSessionSidebarItems() {
     const unitIds = Array.isArray(playlist?.unitIds) ? playlist.unitIds : [];
     const row = macroUnitsMap?.[lessonId] || {};
     const title = String(row.topicName || row.title || "").trim() || `שיעור ${lessonNumber}`;
-    const date = getLessonDateValue(currentCourseForSync(), lessonId, row);
+    const date = getLessonDateValue(courseId, lessonId, row);
     const unitsPreview = unitIds.slice(0, 3).map(unitId => escapeHtml(unitNames.get(unitId) || unitId)).join(" · ");
     const extraUnits = unitIds.length > 3 ? ` +${unitIds.length - 3}` : "";
     return { lessonId, lessonNumber, title, date, unitsCount: unitIds.length, unitsPreview, extraUnits };
