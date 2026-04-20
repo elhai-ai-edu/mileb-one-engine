@@ -2634,10 +2634,17 @@ async function fetchWaitingPressureForSelectedCourse() {
   try {
     const lessonAsUnitParam = lessonId ? `&unitId=${encodeURIComponent(lessonId)}` : "";
     const res = await fetch(`/.netlify/functions/classroom?action=waiting_count&classId=${encodeURIComponent(classId)}${lessonAsUnitParam}`);
-    if (!res.ok) return;
+    if (!res.ok) {
+      updateWaitingPressure(0);
+      console.error("Macro Cockpit Error:", new Error(`waiting_count failed (${res.status})`));
+      return;
+    }
     const data = await res.json();
     updateWaitingPressure(data?.waitingStudentsCount || 0);
-  } catch {}
+  } catch (error) {
+    updateWaitingPressure(0);
+    console.error("Macro Cockpit Error:", error);
+  }
 }
 
 function startWaitingPressurePolling() {
@@ -2800,8 +2807,12 @@ async function loadPreSessionMission() {
   try {
     // Transitional compatibility: classroom APIs still route by `unitId`, while macro runtime resolves lesson ids.
     const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(designCourseId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}&userId=${encodeURIComponent(facultyId)}`);
-    if (!res.ok) return;
     const data = await res.json();
+    if (!res.ok) {
+      const backendError = String(data?.error || '').trim();
+      if (statusEl) statusEl.textContent = backendError || 'שגיאה בפעולה';
+      return;
+    }
     const mission = data?.mission || {};
     const et = data?.entranceTask || {};
 
@@ -2821,8 +2832,10 @@ async function loadPreSessionMission() {
     persistLessonsStoreDebounced();
     renderLesson();
     if (statusEl) statusEl.textContent = et.updatedAt ? `עודכן: ${new Date(et.updatedAt).toLocaleString('he-IL')}` : (mission.updatedAt ? `עודכן: ${new Date(mission.updatedAt).toLocaleString('he-IL')}` : 'אין מטלת כניסה שמורה');
-  } catch (e) {
-    if (statusEl) statusEl.textContent = 'שגיאה בטעינת מטלת כניסה';
+  } catch (error) {
+    const errorMessage = String(error?.message || '').trim();
+    if (statusEl) statusEl.textContent = errorMessage || 'שגיאה בפעולה';
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -2842,32 +2855,38 @@ async function savePreSessionMission() {
   }
 
   if (statusEl) statusEl.textContent = 'שומר...';
-  const res = await callClassroom({
-    action:       'pre_session_save',
-    classId:      designCourseId,
-    courseId:     designCourseId,
-    unitId: lessonId,
-    lessonId,
-    userId:       facultyId,
-    facultyId,
-    taskType: preClass.type,
-    taskTitle: preClass.title,
-    prompt: preClass.prompt,
-    videoUrl: preClass.videoUrl,
-    options: preClass.options.join('\n'),
-    correctIndex: String((Number(preClass.correctIndex) || 0) + 1),
-    pairs: preClass.pairs.map(pair => `${pair[0]}|${pair[1]}`).join('\n'),
-    minLength: String(preClass.minLength || 20),
-    audioDataUrl: preClass.audioDataUrl || '',
-    text: preClass.prompt
-  });
+  try {
+    const res = await callClassroom({
+      action:       'pre_session_save',
+      classId:      designCourseId,
+      courseId:     designCourseId,
+      unitId: lessonId,
+      lessonId,
+      userId:       facultyId,
+      facultyId,
+      taskType: preClass.type,
+      taskTitle: preClass.title,
+      prompt: preClass.prompt,
+      videoUrl: preClass.videoUrl,
+      options: preClass.options.join('\n'),
+      correctIndex: String((Number(preClass.correctIndex) || 0) + 1),
+      pairs: preClass.pairs.map(pair => `${pair[0]}|${pair[1]}`).join('\n'),
+      minLength: String(preClass.minLength || 20),
+      audioDataUrl: preClass.audioDataUrl || '',
+      text: preClass.prompt
+    });
 
-  if (!res?.ok) {
-    if (statusEl) statusEl.textContent = 'שגיאה בשמירה';
-    return;
+    if (!res?.ok) {
+      if (statusEl) statusEl.textContent = res?.error || 'שגיאה בפעולה';
+      return;
+    }
+
+    if (statusEl) statusEl.textContent = 'נשמר ✓';
+  } catch (error) {
+    const errorMessage = String(error?.message || '').trim();
+    if (statusEl) statusEl.textContent = errorMessage || 'שגיאה בפעולה';
+    console.error("Macro Cockpit Error:", error);
   }
-
-  if (statusEl) statusEl.textContent = 'נשמר ✓';
 }
 
 async function clearPreSessionMission() {
@@ -2880,16 +2899,22 @@ async function clearPreSessionMission() {
     return;
   }
 
-  const res = await callClassroom({ action: 'pre_session_clear', classId: designCourseId, courseId: designCourseId, unitId: lessonId, lessonId, userId: facultyId, facultyId });
-  if (!res?.ok) {
-    if (statusEl) statusEl.textContent = 'שגיאה בניקוי';
-    return;
-  }
+  try {
+    const res = await callClassroom({ action: 'pre_session_clear', classId: designCourseId, courseId: designCourseId, unitId: lessonId, lessonId, userId: facultyId, facultyId });
+    if (!res?.ok) {
+      if (statusEl) statusEl.textContent = res?.error || 'שגיאה בפעולה';
+      return;
+    }
 
-  if (currentLesson) currentLesson.preClass = [normalizePreClassItem()];
-  persistLessonsStoreDebounced();
-  renderLesson();
-  if (statusEl) statusEl.textContent = 'נוקה ✓';
+    if (currentLesson) currentLesson.preClass = [normalizePreClassItem()];
+    persistLessonsStoreDebounced();
+    renderLesson();
+    if (statusEl) statusEl.textContent = 'נוקה ✓';
+  } catch (error) {
+    const errorMessage = String(error?.message || '').trim();
+    if (statusEl) statusEl.textContent = errorMessage || 'שגיאה בפעולה';
+    console.error("Macro Cockpit Error:", error);
+  }
 }
 
 async function generateWarmup() {
@@ -2906,13 +2931,15 @@ async function generateWarmup() {
   try {
     const res = await callClassroom({ action: 'generate_warmup', classId: designCourseId, courseId: designCourseId, unitId: lessonId, lessonId, userId: facultyId, facultyId, warmupType: 'memory_match' });
     if (!res?.ok) {
-      if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביצירת חימום';
+      if (statusEl) statusEl.textContent = res?.error || 'שגיאה בפעולה';
     } else {
       if (statusEl) statusEl.textContent = '✓ שאלת חימום נוצרה';
       setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 5000);
     }
-  } catch (e) {
-    if (statusEl) statusEl.textContent = 'שגיאת רשת';
+  } catch (error) {
+    const errorMessage = String(error?.message || '').trim();
+    if (statusEl) statusEl.textContent = errorMessage || 'שגיאה בפעולה';
+    console.error("Macro Cockpit Error:", error);
   } finally {
     if (btn) btn.disabled = false;
   }
@@ -3657,7 +3684,10 @@ async function loadMacroCourseUnits(courseId) {
   try {
     const res = await fetch(`/.netlify/functions/classroom?action=units_list&userId=${encodeURIComponent(facultyId)}&courseId=${encodeURIComponent(courseId)}`);
     legacyMixedUnitsMap = res.ok ? ((await res.json())?.units || {}) : {};
-  } catch { legacyMixedUnitsMap = {}; }
+  } catch (error) {
+    legacyMixedUnitsMap = {};
+    console.error("Macro Cockpit Error:", error);
+  }
   splitMacroUnitsMaps(legacyMixedUnitsMap);
   macroRenderUnits();
 }
@@ -3908,7 +3938,7 @@ async function macroAutoSaveLessonRow(row) {
       linkedUnits,
       lessonDate
     });
-    if (!res?.ok) throw new Error("not ok");
+    if (!res?.ok) throw new Error(res?.error || "שגיאה בפעולה");
     lessonsMap[lessonId] = {
       ...(lessonsMap[lessonId] || {}),
       topicName,
@@ -3922,8 +3952,10 @@ async function macroAutoSaveLessonRow(row) {
       setTimeout(() => { statusEl.textContent = "מוכן"; statusEl.className = "unit-row-status"; }, 1400);
     }
     renderLessonDesignNavigator();
-  } catch {
-    if (statusEl) { statusEl.textContent = "שגיאה"; statusEl.className = "unit-row-status err"; }
+  } catch (error) {
+    const errorMessage = String(error?.message || "").trim();
+    if (statusEl) { statusEl.textContent = errorMessage || "שגיאה בפעולה"; statusEl.className = "unit-row-status err"; }
+    console.error("Macro Cockpit Error:", error);
   }
 }
 async function macroAutoSaveLearningUnitRow(row) {
@@ -3943,7 +3975,7 @@ async function macroAutoSaveLearningUnitRow(row) {
       structureType: "Topic",
       topicName
     });
-    if (!res?.ok) throw new Error("not ok");
+    if (!res?.ok) throw new Error(res?.error || "שגיאה בפעולה");
     learningUnitsMap[unitId] = { ...(learningUnitsMap[unitId] || {}), topicName, structureType: "Topic" };
     if (statusEl) {
       statusEl.textContent = "נשמר"; statusEl.className = "unit-row-status ok";
@@ -3952,8 +3984,10 @@ async function macroAutoSaveLearningUnitRow(row) {
     macroRenderLessonsTable();
     macroRenderLessonUnitLinking();
     renderLinkedLearningUnitsPanel();
-  } catch {
-    if (statusEl) { statusEl.textContent = "שגיאה"; statusEl.className = "unit-row-status err"; }
+  } catch (error) {
+    const errorMessage = String(error?.message || "").trim();
+    if (statusEl) { statusEl.textContent = errorMessage || "שגיאה בפעולה"; statusEl.className = "unit-row-status err"; }
+    console.error("Macro Cockpit Error:", error);
   }
 }
 async function macroSaveLessonLinksFromUi() {
@@ -3987,7 +4021,7 @@ async function macroSaveLessonLinksFromUi() {
       linkedUnitIds,
       linkedUnits
     });
-    if (!res?.ok) throw new Error("not ok");
+    if (!res?.ok) throw new Error(res?.error || "שגיאה בפעולה");
     lessonsMap[lessonId] = {
       ...(lessonsMap[lessonId] || {}),
       structureType: "Session",
@@ -4001,8 +4035,10 @@ async function macroSaveLessonLinksFromUi() {
     macroRenderLessonsTable();
     renderLinkedLearningUnitsPanel(lessonId);
     renderLessonDesignNavigator();
-  } catch {
-    if (statusEl) statusEl.textContent = "שגיאה בשמירת השיוך";
+  } catch (error) {
+    const errorMessage = String(error?.message || "").trim();
+    if (statusEl) statusEl.textContent = errorMessage || "שגיאה בפעולה";
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -4012,10 +4048,11 @@ async function loadMacroBookshelf(courseId) {
     macroBookshelfUnits = macroNormalizeBookshelfUnits(payload?.metadata || null);
     syncLessonResourcesFromMetadata();
     renderLesson();
-  } catch {
+  } catch (error) {
     macroBookshelfUnits = [];
     syncLessonResourcesFromMetadata();
     renderLesson();
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -4130,7 +4167,9 @@ async function loadMacroLifecycle(courseId) {
     const snap = await fetch(`${dbUrl}/classes/${encodeURIComponent(courseId)}.json`).then(r => r.json());
     if (snap?.lockDate)      document.getElementById("macro-lock-date").value      = snap.lockDate;
     if (snap?.retentionDate) document.getElementById("macro-retention-date").value = snap.retentionDate;
-  } catch { /* non-fatal */ }
+  } catch (error) {
+    console.error("Macro Cockpit Error:", error);
+  }
 }
 
 async function macroSaveLifecycle() {
@@ -4365,7 +4404,7 @@ async function openSession() {
       if (doorStateActivated && classId) {
         await writeActiveDoorState({ classId, unitId: sessionUnitId, sessionId: null, status: 'closed', entryPolicy: 'closed' });
       }
-      alert("שגיאה בפתיחת שיעור");
+      alert(res?.error || "שגיאה בפעולה");
       return;
     }
 
@@ -4389,6 +4428,7 @@ async function openSession() {
     startPolling();
     debugLessonContext("session-open:ready");
   } catch (error) {
+    console.error("Macro Cockpit Error:", error);
     if (LESSON_CONTEXT_DEBUG) {
       console.error("[lesson-context] session-open:failed-exception; clearing runtime session state", error);
     }
@@ -4402,7 +4442,8 @@ async function openSession() {
       }
     }
     resetRuntimeSessionState({ resetUi: true, reason: "session-open:failed-exception" });
-    alert("שגיאה בפתיחת שיעור");
+    const errorMessage = String(error?.message || '').trim();
+    alert(errorMessage || "שגיאה בפעולה");
   } finally {
     openSessionInFlight = false;
     setOpenSessionBusy(false);
@@ -5368,7 +5409,9 @@ async function loadCourseMetadataWorkspace(courseId = currentCourseForSync()) {
     if (statusEl) statusEl.textContent = importedMetadataCache ? `נטענו ${importedMetadataCache.unitCount || 0} יחידות מהמטא-דאטה` : 'אין מטא-דאטה לקורס זה';
   } catch (error) {
     renderLessonDesignNavigator();
-    if (statusEl) statusEl.textContent = 'שגיאה בטעינת מטא-דאטה';
+    const errorMessage = String(error?.message || '').trim();
+    if (statusEl) statusEl.textContent = errorMessage || 'שגיאה בפעולה';
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -5543,8 +5586,10 @@ async function loadPacingHeatmap() {
         <span>${status}</span>
       </div>`;
     }).join('');
-  } catch {
-    container.innerHTML = '<div class="thread-empty">שגיאה בטעינת Heatmap</div>';
+  } catch (error) {
+    const errorMessage = String(error?.message || '').trim();
+    container.innerHTML = `<div class="thread-empty">${escapeHtml(errorMessage || 'שגיאה בפעולה')}</div>`;
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -6235,7 +6280,14 @@ async function loadTemplates(classId) {
         opt.dataset.steps = JSON.stringify(tpl.steps || []);
         sel.appendChild(opt);
       });
-  } catch(e) { console.error("loadTemplates error:", e); }
+  } catch(error) {
+    const sel = document.getElementById("template-select");
+    const errorMessage = String(error?.message || "").trim();
+    if (sel) {
+      sel.innerHTML = `<option value="">${escapeHtml(errorMessage || "שגיאה בפעולה")}</option>`;
+    }
+    console.error("Macro Cockpit Error:", error);
+  }
 }
 
 function loadSelectedTemplate() {
@@ -6248,7 +6300,11 @@ function loadSelectedTemplate() {
     currentLesson.steps = JSON.parse(opt.dataset.steps || "[]");
     persistLessonsStore();
     renderLesson();
-  } catch(e) { alert("שגיאה בטעינת התבנית"); }
+  } catch(error) {
+    const errorMessage = String(error?.message || "").trim();
+    alert(errorMessage || "שגיאה בפעולה");
+    console.error("Macro Cockpit Error:", error);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -6340,8 +6396,9 @@ async function initGroupModePanel() {
     const res = await rawRes.json();
     const defs = Array.isArray(res?.sprintDefinitions) ? res.sprintDefinitions : [];
     _groupSprintDefs = defs.filter(s => String(s.stationType || "").toUpperCase() === "GROUP_STATION");
-  } catch(e) {
+  } catch(error) {
     _groupSprintDefs = [];
+    console.error("Macro Cockpit Error:", error);
   }
 
   if (!_groupSprintDefs.length) { panel.style.display = "none"; return; }
@@ -6399,8 +6456,10 @@ async function activateGroupSprint() {
     if (activateBtn) activateBtn.disabled = true;
     if (deactivateBtn) deactivateBtn.style.display = "";
     if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.textContent = "✅ עבודת קבוצות פעילה — הסטודנטים עוברים לסביבת הקבוצה"; }
-  } catch(e) {
-    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
+  } catch(error) {
+    const errorMessage = String(error?.message || "").trim();
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = errorMessage || "שגיאה בפעולה"; }
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -6420,8 +6479,10 @@ async function deactivateGroupMode() {
     if (activateBtn) activateBtn.disabled = false;
     if (deactivateBtn) deactivateBtn.style.display = "none";
     if (statusEl) { statusEl.style.color = "#475569"; statusEl.textContent = "עבודת הקבוצות הסתיימה."; }
-  } catch(e) {
-    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
+  } catch(error) {
+    const errorMessage = String(error?.message || "").trim();
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = errorMessage || "שגיאה בפעולה"; }
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -6433,7 +6494,7 @@ async function exportSession() {
   if (!sessionId) { alert("אין שיעור פעיל לייצוא"); return; }
   try {
     const res = await callClassroom({ action: "export_session", sessionId, facultyId });
-    if (!res.sessionId) { alert("שגיאה בייצוא"); return; }
+    if (!res.sessionId) { alert(res?.error || "שגיאה בפעולה"); return; }
     const filename =
       `teaching_journal_${sessionId.slice(0,12)}_${new Date().toLocaleDateString("he-IL").replace(/\//g,"-")}.json`;
     const blob = new Blob([JSON.stringify(res, null, 2)], { type: "application/json" });
@@ -6441,8 +6502,10 @@ async function exportSession() {
     const a    = document.createElement("a");
     a.href = url; a.download = filename; a.click();
     URL.revokeObjectURL(url);
-  } catch(e) {
-    alert("שגיאה בייצוא: " + e.message);
+  } catch(error) {
+    const errorMessage = String(error?.message || "").trim();
+    alert(errorMessage || "שגיאה בפעולה");
+    console.error("Macro Cockpit Error:", error);
   }
 }
 
@@ -6562,7 +6625,9 @@ document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (e
   const lessonId = resolveActiveLessonId();
   if (!courseId || !lessonId) return;
   setLessonDateValue(courseId, lessonId, event?.target?.value || "");
-  saveLessonDateForCurrentUnit().catch(() => {});
+  saveLessonDateForCurrentUnit().catch((error) => {
+    console.error("Macro Cockpit Error:", error);
+  });
   renderLessonDesignNavigator();
 });
 
