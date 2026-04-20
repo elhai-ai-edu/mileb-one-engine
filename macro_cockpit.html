@@ -2807,14 +2807,14 @@ async function loadPreSessionMission() {
   try {
     // Transitional compatibility: classroom APIs still route by `unitId`, while macro runtime resolves lesson ids.
     const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(designCourseId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}&userId=${encodeURIComponent(facultyId)}`);
-    let data = null;
+    let data = {};
     if (res.ok) {
       data = await res.json();
     } else {
       try {
         data = await res.json();
       } catch (parseError) {
-        data = null;
+        data = {};
         console.error("Macro Cockpit Error:", parseError);
       }
       const backendError = String(data?.error || '').trim();
@@ -6276,7 +6276,18 @@ async function loadTemplates(classId) {
   const sel = document.getElementById("template-select");
   if (!sel) return;
   try {
-    const res  = await fetch(`/.netlify/functions/classroom?action=templates&classId=${classId}`);
+    const res = await fetch(`/.netlify/functions/classroom?action=templates&classId=${classId}`);
+    if (!res.ok) {
+      let errorPayload = {};
+      try {
+        errorPayload = await res.json();
+      } catch (parseError) {
+        console.error("Macro Cockpit Error:", parseError);
+      }
+      const backendError = String(errorPayload?.error || "").trim();
+      sel.innerHTML = `<option value="">${escapeHtml(backendError || "שגיאה בפעולה")}</option>`;
+      return;
+    }
     const data = await res.json();
     sel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
     Object.entries(data.templates || {})
@@ -6290,9 +6301,7 @@ async function loadTemplates(classId) {
       });
   } catch(error) {
     const errorMessage = String(error?.message || "").trim();
-    if (sel) {
-      sel.innerHTML = `<option value="">${escapeHtml(errorMessage || "שגיאה בפעולה")}</option>`;
-    }
+    sel.innerHTML = `<option value="">${escapeHtml(errorMessage || "שגיאה בפעולה")}</option>`;
     console.error("Macro Cockpit Error:", error);
   }
 }
