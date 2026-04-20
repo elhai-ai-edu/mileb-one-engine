@@ -5419,7 +5419,8 @@ async function importMoodleJson() {
     renderLesson();
     if (statusEl) statusEl.textContent = `יובאו ${importedMetadataCache?.unitCount || 0} יחידות ו-${importedMetadataCache?.resourceCount || 0} משאבים`;
   } catch (error) {
-    if (statusEl) statusEl.textContent = 'שגיאה ביבוא';
+    const errorMessage = String(error?.message || '').trim();
+    if (statusEl) statusEl.textContent = errorMessage || 'שגיאה ביבוא';
   }
 }
 
