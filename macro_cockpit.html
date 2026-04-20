@@ -3698,13 +3698,13 @@ function renderLinkedLearningUnitsPanel(lessonId = resolveActiveLessonId()) {
       statusEl.textContent = `${currentLinkedUnits.length} יחידות מקושרות · שיוך לא נמצא`;
       return;
     }
+    const currentRole = normalizeLinkedUnitRole(
+      currentLinkedUnits.find(item => item.unitId === unitId)?.role
+    );
+    if (currentRole === role) return;
     const nextLinkedUnits = currentLinkedUnits.map(item => (
       item.unitId === unitId ? { ...item, role } : item
     ));
-    const hasChanged = nextLinkedUnits.some((item, idx) => (
-      item.unitId === unitId && item.role !== currentLinkedUnits[idx]?.role
-    ));
-    if (!hasChanged) return;
     setLessonLinkedUnitsState(resolvedLessonId, nextLinkedUnits);
     statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות · שומר...`;
     const persisted = await persistLessonLinkedUnitsForLesson(resolvedLessonId, nextLinkedUnits);

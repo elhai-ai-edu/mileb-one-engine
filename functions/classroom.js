@@ -1745,10 +1745,10 @@ export async function handler(event){
       Object.prototype.hasOwnProperty.call(body, "linkedUnits") ||
       Object.prototype.hasOwnProperty.call(body, "linkedUnitIds")
     ) {
+      const normalizedUnitsInput = normalizeLinkedUnits(body.linkedUnits);
       const normalizedIds = Object.prototype.hasOwnProperty.call(body, "linkedUnitIds")
         ? normalizeLinkedUnitIds(body.linkedUnitIds)
-        : normalizeLinkedUnits(body.linkedUnits).map(item => item.unitId);
-      const normalizedUnitsInput = normalizeLinkedUnits(body.linkedUnits, normalizedIds);
+        : normalizedUnitsInput.map(item => item.unitId);
       const roleByUnitId = new Map(normalizedUnitsInput.map(item => [item.unitId, item.role]));
       const normalizedUnits = normalizedIds.map(unitId => ({
         unitId,
