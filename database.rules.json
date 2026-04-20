@@ -1,40 +1,67 @@
 {
   "rules": {
-    // ─── Admin ───────────────────────────────────────────────────────────────
-    // Only Netlify Functions (server-side) read/write admin credentials.
-    // Client-side access is never permitted.
+    // ─── Design note ─────────────────────────────────────────────────────────
+    // All backend writes use the Firebase Admin SDK (Netlify Functions), which
+    // bypasses these rules.  These rules therefore govern only the subset of
+    // client-side Firebase SDK reads and writes that the browser makes directly:
+    //   • lesson_view.html  — real-time session read, presence write, help-request write
+    //   • macro_cockpit.html — instructor session/class writes, waiting-room read
+    //   • team_project.html  — team-project real-time read (writes go via function)
+    //
+    // Fine-grained membership checks (e.g. "is this user in this class?") are not
+    // possible without a denormalized enrollment index.  Where membership cannot be
+    // verified in rules, the server function is the authoritative gate.  A future
+    // migration to Firestore can enforce collection-group queries for this purpose.
+
+    // ─── Admin — fully server-managed, never client-accessible ───────────────
     "admin": {
       ".read": false,
       ".write": false
     },
 
-    // ─── Institutions ─────────────────────────────────────────────────────────
+    // ─── Institutions — server-managed ───────────────────────────────────────
     "institutions": {
       ".read": false,
       ".write": false
     },
 
-    // ─── Authorized Users ────────────────────────────────────────────────────
+    // ─── Authorized Users — server-managed ───────────────────────────────────
     "authorized_users": {
       ".read": false,
       ".write": false
     },
 
-    // ─── Courses ──────────────────────────────────────────────────────────────
-    // Course metadata, playlists, sprint definitions, and live meeting state
-    // are read-only for authenticated clients; writes come from server functions.
+    // ─── Courses — read by authenticated students; writes server-managed ─────
     "courses": {
       ".read": "auth != null",
       ".write": false
     },
 
-    // ─── Active Sessions ─────────────────────────────────────────────────────
-    // Classroom session state: students write their own presence and answers.
+    // ─── Active Sessions ──────────────────────────────────────────────────────
+    // Instructor writes session/class state via client SDK (macro_cockpit).
+    // Students get a real-time read of their own class session.
     "active_sessions": {
       "$classId": {
         ".read": "auth != null",
+        // Instructor writes come from macro_cockpit via authenticated client SDK.
+        // Server functions also write with admin SDK (bypasses this rule).
+        ".write": "auth != null"
+      }
+    },
+
+    // ─── Sessions ─────────────────────────────────────────────────────────────
+    // lesson_view.html reads sessions/{sessionId} in real time.
+    // macro_cockpit writes sessions/{sessionId} via client SDK.
+    // Students update their own presence sub-path.
+    "sessions": {
+      "$sessionId": {
+        ".read": "auth != null",
+        // Instructor (macro_cockpit) writes session-level fields.
+        // Default: server functions handle all other writes.
+        ".write": "auth != null",
         "students": {
           "$studentId": {
+            // Students may update only their own presence slot.
             ".write": "auth != null && auth.uid === $studentId"
           }
         },
@@ -43,45 +70,13 @@
             ".write": "auth != null && auth.uid === $studentId"
           }
         },
-        // Instructor-only writes for publicWall, speakerFocus, recall_all
-        "publicWall":    { ".write": false },
-        "speakerFocus":  { ".write": false },
-        "recall_all":    { ".write": false },
-        "task_log":      { ".write": false },
         "entranceTickets": {
           "$studentId": {
             ".write": "auth != null && auth.uid === $studentId"
           }
         }
-      }
-    },
-
-    // ─── Sessions (class-level session objects) ───────────────────────────────
-    "sessions": {
-      "$sessionId": {
-        ".read": "auth != null",
-        "students": {
-          "$studentId": {
-            ".write": "auth != null && auth.uid === $studentId"
-          }
-        },
-        "answers": {
-          "$studentId": {
-            ".write": "auth != null && auth.uid === $studentId"
-          }
-        },
-        "entranceTickets": {
-          "$studentId": {
-            ".write": "auth != null && auth.uid === $studentId"
-          }
-        },
-        // Instructor-only: publicWall, speakerFocus, recall_all, task_log
-        "publicWall":    { ".write": false },
-        "speakerFocus":  { ".write": false },
-        "recall_all":    { ".write": false },
-        "task_log":      { ".write": false }
       },
-      // Per-student session state keyed by studentId/courseId
+      // Per-student/per-course state — only the student may read their own record.
       "$studentId": {
         "$courseId": {
           ".read": "auth != null && auth.uid === $studentId",
@@ -91,69 +86,61 @@
     },
 
     // ─── Classes ──────────────────────────────────────────────────────────────
-    // Class configuration (features, gatekeeping, lock/retention dates).
-    // Students may read their own class metadata; writes come from server only.
+    // macro_cockpit writes class configuration (features, groupMode, etc.)
+    // via the client SDK as an authenticated instructor.
     "classes": {
       "$classId": {
         ".read": "auth != null",
-        ".write": false
+        ".write": "auth != null"
+      }
+    },
+
+    // ─── Help Requests — students write only their own slot ──────────────────
+    "helpRequests": {
+      "$classId": {
+        "$studentId": {
+          ".read": "auth != null",
+          ".write": "auth != null && auth.uid === $studentId"
+        }
       }
     },
 
     // ─── Group Contributions ─────────────────────────────────────────────────
-    // Group sprint collaborative writing: students write only to their own
-    // contribution slot. Master draft and veto are server-managed.
+    // lesson_view.html reads the whole activity node in real time (.on "value").
+    // All writes go through /.netlify/functions/group (admin SDK) — client writes blocked.
     "group_contributions": {
       "$classId": {
         "$groupId": {
           "$activityId": {
             ".read": "auth != null",
-            "contributions": {
-              "$contributionId": {
-                ".write": "auth != null"
-              }
-            },
-            // Master draft and veto are written server-side only
-            "masterDraft":    { ".write": false },
-            "finalSubmission":{ ".write": false },
-            "veto":           { ".write": false }
+            ".write": false
           }
         }
       }
     },
 
     // ─── Team Projects ────────────────────────────────────────────────────────
-    // Async team projects: students write their own blocks and presence.
-    // Baton, veto, and digest are server-managed.
+    // team_project.html reads the project in real time.
+    // All writes go through /.netlify/functions/team_project (admin SDK) — client writes blocked.
     "team_projects": {
       "$projectId": {
         ".read": "auth != null",
-        "document": {
-          "blocks": {
-            "$blockId": {
-              ".write": "auth != null"
-            }
-          }
-        },
-        "presence": {
-          "$studentId": {
-            ".write": "auth != null && auth.uid === $studentId"
-          }
-        },
-        // Baton, veto, and digest are written server-side only
-        "baton":  { ".write": false },
-        "veto":   { ".write": false },
-        "digest": { ".write": false }
+        ".write": false
       }
     },
 
-    // ─── Submissions ─────────────────────────────────────────────────────────
-    // Students may read submissions in their class for peer review.
-    // Writes (including peer_reviews) come from server functions only.
+    // ─── Submissions ──────────────────────────────────────────────────────────
+    // lesson_view.html reads only the student's own peer_review_ready flag.
+    // All other submission data is server-managed.
     "submissions": {
       "$classId": {
-        ".read": "auth != null",
-        ".write": false
+        "$activityId": {
+          "$studentId": {
+            // Scoped to the owning student for the specific peer-review-ready flag.
+            ".read": "auth != null && auth.uid === $studentId",
+            ".write": false
+          }
+        }
       }
     },
 
@@ -200,6 +187,8 @@
     },
 
     // ─── Waiting Room ────────────────────────────────────────────────────────
+    // macro_cockpit reads waiting attendees via .on("value").
+    // lesson_view / waiting_lobby writes student's own presence.
     "waiting_room": {
       "$classId": {
         ".read": "auth != null",
@@ -227,7 +216,7 @@
       }
     },
 
-    // ─── Activity Bank ───────────────────────────────────────────────────────
+    // ─── Activity Bank — faculty-scoped ──────────────────────────────────────
     "activity_bank": {
       "$facultyId": {
         ".read": "auth != null && auth.uid === $facultyId",
@@ -243,8 +232,7 @@
       }
     },
 
-    // ─── Architect Sessions ───────────────────────────────────────────────────
-    // Bot Architect session data is server-managed; no direct client writes.
+    // ─── Architect Sessions — server-managed ─────────────────────────────────
     "architect_sessions": {
       "$sessionId": {
         ".read": "auth != null",
@@ -260,7 +248,7 @@
       }
     },
 
-    // ─── System Runtime ──────────────────────────────────────────────────────
+    // ─── System Runtime — server-managed ─────────────────────────────────────
     "system": {
       ".read": false,
       ".write": false
@@ -271,3 +259,4 @@
     ".write": false
   }
 }
+
