@@ -1748,8 +1748,14 @@ export async function handler(event){
       const normalizedIds = Object.prototype.hasOwnProperty.call(body, "linkedUnitIds")
         ? normalizeLinkedUnitIds(body.linkedUnitIds)
         : normalizeLinkedUnits(body.linkedUnits).map(item => item.unitId);
+      const normalizedUnitsInput = normalizeLinkedUnits(body.linkedUnits, normalizedIds);
+      const roleByUnitId = new Map(normalizedUnitsInput.map(item => [item.unitId, item.role]));
+      const normalizedUnits = normalizedIds.map(unitId => ({
+        unitId,
+        role: roleByUnitId.get(unitId) || LESSON_LINKED_UNIT_ROLE_NONE
+      }));
       payload.linkedUnitIds = normalizedIds;
-      payload.linkedUnits = normalizeLinkedUnits(body.linkedUnits, normalizedIds);
+      payload.linkedUnits = normalizedUnits;
     }
     if (Object.prototype.hasOwnProperty.call(body, "lessonDate")) {
       payload.lessonDate = String(body.lessonDate || "").trim() || null;

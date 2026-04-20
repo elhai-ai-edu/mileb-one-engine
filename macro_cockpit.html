@@ -3665,7 +3665,7 @@ function renderLinkedLearningUnitsPanel(lessonId = resolveActiveLessonId()) {
     const title = String(row.topicName || row.title || "").trim() || `יחידת לימוד ${unitId}`;
     const role = normalizeLinkedUnitRole(linkedUnit.role);
     const roleOptions = LESSON_LINKED_UNIT_ROLE_OPTIONS.map(option => (
-      `<option value="${escapeHtml(option.value)}"${option.value === role ? " selected" : ""}>${escapeHtml(option.label)}</option>`
+      `<option value="${macroEscHtml(option.value)}"${option.value === role ? " selected" : ""}>${escapeHtml(option.label)}</option>`
     )).join("");
     return `<div class="lesson-linked-units-item">
       <div style="display:grid;gap:2px;min-width:0;flex:1;">
@@ -3673,10 +3673,10 @@ function renderLinkedLearningUnitsPanel(lessonId = resolveActiveLessonId()) {
         <div style="font-size:11px;color:#64748b;">${escapeHtml(unitId)}</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
-        <select data-role="linked-unit-role" data-unit-id="${escapeHtml(unitId)}" style="min-width:132px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:12px;color:#334155;">
+        <select data-role="linked-unit-role" data-unit-id="${macroEscHtml(unitId)}" style="min-width:132px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:12px;color:#334155;">
           ${roleOptions}
         </select>
-        <button type="button" class="lesson-linked-units-open-btn" data-role="open-linked-unit" data-unit-id="${escapeHtml(unitId)}">פתח ביחידות לימוד</button>
+        <button type="button" class="lesson-linked-units-open-btn" data-role="open-linked-unit" data-unit-id="${macroEscHtml(unitId)}">פתח ביחידות לימוד</button>
       </div>
     </div>`;
   }).join("");
@@ -3692,14 +3692,24 @@ function renderLinkedLearningUnitsPanel(lessonId = resolveActiveLessonId()) {
     const unitId = String(select.getAttribute("data-unit-id") || "").trim();
     if (!unitId.startsWith("topic_")) return;
     const role = normalizeLinkedUnitRole(select.value);
-    const nextLinkedUnits = resolveLessonLinkedUnitsState(resolvedLessonId).map(item => (
+    const currentLinkedUnits = resolveLessonLinkedUnitsState(resolvedLessonId);
+    const hasTarget = currentLinkedUnits.some(item => item.unitId === unitId);
+    if (!hasTarget) {
+      statusEl.textContent = `${currentLinkedUnits.length} יחידות מקושרות · שיוך לא נמצא`;
+      return;
+    }
+    const nextLinkedUnits = currentLinkedUnits.map(item => (
       item.unitId === unitId ? { ...item, role } : item
     ));
+    const hasChanged = nextLinkedUnits.some((item, idx) => (
+      item.unitId === unitId && item.role !== currentLinkedUnits[idx]?.role
+    ));
+    if (!hasChanged) return;
     setLessonLinkedUnitsState(resolvedLessonId, nextLinkedUnits);
     statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות · שומר...`;
     const persisted = await persistLessonLinkedUnitsForLesson(resolvedLessonId, nextLinkedUnits);
     if (!persisted) {
-      statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות · שגיאה בשמירה`;
+      statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות · שגיאה בשמירת תפקיד היחידה`;
       return;
     }
     statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות`;
