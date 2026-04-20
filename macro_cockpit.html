@@ -682,10 +682,10 @@
   justify-content: center;
   gap: 16px;
   padding: 18px 24px;
-  background: #1e3a8a !important;
+  background: #dbeafe !important;
   color: white !important;
-  border-bottom: 4px solid #1e40af;
-  box-shadow: 0 8px 24px rgba(15,23,42,0.35);
+  border-bottom: 4px solid #93c5fd;
+  box-shadow: 0 8px 24px rgba(59,130,246,0.22);
   margin-top: 10px;
   margin-bottom: 12px;
   position: sticky;
@@ -1003,21 +1003,21 @@ body { background: var(--bg) !important; }
    Phase Selector Cards  (replaces the old 4-tab cockpit nav)
    ───────────────────────────────────────────────────────────────── */
 .phase-card {
-  background: rgba(255,255,255,0.12);
-  border: 2px solid rgba(255,255,255,0.38);
+  background: rgba(255,255,255,0.58);
+  border: 2px solid rgba(30,64,175,0.28);
   border-radius: 12px;
   padding: 10px 26px;
   cursor: pointer;
   transition: background .18s, border-color .18s, box-shadow .18s, color .18s;
   text-align: center;
   min-width: 180px;
-  color: #fff;
+  color: #1e3a8a;
   user-select: none;
 }
-.phase-card:hover { background: rgba(255,255,255,0.24); border-color: #fff; }
+.phase-card:hover { background: #fff; border-color: #60a5fa; }
 .phase-card.active {
-  background: #fff; border-color: #fff; color: #1e3a8a;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.26);
+  background: #fff; border-color: #bfdbfe; color: #1e3a8a;
+  box-shadow: 0 4px 14px rgba(30,64,175,0.18);
 }
 .phase-card-phase {
   font-size: 10px; font-weight: 800; letter-spacing: .7px;
@@ -1026,14 +1026,15 @@ body { background: var(--bg) !important; }
 .phase-card.active .phase-card-phase { color: #4f46e5; opacity: 1; }
 .phase-card-title { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
 .phase-card-meta { font-size: 11px; }
-.phase-card-progress { font-weight: 700; color: #6ee7b7; }
+.phase-card-progress { font-weight: 700; color: #047857; }
 .phase-card.active .phase-card-progress { color: #059669; }
 .phase-card-status {
-  background: rgba(255,255,255,0.18); border-radius: 20px;
+  background: rgba(191,219,254,0.65); border-radius: 20px;
   padding: 2px 10px; font-weight: 700;
+  color: #1e40af;
 }
 .phase-card.active .phase-card-status { background: #ede9fe; color: #4f46e5; }
-.phase-divider-arrow { font-size: 22px; color: rgba(255,255,255,.5); flex-shrink: 0; }
+.phase-divider-arrow { font-size: 22px; color: rgba(30,58,138,.45); flex-shrink: 0; }
 
 /* ─── Wizard Navigation (inside Phase 1) ─── */
 .wizard-nav {
