@@ -1521,6 +1521,51 @@ This allows one bot instance to serve 20+ courses with contextually appropriate 
 
 ---
 
+## PART 33 — STUDENT MODEL SCHEMA (v5.12 Addition — Gap G-52)
+
+> Source: Paraphrase Bot SP + `מסמך תכנון מערכת 1...`. The Session Continuity Token (Part 8) tracks conversation state; the Student Model Schema tracks the learner's evolving competency profile across sessions.
+
+The **Student Model** is a per-student, per-course data structure stored in Firebase at `sessions/{studentId}/{courseId}`. It is written server-side by `chat.js` after each session and read at the start of a new session to personalize the bot's opening move.
+
+### 33.1 Schema Definition
+
+| Field | Type | Set By | Meaning |
+|-------|------|--------|---------|
+| `skill_levels` | object | Bot (runtime) | Per-dimension mastery score (0–3) keyed by skill ID. E.g. `{ topic_sentence: 2, register: 1 }` |
+| `error_patterns` | string[] | Bot (runtime) | Recurring error categories identified across sessions. E.g. `["over-long_sentence", "missing_connector"]` |
+| `attempt_history` | object | Bot (runtime) | `{ taskId: attemptCount }` — tracks how many times a specific task type has been attempted |
+| `progress_flags` | object | Bot (runtime) | Boolean milestones: `{ intro_complete: true, diagnostic_done: false, ... }` |
+| `current_stage` | string | Bot (runtime) | The active FSM stage at end of last session (enables mid-process continuity) |
+| `last_updated` | ISO timestamp | Bot (runtime) | When this record was last written |
+| `learner_population` | string | Instructor (config) | `"immigrant_m1"` / `"haredi_h1"` / `"general"` — for OPAL tool routing |
+| `gender_marker` | string | Bot (first session) | `"m"` / `"f"` — confirmed in the 6-step opening sequence |
+| `session_count` | number | Bot (runtime) | Total number of sessions completed in this course |
+
+### 33.2 Skill Level Scale
+
+| Value | Meaning | Bot Behavior |
+|-------|---------|--------------|
+| `0` | Not yet attempted | Bot runs diagnostic first |
+| `1` | Exposed, not mastered | Scaffolding approach; micro-tasks only |
+| `2` | Developing | Graduated autonomy; hints available on request |
+| `3` | Mastered | Bot shifts to deepening or adjacent skill |
+
+### 33.3 Relationship to Other Parts
+
+| Part | Connection |
+|------|-----------|
+| Part 8 — Session Continuity Token | Token is a conversation-level snapshot; Student Model is the durable competency record |
+| Part 21 — Adaptive Protocols | Adaptive pacing decisions draw on `skill_levels` and `attempt_history` |
+| Part 28 — Variable Types | `skill_levels`, `error_patterns`, `attempt_history` are `DYNAMIC` variables (runtime-only) |
+| Part 29 — KB Architecture | `KB_hints` gating uses `attempt_history`; `KB_L2_errors` uses `learner_population` |
+| OPAL Tier selection (Part 27) | `learner_population` in the Student Model routes students to immigrant or Haredi track |
+
+### 33.4 Privacy and Retention
+
+Student Model records are subject to `classes/{classId}/retentionDate` (set by the instructor). When the retention date passes, `admin_cockpit.html` prompts the institution admin to delete the record. The schema purposefully excludes PII beyond the student's own `userId` key.
+
+---
+
 ## PART 31 — THE BOT ARCHITECT ENGINE
 
 > Added v4.2 — Bot Architect is the meta-layer of the MilEd.One system. It translates raw faculty pedagogical needs into complete, compliant 8-layer System Prompts. It is itself an SPI of the one engine — configured as a teaching-phase, design-function bot.
