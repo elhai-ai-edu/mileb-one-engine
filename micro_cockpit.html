@@ -864,26 +864,47 @@
 #welcome-msg { color: #93c5fd !important; }
 #user-badge  { color: #e2e8f0 !important; }
 
-/* ─── Classroom grid: 2-column layout (matches demo l-layout pattern) ─── */
+/* ─── Classroom container — panels manage their own layout ─── */
 .classroom-grid {
-  display: grid !important;
-  grid-template-columns: 340px 1fr !important;
-  gap: 20px !important;
-  padding: 20px !important;
+  padding: 0 20px 20px;
   background: #f1f5f9;
   min-height: calc(100vh - 80px);
-  align-items: start !important;
   max-width: 1500px;
   margin: 0 auto;
 }
-@media (max-width: 960px) {
-  .classroom-grid { grid-template-columns: 1fr !important; }
-}
-/* Non-live tabs have only one panel — span both columns */
 [data-tab-panel] { padding: 0; }
-[data-tab-panel].active { grid-column: 1 / -1; }
-/* Live tab has two panels — each takes its natural column */
-[data-tab-panel="live"].active { grid-column: auto; }
+/* ─── Live Tab: 3-column layout (שליטה | אורקסטרציה | מעקב) ─── */
+.live-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr 330px;
+  gap: 16px;
+  align-items: start;
+  padding-top: 12px;
+}
+.live-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+@media (max-width: 1280px) {
+  .live-layout { grid-template-columns: 280px 1fr; }
+  .live-col-right { grid-column: 1 / -1; }
+}
+@media (max-width: 800px) {
+  .live-layout { grid-template-columns: 1fr; }
+  .live-col-right { grid-column: auto; }
+}
+/* ─── Cards inside live columns: reset margin-bottom (flex gap handles spacing) ─── */
+.live-col .mc-card,
+.live-col .gatekeeping-panel {
+  margin-bottom: 0;
+}
+/* ─── Student grid inside right column card ─── */
+.live-col-right .student-grid {
+  max-height: 420px;
+  overflow-y: auto;
+}
 
 .avatar-crop-overlay {
   position: fixed;
@@ -1139,198 +1160,342 @@
 <div class="classroom-grid">
 
   <div class="panel" data-tab-panel="live">
+    <!-- Status Bar (full width) -->
     <div id="unread-bar" class="unread-bar" role="button" tabindex="0" onclick="openPresenceModal()" onkeypress="if(event.key==='Enter'){openPresenceModal();}">🔔 יש לך 0 הודעות שלא נקראו · 0/30 Students Present</div>
 
-    <div class="mc-card">
-    <div class="mc-card-head">🎛️ שליטת מרצה</div>
-    <div class="mc-card-body">
+    <!-- ═══════════════════════════════════════════════════
+         3-Column layout: שליטה | אורקסטרציה | מעקב
+    ════════════════════════════════════════════════════ -->
+    <div class="live-layout">
 
-    <div class="field" style="margin-bottom:8px;">
-      <label>תמונת מרצה</label>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <button id="lecturer-avatar-btn" class="lecturer-avatar-btn" onclick="triggerLecturerAvatarUpload()" title="עדכן תמונת מרצה">
-          <img id="lecturer-avatar-preview" alt="avatar" style="display:none;" />
-          <span id="lecturer-avatar-fallback">🧑‍🏫</span>
-        </button>
-        <input id="lecturer-avatar-input" type="file" accept="image/*" style="display:none;" onchange="handleLecturerAvatarUpload(event)">
-        <span style="font-size:12px;color:#64748b;">לחץ לעדכון או החלפת תמונת פרופיל</span>
-      </div>
-    </div>
+      <!-- ════════ LEFT: שליטה והפעלה ════════ -->
+      <div class="live-col live-col-left">
 
-    <div id="activeCourseIndicatorLive" style="display:none;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;font-weight:600;margin-bottom:10px;"></div>
+        <!-- Card: שליטת מרצה -->
+        <div class="mc-card">
+        <div class="mc-card-head">🎛️ שליטת מרצה</div>
+        <div class="mc-card-body">
 
-    <div class="field">
-      <label>בחר בוט / קורס</label>
-      <select id="botSelect"><option value="">טוען...</option></select>
-    </div>
-
-    <div class="field" id="startingBotField" style="display:none;">
-      <label>בוט פתיחה לשיעור</label>
-      <select id="startingBotSelect"></select>
-    </div>
-
-    <div id="activity-picker" class="field" style="display:none;">
-      <label>📋 בחר פעילות לשיעור <span style="font-size:11px;color:#94a3b8;font-weight:normal;">(MVP — נשמרת ב-session; תצוגה בשיעור בפיתוח)</span></label>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <select id="activitySelect" style="flex:1;" onchange="onActivitySelect(this)">
-          <option value="">— ללא פעילות ספציפית —</option>
-        </select>
-        <button class="btn btn-outline" style="font-size:12px;padding:7px 10px;" onclick="loadActivitiesForPicker()">🔄 טען</button>
-      </div>
-      <div id="activityPickerDetail" style="display:none;margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:13px;line-height:1.5;"></div>
-    </div>
-
-    <div id="sessionControls" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
-      <a href="macro_cockpit.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ תכנון ראשי</a>
-      <div id="activeSessionControls" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
-        <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל - כולם פנימה! 🔓</button>
-        <button class="btn btn-outline" id="sendToLobbyBtn" onclick="sendStudentsToLobby()" style="font-size:12px;padding:7px 14px;background:#fff7ed;color:#9a3412;border-color:#fdba74;">🚪 שלח לחדר המתנה</button>
-        <button class="btn btn-green" id="returnFromLobbyBtn" onclick="returnStudentsFromLobby()" style="font-size:12px;padding:7px 14px;display:none;">▶ החזר לשיעור</button>
-        <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
-        <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן הוראה</button>
-      </div>
-    </div>
-
-    <div id="sessionInfo" style="display:none">
-      <div class="session-id-box">
-        <strong>קוד שיעור לתלמידים:</strong><br>
-        <span id="sessionIdDisplay"></span>
-      </div>
-    </div>
-
-    <div class="broadcast-box" style="margin-top:12px;">
-      <div style="padding:10px 0 8px;font-size:12px;font-weight:800;color:#64748b;letter-spacing:.4px;display:flex;align-items:center;gap:6px;border-top:1px solid #e2e8f0;margin-bottom:8px;">
-        <span style="display:inline-block;width:3px;height:14px;border-radius:2px;background:#3b82f6;"></span>📡 שידור לכיתה
-      </div>
-      <div class="field" style="margin-bottom:8px;">
-        <textarea id="broadcastText" aria-label="שידור לכיתה" placeholder="כתוב הודעה מיידית לכל הסטודנטים..."></textarea>
-      </div>
-      <div class="broadcast-controls">
-        <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
-        <button class="broadcast-mic-btn" id="broadcastMicBtn" onclick="toggleBroadcastAudio()" title="הקלט שידור קולי לכל הכיתה">🎙️</button>
-        <button class="broadcast-upload-btn" id="broadcastFileBtn" onclick="document.getElementById('broadcastFileInput').click()" title="העלה קובץ לשידור">📎</button>
-        <input type="file" id="broadcastFileInput" style="display:none;" onchange="handleBroadcastFileUpload(event)">
-      </div>
-      <div id="broadcastHistory" class="broadcast-history"></div>
-      <div class="broadcast-gates">
-        <button class="gate-btn gate-open" onclick="openStageAll()" title="פתח שלב לכל הסטודנטים">🔓 פתח שלב לכולם</button>
-        <button class="gate-btn gate-lock" onclick="lockStageAll()" title="נעל שלב לכל הסטודנטים">🔒 נעל שלב לכולם</button>
-        <button class="gate-btn gate-recall" onclick="recallAllStudents()" title="שלח קריאה מיידית לחזרה לשיעור">🚨 קרא לכולם חזרה</button>
-      </div>
-      <div id="recall-status" class="recall-status"></div>
-
-      <!-- Group Mode quick-activate -->
-      <div id="microGroupModeBox" style="display:none;margin-top:12px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
-        <div style="font-size:12px;font-weight:800;color:#15803d;margin-bottom:6px;">👥 עבודת צוות זמינה</div>
-        <div id="microGroupSprintName" style="font-size:12px;color:#334155;margin-bottom:8px;"></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button id="microActivateGroupBtn" onclick="microActivateGroupMode()"
-            style="padding:6px 14px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
-            👥 הפעל קבוצות
-          </button>
-          <button id="microDeactivateGroupBtn" onclick="microDeactivateGroupMode()" style="display:none;
-            padding:6px 14px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
-            ✕ סיים קבוצות
-          </button>
+        <div class="field" style="margin-bottom:8px;">
+          <label>תמונת מרצה</label>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button id="lecturer-avatar-btn" class="lecturer-avatar-btn" onclick="triggerLecturerAvatarUpload()" title="עדכן תמונת מרצה">
+              <img id="lecturer-avatar-preview" alt="avatar" style="display:none;" />
+              <span id="lecturer-avatar-fallback">🧑‍🏫</span>
+            </button>
+            <input id="lecturer-avatar-input" type="file" accept="image/*" style="display:none;" onchange="handleLecturerAvatarUpload(event)">
+            <span style="font-size:12px;color:#64748b;">לחץ לעדכון תמונת פרופיל</span>
+          </div>
         </div>
-        <div id="microGroupStatusMsg" style="font-size:11px;min-height:14px;margin-top:4px;"></div>
-      </div>
-    </div>
 
-    </div><!-- /.mc-card-body -->
-    </div><!-- /.mc-card שליטת מרצה -->
+        <div id="activeCourseIndicatorLive" style="display:none;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;font-weight:600;margin-bottom:10px;"></div>
 
-    <div class="mc-card">
-    <div class="mc-card-head">🏛 במת המרצה</div>
-    <div class="mc-card-body">
-    <p class="panel-sub" id="dj-booth-status">DJ Booth הוא כלי אופציונלי לדחיפת שלבים מתוך תבנית שיעור</p>
-    <div id="dj-booth-steps" class="dj-booth-steps">
-      <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
-    </div>
-
-    <div class="mc-heatmap-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
-        <div>
-          <div style="font-size:14px;font-weight:800;color:#0f172a;">Heatmap ספרינטים</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px;">מבט מהיר על מי תקוע, מי מתקדם מהר, ובאיזה ספרינט הכיתה נמצאת.</div>
+        <div class="field">
+          <label>בחר בוט / קורס</label>
+          <select id="botSelect"><option value="">טוען...</option></select>
         </div>
-        <button class="btn btn-outline" type="button" onclick="loadPacingHeatmap()" style="font-size:12px;padding:7px 12px;">רענן Heatmap</button>
-      </div>
-      <div id="pacingHeatmap" style="display:grid;gap:8px;">
-        <div class="thread-empty">אין עדיין נתוני pacing פעילים</div>
-      </div>
-    </div>
-    </div><!-- /.mc-card-body -->
-    </div><!-- /.mc-card במת המרצה -->
 
-    <div class="gatekeeping-panel">
-      <div class="gatekeeping-head">
-        <div>
-          <div style="font-size:14px;font-weight:800;color:#0f172a;">Gatekeeping Queue</div>
-          <div style="font-size:12px;color:#64748b;">תור בדיקות להגשות לפי הקורס שנבחר כרגע.</div>
+        <div class="field" id="startingBotField" style="display:none;">
+          <label>בוט פתיחה לשיעור</label>
+          <select id="startingBotSelect"></select>
         </div>
-        <button class="btn btn-outline" type="button" onclick="loadGatekeepingQueue()" style="font-size:12px;padding:7px 12px;">רענן תור</button>
-      </div>
 
-      <div class="gatekeeping-body">
-      <div class="gatekeeping-filter-row">
-        <input id="gatekeepingStageFilter" class="lp-input" style="margin:0;max-width:180px;" placeholder="סינון לפי Stage ID">
-        <input id="gatekeepingStudentFilter" class="lp-input" style="margin:0;max-width:180px;" placeholder="סינון לפי Student ID">
-        <select id="gatekeepingStatusFilter" class="lp-input" style="margin:0;max-width:170px;">
-          <option value="">כל הסטטוסים</option>
-          <option value="pending_review">ממתין לבדיקה</option>
-          <option value="approved">מאושר</option>
-          <option value="rejected">נדחה</option>
-          <option value="review_required">נדרש תיקון</option>
-        </select>
-        <input id="gatekeepingFromDate" type="date" class="lp-input" style="margin:0;max-width:170px;" title="מתאריך">
-        <input id="gatekeepingToDate" type="date" class="lp-input" style="margin:0;max-width:170px;" title="עד תאריך">
-        <input id="gatekeepingSearchText" class="lp-input" style="margin:0;max-width:200px;" placeholder="חיפוש חופשי">
-        <select id="gatekeepingSortBy" class="lp-input" style="margin:0;max-width:210px;">
-          <option value="submitted_desc">מיון: חדש לישן</option>
-          <option value="submitted_asc">מיון: ישן לחדש</option>
-          <option value="student_asc">מיון: סטודנט א-ת</option>
-          <option value="status_asc">מיון: לפי סטטוס</option>
-        </select>
-        <select id="gatekeepingPageSize" class="lp-input" style="margin:0;max-width:140px;">
-          <option value="20">20 לעמוד</option>
-          <option value="50" selected>50 לעמוד</option>
-          <option value="100">100 לעמוד</option>
-        </select>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;font-weight:700;">
-          <input id="gatekeepingSelectAll" type="checkbox">
-          סמן הכל
-        </label>
-        <span id="gatekeepingSelectionCount" style="font-size:12px;color:#64748b;"></span>
-        <span id="gatekeepingQueueStatus" style="font-size:12px;color:#475569;"></span>
-      </div>
-
-      <textarea id="gatekeepingFeedback" class="lp-textarea" rows="2" style="margin:0;" placeholder="משוב להערכה (אופציונלי)"></textarea>
-      <div class="gatekeeping-actions">
-        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="clearGatekeepingSelection()">נקה בחירה</button>
-        <button class="btn btn-green" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('approved')">אישור נבחרים</button>
-        <button class="btn btn-red" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('rejected')">דחיית נבחרים</button>
-        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('review_required')">נדרש תיקון לנבחרים</button>
-        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="retryGatekeepingFailedBulk()">נסה שוב נכשלים</button>
-        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="stopGatekeepingBulk()">עצור Bulk</button>
-        <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="exportGatekeepingAuditCsv()">ייצא Audit CSV</button>
-      </div>
-      <div class="gatekeeping-filter-row" style="justify-content:space-between;">
-        <span id="gatekeepingBulkProgress" style="font-size:12px;color:#1e293b;"></span>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(-1)">הקודם</button>
-          <span id="gatekeepingPageInfo" style="font-size:12px;color:#475569;"></span>
-          <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(1)">הבא</button>
+        <div id="activity-picker" class="field" style="display:none;">
+          <label>📋 בחר פעילות לשיעור <span style="font-size:11px;color:#94a3b8;font-weight:normal;">(MVP)</span></label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="activitySelect" style="flex:1;" onchange="onActivitySelect(this)">
+              <option value="">— ללא פעילות ספציפית —</option>
+            </select>
+            <button class="btn btn-outline" style="font-size:12px;padding:7px 10px;" onclick="loadActivitiesForPicker()">🔄</button>
+          </div>
+          <div id="activityPickerDetail" style="display:none;margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:13px;line-height:1.5;"></div>
         </div>
-      </div>
-      <div id="gatekeepingQueueList" style="display:grid;gap:8px;">
-        <div class="gatekeeping-empty">בחר קורס כדי לטעון תור Gatekeeping</div>
-      </div>
-      </div><!-- /.gatekeeping-body -->
-    </div>
-  </div>
+
+        <div id="sessionControls" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
+          <a href="macro_cockpit.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ תכנון ראשי</a>
+          <div id="activeSessionControls" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
+            <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל 🔓</button>
+            <button class="btn btn-outline" id="sendToLobbyBtn" onclick="sendStudentsToLobby()" style="font-size:12px;padding:7px 14px;background:#fff7ed;color:#9a3412;border-color:#fdba74;">🚪 שלח לממתינה</button>
+            <button class="btn btn-green" id="returnFromLobbyBtn" onclick="returnStudentsFromLobby()" style="font-size:12px;padding:7px 14px;display:none;">▶ החזר לשיעור</button>
+            <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
+            <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן</button>
+          </div>
+        </div>
+
+        <div id="sessionInfo" style="display:none">
+          <div class="session-id-box">
+            <strong>קוד שיעור לתלמידים:</strong><br>
+            <span id="sessionIdDisplay"></span>
+          </div>
+        </div>
+
+        </div><!-- /.mc-card-body -->
+        </div><!-- /.mc-card שליטת מרצה -->
+
+        <!-- Card: במת המרצה (DJ Booth) -->
+        <div class="mc-card">
+        <div class="mc-card-head">🏛 במת המרצה</div>
+        <div class="mc-card-body">
+        <p class="panel-sub" id="dj-booth-status">DJ Booth — דחיפת שלבים מתבנית השיעור</p>
+        <div id="dj-booth-steps" class="dj-booth-steps">
+          <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
+        </div>
+        </div><!-- /.mc-card-body -->
+        </div><!-- /.mc-card במת המרצה -->
+
+        <!-- Card: מצב שיעור (Live Phase) + קבוצות -->
+        <div class="mc-card">
+        <div class="mc-card-head">🏷️ מצב שיעור וקבוצות</div>
+        <div class="mc-card-body">
+
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:8px;letter-spacing:.3px;">🏷️ Live Phase — עדכן מה קורה עכשיו</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('listening')" style="font-size:12px;padding:6px 10px;">🎧 מקשיבים</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('interactive')" style="font-size:12px;padding:6px 10px;">💬 דיון</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('solo')" style="font-size:12px;padding:6px 10px;">✍️ עצמאי</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('pairs')" style="font-size:12px;padding:6px 10px;">👥 זוגות</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('plenary')" style="font-size:12px;padding:6px 10px;">🏛️ מליאה</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('')" style="font-size:12px;padding:6px 10px;">✕ נקה</button>
+            <button class="btn btn-outline" type="button" onclick="resetPhaseToActivity()" style="font-size:11px;padding:5px 8px;background:#f0fdf4;color:#166534;border-color:#bbf7d0;" title="נגזר אוטומטית ממצב הפעילות הפעילה — מבטל override ידני">📌 הצמד לפעילות</button>
+          </div>
+          <div id="livePhaseStatus" style="font-size:12px;color:#475569;margin-top:6px;"></div>
+        </div>
+
+        <!-- Group Mode -->
+        <div id="microGroupModeBox" style="display:none;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;margin-top:4px;">
+          <div style="font-size:12px;font-weight:800;color:#15803d;margin-bottom:6px;">👥 עבודת צוות זמינה</div>
+          <div id="microGroupSprintName" style="font-size:12px;color:#334155;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button id="microActivateGroupBtn" onclick="microActivateGroupMode()"
+              style="padding:6px 14px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
+              👥 הפעל קבוצות
+            </button>
+            <button id="microDeactivateGroupBtn" onclick="microDeactivateGroupMode()" style="display:none;
+              padding:6px 14px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
+              ✕ סיים קבוצות
+            </button>
+          </div>
+          <div id="microGroupStatusMsg" style="font-size:11px;min-height:14px;margin-top:4px;"></div>
+        </div>
+
+        </div><!-- /.mc-card-body -->
+        </div><!-- /.mc-card מצב שיעור -->
+
+      </div><!-- /live-col-left -->
+
+      <!-- ════════ CENTER: אורקסטרציה בזמן אמת ════════ -->
+      <div class="live-col live-col-center">
+
+        <!-- Card: שידור לכיתה -->
+        <div class="mc-card">
+        <div class="mc-card-head">📡 שידור לכיתה</div>
+        <div class="mc-card-body">
+
+        <div class="field" style="margin-bottom:8px;">
+          <textarea id="broadcastText" aria-label="שידור לכיתה" placeholder="כתוב הודעה מיידית לכל הסטודנטים..." style="width:100%;box-sizing:border-box;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;font-family:inherit;font-size:13px;resize:vertical;min-height:64px;"></textarea>
+        </div>
+        <div class="broadcast-controls">
+          <button class="btn btn-blue" id="broadcastBtn" onclick="broadcast()" disabled>📡 שדר לכולם</button>
+          <button class="broadcast-mic-btn" id="broadcastMicBtn" onclick="toggleBroadcastAudio()" title="הקלט שידור קולי לכל הכיתה">🎙️</button>
+          <button class="broadcast-upload-btn" id="broadcastFileBtn" onclick="document.getElementById('broadcastFileInput').click()" title="העלה קובץ לשידור">📎</button>
+          <input type="file" id="broadcastFileInput" style="display:none;" onchange="handleBroadcastFileUpload(event)">
+        </div>
+        <div id="broadcastHistory" class="broadcast-history"></div>
+        <div class="broadcast-gates">
+          <button class="gate-btn gate-open" onclick="openStageAll()" title="פתח שלב לכל הסטודנטים">🔓 פתח שלב לכולם</button>
+          <button class="gate-btn gate-lock" onclick="lockStageAll()" title="נעל שלב לכל הסטודנטים">🔒 נעל שלב לכולם</button>
+          <button class="gate-btn gate-recall" onclick="recallAllStudents()" title="שלח קריאה מיידית לחזרה לשיעור">🚨 קרא לכולם חזרה</button>
+        </div>
+        <div id="recall-status" class="recall-status"></div>
+
+        </div><!-- /.mc-card-body -->
+        </div><!-- /.mc-card שידור -->
+
+        <!-- Card: כרטיסי כניסה -->
+        <div class="mc-card">
+        <div class="mc-card-head">🧩 כרטיסי כניסה (לייב)</div>
+        <div class="mc-card-body">
+        <div id="entrance-ticket-list" style="max-height:240px;overflow:auto;display:grid;gap:6px;">
+          <div class="thread-empty">תשובות יופיעו כאן לאחר שליחת משימת הכניסה</div>
+        </div>
+        </div><!-- /.mc-card-body -->
+        </div><!-- /.mc-card כרטיסי כניסה -->
+
+        <!-- Card: Heatmap ספרינטים -->
+        <div class="mc-card">
+        <div class="mc-card-head">📊 Heatmap ספרינטים
+          <span style="margin-right:auto;">
+            <button class="btn btn-outline" type="button" onclick="loadPacingHeatmap()" style="font-size:12px;padding:5px 10px;">רענן</button>
+          </span>
+        </div>
+        <div class="mc-card-body">
+        <div style="font-size:12px;color:#64748b;margin-bottom:10px;">מבט מהיר על מי תקוע, מי מתקדם ובאיזה ספרינט הכיתה נמצאת.</div>
+        <div id="pacingHeatmap" style="display:grid;gap:8px;">
+          <div class="thread-empty">אין עדיין נתוני pacing פעילים</div>
+        </div>
+        </div><!-- /.mc-card-body -->
+        </div><!-- /.mc-card heatmap -->
+
+      </div><!-- /live-col-center -->
+
+      <!-- ════════ RIGHT: מעקב ואיכות ════════ -->
+      <div class="live-col live-col-right">
+
+        <!-- Card: מצב הכיתה בזמן אמת + studentGrid -->
+        <div class="mc-card">
+        <div class="mc-card-head">
+          👥 מצב הכיתה בזמן אמת
+          <span style="margin-right:auto;display:flex;align-items:center;gap:8px;">
+            <span class="live-count"><span id="studentCount">0</span> תלמידים</span>
+            <span id="waiting-pressure" style="display:inline-flex;align-items:center;gap:6px;background:#fff7ed;color:#9a3412;border:1px solid #fdba74;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;">⏳ ממתינים: <span id="waitingCount">0</span></span>
+          </span>
+        </div>
+        <div id="studentGrid" class="student-grid">
+          <div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <p>פתח שיעור כדי לראות את התלמידים</p>
+          </div>
+        </div>
+        </div><!-- /.mc-card student grid -->
+
+        <!-- Card: מפגש חי (Moodle Zoom) -->
+        <div class="mc-card">
+        <div class="mc-card-head">🎥 מפגש חי (Moodle Zoom) <span class="mc-sub">ניהול קישורי שיעור חי והקלטה</span></div>
+        <div class="mc-card-body">
+
+        <div style="display:grid;gap:10px;padding:12px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="field" style="margin:0;">
+              <label>מקור המפגש</label>
+              <select id="meetingSourceSelect" class="lp-input" style="margin:0;">
+                <option value="manual">Manual — קישור ידני</option>
+                <option value="moodle_zoom">Moodle Zoom Plugin</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0;">
+              <label>סטטוס מפגש</label>
+              <select id="meetingStatusSelect" class="lp-input" style="margin:0;">
+                <option value="scheduled">📅 מתוכנן</option>
+                <option value="live">🔴 חי עכשיו</option>
+                <option value="ended">✅ הסתיים</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" style="margin:0;">
+            <label>כותרת המפגש (לתצוגת הסטודנטים)</label>
+            <input id="meetingTitleInput" type="text" class="lp-input" style="margin:0;" placeholder="לדוג׳: שיעור 5 — ניתוח מקורות">
+          </div>
+          <div class="field" style="margin:0;">
+            <label>קישור הצטרפות לזום (joinUrl)</label>
+            <input id="meetingJoinUrlInput" type="url" class="lp-input" style="margin:0;" placeholder="https://zoom.us/j/...">
+          </div>
+          <div class="field" style="margin:0;">
+            <label>מזהה פעילות Moodle (אופציונלי)</label>
+            <input id="meetingMoodleIdInput" type="text" class="lp-input" style="margin:0;" placeholder="Activity ID מ-Moodle">
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <button class="btn btn-blue" type="button" onclick="saveMeetingInfo()" style="font-size:12px;padding:7px 14px;">💾 שמור פרטי מפגש</button>
+            <button class="btn btn-green" type="button" id="meetingJoinHostBtn" onclick="joinMeetingAsHost()" style="font-size:12px;padding:7px 14px;" disabled>🎙️ כניסה כמנחה</button>
+            <span id="meetingInfoStatus" style="font-size:12px;color:#475569;"></span>
+          </div>
+          <div style="border-top:1px solid #dbeafe;padding-top:10px;display:grid;gap:6px;">
+            <div style="font-size:13px;font-weight:700;color:#0f172a;">🎞️ הקלטת שיעור</div>
+            <input id="meetingRecordingUrlInput" type="url" class="lp-input" style="margin:0;" placeholder="https://zoom.us/rec/...">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <button class="btn btn-outline" type="button" onclick="publishRecordingUrl()" style="font-size:12px;padding:7px 14px;">📤 פרסם הקלטה לסטודנטים</button>
+              <span id="meetingRecordingStatus" style="font-size:12px;color:#475569;"></span>
+            </div>
+          </div>
+          <div style="border-top:1px solid #dbeafe;padding-top:10px;display:grid;gap:6px;">
+            <div style="font-size:13px;font-weight:700;color:#0f172a;">🗣️ דובר ראשי (Speaker Focus)</div>
+            <div style="font-size:12px;color:#64748b;">סמן את הדובר הראשי עכשיו — הסטודנטים יראו באנר חי.</div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;">
+              <input id="speakerFocusInput" type="text" class="lp-input" style="margin:0;" placeholder="לדוג׳: מריאם — שיתוף חוויה">
+              <button class="btn btn-blue" type="button" onclick="setSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">📢 הגדר</button>
+              <button class="btn btn-outline" type="button" onclick="clearSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">✕ נקה</button>
+            </div>
+            <div id="speakerFocusStatus" style="font-size:12px;color:#475569;"></div>
+          </div>
+        </div>
+
+        </div><!-- /.mc-card-body -->
+        </div><!-- /.mc-card מפגש חי -->
+
+        <!-- Gatekeeping Queue -->
+        <div class="gatekeeping-panel">
+          <div class="gatekeeping-head">
+            <div>
+              <div style="font-size:14px;font-weight:800;color:#0f172a;">Gatekeeping Queue</div>
+              <div style="font-size:12px;color:#64748b;">תור בדיקות להגשות לפי הקורס שנבחר כרגע.</div>
+            </div>
+            <button class="btn btn-outline" type="button" onclick="loadGatekeepingQueue()" style="font-size:12px;padding:7px 12px;">רענן תור</button>
+          </div>
+
+          <div class="gatekeeping-body">
+          <div class="gatekeeping-filter-row">
+            <input id="gatekeepingStageFilter" class="lp-input" style="margin:0;max-width:180px;" placeholder="סינון לפי Stage ID">
+            <input id="gatekeepingStudentFilter" class="lp-input" style="margin:0;max-width:180px;" placeholder="סינון לפי Student ID">
+            <select id="gatekeepingStatusFilter" class="lp-input" style="margin:0;max-width:170px;">
+              <option value="">כל הסטטוסים</option>
+              <option value="pending_review">ממתין לבדיקה</option>
+              <option value="approved">מאושר</option>
+              <option value="rejected">נדחה</option>
+              <option value="review_required">נדרש תיקון</option>
+            </select>
+            <input id="gatekeepingFromDate" type="date" class="lp-input" style="margin:0;max-width:170px;" title="מתאריך">
+            <input id="gatekeepingToDate" type="date" class="lp-input" style="margin:0;max-width:170px;" title="עד תאריך">
+            <input id="gatekeepingSearchText" class="lp-input" style="margin:0;max-width:200px;" placeholder="חיפוש חופשי">
+            <select id="gatekeepingSortBy" class="lp-input" style="margin:0;max-width:210px;">
+              <option value="submitted_desc">מיון: חדש לישן</option>
+              <option value="submitted_asc">מיון: ישן לחדש</option>
+              <option value="student_asc">מיון: סטודנט א-ת</option>
+              <option value="status_asc">מיון: לפי סטטוס</option>
+            </select>
+            <select id="gatekeepingPageSize" class="lp-input" style="margin:0;max-width:140px;">
+              <option value="20">20 לעמוד</option>
+              <option value="50" selected>50 לעמוד</option>
+              <option value="100">100 לעמוד</option>
+            </select>
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#475569;font-weight:700;">
+              <input id="gatekeepingSelectAll" type="checkbox">
+              סמן הכל
+            </label>
+            <span id="gatekeepingSelectionCount" style="font-size:12px;color:#64748b;"></span>
+            <span id="gatekeepingQueueStatus" style="font-size:12px;color:#475569;"></span>
+          </div>
+
+          <textarea id="gatekeepingFeedback" class="lp-textarea" rows="2" style="margin:0;" placeholder="משוב להערכה (אופציונלי)"></textarea>
+          <div class="gatekeeping-actions">
+            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="clearGatekeepingSelection()">נקה בחירה</button>
+            <button class="btn btn-green" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('approved')">אישור נבחרים</button>
+            <button class="btn btn-red" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('rejected')">דחיית נבחרים</button>
+            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('review_required')">נדרש תיקון לנבחרים</button>
+            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="retryGatekeepingFailedBulk()">נסה שוב נכשלים</button>
+            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="stopGatekeepingBulk()">עצור Bulk</button>
+            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="exportGatekeepingAuditCsv()">ייצא Audit CSV</button>
+          </div>
+          <div class="gatekeeping-filter-row" style="justify-content:space-between;">
+            <span id="gatekeepingBulkProgress" style="font-size:12px;color:#1e293b;"></span>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(-1)">הקודם</button>
+              <span id="gatekeepingPageInfo" style="font-size:12px;color:#475569;"></span>
+              <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(1)">הבא</button>
+            </div>
+          </div>
+          <div id="gatekeepingQueueList" style="display:grid;gap:8px;">
+            <div class="gatekeeping-empty">בחר קורס כדי לטעון תור Gatekeeping</div>
+          </div>
+          </div><!-- /.gatekeeping-body -->
+        </div><!-- /.gatekeeping-panel -->
+
+      </div><!-- /live-col-right -->
+
+    </div><!-- /live-layout -->
+
+  </div><!-- /live panel -->
 
   <div class="panel" data-tab-panel="prep">
 
@@ -1669,131 +1834,6 @@
   </div>
 
   <!-- RIGHT: Live view -->
-  <div class="panel" data-tab-panel="live">
-    <div class="mc-card">
-    <div class="mc-card-head">
-      👥 מצב הכיתה בזמן אמת
-      <span style="margin-right:auto;display:flex;align-items:center;gap:8px;">
-        <span class="live-count"><span id="studentCount">0</span> תלמידים</span>
-        <span id="waiting-pressure" style="display:inline-flex;align-items:center;gap:6px;background:#fff7ed;color:#9a3412;border:1px solid #fdba74;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700;">⏳ ממתינים: <span id="waitingCount">0</span></span>
-      </span>
-    </div>
-
-    <div class="mc-card-body">
-    <div style="margin-bottom:14px;padding:12px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;">
-      <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:8px;">🧩 כרטיסי כניסה (לייב)</div>
-      <div id="entrance-ticket-list" style="max-height:180px;overflow:auto;display:grid;gap:6px;">
-        <div class="thread-empty">תשובות יופיעו כאן לאחר שליחת משימת הכניסה</div>
-      </div>
-    </div>
-    </div><!-- /.mc-card-body -->
-    </div><!-- /.mc-card student status -->
-
-    <!-- ─── Live Meeting (Moodle Zoom) Panel ─── -->
-    <div class="mc-card">
-    <div class="mc-card-head">🎥 מפגש חי (Moodle Zoom) <span class="mc-sub">ניהול קישורי שיעור חי והקלטה</span></div>
-    <div class="mc-card-body">
-
-    <div style="display:grid;gap:12px;padding:14px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;">
-      <!-- Source + Status row -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <div class="field" style="margin:0;">
-          <label>מקור המפגש</label>
-          <select id="meetingSourceSelect" class="lp-input" style="margin:0;">
-            <option value="manual">Manual — קישור ידני</option>
-            <option value="moodle_zoom">Moodle Zoom Plugin</option>
-          </select>
-        </div>
-        <div class="field" style="margin:0;">
-          <label>סטטוס מפגש</label>
-          <select id="meetingStatusSelect" class="lp-input" style="margin:0;">
-            <option value="scheduled">📅 מתוכנן</option>
-            <option value="live">🔴 חי עכשיו</option>
-            <option value="ended">✅ הסתיים</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Title -->
-      <div class="field" style="margin:0;">
-        <label>כותרת המפגש (לתצוגת הסטודנטים)</label>
-        <input id="meetingTitleInput" type="text" class="lp-input" style="margin:0;" placeholder="לדוג׳: שיעור 5 — ניתוח מקורות">
-      </div>
-
-      <!-- Join URL -->
-      <div class="field" style="margin:0;">
-        <label>קישור הצטרפות לזום (joinUrl)</label>
-        <input id="meetingJoinUrlInput" type="url" class="lp-input" style="margin:0;" placeholder="https://zoom.us/j/...">
-      </div>
-
-      <!-- Moodle Activity ID (optional) -->
-      <div class="field" style="margin:0;">
-        <label>מזהה פעילות Moodle (אופציונלי)</label>
-        <input id="meetingMoodleIdInput" type="text" class="lp-input" style="margin:0;" placeholder="Activity ID מ-Moodle">
-      </div>
-
-      <!-- Save + Join buttons -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-blue" type="button" onclick="saveMeetingInfo()" style="font-size:12px;padding:7px 14px;">💾 שמור פרטי מפגש</button>
-        <button class="btn btn-green" type="button" id="meetingJoinHostBtn" onclick="joinMeetingAsHost()" style="font-size:12px;padding:7px 14px;" disabled>🎙️ כניסה כמנחה</button>
-        <span id="meetingInfoStatus" style="font-size:12px;color:#475569;"></span>
-      </div>
-
-      <!-- Recording section -->
-      <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:8px;">
-        <div style="font-size:13px;font-weight:700;color:#0f172a;">🎞️ הקלטת שיעור (לאחר סיום)</div>
-        <div class="field" style="margin:0;">
-          <label>קישור להקלטה (recordingUrl)</label>
-          <input id="meetingRecordingUrlInput" type="url" class="lp-input" style="margin:0;" placeholder="https://zoom.us/rec/...">
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-outline" type="button" onclick="publishRecordingUrl()" style="font-size:12px;padding:7px 14px;">📤 פרסם הקלטה לסטודנטים</button>
-          <span id="meetingRecordingStatus" style="font-size:12px;color:#475569;"></span>
-        </div>
-      </div>
-
-      <!-- Speaker Focus section -->
-      <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:8px;">
-        <div style="font-size:13px;font-weight:700;color:#0f172a;">🗣️ דובר ראשי (Speaker Focus)</div>
-        <div style="font-size:12px;color:#64748b;">סמן את הדובר הראשי עכשיו — הסטודנטים יראו באנר חי בתצוגת השיעור.</div>
-        <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;">
-          <div class="field" style="margin:0;">
-            <label>שם/תיאור הדובר</label>
-            <input id="speakerFocusInput" type="text" class="lp-input" style="margin:0;" placeholder="לדוג׳: מריאם — שיתוף חוויה">
-          </div>
-          <button class="btn btn-blue" type="button" onclick="setSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">📢 הגדר</button>
-          <button class="btn btn-outline" type="button" onclick="clearSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">✕ נקה</button>
-        </div>
-        <div id="speakerFocusStatus" style="font-size:12px;color:#475569;"></div>
-      </div>
-
-        <!-- Live Phase section -->
-        <div style="border-top:1px solid #dbeafe;padding-top:12px;display:grid;gap:8px;">
-          <div style="font-size:13px;font-weight:700;color:#0f172a;">🏷️ מצב שיעור (Live Phase)</div>
-          <div style="font-size:12px;color:#64748b;">עדכן את הסטודנטים מה קורה עכשיו — הבאדג׳ יוצג בזמן אמת בתצוגת השיעור.</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('listening')" style="font-size:12px;padding:6px 12px;">🎧 מקשיבים</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('interactive')" style="font-size:12px;padding:6px 12px;">💬 דיון</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('solo')" style="font-size:12px;padding:6px 12px;">✍️ עצמאי</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('pairs')" style="font-size:12px;padding:6px 12px;">👥 זוגות</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('plenary')" style="font-size:12px;padding:6px 12px;">🏛️ מליאה</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('')" style="font-size:12px;padding:6px 12px;">✕ נקה</button>
-            <button class="btn btn-outline" type="button" onclick="resetPhaseToActivity()" style="font-size:12px;padding:6px 12px;background:#f0fdf4;color:#166534;border-color:#bbf7d0;" title="נגזר אוטומטית ממצב הפעילות הפעילה — מבטל override ידני">📌 הצמד לפעילות</button>
-          </div>
-          <div id="livePhaseStatus" style="font-size:12px;color:#475569;"></div>
-        </div>
-      </div>
-
-    </div><!-- /.mc-card-body -->
-    </div><!-- /.mc-card live meeting -->
-
-    <div id="studentGrid" class="student-grid">
-      <div class="empty-state">
-        <div class="empty-state-icon">📭</div>
-        <p>פתח שיעור כדי לראות את התלמידים</p>
-      </div>
-    </div>
-  </div>
 
 </div>
 
