@@ -1184,7 +1184,7 @@
               <span id="lecturer-avatar-fallback">🧑‍🏫</span>
             </button>
             <input id="lecturer-avatar-input" type="file" accept="image/*" style="display:none;" onchange="handleLecturerAvatarUpload(event)">
-            <span style="font-size:12px;color:#64748b;">לחץ לעדכון תמונת פרופיל</span>
+            <span style="font-size:12px;color:#64748b;">לחץ לעדכון או החלפת תמונת פרופיל</span>
           </div>
         </div>
 
@@ -1206,7 +1206,7 @@
             <select id="activitySelect" style="flex:1;" onchange="onActivitySelect(this)">
               <option value="">— ללא פעילות ספציפית —</option>
             </select>
-            <button class="btn btn-outline" style="font-size:12px;padding:7px 10px;" onclick="loadActivitiesForPicker()">🔄</button>
+            <button class="btn btn-outline" style="font-size:12px;padding:7px 10px;" onclick="loadActivitiesForPicker()">🔄 טען</button>
           </div>
           <div id="activityPickerDetail" style="display:none;margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:13px;line-height:1.5;"></div>
         </div>
@@ -1216,11 +1216,11 @@
           <a href="macro_cockpit.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ תכנון ראשי</a>
           <div id="activeSessionControls" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
             <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
-            <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל 🔓</button>
-            <button class="btn btn-outline" id="sendToLobbyBtn" onclick="sendStudentsToLobby()" style="font-size:12px;padding:7px 14px;background:#fff7ed;color:#9a3412;border-color:#fdba74;">🚪 שלח לממתינה</button>
+            <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל - כולם פנימה! 🔓</button>
+            <button class="btn btn-outline" id="sendToLobbyBtn" onclick="sendStudentsToLobby()" style="font-size:12px;padding:7px 14px;background:#fff7ed;color:#9a3412;border-color:#fdba74;">🚪 שלח לחדר המתנה</button>
             <button class="btn btn-green" id="returnFromLobbyBtn" onclick="returnStudentsFromLobby()" style="font-size:12px;padding:7px 14px;display:none;">▶ החזר לשיעור</button>
             <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
-            <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן</button>
+            <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן הוראה</button>
           </div>
         </div>
 
@@ -1238,7 +1238,7 @@
         <div class="mc-card">
         <div class="mc-card-head">🏛 במת המרצה</div>
         <div class="mc-card-body">
-        <p class="panel-sub" id="dj-booth-status">DJ Booth — דחיפת שלבים מתבנית השיעור</p>
+        <p class="panel-sub" id="dj-booth-status">DJ Booth הוא כלי אופציונלי לדחיפת שלבים מתוך תבנית שיעור</p>
         <div id="dj-booth-steps" class="dj-booth-steps">
           <div class="dj-empty">הגדר שלבים בלוח השיעורים כדי להציג אותם כאן</div>
         </div>
