@@ -1137,11 +1137,59 @@ body { background: var(--bg) !important; }
   flex-direction: column;
 }
 .lesson-block-overview { order: 1; }
-.lesson-block-flow { order: 2; }
-.lesson-block-preclass { order: 3; }
-.lesson-block-resources { order: 4; }
-.lesson-block-dj { order: 5; }
-.lesson-block-sprint { order: 6; }
+.lesson-block-linked-units { order: 2; }
+.lesson-block-flow { order: 3; }
+.lesson-block-preclass { order: 4; }
+.lesson-block-resources { order: 5; }
+.lesson-block-dj { order: 6; }
+.lesson-block-sprint { order: 7; }
+.lesson-linked-units-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.lesson-linked-units-manage-btn {
+  font-size: 12px;
+  padding: 7px 12px;
+}
+.lesson-linked-units-status {
+  font-size: 12px;
+  color: #475569;
+  font-weight: 700;
+}
+.lesson-linked-units-list {
+  display: grid;
+  gap: 8px;
+}
+.lesson-linked-units-item {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+.lesson-linked-units-open-btn {
+  border: 1px solid #bfdbfe;
+  background: #fff;
+  color: #1d4ed8;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.lesson-linked-units-open-btn:hover { background: #eff6ff; }
+.lesson-linked-unit-focus {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
 .lesson-plan-sidebar {
   position: sticky;
   top: calc(var(--cockpit-nav-top, 74px) + 16px);
@@ -1796,6 +1844,18 @@ body { background: var(--bg) !important; }
       <div class="field" style="margin:0;">
         <label for="lesson-objectives">מטרות השיעור</label>
         <textarea id="lesson-objectives" class="lp-textarea" rows="4" placeholder="מטרה בכל שורה"></textarea>
+      </div>
+    </div></div>
+
+    <div class="mc-section lesson-block-linked-units">
+    <div class="mc-section-head">🔗 יחידות לימוד מקושרות<span class="mc-sub">השיעור הפעיל מחובר ליחידות לימוד — לצפייה וניווט מהיר</span></div>
+    <div class="mc-section-body">
+      <div class="lesson-linked-units-actions">
+        <button class="btn btn-outline lesson-linked-units-manage-btn" type="button" onclick="openCourseLinkingForActiveLesson()">⚙️ ניהול שיוך יחידות</button>
+        <span id="lesson-linked-units-status" class="lesson-linked-units-status">טוען...</span>
+      </div>
+      <div id="lesson-linked-units-list" class="lesson-linked-units-list">
+        <div class="thread-empty">טוען יחידות מקושרות…</div>
       </div>
     </div></div>
 
@@ -3186,6 +3246,8 @@ let macroCourseId = presetCourseId || cockpitParams.get("classId") || "";
 let macroBookshelfUnits = [];
 const MAX_SESSION_LESSONS = 14;
 const MAX_TOPIC_LESSONS = 50;
+const LESSON_LINKED_UNIT_FOCUS_MS = 1400;
+const LESSON_LINKED_UNIT_FOCUS_TIMERS = new WeakMap();
 
 if (macroCourseId) {
   loadMacroCourseManagement(macroCourseId);
@@ -3465,6 +3527,71 @@ function summarizeLinkedUnitTitles(linkedUnitIds = []) {
   if (normalized.length > 2) preview.push(`+${normalized.length - 2}`);
   return preview.join(" · ");
 }
+function renderLinkedLearningUnitsPanel(lessonId = resolveActiveLessonId()) {
+  const statusEl = document.getElementById("lesson-linked-units-status");
+  const listEl = document.getElementById("lesson-linked-units-list");
+  if (!statusEl || !listEl) return;
+  const resolvedLessonId = normalizeLessonId(lessonId);
+  if (!resolvedLessonId) {
+    statusEl.textContent = "לא נבחר שיעור פעיל";
+    listEl.innerHTML = '<div class="thread-empty">בחר שיעור כדי לראות יחידות ידע מקושרות</div>';
+    return;
+  }
+  const lessonRow = lessonsMap?.[resolvedLessonId] || {};
+  const linkedUnitIds = normalizeLinkedUnitIds(lessonRow.linkedUnitIds);
+  if (!linkedUnitIds.length) {
+    statusEl.textContent = "0 יחידות מקושרות";
+    listEl.innerHTML = '<div class="thread-empty">אין עדיין יחידות מקושרות לשיעור זה — לחץ על \"ניהול שיוך יחידות\" להגדרה.</div>';
+    return;
+  }
+  statusEl.textContent = `${linkedUnitIds.length} יחידות מקושרות`;
+  listEl.innerHTML = linkedUnitIds.map((unitId, index) => {
+    const row = learningUnitsMap?.[unitId] || {};
+    const title = String(row.topicName || row.title || "").trim() || `יחידת לימוד ${unitId}`;
+    return `<div class="lesson-linked-units-item">
+      <div>
+        <div><strong>${escapeHtml(unitId)}</strong> · ${escapeHtml(title)}</div>
+      </div>
+      <button type="button" class="lesson-linked-units-open-btn" data-role="open-linked-unit" data-unit-id="${escapeHtml(unitId)}">פתח ביחידות לימוד</button>
+    </div>`;
+  }).join("");
+  listEl.onclick = (event) => {
+    const button = event.target?.closest?.("button[data-role='open-linked-unit']");
+    if (!button || !listEl.contains(button)) return;
+    const unitId = String(button.getAttribute("data-unit-id") || "").trim();
+    openCourseLinkingForActiveLesson({ focusUnitId: unitId });
+  };
+}
+function openCourseLinkingForActiveLesson({ focusUnitId = "" } = {}) {
+  const lessonId = resolveActiveLessonId();
+  if (!lessonId) return;
+  macroLinkingLessonId = lessonId;
+  switchPhase('course');
+  switchWizardStep(4);
+  macroRenderLessonUnitLinking();
+  const lessonSelect = document.getElementById("macro-link-lesson-select");
+  if (lessonSelect && lessonSelect.value !== lessonId) {
+    lessonSelect.value = lessonId;
+    lessonSelect.dispatchEvent(new Event("change"));
+  }
+  if (!focusUnitId) return;
+  const targetCheckbox = Array.from(document.querySelectorAll("#macro-link-units-list input[data-role='link-unit']"))
+    .find(input => String(input.value || "").trim() === focusUnitId);
+  const unitRow = Array.from(document.querySelectorAll("#macro-learning-units-tbody tr[data-learning-unit-id]"))
+    .find(row => String(row.getAttribute("data-learning-unit-id") || "").trim() === focusUnitId);
+  const targetEl = targetCheckbox || unitRow;
+  if (targetEl) {
+    targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+    const prevTimer = LESSON_LINKED_UNIT_FOCUS_TIMERS.get(targetEl);
+    if (prevTimer) clearTimeout(prevTimer);
+    targetEl.classList.add("lesson-linked-unit-focus");
+    const timer = setTimeout(() => {
+      targetEl.classList.remove("lesson-linked-unit-focus");
+      LESSON_LINKED_UNIT_FOCUS_TIMERS.delete(targetEl);
+    }, LESSON_LINKED_UNIT_FOCUS_MS);
+    LESSON_LINKED_UNIT_FOCUS_TIMERS.set(targetEl, timer);
+  }
+}
 function macroRenderLessonsTable() {
   const tbody = document.getElementById("macro-lessons-tbody");
   if (!tbody) return;
@@ -3568,6 +3695,7 @@ function macroRenderUnits() {
   macroRenderLessonsTable();
   macroRenderLearningUnitsTable();
   macroRenderLessonUnitLinking();
+  renderLinkedLearningUnitsPanel();
   renderLessonDesignNavigator();
 }
 async function macroAutoSaveLessonRow(row) {
@@ -3635,6 +3763,7 @@ async function macroAutoSaveLearningUnitRow(row) {
     }
     macroRenderLessonsTable();
     macroRenderLessonUnitLinking();
+    renderLinkedLearningUnitsPanel();
   } catch {
     if (statusEl) { statusEl.textContent = "שגיאה"; statusEl.className = "unit-row-status err"; }
   }
@@ -3673,6 +3802,7 @@ async function macroSaveLessonLinksFromUi() {
     };
     if (statusEl) statusEl.textContent = `נשמר · ${linkedUnitIds.length} יחידות שויכו`;
     macroRenderLessonsTable();
+    renderLinkedLearningUnitsPanel(lessonId);
     renderLessonDesignNavigator();
   } catch {
     if (statusEl) statusEl.textContent = "שגיאה בשמירת השיוך";
@@ -5767,6 +5897,7 @@ function renderLesson() {
   const bannerTitleEl = document.getElementById("lessonDesignLessonTitle");
   if (bannerTitleEl) setLessonTitleInput(bannerTitleEl, lesson?.title || "");
   renderObjectives();
+  renderLinkedLearningUnitsPanel(lessonId);
   renderPreClass();
   renderResources();
   renderLessonSteps();
