@@ -1603,6 +1603,7 @@
     const sessionId = String(params.get("sessionId") || "").trim();
     const courseIdFromUrl = String(params.get("courseId") || params.get("classId") || "").trim();
     const unitIdFromUrl = String(params.get("unitId") || "unit_01").trim() || "unit_01";
+    const dbgMode = params.get("dbg") === "1";
     const gatewayRedirect = `/index.html${params.toString() ? `?${params.toString()}` : ""}`;
     const lessonViewAccessReady = window.MiledAccess?.enforcePageAccess(["student", "lecturer", "institution_admin", "system_admin"], gatewayRedirect);
 
@@ -2663,7 +2664,8 @@
       if (writePanel) writePanel.style.display = role === "lecturer" ? "none" : "";
       // Show waiting screen if session not yet open for students
       // In preview mode the session doesn't exist — show the lesson view anyway
-      if (role === "student" && !isPreviewMode) {
+      // dbgMode (?dbg=1) forces lesson view visible for diagnostic purposes
+      if (role === "student" && !isPreviewMode && !dbgMode) {
         const doorStatus = String(lessonData?.state?.door_status || "auto").toLowerCase();
         const sessionActive = !!lessonData?.active;
         const showWaiting = !sessionActive || doorStatus === "closed";
@@ -2697,6 +2699,32 @@
       renderLiveMeetingBar(lessonData?.liveMeeting || null);
       renderSpeakerFocusBanner(lessonData?.speakerFocus || null);
       setChatFrame(lessonData?.courseId || "", lessonData?.botType || "");
+
+      // Debug overlay — only in ?dbg=1 mode
+      if (dbgMode) {
+        let dbgEl = document.getElementById("__dbgOverlay");
+        if (!dbgEl) {
+          dbgEl = document.createElement("div");
+          dbgEl.id = "__dbgOverlay";
+          dbgEl.style.cssText = "position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:rgba(0,0,0,.85);color:#a3e635;font-family:monospace;font-size:11px;padding:10px 14px;z-index:9999;border-top:2px solid #84cc16;";
+          document.body.appendChild(dbgEl);
+        }
+        const dbgData = {
+          courseId: lessonData?.courseId,
+          lessonId: lessonData?.lessonId,
+          active: lessonData?.active,
+          door_status: lessonData?.state?.door_status,
+          active_sprint: lessonData?.state?.active_sprint,
+          lessonPlanLength: Array.isArray(lessonData?.lessonPlan) ? lessonData.lessonPlan.length : "not array",
+          sprintDefinitionsLength: Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions.length : "not array",
+          lessonPlan: lessonData?.lessonPlan,
+          sprintDefinitions: lessonData?.sprintDefinitions,
+          role,
+          isPreviewMode: lessonData?.state?.door_status === "preview"
+        };
+        dbgEl.innerHTML = `<strong style="color:#fbbf24">DBG lessonData</strong><br><pre>${JSON.stringify(dbgData, null, 2)}</pre>`;
+        console.log("[DBG] lessonData", lessonData);
+      }
     }
 
     function renderLiveMeetingBar(liveMeeting) {
