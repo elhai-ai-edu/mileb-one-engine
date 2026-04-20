@@ -252,13 +252,53 @@ function tryParseJson(value) {
   }
 }
 
-function slugifySegment(value, fallback = "item") {
-  const normalized = String(value || "")
+function slugifySegment(value) {
+  return String(value || "")
+    .normalize("NFKD")
+    .replace(/[^\u0590-\u05FFa-zA-Z0-9\s_-]/g, "")
     .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-  return normalized || fallback;
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toLowerCase();
+}
+
+function hashCode(value) {
+  const input = String(value || "");
+  let hash = 0;
+  for(let i = 0; i < input.length; i++){
+    hash = ((hash << 5) - hash) + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
+}
+
+function fallbackUnitId(name, index) {
+  const base = slugifySegment(name);
+  if(base) return base;
+
+  const firstValidWord = String(name || "")
+    .normalize("NFKD")
+    .split(/\s+/)
+    .map(word => slugifySegment(word))
+    .find(Boolean);
+  if(firstValidWord) return firstValidWord;
+
+  const hash = Math.abs(hashCode(name)).toString(36).slice(0, 6) || "0";
+  return `unit_${index + 1}_${hash}`;
+}
+
+function ensureUniqueUnitId(baseUnitId, usedUnitIds) {
+  const rawBase = String(baseUnitId || "").trim();
+  const normalizedBase = rawBase || "unit";
+  let candidate = normalizedBase;
+  let suffix = 2;
+  while(usedUnitIds.has(candidate)){
+    candidate = `${normalizedBase}_${suffix}`;
+    suffix += 1;
+  }
+  usedUnitIds.add(candidate);
+  return candidate;
 }
 
 function cleanResourceTitle(value) {
@@ -298,6 +338,7 @@ function isLecturerOnlyResource(title) {
 function normalizeMoodleMetadata(rawInput) {
   const raw = tryParseJson(rawInput);
   if(!raw || typeof raw !== "object") return null;
+  const shouldLogUnitMapping = process.env.IS_DEV === "true";
 
   const topLevelMapSections = (
     !Array.isArray(raw) &&
@@ -318,12 +359,19 @@ function normalizeMoodleMetadata(rawInput) {
     topLevelMapSections ||
     [];
 
+  const usedUnitIds = new Set();
   const units = sections.map((section, sectionIndex) => {
     const sectionName = String(section?.name || section?.title || section?.section || `Unit ${sectionIndex + 1}`).trim();
-    const unitId = normalizeUnitId(
-      section?.unitId || section?.id || slugifySegment(sectionName, `unit_${String(sectionIndex + 1).padStart(2, "0")}`),
-      `unit_${String(sectionIndex + 1).padStart(2, "0")}`
-    );
+    const rawProvidedUnitId = String(section?.unitId || section?.id || "").trim();
+    const generatedUnitId = fallbackUnitId(sectionName, sectionIndex);
+    const candidateUnitId = normalizeUnitId(rawProvidedUnitId || generatedUnitId, generatedUnitId);
+    const unitId = ensureUniqueUnitId(candidateUnitId, usedUnitIds);
+    if(shouldLogUnitMapping){
+      console.log("[Moodle Import] Unit mapping:", {
+        original: sectionName,
+        unitId
+      });
+    }
     const itemList =
       (Array.isArray(section?.items) && section.items) ||
       (Array.isArray(section?.modules) && section.modules) ||
@@ -352,6 +400,7 @@ function normalizeMoodleMetadata(rawInput) {
     return {
       unitId,
       name: sectionName || `Unit ${sectionIndex + 1}`,
+      displayName: sectionName || `Unit ${sectionIndex + 1}`,
       resources
     };
   }).filter(unit => unit.name || unit.resources.length);
