@@ -1827,7 +1827,7 @@ body { background: var(--bg) !important; }
             <label for="lessonDesignLessonDate">תאריך (לא חובה)</label>
             <input id="lessonDesignLessonDate" type="date" class="lp-input" style="margin:0;min-width:160px;">
           </div>
-          <span id="lessonDesignStatus" style="font-size:12px;color:#64748b;"></span>
+          <span id="lessonDesignStatus" style="font-size:12px;color:var(--color-text-muted);"></span>
           <button class="btn btn-outline" onclick="switchPhase('course')" style="font-size:12px;padding:6px 12px;white-space:nowrap;">&#x2190; עיצוב קורס</button>
         </div>
       </div>
@@ -3647,15 +3647,13 @@ async function saveLessonDateForCurrentUnit(statusEl = null) {
       lessonDate
     }), statusEl);
   if (!res) return false;
-  if (res?.ok) {
-    lessonsMap[lessonId] = {
-      ...(lessonsMap[lessonId] || {}),
-      structureType: "Session",
-      linkedUnitIds,
-      linkedUnits,
-      lessonDate: lessonDate || null
-    };
-  }
+  lessonsMap[lessonId] = {
+    ...(lessonsMap[lessonId] || {}),
+    structureType: "Session",
+    linkedUnitIds,
+    linkedUnits,
+    lessonDate: lessonDate || null
+  };
   return true;
 }
 
@@ -5024,28 +5022,32 @@ async function lockStageAll() {
 // ─────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────
-async function safeAsync(action, statusEl) {
+async function safeAsync(action, statusEl, options = {}) {
+  const loadingMessage = options?.loadingMessage || 'טוען...';
+  const successMessage = options?.successMessage || 'נשמר ✓';
+  const fallbackErrorMessage = options?.errorMessage || 'שגיאה בפעולה';
+  const actionName = options?.actionName || action?.name || 'unknown';
   try {
-    if (statusEl) statusEl.textContent = 'טוען...';
+    if (statusEl) statusEl.textContent = loadingMessage;
 
     const res = await action();
 
     if (!res?.ok) {
-      const msg = res?.error || 'שגיאה בפעולה';
+      const msg = res?.error || fallbackErrorMessage;
       if (statusEl) statusEl.textContent = msg;
       return null;
     }
 
-    if (statusEl) statusEl.textContent = 'נשמר ✓';
+    if (statusEl) statusEl.textContent = successMessage;
     return res;
 
   } catch (error) {
     const msg = String(error?.message || '').trim();
-    if (statusEl) statusEl.textContent = msg || 'שגיאה בפעולה';
+    if (statusEl) statusEl.textContent = msg || fallbackErrorMessage;
 
     console.error('Macro Cockpit Error:', {
       error,
-      actionName: action?.name || 'unknown'
+      actionName
     });
 
     return null;
@@ -6394,43 +6396,41 @@ async function activateGroupSprint() {
   const statusEl = document.getElementById("groupStatusMsg");
   if (statusEl) { statusEl.style.color = "#6366f1"; statusEl.textContent = "מפעיל עבודת קבוצות..."; }
 
-  try {
-    // 1. Write group feature flag to Firebase classes/{classId}/features/groupMode
-    if (db && courseId) {
-      const roles = ["מנסח", "מאתגר", "מגיב"].slice(0, groupSize);
-      await db.ref(`classes/${courseId}/features/groupMode`).set({
-        enabled: true,
-        groupId: `group_${sessionId.slice(-6)}`,
-        roles: roles.reduce((acc, r, i) => { acc[`slot_${i}`] = r; return acc; }, {}),
-        autoAssign: true,
-        groupSize,
-        sprintId: sprint.id,
-        activatedAt: Date.now()
+  const res = await safeAsync(async () => {
+      // 1. Write group feature flag to Firebase classes/{classId}/features/groupMode
+      if (db && courseId) {
+        const roles = ["מנסח", "מאתגר", "מגיב"].slice(0, groupSize);
+        await db.ref(`classes/${courseId}/features/groupMode`).set({
+          enabled: true,
+          groupId: `group_${sessionId.slice(-6)}`,
+          roles: roles.reduce((acc, r, i) => { acc[`slot_${i}`] = r; return acc; }, {}),
+          autoAssign: true,
+          groupSize,
+          sprintId: sprint.id,
+          activatedAt: Date.now()
+        });
+      }
+      // 2. Activate the sprint + set mode via session_state_update
+      return callClassroom({
+        action: "session_state_update",
+        sessionId,
+        facultyId,
+        activeSprint: String(sprint.id),
+        mode: "group",
+        sprintDefinitions: _groupSprintDefs
       });
-    }
-
-    // 2. Activate the sprint + set mode via session_state_update
-    const res = await safeAsync(() => callClassroom({
-      action: "session_state_update",
-      sessionId,
-      facultyId,
-      activeSprint: String(sprint.id),
-      mode: "group",
-      sprintDefinitions: _groupSprintDefs
-    }), statusEl);
-    if (!res) return;
-
-    _groupModeActive = true;
-    const activateBtn = document.getElementById("activateGroupBtn");
-    const deactivateBtn = document.getElementById("deactivateGroupBtn");
-    if (activateBtn) activateBtn.disabled = true;
-    if (deactivateBtn) deactivateBtn.style.display = "";
-    if (statusEl) statusEl.style.color = "#16a34a";
-  } catch(error) {
-    const errorMessage = String(error?.message || "").trim();
-    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = errorMessage || "שגיאה בפעולה"; }
-    console.error("Macro Cockpit Error:", error);
+    }, statusEl, { successMessage: "✅ עבודת קבוצות פעילה — הסטודנטים עוברים לסביבת הקבוצה" });
+  if (!res) {
+    if (statusEl) statusEl.style.color = "#dc2626";
+    return;
   }
+
+  _groupModeActive = true;
+  const activateBtn = document.getElementById("activateGroupBtn");
+  const deactivateBtn = document.getElementById("deactivateGroupBtn");
+  if (activateBtn) activateBtn.disabled = true;
+  if (deactivateBtn) deactivateBtn.style.display = "";
+  if (statusEl) statusEl.style.color = "#16a34a";
 }
 
 async function deactivateGroupMode() {
@@ -6596,7 +6596,6 @@ document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (e
   if (!courseId || !lessonId) return;
   setLessonDateValue(courseId, lessonId, event?.target?.value || "");
   saveLessonDateForCurrentUnit(statusEl).catch((error) => {
-    if (statusEl) statusEl.textContent = String(error?.message || "").trim() || "שגיאה בפעולה";
     console.error("Macro Cockpit Error:", error);
   });
   renderLessonDesignNavigator();
