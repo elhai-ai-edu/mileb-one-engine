@@ -2807,8 +2807,15 @@ async function loadPreSessionMission() {
   try {
     // Transitional compatibility: classroom APIs still route by `unitId`, while macro runtime resolves lesson ids.
     const res = await fetch(`/.netlify/functions/classroom?action=pre_session&classId=${encodeURIComponent(designCourseId)}&unitId=${encodeURIComponent(lessonId)}&lessonId=${encodeURIComponent(lessonId)}&userId=${encodeURIComponent(facultyId)}`);
-    const data = await res.json();
-    if (!res.ok) {
+    let data = null;
+    if (res.ok) {
+      data = await res.json();
+    } else {
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        data = null;
+      }
       const backendError = String(data?.error || '').trim();
       if (statusEl) statusEl.textContent = backendError || 'שגיאה בפעולה';
       return;
@@ -6265,10 +6272,10 @@ async function saveTemplate() {
 
 async function loadTemplates(classId) {
   if (!classId) return;
+  const sel = document.getElementById("template-select");
   try {
     const res  = await fetch(`/.netlify/functions/classroom?action=templates&classId=${classId}`);
     const data = await res.json();
-    const sel  = document.getElementById("template-select");
     if (!sel) return;
     sel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
     Object.entries(data.templates || {})
@@ -6281,7 +6288,6 @@ async function loadTemplates(classId) {
         sel.appendChild(opt);
       });
   } catch(error) {
-    const sel = document.getElementById("template-select");
     const errorMessage = String(error?.message || "").trim();
     if (sel) {
       sel.innerHTML = `<option value="">${escapeHtml(errorMessage || "שגיאה בפעולה")}</option>`;
