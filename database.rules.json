@@ -1,0 +1,273 @@
+{
+  "rules": {
+    // ─── Admin ───────────────────────────────────────────────────────────────
+    // Only Netlify Functions (server-side) read/write admin credentials.
+    // Client-side access is never permitted.
+    "admin": {
+      ".read": false,
+      ".write": false
+    },
+
+    // ─── Institutions ─────────────────────────────────────────────────────────
+    "institutions": {
+      ".read": false,
+      ".write": false
+    },
+
+    // ─── Authorized Users ────────────────────────────────────────────────────
+    "authorized_users": {
+      ".read": false,
+      ".write": false
+    },
+
+    // ─── Courses ──────────────────────────────────────────────────────────────
+    // Course metadata, playlists, sprint definitions, and live meeting state
+    // are read-only for authenticated clients; writes come from server functions.
+    "courses": {
+      ".read": "auth != null",
+      ".write": false
+    },
+
+    // ─── Active Sessions ─────────────────────────────────────────────────────
+    // Classroom session state: students write their own presence and answers.
+    "active_sessions": {
+      "$classId": {
+        ".read": "auth != null",
+        "students": {
+          "$studentId": {
+            ".write": "auth != null && auth.uid === $studentId"
+          }
+        },
+        "answers": {
+          "$studentId": {
+            ".write": "auth != null && auth.uid === $studentId"
+          }
+        },
+        // Instructor-only writes for publicWall, speakerFocus, recall_all
+        "publicWall":    { ".write": false },
+        "speakerFocus":  { ".write": false },
+        "recall_all":    { ".write": false },
+        "task_log":      { ".write": false },
+        "entranceTickets": {
+          "$studentId": {
+            ".write": "auth != null && auth.uid === $studentId"
+          }
+        }
+      }
+    },
+
+    // ─── Sessions (class-level session objects) ───────────────────────────────
+    "sessions": {
+      "$sessionId": {
+        ".read": "auth != null",
+        "students": {
+          "$studentId": {
+            ".write": "auth != null && auth.uid === $studentId"
+          }
+        },
+        "answers": {
+          "$studentId": {
+            ".write": "auth != null && auth.uid === $studentId"
+          }
+        },
+        "entranceTickets": {
+          "$studentId": {
+            ".write": "auth != null && auth.uid === $studentId"
+          }
+        },
+        // Instructor-only: publicWall, speakerFocus, recall_all, task_log
+        "publicWall":    { ".write": false },
+        "speakerFocus":  { ".write": false },
+        "recall_all":    { ".write": false },
+        "task_log":      { ".write": false }
+      },
+      // Per-student session state keyed by studentId/courseId
+      "$studentId": {
+        "$courseId": {
+          ".read": "auth != null && auth.uid === $studentId",
+          ".write": false
+        }
+      }
+    },
+
+    // ─── Classes ──────────────────────────────────────────────────────────────
+    // Class configuration (features, gatekeeping, lock/retention dates).
+    // Students may read their own class metadata; writes come from server only.
+    "classes": {
+      "$classId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+
+    // ─── Group Contributions ─────────────────────────────────────────────────
+    // Group sprint collaborative writing: students write only to their own
+    // contribution slot. Master draft and veto are server-managed.
+    "group_contributions": {
+      "$classId": {
+        "$groupId": {
+          "$activityId": {
+            ".read": "auth != null",
+            "contributions": {
+              "$contributionId": {
+                ".write": "auth != null"
+              }
+            },
+            // Master draft and veto are written server-side only
+            "masterDraft":    { ".write": false },
+            "finalSubmission":{ ".write": false },
+            "veto":           { ".write": false }
+          }
+        }
+      }
+    },
+
+    // ─── Team Projects ────────────────────────────────────────────────────────
+    // Async team projects: students write their own blocks and presence.
+    // Baton, veto, and digest are server-managed.
+    "team_projects": {
+      "$projectId": {
+        ".read": "auth != null",
+        "document": {
+          "blocks": {
+            "$blockId": {
+              ".write": "auth != null"
+            }
+          }
+        },
+        "presence": {
+          "$studentId": {
+            ".write": "auth != null && auth.uid === $studentId"
+          }
+        },
+        // Baton, veto, and digest are written server-side only
+        "baton":  { ".write": false },
+        "veto":   { ".write": false },
+        "digest": { ".write": false }
+      }
+    },
+
+    // ─── Submissions ─────────────────────────────────────────────────────────
+    // Students may read submissions in their class for peer review.
+    // Writes (including peer_reviews) come from server functions only.
+    "submissions": {
+      "$classId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+
+    // ─── Skills ───────────────────────────────────────────────────────────────
+    "skills_mastery": {
+      "$studentId": {
+        ".read": "auth != null && auth.uid === $studentId",
+        ".write": false
+      }
+    },
+    "skills_sessions": {
+      "$studentId": {
+        ".read": "auth != null && auth.uid === $studentId",
+        ".write": false
+      }
+    },
+
+    // ─── Pre-Session Content ─────────────────────────────────────────────────
+    "pre_session_content": {
+      "$classId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+    "pre_session_tickets": {
+      "$classId": {
+        ".read": "auth != null",
+        "$studentId": {
+          ".write": "auth != null && auth.uid === $studentId"
+        }
+      }
+    },
+    "pre_session_warmup": {
+      "$classId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+    "pre_session_warmup_meta": {
+      "$classId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+
+    // ─── Waiting Room ────────────────────────────────────────────────────────
+    "waiting_room": {
+      "$classId": {
+        ".read": "auth != null",
+        "$studentId": {
+          ".write": "auth != null && auth.uid === $studentId"
+        }
+      }
+    },
+
+    // ─── Course Progress ─────────────────────────────────────────────────────
+    "course_progress": {
+      "$courseId": {
+        "$studentId": {
+          ".read": "auth != null && auth.uid === $studentId",
+          ".write": false
+        }
+      }
+    },
+
+    // ─── Lesson Templates ────────────────────────────────────────────────────
+    "lesson_templates": {
+      "$classId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+
+    // ─── Activity Bank ───────────────────────────────────────────────────────
+    "activity_bank": {
+      "$facultyId": {
+        ".read": "auth != null && auth.uid === $facultyId",
+        ".write": false
+      }
+    },
+
+    // ─── Faculty Journals ────────────────────────────────────────────────────
+    "faculty_journals": {
+      "$facultyId": {
+        ".read": "auth != null && auth.uid === $facultyId",
+        ".write": false
+      }
+    },
+
+    // ─── Architect Sessions ───────────────────────────────────────────────────
+    // Bot Architect session data is server-managed; no direct client writes.
+    "architect_sessions": {
+      "$sessionId": {
+        ".read": "auth != null",
+        ".write": false
+      }
+    },
+
+    // ─── Users ────────────────────────────────────────────────────────────────
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    // ─── System Runtime ──────────────────────────────────────────────────────
+    "system": {
+      ".read": false,
+      ".write": false
+    },
+
+    // ─── Default: deny all ───────────────────────────────────────────────────
+    ".read": false,
+    ".write": false
+  }
+}

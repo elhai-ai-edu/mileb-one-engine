@@ -1,5 +1,5 @@
 {
-  "system_version": "5.11 - Course Catalog + Instance Architecture",
+  "system_version": "5.12 - Implementation Plan: redirects + DB rules + Student Model Schema",
   "_architecture": "מנוע אחד + config היררכי. כל שינוי תוכני נעשה כאן בלבד, ללא נגיעה בקוד.",
 
   "balance": {
