@@ -39,9 +39,9 @@ export async function handler(event) {
 
   const basePath = `group_contributions/${classId}/${groupId}/${activityId}`;
 
-  // Helper: read this student's group role
+  // Helper: read this student's group role from assignments (keyed by studentId)
   async function getRole() {
-    const snap = await db.ref(`classes/${classId}/features/groupMode/roles/${studentId}`).once("value");
+    const snap = await db.ref(`classes/${classId}/features/groupMode/assignments/${studentId}`).once("value");
     return snap.val() || null;
   }
 
@@ -89,11 +89,12 @@ export async function handler(event) {
     const draft     = draftSnap.val();
     if (!draft?.text) return err("no master draft to veto");
 
-    const rolesSnap = await db.ref(`classes/${classId}/features/groupMode/roles`).once("value");
-    const roles     = rolesSnap.val() || {};
-    const now       = Date.now();
-    const approvals = {};
-    Object.keys(roles).forEach(sid => {
+    // Read per-student assignments (not slot-keyed roles) to build approvals map
+    const assignSnap = await db.ref(`classes/${classId}/features/groupMode/assignments`).once("value");
+    const assignments = assignSnap.val() || {};
+    const now         = Date.now();
+    const approvals   = {};
+    Object.keys(assignments).forEach(sid => {
       approvals[sid] = sid === studentId
         ? { approved: true,  approvedAt: now }
         : { approved: null,  approvedAt: null };

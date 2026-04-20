@@ -2060,6 +2060,13 @@ body { background: var(--bg) !important; }
         </select>
       </div>
       <div id="groupStatusMsg" style="font-size:12px;min-height:18px;"></div>
+
+      <!-- Live role assignments table — shown after activation -->
+      <div id="groupAssignmentsBox" style="display:none;margin-top:4px;">
+        <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">שיבוץ תפקידים</div>
+        <div id="groupAssignmentsTable"></div>
+      </div>
+
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="activateGroupSprint()" id="activateGroupBtn"
           style="padding:8px 18px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
@@ -6351,8 +6358,9 @@ async function pushTask(stepIdx) {
 // GROUP MODE — Team Workspace
 // ═══════════════════════════════════════════
 
-let _groupSprintDefs = [];   // group station sprints for current lesson
-let _groupModeActive = false;
+let _groupSprintDefs          = [];   // group station sprints for current lesson
+let _groupModeActive          = false;
+let _groupAssignmentsWatchRef = null;
 
 // Called after lesson/session is loaded — scans sprintDefinitions for GROUP_STATION
 async function initGroupModePanel() {
@@ -6420,18 +6428,30 @@ async function activateGroupSprint() {
         mode: "group",
         sprintDefinitions: _groupSprintDefs
       });
-    }, statusEl, { successMessage: "✅ עבודת קבוצות פעילה — הסטודנטים עוברים לסביבת הקבוצה" });
-  if (!res) {
-    if (statusEl) statusEl.style.color = "#dc2626";
-    return;
-  }
+    }
 
-  _groupModeActive = true;
-  const activateBtn = document.getElementById("activateGroupBtn");
-  const deactivateBtn = document.getElementById("deactivateGroupBtn");
-  if (activateBtn) activateBtn.disabled = true;
-  if (deactivateBtn) deactivateBtn.style.display = "";
-  if (statusEl) statusEl.style.color = "#16a34a";
+    // 2. Activate the sprint + set mode via session_state_update
+    const res = await callClassroom({
+      action: "session_state_update",
+      sessionId,
+      facultyId,
+      activeSprint: String(sprint.id),
+      mode: "group",
+      sprintDefinitions: _groupSprintDefs
+    });
+
+    if (!res.ok) throw new Error(res.error || "שגיאה");
+
+    _groupModeActive = true;
+    const activateBtn = document.getElementById("activateGroupBtn");
+    const deactivateBtn = document.getElementById("deactivateGroupBtn");
+    if (activateBtn) activateBtn.disabled = true;
+    if (deactivateBtn) deactivateBtn.style.display = "";
+    if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.textContent = "✅ עבודת קבוצות פעילה — הסטודנטים עוברים לסביבת הקבוצה"; }
+    startGroupAssignmentsWatch(courseId);
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
+  }
 }
 
 async function deactivateGroupMode() {
@@ -6443,17 +6463,93 @@ async function deactivateGroupMode() {
       sessionId,
       facultyId,
       mode: "lesson"
-    }), statusEl);
-  if (!res) {
-    if (statusEl) statusEl.style.color = "#dc2626";
+    });
+    _groupModeActive = false;
+    if (_groupAssignmentsWatchRef) { _groupAssignmentsWatchRef.off(); _groupAssignmentsWatchRef = null; }
+    const activateBtn = document.getElementById("activateGroupBtn");
+    const deactivateBtn = document.getElementById("deactivateGroupBtn");
+    const assignmentsBox = document.getElementById("groupAssignmentsBox");
+    if (activateBtn) activateBtn.disabled = false;
+    if (deactivateBtn) deactivateBtn.style.display = "none";
+    if (assignmentsBox) assignmentsBox.style.display = "none";
+    if (statusEl) { statusEl.style.color = "#475569"; statusEl.textContent = "עבודת הקבוצות הסתיימה."; }
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
+  }
+}
+
+// ── Live assignments watch ───────────────────────────────────────────────────
+function startGroupAssignmentsWatch(courseId) {
+  if (_groupAssignmentsWatchRef) { _groupAssignmentsWatchRef.off(); _groupAssignmentsWatchRef = null; }
+  const db = getRealtimeDb();
+  if (!db || !courseId) return;
+
+  const box = document.getElementById("groupAssignmentsBox");
+  if (box) box.style.display = "";
+
+  _groupAssignmentsWatchRef = db.ref(`classes/${courseId}/features/groupMode/assignments`);
+  _groupAssignmentsWatchRef.on("value", snap => {
+    renderGroupAssignmentsTable(snap.val() || {}, courseId);
+  });
+}
+
+function renderGroupAssignmentsTable(assignments, courseId) {
+  const container = document.getElementById("groupAssignmentsTable");
+  if (!container) return;
+
+  const gm    = null; // slot-based roles pulled from sprint config
+  const sprint = _groupSprintDefs[0];
+  const slotRoles = sprint?.groupConfig?.roles
+    ? [...sprint.groupConfig.roles]
+    : ["מנסח", "מאתגר", "מגיב"];
+
+  const entries = Object.entries(assignments);
+
+  if (!entries.length) {
+    container.innerHTML = '<div style="font-size:12px;color:#94a3b8;">ממתין לכניסת סטודנטים לסביבת הקבוצה...</div>';
     return;
   }
-  _groupModeActive = false;
-  const activateBtn = document.getElementById("activateGroupBtn");
-  const deactivateBtn = document.getElementById("deactivateGroupBtn");
-  if (activateBtn) activateBtn.disabled = false;
-  if (deactivateBtn) deactivateBtn.style.display = "none";
-  if (statusEl) statusEl.style.color = "#475569";
+
+  container.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#f1f5f9;">
+          <th style="padding:5px 8px;text-align:right;color:#475569;font-weight:700;">סטודנט</th>
+          <th style="padding:5px 8px;text-align:right;color:#475569;font-weight:700;">תפקיד</th>
+          <th style="padding:5px 8px;text-align:right;color:#475569;font-weight:700;">שינוי</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${entries.map(([sid, role]) => `
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:5px 8px;color:#1e293b;">${macroEscHtml(sid)}</td>
+            <td style="padding:5px 8px;">
+              <span style="display:inline-block;padding:2px 8px;border-radius:999px;
+                background:#e0e7ff;color:#3730a3;font-weight:700;font-size:11px;">
+                ${macroEscHtml(role)}
+              </span>
+            </td>
+            <td style="padding:5px 8px;">
+              <select onchange="reassignGroupRole('${macroEscHtml(sid)}', this.value, '${macroEscHtml(courseId)}')"
+                style="font-size:11px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;color:#334155;">
+                ${slotRoles.map(r =>
+                  `<option value="${macroEscHtml(r)}"${r === role ? " selected" : ""}>${macroEscHtml(r)}</option>`
+                ).join("")}
+              </select>
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function reassignGroupRole(studentId, newRole, courseId) {
+  const db = getRealtimeDb();
+  if (!db || !courseId || !studentId || !newRole) return;
+  try {
+    await db.ref(`classes/${courseId}/features/groupMode/assignments/${studentId}`).set(newRole);
+  } catch(e) {
+    console.warn("[MilEd] reassign role failed:", e);
+  }
 }
 
 // ═══════════════════════════════════════════

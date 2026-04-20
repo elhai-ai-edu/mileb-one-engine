@@ -6,6 +6,40 @@
 <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — קורסים</title>
+<style>
+/* ── Course Cards ── */
+.course-card {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+.course-card:hover { box-shadow: 0 6px 20px rgba(30,27,75,0.09); border-color: #c7d2fe; }
+.course-card-name {
+  font-size: 16px; font-weight: 700; color: #1e1b4b; margin-bottom: 4px;
+}
+.course-card-meta {
+  font-size: 12px; color: #94a3b8; margin-bottom: 16px;
+}
+.course-card-actions { display: flex; flex-direction: column; gap: 8px; }
+.cc-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  border: none; cursor: pointer; text-decoration: none;
+  transition: opacity 0.15s, box-shadow 0.15s;
+}
+.cc-btn:hover { opacity: 0.88; box-shadow: 0 3px 10px rgba(0,0,0,0.12); }
+.cc-btn-live    { background: #6366f1; color: #fff; }
+.cc-btn-team    { background: #f0fdf4; color: #15803d; border: 1.5px solid #86efac; }
+.cc-btn-personal{ background: #eff6ff; color: #1d4ed8; border: 1.5px solid #bfdbfe; }
+.cc-divider {
+  font-size: 11px; font-weight: 700; color: #94a3b8;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 4px 0 2px;
+}
+</style>
 </head>
 
 <body class="user-student">
@@ -135,19 +169,61 @@ async function loadConfig() {
   renderCourses();
 }
 
+// ── studentId per course (same pattern as waiting_lobby) ─────────────────────
+function getStudentId(courseId) {
+  const key = `miled_student_id_${courseId || "global"}`;
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = `stu_${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+function getStudentName(courseId) {
+  const key = `miled_student_name_${courseId || "global"}`;
+  return localStorage.getItem(key) || getStudentId(courseId).slice(0, 8);
+}
+
 function renderCourses() {
   const courses = CONFIG.my_courses || {};
   const container = document.getElementById("course-list");
   container.innerHTML = "";
 
-  for (let id in courses) {
-    const course = courses[id];
-    const a = document.createElement("a");
-    a.className = "btn";
-    a.href = `/waiting_lobby.html?courseId=${id}`;
-    a.innerHTML = `<h3 style="margin:0 0 4px 0;">${course.name}</h3>
-                   <p style="margin:0;opacity:.7;font-size:13px;">לחץ להיכנס למרחב הקורס</p>`;
-    container.appendChild(a);
+  for (const [id, course] of Object.entries(courses)) {
+    const studentId   = getStudentId(id);
+    const studentName = getStudentName(id);
+    const esc = s => encodeURIComponent(s);
+
+    const lobbyUrl   = `/waiting_lobby.html?courseId=${esc(id)}`;
+    const teamProj   = course.teamProject;
+    const personalProj = course.personalProject;
+
+    const teamBtn = teamProj ? `
+      <a class="cc-btn cc-btn-team"
+         href="/team_project.html?projectId=${esc(teamProj.projectId)}&studentId=${esc(studentId)}&studentName=${esc(studentName)}&courseId=${esc(id)}">
+        👥 ${teamProj.title || "פרויקט צוות מתמשך"}
+      </a>` : "";
+
+    const personalBtn = personalProj ? `
+      <a class="cc-btn cc-btn-personal"
+         href="${personalProj.url || `/chat.html?botType=task_final_project&courseId=${esc(id)}&studentId=${esc(studentId)}`}">
+        📝 ${personalProj.title || "פרויקט גמר אישי"}
+      </a>` : "";
+
+    const projectsSection = (teamBtn || personalBtn) ? `
+      <div class="cc-divider">פרויקטים</div>
+      ${teamBtn}${personalBtn}` : "";
+
+    const card = document.createElement("div");
+    card.className = "course-card";
+    card.innerHTML = `
+      <div class="course-card-name">${course.name || id}</div>
+      <div class="course-card-meta">${course.semester || ""}</div>
+      <div class="course-card-actions">
+        <a class="cc-btn cc-btn-live" href="${lobbyUrl}">📡 שיעור חי</a>
+        ${projectsSection}
+      </div>`;
+    container.appendChild(card);
   }
 }
 

@@ -71,7 +71,8 @@ async function loadArchitectBotConfig() {
     return config?.system?.bot_architect || {};
   }
 
-  const response = await fetch(new URL("/config.json", SITE_URL));
+  const siteUrl = process.env.URL || process.env.DEPLOY_URL || "http://localhost:8888";
+  const response = await fetch(new URL("/config.json", siteUrl));
   if (!response.ok) {
     throw new Error(`Failed to load config.json: HTTP ${response.status}`);
   }

@@ -227,10 +227,17 @@ function buildConfigCourseBundle(courseConfig = {}, lessonId) {
   const selectedUnits = fallbackUnits.filter(unit => unit.unitId === normalizedLessonId);
   const activeUnit = selectedUnits[0] || null;
 
+  // Read per-unit resources from config if defined (keyed by unitId or "_default")
+  const configResources = Array.isArray(courseConfig?.resources?.[normalizedLessonId])
+    ? courseConfig.resources[normalizedLessonId]
+    : Array.isArray(courseConfig?.resources?.["_default"])
+      ? courseConfig.resources["_default"]
+      : [];
+
   return {
     courseName: String(courseConfig?.name || "").trim() || null,
     selectedUnits,
-    resources: [],
+    resources: configResources,
     sprintDefinitions: activeUnit ? [{
       id: `${normalizedLessonId}_focus`,
       title: activeUnit.name,
@@ -768,17 +775,18 @@ export async function handler(event){
     }
 
     if(action === "lesson_payload"){
-      if(!sessionId) return err("sessionId required");
-      const sessionSnap = await db.ref(`sessions/${sessionId}`).once("value");
-      const session = sessionSnap.val() || null;
+      // Allow courseId-only requests (no sessionId) so team_project.html and other
+      // pages can fetch resources + sprintDefinitions without an active session.
+      const session = sessionId
+        ? ((await db.ref(`sessions/${sessionId}`).once("value")).val() || null)
+        : null;
 
-      // When the session doesn't exist in Firebase but a courseId URL param was
-      // provided, return config-based data so the page can render the lesson plan
-      // and default sprint even in preview / test scenarios.
+      // No session (either sessionId absent, or session not found in Firebase) —
+      // return config-based data when a courseId URL param is present.
       if(!session){
         const fbCourseId = String(event.queryStringParameters?.courseId || "").trim();
         const fbUnitId   = normalizeUnitId(event.queryStringParameters?.unitId || "unit_01");
-        if(!fbCourseId) return err("session not found");
+        if(!fbCourseId) return err("sessionId or courseId required");
         const configCourses2 = await getConfigCourses();
         const courseConfig2   = configCourses2?.[fbCourseId] || null;
         const configBundle2   = courseConfig2 ? buildConfigCourseBundle(courseConfig2, fbUnitId) : null;
@@ -804,7 +812,8 @@ export async function handler(event){
           broadcastedAt: null,
           currentStep: 1,
           projectStages: [],
-          teamProjectId: null,
+          teamProjectId: courseConfig2?.teamProject?.projectId || null,
+          personalProjectUrl: courseConfig2?.personalProject?.url || null,
           liveMeeting: null,
           speakerFocus: null
         });
@@ -882,6 +891,7 @@ export async function handler(event){
         currentStep: session.currentStep || 1,
         projectStages: courseConfig?.course_units?.semester_a?.project?.stages || [],
         teamProjectId: courseConfig?.teamProject?.projectId || null,
+        personalProjectUrl: courseConfig?.personalProject?.url || null,
         liveMeeting,
         speakerFocus
       });

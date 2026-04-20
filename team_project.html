@@ -211,6 +211,8 @@
     .banner-success { background: #f0fdf4; border: 1.5px solid #86efac; color: #15803d; }
     .banner-info    { background: #eff6ff; border: 1.5px solid #bfdbfe; color: #1e40af; }
     .banner-warn    { background: #fffbeb; border: 1.5px solid #fed7aa; color: #92400e; }
+    .banner-nudge   { background: #fdf4ff; border: 1.5px solid #d8b4fe; color: #6b21a8; display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+    .banner-nudge .nudge-dismiss { background: none; border: none; cursor: pointer; font-size: 16px; color: #a855f7; padding: 0 2px; line-height: 1; }
 
     /* ── Chat iframe ── */
     .tp-chat-frame {
@@ -267,6 +269,168 @@
     .tp-tab:hover  { color: #3730a3; }
     .tp-tab-pane   { display: none; }
     .tp-tab-pane.active { display: block; }
+
+    /* ── Sources tab ── */
+    .source-card {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      border: 1px solid #e2e8f0; background: #f8fafc;
+      margin-bottom: 8px; text-decoration: none; color: inherit;
+      transition: background .12s, border-color .12s;
+    }
+    .source-card:hover { background: #eff6ff; border-color: #93c5fd; }
+    .source-icon {
+      font-size: 18px; flex-shrink: 0;
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      border-radius: 8px; background: #fff; border: 1px solid #e2e8f0;
+    }
+    .source-info { flex: 1; min-width: 0; }
+    .source-title {
+      font-size: 13px; font-weight: 700; color: #0f172a;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .source-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .source-empty { color: #94a3b8; font-size: 13px; padding: 16px 0; text-align: center; }
+
+    /* ── Tasks tab ── */
+    .task-list-head {
+      font-size: 11px; font-weight: 800; color: #64748b;
+      letter-spacing: .5px; text-transform: uppercase; margin-bottom: 10px;
+    }
+    .task-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 12px; border-radius: 10px;
+      border: 1px solid #e2e8f0; background: #f8fafc;
+      margin-bottom: 8px; transition: background .12s;
+    }
+    .task-item.done-me { background: #f0fdf4; border-color: #86efac; }
+    .task-item-check {
+      width: 20px; height: 20px; border-radius: 6px;
+      border: 2px solid #cbd5e1; background: #fff;
+      flex-shrink: 0; cursor: pointer; display: flex;
+      align-items: center; justify-content: center; font-size: 12px;
+      transition: all .12s; margin-top: 1px;
+    }
+    .task-item-check.checked { background: #059669; border-color: #059669; color: #fff; }
+    .task-item-body { flex: 1; min-width: 0; }
+    .task-item-title { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 3px; }
+    .task-item-desc  { font-size: 12px; color: #475569; line-height: 1.55; }
+    .task-item-duration { font-size: 11px; color: #94a3b8; font-weight: 700; margin-top: 4px; }
+    .task-members-row {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;
+    }
+    .task-member-dot {
+      width: 20px; height: 20px; border-radius: 50%;
+      font-size: 9px; font-weight: 800; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      opacity: .35; transition: opacity .15s;
+      position: relative;
+    }
+    .task-member-dot.done { opacity: 1; }
+    .task-member-dot.done::after {
+      content: "✓"; position: absolute; bottom: -1px; right: -1px;
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #059669; color: #fff; font-size: 7px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ── Skeptic's Redline ── */
+    .doc-section.redlined         { background: #fff5f5; border: 1.5px solid #fca5a5; border-radius: 10px; }
+    .redline-note {
+      margin-top: 6px; padding: 6px 10px; background: #fee2e2;
+      border-radius: 7px; border-right: 3px solid #ef4444;
+      font-size: 12px; color: #991b1b; line-height: 1.5;
+    }
+    .redline-note-author { font-weight: 700; margin-left: 4px; }
+    .redline-actions     { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .redline-btn {
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px;
+      border: none; cursor: pointer; transition: opacity .15s;
+    }
+    .redline-btn:hover   { opacity: .85; }
+    .redline-btn.dismiss { background: #fef3c7; color: #92400e; }
+    .redline-btn.accept  { background: #dcfce7; color: #166534; }
+    .redline-add-btn {
+      font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 6px;
+      border: 1.5px solid #fca5a5; background: #fff; color: #dc2626; cursor: pointer;
+      margin-top: 6px; transition: background .15s;
+    }
+    .redline-add-btn:hover { background: #fff5f5; }
+
+    /* ── Bulletin Board tab ── */
+    .board-compose {
+      display: flex; flex-direction: column; gap: 8px;
+      padding-bottom: 14px; border-bottom: 1px solid var(--line-soft); margin-bottom: 14px;
+    }
+    .board-compose textarea {
+      width: 100%; border: 1.5px solid #e2e8f0; border-radius: 10px;
+      padding: 9px 12px; font: inherit; font-size: 13px; resize: none;
+      background: #f8fafc; transition: border-color .15s;
+    }
+    .board-compose textarea:focus { outline: none; border-color: #818cf8; background: #fff; }
+    .board-compose-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .board-type-select {
+      font-size: 12px; padding: 5px 8px; border: 1px solid #e2e8f0;
+      border-radius: 7px; background: #fff; color: #334155; cursor: pointer;
+    }
+    .board-post {
+      display: flex; gap: 10px; padding: 10px 0;
+      border-bottom: 1px solid #f1f5f9; align-items: flex-start;
+    }
+    .board-post:last-child { border-bottom: none; }
+    .board-post-avatar {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #fff;
+    }
+    .board-post-body { flex: 1; min-width: 0; }
+    .board-post-header {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px;
+    }
+    .board-post-author { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .board-post-time   { font-size: 10px; color: #94a3b8; }
+    .board-post-type   {
+      font-size: 10px; font-weight: 700; padding: 1px 7px; border-radius: 999px;
+    }
+    .board-post-type.update   { background: #e0f2fe; color: #0369a1; }
+    .board-post-type.question { background: #fef9c3; color: #92400e; }
+    .board-post-type.pin      { background: #f0fdf4; color: #15803d; }
+    .board-post-text  { font-size: 13px; color: #334155; line-height: 1.65; white-space: pre-wrap; }
+    .board-pin-badge  {
+      display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 999px;
+      background: #fef3c7; color: #b45309; font-weight: 700; margin-bottom: 4px;
+    }
+    .board-empty { color: #94a3b8; font-size: 13px; padding: 8px 0; }
+
+    /* ── Timeline tab ── */
+    .tl-item {
+      display: flex; gap: 10px; padding: 8px 0;
+      border-bottom: 1px solid #f1f5f9; align-items: flex-start;
+    }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-dot-col { display: flex; flex-direction: column; align-items: center; gap: 0; flex-shrink: 0; padding-top: 3px; }
+    .tl-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid #fff; box-shadow: 0 0 0 2px currentColor;
+    }
+    .tl-dot.block   { color: #6366f1; background: #6366f1; }
+    .tl-dot.board   { color: #059669; background: #059669; }
+    .tl-dot.baton   { color: #d97706; background: #d97706; }
+    .tl-dot.submit  { color: #dc2626; background: #dc2626; }
+    .tl-line        { width: 2px; flex: 1; min-height: 14px; background: #e2e8f0; margin-top: 2px; }
+    .tl-body        { flex: 1; min-width: 0; }
+    .tl-meta        { font-size: 10px; color: #94a3b8; margin-bottom: 2px; }
+    .tl-author      { font-weight: 700; color: #64748b; }
+    .tl-text        { font-size: 12px; color: #334155; line-height: 1.55; white-space: pre-wrap; }
+    .tl-badge {
+      display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 999px;
+      font-weight: 700; margin-right: 4px;
+    }
+    .tl-badge.block  { background: #ede9fe; color: #5b21b6; }
+    .tl-badge.board  { background: #d1fae5; color: #065f46; }
+    .tl-badge.baton  { background: #fef3c7; color: #92400e; }
+    .tl-badge.submit { background: #fee2e2; color: #991b1b; }
+    .tl-empty { color: #94a3b8; font-size: 13px; padding: 8px 0; }
 
     /* ── Members column ── */
     .tp-members-col { display: flex; flex-direction: column; gap: 0; }
@@ -376,6 +540,12 @@
 
     <!-- Col 2: Document -->
     <main>
+      <!-- Curator nudge banner -->
+      <div id="tpCuratorNudge" class="tp-status-banner banner-nudge" style="display:none;">
+        <span id="tpCuratorNudgeText"></span>
+        <button class="nudge-dismiss" onclick="dismissNudge()" title="סגור">✕</button>
+      </div>
+
       <!-- Submitted banner -->
       <div id="tpSubmittedBanner" class="tp-status-banner banner-success" style="display:none;">
         ✅ הפרויקט הוגש בהצלחה — כל חברי הצוות אישרו!
@@ -390,6 +560,8 @@
       <div class="tp-panel" style="margin-bottom:16px;">
         <div class="tp-tabs">
           <button class="tp-tab active" onclick="switchTab('document', this)">📄 מסמך</button>
+          <button class="tp-tab" onclick="switchTab('board', this)">📌 לוח מודעות</button>
+          <button class="tp-tab" onclick="switchTab('timeline', this)">🕓 היסטוריה</button>
           <button class="tp-tab" onclick="switchTab('sources', this)">📚 מקורות</button>
           <button class="tp-tab" onclick="switchTab('tasks', this)">✅ משימות</button>
           <button class="tp-tab" id="chatTab" onclick="switchTab('chat', this)">💬 צ'אט</button>
@@ -406,12 +578,33 @@
           </div>
         </div>
 
+        <div class="tp-tab-pane" id="tabBoard">
+          <!-- Compose form -->
+          <div class="board-compose">
+            <textarea id="boardTa" rows="2" placeholder="כתוב/י עדכון, שאלה או הודעה לצוות..."></textarea>
+            <div class="board-compose-row">
+              <select id="boardTypeSelect" class="board-type-select">
+                <option value="update">📢 עדכון</option>
+                <option value="question">❓ שאלה</option>
+                <option value="pin">📌 נעיצה</option>
+              </select>
+              <button class="btn btn-primary" onclick="postBoardMessage()">פרסם</button>
+            </div>
+          </div>
+          <!-- Feed -->
+          <div id="boardFeed"><div class="board-empty">אין הודעות עדיין.</div></div>
+        </div>
+
+        <div class="tp-tab-pane" id="tabTimeline">
+          <div id="timelineContainer"><div class="tl-empty">אין פעילות עדיין.</div></div>
+        </div>
+
         <div class="tp-tab-pane" id="tabSources">
-          <div style="color:#94a3b8;font-size:13px;padding:8px 0;">מקורות ומראי מקום ייתווספו כאן.</div>
+          <div id="sourcesContainer"><div class="tp-loading">טוען מקורות...</div></div>
         </div>
 
         <div class="tp-tab-pane" id="tabTasks">
-          <div style="color:#94a3b8;font-size:13px;padding:8px 0;">רשימת משימות ייתווסף כאן.</div>
+          <div id="tasksContainer"><div class="tp-loading">טוען משימות...</div></div>
         </div>
 
         <div class="tp-tab-pane" id="tabChat">
@@ -478,6 +671,8 @@
     const studentId   = params.get("studentId")   || "";
     const studentName = params.get("studentName") || studentId;
     const courseId    = params.get("courseId")    || "";
+    const unitId      = params.get("unitId")      || "";
+    const source      = params.get("source")      || "";  // "lesson" when opened inside lesson_view iframe
 
     if (!projectId || !studentId) {
       document.body.innerHTML = '<div style="padding:48px;text-align:center;font-size:15px;color:#dc2626;">חסרים פרמטרים — חזור/י ל-waiting lobby.</div>';
@@ -490,9 +685,14 @@
     let _vetoActivityId = "final";
     let _newBlockIds    = new Set();
 
-    let _docRef   = null;
-    let _batonRef = null;
-    let _vetoRef  = null;
+    let _docRef    = null;
+    let _batonRef  = null;
+    let _vetoRef   = null;
+    let _tasksRef  = null;
+    let _boardRef    = null;
+    let _redlineRef  = null;
+    let _nudgeRef    = null;
+    let _redlines    = {};   // blockId → redline object, kept in sync by listener
 
     // ── Firebase ─────────────────────────────────────────────────────────────
     function getDb() {
@@ -532,6 +732,9 @@
         // Digest modal
         showDigest(data.digest);
 
+        // Fetch lesson payload for sources + tasks
+        fetchLessonData();
+
         // Firebase listeners
         startListeners();
 
@@ -539,6 +742,293 @@
         document.getElementById("tpLoadingScreen").innerHTML =
           `<div style="color:#dc2626;">שגיאה: ${e.message}</div>`;
       }
+    }
+
+    // ── Bulletin Board ───────────────────────────────────────────────────────
+    const BOARD_TYPE_LABELS = { update: "📢 עדכון", question: "❓ שאלה", pin: "📌 נעיצה" };
+    const BOARD_TYPE_CLASS  = { update: "update",   question: "question",  pin: "pin"    };
+
+    async function postBoardMessage() {
+      const ta   = document.getElementById("boardTa");
+      const text = String(ta?.value || "").trim();
+      if (!text) return;
+
+      const type = document.getElementById("boardTypeSelect")?.value || "update";
+
+      try {
+        const res = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "board_post", projectId, studentId, studentName, text, type })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+        if (ta) ta.value = "";
+      } catch(e) {
+        alert(`שגיאה: ${e.message}`);
+      }
+    }
+
+    function renderBoardFeed(board) {
+      const feed = document.getElementById("boardFeed");
+      if (!feed) return;
+
+      const posts = Object.values(board || {})
+        .sort((a, b) => {
+          // Pins first, then by time descending
+          if (a.type === "pin" && b.type !== "pin") return -1;
+          if (b.type === "pin" && a.type !== "pin") return  1;
+          return b.postedAt - a.postedAt;
+        });
+
+      if (!posts.length) {
+        feed.innerHTML = '<div class="board-empty">אין הודעות עדיין.</div>';
+        return;
+      }
+
+      feed.innerHTML = posts.map(p => {
+        const color  = avatarColor(p.authorId || "");
+        const init   = ((p.authorName || p.authorId || "?").charAt(0)).toUpperCase();
+        const time   = new Date(p.postedAt).toLocaleString("he-IL", {
+          day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit"
+        });
+        const typeLabel = BOARD_TYPE_LABELS[p.type] || p.type;
+        const typeCls   = BOARD_TYPE_CLASS[p.type]  || "update";
+        const isPin     = p.type === "pin";
+
+        return `
+          <div class="board-post">
+            <div class="board-post-avatar" style="background:${color};">${init}</div>
+            <div class="board-post-body">
+              ${isPin ? '<div class="board-pin-badge">📌 נעוץ</div>' : ""}
+              <div class="board-post-header">
+                <span class="board-post-author">${escHtml(p.authorName || p.authorId)}</span>
+                <span class="board-post-type ${typeCls}">${typeLabel}</span>
+                <span class="board-post-time">${time}</span>
+              </div>
+              <div class="board-post-text">${escHtml(p.text)}</div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    // ── Curator Nudge ─────────────────────────────────────────────────────────
+    function renderCuratorNudge(nudge) {
+      const banner  = document.getElementById("tpCuratorNudge");
+      const textEl  = document.getElementById("tpCuratorNudgeText");
+      if (!banner || !textEl) return;
+
+      // No nudge or already seen by this student
+      if (!nudge?.message || nudge.seenBy?.[studentId]) {
+        banner.style.display = "none";
+        return;
+      }
+
+      textEl.textContent = `💡 ${nudge.message}`;
+      banner.style.display = "";
+    }
+
+    async function dismissNudge() {
+      const banner = document.getElementById("tpCuratorNudge");
+      if (banner) banner.style.display = "none";
+      const db = getDb();
+      if (!db) return;
+      await db.ref(`team_projects/${projectId}/curatorNudge/seenBy/${studentId}`).set(Date.now());
+    }
+
+    // ── Timeline ──────────────────────────────────────────────────────────────
+    // Aggregates doc blocks + board posts + baton passes into one chronological feed.
+    // Called from document and board listeners so it auto-refreshes.
+    function renderTimeline() {
+      const container = document.getElementById("timelineContainer");
+      if (!container) return;
+
+      const events = [];
+
+      // Document blocks
+      const db = getDb();
+      if (db) {
+        // Re-read from live Firebase state via cached refs isn't possible here
+        // — we rely on _project and the last rendered document snapshot.
+        // We keep a module-level cache updated by the document listener.
+      }
+
+      // Use _timelineCache populated by listeners
+      const docBlocks  = (_timelineCache.blocks  || []);
+      const boardPosts = (_timelineCache.board   || []);
+      const batonLog   = (_timelineCache.baton   || []);
+
+      docBlocks.forEach(b => events.push({
+        type: "block", at: b.addedAt,
+        author: b.authorName || b.authorId || "?",
+        text: b.text.length > 120 ? b.text.slice(0, 120) + "…" : b.text
+      }));
+
+      boardPosts.forEach(p => events.push({
+        type: "board", at: p.postedAt,
+        author: p.authorName || p.authorId || "?",
+        text: `[${p.type}] ${p.text.length > 100 ? p.text.slice(0, 100) + "…" : p.text}`
+      }));
+
+      batonLog.forEach(e => events.push(e));
+
+      events.sort((a, b) => b.at - a.at);
+
+      if (!events.length) {
+        container.innerHTML = '<div class="tl-empty">אין פעילות עדיין.</div>';
+        return;
+      }
+
+      const TYPE_LABELS = { block: "בלוק נוסף", board: "הודעה", baton: "העברת בטון", submit: "הגשה" };
+
+      container.innerHTML = events.map((e, i) => {
+        const isLast = i === events.length - 1;
+        const time   = new Date(e.at).toLocaleString("he-IL", {
+          day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit"
+        });
+        return `
+          <div class="tl-item">
+            <div class="tl-dot-col">
+              <div class="tl-dot ${e.type}"></div>
+              ${!isLast ? '<div class="tl-line"></div>' : ""}
+            </div>
+            <div class="tl-body">
+              <div class="tl-meta">
+                <span class="tl-badge ${e.type}">${escHtml(TYPE_LABELS[e.type] || e.type)}</span>
+                <span class="tl-author">${escHtml(e.author)}</span>
+                · <span>${time}</span>
+              </div>
+              <div class="tl-text">${escHtml(e.text)}</div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    // Cache updated by document + board listeners
+    const _timelineCache = { blocks: [], board: [], baton: [] };
+
+    // ── Sources + Tasks (lesson payload) ─────────────────────────────────────
+    async function fetchLessonData() {
+      if (!courseId) return;
+      try {
+        const q = new URLSearchParams({ action: "lesson_payload", courseId });
+        if (unitId) q.set("unitId", unitId);
+        const res  = await fetch(`/.netlify/functions/classroom?${q.toString()}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.error) return;
+        renderSources(data.resources || []);
+        renderTasks(data.sprintDefinitions || []);
+        startTasksListener(data.sprintDefinitions || []);
+      } catch(e) {
+        console.warn("fetchLessonData failed:", e);
+      }
+    }
+
+    // ── Sources tab ───────────────────────────────────────────────────────────
+    const SOURCE_ICONS = {
+      video:    "🎬",
+      article:  "📰",
+      pdf:      "📄",
+      book:     "📚",
+      link:     "🔗",
+      image:    "🖼️",
+      default:  "📎"
+    };
+
+    function renderSources(resources) {
+      const container = document.getElementById("sourcesContainer");
+      if (!container) return;
+      if (!resources.length) {
+        container.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">לא הוגדרו מקורות לשיעור זה.</div>';
+        return;
+      }
+      container.innerHTML = resources.map(r => {
+        const icon  = SOURCE_ICONS[r.type] || SOURCE_ICONS.default;
+        const title = escHtml(r.title || r.url || "מקור");
+        const meta  = escHtml(r.description || r.type || "");
+        const href  = r.url ? `href="${escHtml(r.url)}" target="_blank" rel="noopener"` : "";
+        return `
+          <div class="source-card">
+            <div class="source-icon">${icon}</div>
+            <div class="source-info">
+              <div class="source-title">${href ? `<a ${href} style="color:inherit;">${title}</a>` : title}</div>
+              ${meta ? `<div class="source-meta">${meta}</div>` : ""}
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    // ── Tasks tab ─────────────────────────────────────────────────────────────
+    let _sprintDefs = [];
+
+    function renderTasks(sprintDefs, allProgress) {
+      _sprintDefs = sprintDefs;
+      const container = document.getElementById("tasksContainer");
+      if (!container) return;
+      if (!sprintDefs.length) {
+        container.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:8px 0;">לא הוגדרו שלבים לשיעור זה.</div>';
+        return;
+      }
+      const progress = allProgress || {};
+
+      container.innerHTML = sprintDefs.map(sprint => {
+        const id     = String(sprint.id || "");
+        const title  = escHtml(sprint.title || id);
+        const desc   = escHtml(sprint.instructions || sprint.description || "");
+
+        // Determine my completion status
+        const myDone = progress[studentId]?.[id]?.done === true;
+
+        // Gather member completion dots
+        const members = _project?.members || [];
+        const dotsHtml = members.map(sid => {
+          const done  = progress[sid]?.[id]?.done === true;
+          const color = avatarColor(sid);
+          const init  = (sid.charAt(0) || "?").toUpperCase();
+          return `<span class="task-member-dot${done ? " done" : ""}"
+            style="background:${done ? color : "#e2e8f0"};"
+            title="${escHtml(sid)}">${init}</span>`;
+        }).join("");
+
+        // Duration label
+        const dur = sprint.duration ? `<span class="task-item-duration">${sprint.duration} דק'</span>` : "";
+
+        return `
+          <div class="task-item${myDone ? " done-me" : ""}" id="task_${id}">
+            <button class="task-item-check${myDone ? " checked" : ""}"
+              onclick="toggleTask('${id}')"
+              title="${myDone ? "סמן כלא-בוצע" : "סמן כבוצע"}">
+              ${myDone ? "✓" : ""}
+            </button>
+            <div class="task-item-body">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div class="task-item-title">${title}</div>
+                ${dur}
+              </div>
+              ${desc ? `<div class="task-item-desc">${desc}</div>` : ""}
+              <div class="task-members-row">${dotsHtml}</div>
+            </div>
+          </div>`;
+      }).join("");
+    }
+
+    async function toggleTask(taskId) {
+      const db = getDb();
+      if (!db) return;
+      const ref    = db.ref(`team_projects/${projectId}/tasks/${studentId}/${taskId}`);
+      const snap   = await ref.once("value");
+      const isDone = snap.val()?.done === true;
+      await ref.set({ done: !isDone, updatedAt: Date.now() });
+    }
+
+    function startTasksListener(sprintDefs) {
+      const db = getDb();
+      if (!db || !sprintDefs.length) return;
+      _tasksRef = db.ref(`team_projects/${projectId}/tasks`);
+      _tasksRef.on("value", snap => {
+        renderTasks(sprintDefs, snap.val() || {});
+      });
     }
 
     // ── Tab switching ────────────────────────────────────────────────────────
@@ -603,15 +1093,44 @@
         return;
       }
 
+      const myRole    = _project?.roles?.[studentId] || null;
+      const isSkeptic = myRole === "מאתגר";
+      const isDrafter = myRole === "מנסח";
+
       container.innerHTML = blocks.map(b => {
-        const authorId = b.authorId || "";
-        const name     = b.authorName || authorId;
-        const initial  = (name.charAt(0) || "?").toUpperCase();
-        const color    = avatarColor(authorId);
-        const time     = new Date(b.addedAt).toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
-        const isNew    = _newBlockIds.has(b.id);
+        const authorId  = b.authorId || "";
+        const name      = b.authorName || authorId;
+        const initial   = (name.charAt(0) || "?").toUpperCase();
+        const color     = avatarColor(authorId);
+        const time      = new Date(b.addedAt).toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+        const isNew     = _newBlockIds.has(b.id);
+        const redline   = _redlines[b.id] || null;
+        const hasActive = redline && redline.status === "open";
+
+        // Redline annotation
+        let redlineHtml = "";
+        if (hasActive) {
+          const rAuthor = escHtml(redline.authorName || redline.authorId || "?");
+          const rNote   = escHtml(redline.note || "");
+          const resolveButtons = isDrafter ? `
+            <div class="redline-actions">
+              <button class="redline-btn accept"  onclick="resolveRedline('${escHtml(b.id)}','accept')">✅ קיבלתי — אתקן</button>
+              <button class="redline-btn dismiss" onclick="resolveRedline('${escHtml(b.id)}','dismiss')">✕ לא מקבל</button>
+            </div>` : "";
+          redlineHtml = `<div class="redline-note">
+            <span class="redline-note-author">❌ הסתייגות (${rAuthor}):</span> ${rNote}
+            ${resolveButtons}
+          </div>`;
+        }
+
+        // Skeptic add-redline button
+        const canRedline   = isSkeptic && !hasActive && authorId !== studentId;
+        const addRedlineBtn = canRedline
+          ? `<button class="redline-add-btn" onclick="openRedlinePrompt('${escHtml(b.id)}')">❌ הוסף הסתייגות</button>`
+          : "";
+
         return `
-          <div class="doc-section">
+          <div class="doc-section${hasActive ? " redlined" : ""}">
             <div class="doc-attr-avatar" style="background:${color};">${initial}</div>
             <div class="doc-section-body">
               <div class="doc-section-attr">
@@ -620,9 +1139,38 @@
                 ${isNew ? '<span class="doc-section-new">✨ חדש</span>' : ""}
               </div>
               <div class="doc-section-text">${escHtml(b.text)}</div>
+              ${redlineHtml}
+              ${addRedlineBtn}
             </div>
           </div>`;
       }).join("");
+    }
+
+    // ── Skeptic's Redline ──────────────────────────────────────────────────────
+    async function openRedlinePrompt(blockId) {
+      const note = String(prompt("מה ההסתייגות שלך על הבלוק הזה?") || "").trim();
+      if (!note) return;
+      try {
+        const res  = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "redline_add", projectId, studentId, studentName, blockId, note })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+      } catch(e) { alert(`שגיאה: ${e.message}`); }
+    }
+
+    async function resolveRedline(blockId, resolution) {
+      try {
+        const res  = await fetch("/.netlify/functions/team_project", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "redline_resolve", projectId, studentId, blockId, resolution })
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error);
+      } catch(e) { alert(`שגיאה: ${e.message}`); }
     }
 
     function escHtml(str) {
@@ -774,19 +1322,60 @@
       // Document listener
       _docRef = db.ref(`team_projects/${projectId}/document`);
       _docRef.on("value", snap => {
-        renderDocument(snap.val());
+        const doc = snap.val();
+        renderDocument(doc);
+        _timelineCache.blocks = Object.values(doc?.blocks || {})
+          .filter(b => !b.deleted)
+          .sort((a, b) => a.addedAt - b.addedAt);
+        renderTimeline();
       });
 
       // Baton listener
       _batonRef = db.ref(`team_projects/${projectId}/baton`);
       _batonRef.on("value", snap => {
-        renderBaton(snap.val());
+        const baton = snap.val();
+        renderBaton(baton);
+        if (baton?.handoffAt) {
+          _timelineCache.baton = [{
+            type: "baton", at: baton.handoffAt,
+            author: baton.handoffFrom || "?",
+            text: `הבטון הועבר ל-${baton.currentHolder || "?"}${baton.handoffNote ? ` — "${baton.handoffNote}"` : ""}`
+          }];
+          renderTimeline();
+        }
       });
 
       // Veto listener
       _vetoRef = db.ref(`team_projects/${projectId}/veto/${_vetoActivityId}`);
       _vetoRef.on("value", snap => {
         renderVeto(snap.val());
+      });
+
+      // Redline listener — re-renders document on any change
+      _redlineRef = db.ref(`team_projects/${projectId}/redlines`);
+      _redlineRef.on("value", snap => {
+        _redlines = snap.val() || {};
+        // Re-render document to reflect current redline state
+        const docSnap = _docRef;
+        if (docSnap) {
+          db.ref(`team_projects/${projectId}/document`).once("value").then(s => renderDocument(s.val()));
+        }
+      });
+
+      // Board listener
+      _boardRef = db.ref(`team_projects/${projectId}/board`);
+      _boardRef.on("value", snap => {
+        const board = snap.val();
+        renderBoardFeed(board);
+        _timelineCache.board = Object.values(board || {})
+          .sort((a, b) => a.postedAt - b.postedAt);
+        renderTimeline();
+      });
+
+      // Curator nudge listener
+      _nudgeRef = db.ref(`team_projects/${projectId}/curatorNudge`);
+      _nudgeRef.on("value", snap => {
+        renderCuratorNudge(snap.val());
       });
     }
 
@@ -812,6 +1401,10 @@
       if (_docRef)   { _docRef.off();   _docRef   = null; }
       if (_batonRef) { _batonRef.off(); _batonRef = null; }
       if (_vetoRef)  { _vetoRef.off();  _vetoRef  = null; }
+      if (_tasksRef) { _tasksRef.off(); _tasksRef = null; }
+      if (_boardRef)   { _boardRef.off();   _boardRef   = null; }
+      if (_redlineRef) { _redlineRef.off(); _redlineRef = null; }
+      if (_nudgeRef)   { _nudgeRef.off();   _nudgeRef   = null; }
     }
 
     // ── Add block ─────────────────────────────────────────────────────────────
@@ -932,6 +1525,11 @@
       const isBatonHolder = _baton?.currentHolder === studentId && _baton?.status === "holding";
       if (isBatonHolder) {
         openBatonModal();
+        return;
+      }
+      if (source === "lesson") {
+        // Opened inside lesson_view iframe — signal parent to close, don't navigate
+        window.parent.postMessage({ type: "tp_exit" }, "*");
         return;
       }
       const lobbyUrl = `/waiting_lobby.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}`;
