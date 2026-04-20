@@ -1094,6 +1094,231 @@
 .stage-row-stage { font-size: 12px; }
 .stage-row-badge { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
 .stage-row-actions { display: flex; gap: 6px; align-items: center; }
+
+/* ══════════════════════════════════════════════════════════
+   Micro Cockpit v9 — Unified Button Design System
+   All .btn share one consistent size, shape, and interaction.
+   Semantic variants use solid or ghost color tokens.
+   !important overrides conflicting inline style= attributes.
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── Base ─── */
+body.management-theme .btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 7px 14px !important;
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, box-shadow .15s, opacity .15s !important;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1.4 !important;
+  box-sizing: border-box;
+  vertical-align: middle;
+  -webkit-font-smoothing: antialiased;
+  transform: none !important;
+}
+body.management-theme .btn:active { transform: scale(0.97) !important; }
+body.management-theme .btn:disabled,
+body.management-theme .btn[disabled] {
+  opacity: .50 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+/* Kill conflicting shimmer pseudo-elements */
+body.management-theme .btn::before,
+body.management-theme .btn::after { display: none !important; }
+
+/* ─── Primary (blue) ─── */
+body.management-theme .btn-blue {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(37,99,235,.20) !important;
+}
+body.management-theme .btn-blue:hover:not(:disabled) {
+  background: #1d4ed8 !important;
+  border-color: #1d4ed8 !important;
+}
+
+/* ─── Success (green solid) ─── */
+body.management-theme .btn-green {
+  background: #059669 !important;
+  border-color: #059669 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(5,150,105,.20) !important;
+  margin-top: 0 !important;
+}
+body.management-theme .btn-green:hover:not(:disabled) {
+  background: #047857 !important;
+  border-color: #047857 !important;
+}
+
+/* ─── Danger (red solid) ─── */
+body.management-theme .btn-red {
+  background: #dc2626 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 6px rgba(220,38,38,.18) !important;
+  margin-top: 0 !important;
+}
+body.management-theme .btn-red:hover:not(:disabled) {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+}
+
+/* ─── Secondary / Outline ─── */
+body.management-theme .btn-outline {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #374151 !important;
+  box-shadow: none !important;
+}
+body.management-theme .btn-outline:hover:not(:disabled) {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #1e293b !important;
+}
+
+/* ─── Warning (amber) — for lobby / recall actions ─── */
+body.management-theme .btn-warning {
+  background: #fff7ed !important;
+  border-color: #fdba74 !important;
+  color: #9a3412 !important;
+  box-shadow: none !important;
+}
+body.management-theme .btn-warning:hover:not(:disabled) {
+  background: #ffedd5 !important;
+  border-color: #fb923c !important;
+}
+
+/* ─── Ghost green — AI / auto / suggested actions ─── */
+body.management-theme .btn-ghost-green {
+  background: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+  color: #166534 !important;
+  box-shadow: none !important;
+}
+body.management-theme .btn-ghost-green:hover:not(:disabled) {
+  background: #dcfce7 !important;
+  border-color: #86efac !important;
+}
+
+/* ─── Ghost red — soft reject/remove actions in rows ─── */
+body.management-theme .btn-ghost-red {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #991b1b !important;
+  box-shadow: none !important;
+}
+body.management-theme .btn-ghost-red:hover:not(:disabled) {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+
+/* ─── XS size — tiny action buttons inside rows ─── */
+body.management-theme .btn.btn-xs {
+  font-size: 11px !important;
+  padding: 4px 9px !important;
+}
+
+/* ─── Gate buttons: align with btn system ─── */
+.gate-btn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border-style: solid;
+  border-width: 1px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  flex: 0 1 auto !important;
+  min-width: unset !important;
+  white-space: nowrap;
+}
+
+/* ─── Broadcast icon buttons ─── */
+.broadcast-mic-btn,
+.broadcast-upload-btn {
+  font-size: 16px !important;
+  padding: 7px 10px !important;
+  border-radius: 8px !important;
+  font-weight: 400 !important;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+/* ─── DJ push button ─── */
+.dj-push-btn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+}
+
+/* ─── Master open-all: keep prominence, normalize size ─── */
+.master-open-all-btn {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  padding: 8px 18px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 14px rgba(5,150,105,.28) !important;
+  letter-spacing: .2px;
+}
+
+/* ─── Group mode inline buttons → bring into btn system ─── */
+#microActivateGroupBtn,
+#microDeactivateGroupBtn {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, opacity .15s;
+  white-space: nowrap;
+}
+#microActivateGroupBtn {
+  background: #059669;
+  border-color: #059669;
+  color: #ffffff;
+}
+#microActivateGroupBtn:hover { background: #047857; border-color: #047857; }
+#microDeactivateGroupBtn {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+}
+#microDeactivateGroupBtn:hover { background: #b91c1c; border-color: #b91c1c; }
+
+/* ─── Top-bar btn-outline: keep the dark-bg inverse look ─── */
+.top-bar .btn-outline {
+  background: rgba(255,255,255,.10) !important;
+  border-color: rgba(255,255,255,.28) !important;
+  color: #e2e8f0 !important;
+  box-shadow: none !important;
+}
+.top-bar .btn-outline:hover {
+  background: rgba(255,255,255,.20) !important;
+  border-color: rgba(255,255,255,.45) !important;
+  color: #ffffff !important;
+}
 </style>
 <title>MilEd.One — Micro Cockpit</title>
 
@@ -1139,8 +1364,8 @@
       <a href="/admin_cockpit.html" onclick="window.MiledAccess?.clearPreviewRole?.()" style="display:block;padding:8px 12px;border-radius:6px;text-decoration:none;color:#4338ca;font-size:13px;font-weight:600;">🛠 ניהול מערכת</a>
     </div>
   </div>
-  <a id="toMacroCockpitBtn" href="/macro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">עבור למאקרו →</a>
-  <a href="/cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
+  <a id="toMacroCockpitBtn" href="/macro_cockpit.html" class="btn btn-outline">עבור למאקרו →</a>
+  <a href="/cockpit.html" class="btn btn-outline">📊 סקירת מיומנויות כיתה</a>
 </div>
 
 <div id="cockpit-nav">
@@ -1206,21 +1431,21 @@
             <select id="activitySelect" style="flex:1;" onchange="onActivitySelect(this)">
               <option value="">— ללא פעילות ספציפית —</option>
             </select>
-            <button class="btn btn-outline" style="font-size:12px;padding:7px 10px;" onclick="loadActivitiesForPicker()">🔄 טען</button>
+            <button class="btn btn-outline"  onclick="loadActivitiesForPicker()">🔄 טען</button>
           </div>
           <div id="activityPickerDetail" style="display:none;margin-top:8px;padding:10px;background:#f0f9ff;border-radius:8px;font-size:13px;line-height:1.5;"></div>
         </div>
 
         <div id="sessionControls" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <button class="btn btn-green" id="openBtn" onclick="openSession()">▶ פתח שיעור</button>
-          <a href="macro_cockpit.html" class="btn btn-outline" id="backToUnitsBtn" style="font-size:12px;padding:7px 14px;text-decoration:none;">↩ תכנון ראשי</a>
+          <a href="macro_cockpit.html" class="btn btn-outline" id="backToUnitsBtn" style="text-decoration:none">↩ תכנון ראשי</a>
           <div id="activeSessionControls" style="display:none;align-items:center;gap:8px;flex-wrap:wrap;">
             <div id="sessionBadge" class="session-badge">✅ שיעור פעיל</div>
             <button class="btn master-open-all-btn" id="openAllBtn" onclick="openAllEntryPolicy()">פתח הכל - כולם פנימה! 🔓</button>
-            <button class="btn btn-outline" id="sendToLobbyBtn" onclick="sendStudentsToLobby()" style="font-size:12px;padding:7px 14px;background:#fff7ed;color:#9a3412;border-color:#fdba74;">🚪 שלח לחדר המתנה</button>
-            <button class="btn btn-green" id="returnFromLobbyBtn" onclick="returnStudentsFromLobby()" style="font-size:12px;padding:7px 14px;display:none;">▶ החזר לשיעור</button>
+            <button class="btn btn-warning" id="sendToLobbyBtn" onclick="sendStudentsToLobby()">🚪 שלח לחדר המתנה</button>
+            <button class="btn btn-green" id="returnFromLobbyBtn" onclick="returnStudentsFromLobby()" style="display:none">▶ החזר לשיעור</button>
             <button class="btn btn-red" id="closeBtn" onclick="closeSession()">■ סגור שיעור</button>
-            <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 יומן הוראה</button>
+            <button class="btn btn-outline" onclick="exportSession()">📓 יומן הוראה</button>
           </div>
         </div>
 
@@ -1253,13 +1478,13 @@
         <div style="margin-bottom:12px;">
           <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:8px;letter-spacing:.3px;">🏷️ Live Phase — עדכן מה קורה עכשיו</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('listening')" style="font-size:12px;padding:6px 10px;">🎧 מקשיבים</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('interactive')" style="font-size:12px;padding:6px 10px;">💬 דיון</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('solo')" style="font-size:12px;padding:6px 10px;">✍️ עצמאי</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('pairs')" style="font-size:12px;padding:6px 10px;">👥 זוגות</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('plenary')" style="font-size:12px;padding:6px 10px;">🏛️ מליאה</button>
-            <button class="btn btn-outline" type="button" onclick="setLivePhase('')" style="font-size:12px;padding:6px 10px;">✕ נקה</button>
-            <button class="btn btn-outline" type="button" onclick="resetPhaseToActivity()" style="font-size:11px;padding:5px 8px;background:#f0fdf4;color:#166534;border-color:#bbf7d0;" title="נגזר אוטומטית ממצב הפעילות הפעילה — מבטל override ידני">📌 הצמד לפעילות</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('listening')">🎧 מקשיבים</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('interactive')">💬 דיון</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('solo')">✍️ עצמאי</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('pairs')">👥 זוגות</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('plenary')">🏛️ מליאה</button>
+            <button class="btn btn-outline" type="button" onclick="setLivePhase('')">✕ נקה</button>
+            <button class="btn btn-ghost-green" type="button" onclick="resetPhaseToActivity()" title="נגזר אוטומטית ממצב הפעילות הפעילה — מבטל override ידני">📌 הצמד לפעילות</button>
           </div>
           <div id="livePhaseStatus" style="font-size:12px;color:#475569;margin-top:6px;"></div>
         </div>
@@ -1328,7 +1553,7 @@
         <div class="mc-card">
         <div class="mc-card-head">📊 Heatmap ספרינטים
           <span style="margin-right:auto;">
-            <button class="btn btn-outline" type="button" onclick="loadPacingHeatmap()" style="font-size:12px;padding:5px 10px;">רענן</button>
+            <button class="btn btn-outline" type="button" onclick="loadPacingHeatmap()">רענן</button>
           </span>
         </div>
         <div class="mc-card-body">
@@ -1397,15 +1622,15 @@
             <input id="meetingMoodleIdInput" type="text" class="lp-input" style="margin:0;" placeholder="Activity ID מ-Moodle">
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-            <button class="btn btn-blue" type="button" onclick="saveMeetingInfo()" style="font-size:12px;padding:7px 14px;">💾 שמור פרטי מפגש</button>
-            <button class="btn btn-green" type="button" id="meetingJoinHostBtn" onclick="joinMeetingAsHost()" style="font-size:12px;padding:7px 14px;" disabled>🎙️ כניסה כמנחה</button>
+            <button class="btn btn-blue" type="button" onclick="saveMeetingInfo()">💾 שמור פרטי מפגש</button>
+            <button class="btn btn-green" type="button" id="meetingJoinHostBtn" onclick="joinMeetingAsHost()"  disabled>🎙️ כניסה כמנחה</button>
             <span id="meetingInfoStatus" style="font-size:12px;color:#475569;"></span>
           </div>
           <div style="border-top:1px solid #dbeafe;padding-top:10px;display:grid;gap:6px;">
             <div style="font-size:13px;font-weight:700;color:#0f172a;">🎞️ הקלטת שיעור</div>
             <input id="meetingRecordingUrlInput" type="url" class="lp-input" style="margin:0;" placeholder="https://zoom.us/rec/...">
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-              <button class="btn btn-outline" type="button" onclick="publishRecordingUrl()" style="font-size:12px;padding:7px 14px;">📤 פרסם הקלטה לסטודנטים</button>
+              <button class="btn btn-outline" type="button" onclick="publishRecordingUrl()">📤 פרסם הקלטה לסטודנטים</button>
               <span id="meetingRecordingStatus" style="font-size:12px;color:#475569;"></span>
             </div>
           </div>
@@ -1414,8 +1639,8 @@
             <div style="font-size:12px;color:#64748b;">סמן את הדובר הראשי עכשיו — הסטודנטים יראו באנר חי.</div>
             <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:end;">
               <input id="speakerFocusInput" type="text" class="lp-input" style="margin:0;" placeholder="לדוג׳: מריאם — שיתוף חוויה">
-              <button class="btn btn-blue" type="button" onclick="setSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">📢 הגדר</button>
-              <button class="btn btn-outline" type="button" onclick="clearSpeakerFocus()" style="font-size:12px;padding:7px 14px;white-space:nowrap;">✕ נקה</button>
+              <button class="btn btn-blue" type="button" onclick="setSpeakerFocus()" style="white-space:nowrap">📢 הגדר</button>
+              <button class="btn btn-outline" type="button" onclick="clearSpeakerFocus()" style="white-space:nowrap">✕ נקה</button>
             </div>
             <div id="speakerFocusStatus" style="font-size:12px;color:#475569;"></div>
           </div>
@@ -1431,7 +1656,7 @@
               <div style="font-size:14px;font-weight:800;color:#0f172a;">Gatekeeping Queue</div>
               <div style="font-size:12px;color:#64748b;">תור בדיקות להגשות לפי הקורס שנבחר כרגע.</div>
             </div>
-            <button class="btn btn-outline" type="button" onclick="loadGatekeepingQueue()" style="font-size:12px;padding:7px 12px;">רענן תור</button>
+            <button class="btn btn-outline" type="button" onclick="loadGatekeepingQueue()">רענן תור</button>
           </div>
 
           <div class="gatekeeping-body">
@@ -1469,20 +1694,20 @@
 
           <textarea id="gatekeepingFeedback" class="lp-textarea" rows="2" style="margin:0;" placeholder="משוב להערכה (אופציונלי)"></textarea>
           <div class="gatekeeping-actions">
-            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="clearGatekeepingSelection()">נקה בחירה</button>
-            <button class="btn btn-green" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('approved')">אישור נבחרים</button>
-            <button class="btn btn-red" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('rejected')">דחיית נבחרים</button>
-            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="evaluateGatekeepingBulk('review_required')">נדרש תיקון לנבחרים</button>
-            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="retryGatekeepingFailedBulk()">נסה שוב נכשלים</button>
-            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="stopGatekeepingBulk()">עצור Bulk</button>
-            <button class="btn btn-outline" type="button" style="font-size:12px;padding:7px 12px;" onclick="exportGatekeepingAuditCsv()">ייצא Audit CSV</button>
+            <button class="btn btn-outline" type="button"  onclick="clearGatekeepingSelection()">נקה בחירה</button>
+            <button class="btn btn-green" type="button"  onclick="evaluateGatekeepingBulk('approved')">אישור נבחרים</button>
+            <button class="btn btn-red" type="button"  onclick="evaluateGatekeepingBulk('rejected')">דחיית נבחרים</button>
+            <button class="btn btn-outline" type="button"  onclick="evaluateGatekeepingBulk('review_required')">נדרש תיקון לנבחרים</button>
+            <button class="btn btn-outline" type="button"  onclick="retryGatekeepingFailedBulk()">נסה שוב נכשלים</button>
+            <button class="btn btn-outline" type="button"  onclick="stopGatekeepingBulk()">עצור Bulk</button>
+            <button class="btn btn-outline" type="button"  onclick="exportGatekeepingAuditCsv()">ייצא Audit CSV</button>
           </div>
           <div class="gatekeeping-filter-row" style="justify-content:space-between;">
             <span id="gatekeepingBulkProgress" style="font-size:12px;color:#1e293b;"></span>
             <div style="display:flex;gap:8px;align-items:center;">
-              <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(-1)">הקודם</button>
+              <button class="btn btn-outline" type="button"  onclick="changeGatekeepingPage(-1)">הקודם</button>
               <span id="gatekeepingPageInfo" style="font-size:12px;color:#475569;"></span>
-              <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="changeGatekeepingPage(1)">הבא</button>
+              <button class="btn btn-outline" type="button"  onclick="changeGatekeepingPage(1)">הבא</button>
             </div>
           </div>
           <div id="gatekeepingQueueList" style="display:grid;gap:8px;">
@@ -1569,7 +1794,7 @@
       <div class="field" style="margin-bottom:8px;">
         <label>Audio Blob</label>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <button class="btn btn-outline" onclick="document.getElementById('preSessionAudioInput').click()" style="font-size:12px;padding:7px 12px;">🎧 העלה אודיו</button>
+          <button class="btn btn-outline" onclick="document.getElementById('preSessionAudioInput').click()">🎧 העלה אודיו</button>
           <input type="file" id="preSessionAudioInput" accept="audio/*" style="display:none;" onchange="handlePreSessionAudioUpload(event)">
           <span id="preSessionAudioHint" style="font-size:11px;color:#64748b;">לא נבחר קובץ</span>
         </div>
@@ -1577,9 +1802,9 @@
       </div>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-blue" onclick="savePreSessionMission()" style="font-size:12px;padding:7px 14px;">💾 שמור מטלת כניסה</button>
-        <button class="btn btn-outline" onclick="clearPreSessionMission()" style="font-size:12px;padding:7px 14px;">🗑️ נקה</button>
-        <button class="btn btn-outline" id="generateWarmupBtn" onclick="generateWarmup()" style="font-size:12px;padding:7px 14px;background:#f0fdf4;color:#166534;border-color:#bbf7d0;">🤖 צור חימום AI</button>
+        <button class="btn btn-blue" onclick="savePreSessionMission()">💾 שמור מטלת כניסה</button>
+        <button class="btn btn-outline" onclick="clearPreSessionMission()">🗑️ נקה</button>
+        <button class="btn btn-ghost-green" id="generateWarmupBtn" onclick="generateWarmup()">🤖 צור חימום AI</button>
         <span id="preSessionStatus" style="font-size:12px;color:#475569;align-self:center;"></span>
       </div>
     </div>
@@ -1595,7 +1820,7 @@
       <select id="template-select" class="lp-input" style="margin:0;flex:1;">
         <option value="">— טען תבנית שמורה —</option>
       </select>
-      <button class="btn btn-outline" onclick="loadSelectedTemplate()" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">📥 טען</button>
+      <button class="btn btn-outline" onclick="loadSelectedTemplate()" style="white-space:nowrap;flex-shrink:0">📥 טען</button>
     </div>
 
     <div class="lp-step-form">
@@ -1609,7 +1834,7 @@
         <option value="pairs">👥 עבודה בזוגות</option>
         <option value="plenary">🏛️ מליאה</option>
       </select>
-      <button class="btn btn-outline" onclick="addLessonStep()" style="width:100%;font-size:13px;">+ הוסף שלב</button>
+      <button class="btn btn-outline" onclick="addLessonStep()" style="width:100%">+ הוסף שלב</button>
     </div>
 
     <div id="lesson-steps-list" class="lesson-steps-list">
@@ -1618,7 +1843,7 @@
 
     <div class="lp-save-row">
       <input type="text" id="template-name-input" placeholder="שם התבנית" class="lp-input" style="margin:0;flex:1;">
-      <button class="btn btn-green" onclick="saveTemplate()" style="font-size:12px;padding:7px 14px;white-space:nowrap;flex-shrink:0;">💾 שמור</button>
+      <button class="btn btn-green" onclick="saveTemplate()" style="white-space:nowrap;flex-shrink:0">💾 שמור</button>
     </div>
 
     </div><!-- /.mc-card-body -->
@@ -1638,8 +1863,8 @@
       </div>
       <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...] }]} ' style="margin:0;"></textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-        <button class="btn btn-blue" type="button" onclick="importMoodleJson()" style="font-size:12px;padding:7px 14px;">יבא Moodle JSON</button>
-        <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()" style="font-size:12px;padding:7px 14px;">טען מטא-דאטה קיים</button>
+        <button class="btn btn-blue" type="button" onclick="importMoodleJson()">יבא Moodle JSON</button>
+        <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()">טען מטא-דאטה קיים</button>
         <span id="moodleImportStatus" style="font-size:12px;color:#475569;"></span>
       </div>
 
@@ -1653,7 +1878,7 @@
             <label>Lesson ID יעד</label>
             <input id="playlistLessonId" type="text" value="unit_01" class="lp-input" style="margin:0;">
           </div>
-          <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()" style="font-size:12px;padding:7px 14px;">שמור Playlist</button>
+          <button class="btn btn-green" type="button" onclick="saveLessonPlaylist()">שמור Playlist</button>
           <span id="playlistStatus" style="font-size:12px;color:#475569;"></span>
         </div>
         <div id="moodleUnitsList" style="display:grid;gap:8px;">
@@ -1694,8 +1919,8 @@
           Require Proof of Work for this sprint
         </label>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-outline" type="button" onclick="addSprintDraft()" style="font-size:12px;padding:7px 14px;">הוסף ספרינט</button>
-          <button class="btn btn-blue" type="button" onclick="saveSprintDefinitions()" style="font-size:12px;padding:7px 14px;">שמור Sprint Set</button>
+          <button class="btn btn-outline" type="button" onclick="addSprintDraft()">הוסף ספרינט</button>
+          <button class="btn btn-blue" type="button" onclick="saveSprintDefinitions()">שמור Sprint Set</button>
           <span id="sprintStatus" style="font-size:12px;color:#475569;"></span>
         </div>
         <div id="sprintDraftList" style="display:grid;gap:8px;">
@@ -1719,7 +1944,7 @@
         oninput="updateBalanceSlider(this.value)"
         style="width:100%;accent-color:#6c5ce7;margin-top:6px;">
     </div>
-    <button class="btn btn-blue" onclick="saveBalance()" style="margin-bottom:16px;width:100%;">💾 שמור איזון ציון</button>
+    <button class="btn btn-blue" onclick="saveBalance()" style="margin-bottom:16px;width:100%">💾 שמור איזון ציון</button>
     <hr style="margin:0 0 14px;border:none;border-top:1px solid #e2e8f0;">
 
     <div class="field">
@@ -1739,7 +1964,7 @@
       </select>
     </div>
 
-    <button class="btn btn-blue" onclick="addSyllabusRow()" style="margin-bottom:14px;">+ הוסף שיוך</button>
+    <button class="btn btn-blue" onclick="addSyllabusRow()" style="margin-bottom:14px">+ הוסף שיוך</button>
 
     <div id="syllabus-empty" style="text-align:center;font-size:12px;color:var(--color-text-muted);padding:10px 0;">טרם נוספו שיוכים</div>
     <table id="syllabus-table" style="width:100%;font-size:13px;border-collapse:collapse;display:none;">
@@ -1781,7 +2006,7 @@
     <div class="mc-card">
     <div class="mc-card-head">📍 מעקב שלבים — פרויקט גמר
       <span style="margin-right:auto;">
-        <button class="btn btn-outline" type="button" onclick="loadStageSummary()" style="font-size:12px;padding:7px 12px;">🔄 עדכן</button>
+        <button class="btn btn-outline" type="button" onclick="loadStageSummary()">🔄 עדכן</button>
       </span>
     </div>
     <div class="mc-card-body">
@@ -1816,8 +2041,8 @@
     <div class="mc-card-head">📓 יומן וניתוח <span class="mc-sub">יצוא יומן הוראה והפקת ניתוח מיומנויות כיתתי</span></div>
     <div class="mc-card-body">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-        <button class="btn btn-outline" onclick="exportSession()" style="font-size:12px;padding:7px 14px;">📓 ייצא יומן הוראה</button>
-        <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:13px;padding:8px 14px;">📊 פרופיל מיומנויות</button>
+        <button class="btn btn-outline" onclick="exportSession()">📓 ייצא יומן הוראה</button>
+        <button onclick="openClassProfiler()" class="btn btn-blue">📊 פרופיל מיומנויות</button>
       </div>
 
       <div style="padding:16px;border:1px solid #dbeafe;border-radius:12px;background:#f8fbff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
@@ -1825,7 +2050,7 @@
           <div style="font-size:14px;font-weight:800;color:#0f172a;">📈 ניתוח מיומנויות כיתתי</div>
           <div style="font-size:12px;color:#64748b;margin-top:2px;">הפק דוח מצב מיומנויות לכלל הכיתה</div>
         </div>
-        <button onclick="openClassProfiler()" class="btn btn-blue" style="font-size:14px;padding:10px 22px;white-space:nowrap;">
+        <button onclick="openClassProfiler()" class="btn btn-blue">
           📊 הפקת פרופיל מיומנויות כיתתי
         </button>
       </div>
@@ -3975,9 +4200,9 @@ function renderGatekeepingQueue(items = []) {
         </div>
         ${feedback ? `<div style="font-size:12px;color:#475569;">Feedback: ${escapeHtml(feedback)}</div>` : ""}
         <div class="gatekeeping-actions">
-          <button class="btn btn-green" type="button" style="font-size:12px;padding:6px 10px;" onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'approved')">אשר</button>
-          <button class="btn btn-red" type="button" style="font-size:12px;padding:6px 10px;" onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'rejected')">דחה</button>
-          <button class="btn btn-outline" type="button" style="font-size:12px;padding:6px 10px;" onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'review_required')">נדרש תיקון</button>
+          <button class="btn btn-green" type="button"  onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'approved')">אשר</button>
+          <button class="btn btn-red" type="button"  onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'rejected')">דחה</button>
+          <button class="btn btn-outline" type="button"  onclick="evaluateGatekeepingQueueItem('${studentId}', '${submissionId}', '${stageId}', 'review_required')">נדרש תיקון</button>
         </div>
       </div>`;
   }).join("");
@@ -4329,7 +4554,7 @@ function renderSprintDrafts() {
     <div style="padding:10px 12px;border:1px solid #dbeafe;border-radius:12px;background:#fff;display:grid;gap:6px;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
         <strong>${escapeHtml(sprint.title)}</strong>
-        <button class="btn btn-outline" type="button" data-remove-sprint="${index}" style="font-size:11px;padding:4px 8px;">הסר</button>
+        <button class="btn btn-xs btn-outline" type="button" data-remove-sprint="${index}">הסר</button>
       </div>
       <div style="font-size:11px;color:#64748b;">${escapeHtml(sprint.stationType)}${sprint.evidenceRequired ? ' · Requires Proof' : ''}</div>
       <div style="font-size:12px;color:#334155;line-height:1.6;">${escapeHtml(sprint.instructions || '')}</div>
@@ -5267,9 +5492,9 @@ function renderStageSummaryTable() {
     const submissionId = pendingEntry?.submissionId || null;
 
     const approveBtn = pendingEntry && submissionId
-      ? `<button class="btn btn-outline" style="font-size:11px;padding:4px 9px;color:#166534;border-color:#bbf7d0;" 
+      ? `<button class="btn btn-xs btn-ghost-green" 
           onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','approved')">✔ אשר</button>
-         <button class="btn btn-outline" style="font-size:11px;padding:4px 9px;color:#991b1b;border-color:#fecaca;"
+         <button class="btn btn-xs btn-ghost-red"
           onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','rejected')">✖ דחה</button>`
       : "";
 
