@@ -7,6 +7,26 @@
 <link rel="stylesheet" href="style.css">
 <title>MilEd.One — קורסים</title>
 <style>
+/* ── Semester Filter ── */
+.sem-filter-bar {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 20px; align-items: center;
+}
+.sem-filter-label {
+  font-size: 12px; color: #64748b; font-weight: 600; margin-left: 4px;
+}
+.sem-pill {
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #f8fafc; color: #475569;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+}
+.sem-pill:hover { border-color: #a5b4fc; color: #4338ca; }
+.sem-pill.active { background: #6366f1; border-color: #6366f1; color: #fff; }
+.sem-empty {
+  text-align: center; padding: 40px 20px; color: #94a3b8;
+  font-size: 14px; grid-column: 1/-1;
+}
+
 /* ── Course Cards ── */
 .course-card {
   background: #fff;
@@ -62,7 +82,8 @@
   <div class="container">
     <span style="font-weight:300;color:#000;">MilEd.One</span>
     <h1>הקורסים שלי</h1>
-    <p>בחר קורס להיכנס למרחב הלמידה</p>
+    <p id="sem-context-label" style="color:#64748b;font-size:13px;margin-bottom:4px;"></p>
+    <div class="sem-filter-bar" id="semFilterBar"></div>
     <div id="course-list" class="grid"></div>
     <br>
     <a href="#" onclick="navigateHome()" class="btn btn-blue">← חזרה למסך הבית</a>
@@ -110,6 +131,113 @@ window.navigateHome = function() {
 };
 
 let CONFIG = null;
+let _activeFilter = null;   // set after config loads
+
+// ─────────────────────────────
+// לוגיקת סמסטר ושנה אקדמית
+// ─────────────────────────────
+
+/**
+ * מחזיר את שנת-הפתיחה של השנה האקדמית עבור תאריך נתון.
+ * אוקטובר–ספטמבר: שנה אקדמית מתחילה באוקטובר.
+ * ינואר 2026 → שנה אקדמית 2025  (2025-2026)
+ * אוקטובר 2026 → שנה אקדמית 2026 (2026-2027)
+ */
+function academicYearStart(date = new Date()) {
+  const m = date.getMonth() + 1; // 1-12
+  return m >= 10 ? date.getFullYear() : date.getFullYear() - 1;
+}
+
+/**
+ * מחזיר את הסמסטר הנוכחי לפי חודש:
+ * אפריל–יולי (4–7)   → "B"
+ * אוגוסט–ספטמבר (8–9)→ "Summer"
+ * אוקטובר–מרץ (10–3) → "A"
+ */
+function currentSemesterCode(date = new Date()) {
+  const m = date.getMonth() + 1;
+  if (m >= 4 && m <= 7) return "B";
+  if (m >= 8 && m <= 9) return "Summer";
+  return "A";
+}
+
+function semesterLabel(code) {
+  return { A: "סמ׳ א", B: "סמ׳ ב", Summer: "קיץ" }[code] || code;
+}
+
+/** מחזיר את מחרוזת הסמסטר בפורמט config: "2025-B" */
+function semesterString(yearStart, code) {
+  return `${yearStart}-${code}`;
+}
+
+/**
+ * בונה את אפשרויות הפילטר לפי הסמסטר הנוכחי:
+ *   current   → הסמסטר הנוכחי בלבד
+ *   A         → סמ׳ א של השנה האקדמית הנוכחית
+ *   B         → סמ׳ ב של השנה האקדמית הנוכחית
+ *   year      → כל השנה האקדמית הנוכחית
+ *   prev      → כל השנה האקדמית הקודמת
+ */
+function buildFilterOptions() {
+  const now      = new Date();
+  const yearNow  = academicYearStart(now);
+  const semNow   = currentSemesterCode(now);
+  const yearPrev = yearNow - 1;
+
+  return [
+    {
+      id: "current",
+      label: `${semesterLabel(semNow)} (נוכחי)`,
+      match: s => s === semesterString(yearNow, semNow),
+      description: `${semesterLabel(semNow)} ${yearNow}–${yearNow + 1}`
+    },
+    ...(semNow !== "A" ? [{
+      id: "A",
+      label: "סמ׳ א",
+      match: s => s === semesterString(yearNow, "A"),
+      description: `סמ׳ א ${yearNow}–${yearNow + 1}`
+    }] : []),
+    ...(semNow !== "B" ? [{
+      id: "B",
+      label: "סמ׳ ב",
+      match: s => s === semesterString(yearNow, "B"),
+      description: `סמ׳ ב ${yearNow}–${yearNow + 1}`
+    }] : []),
+    {
+      id: "year",
+      label: `כל ${yearNow}–${yearNow + 1}`,
+      match: s => typeof s === "string" && s.startsWith(String(yearNow) + "-"),
+      description: `כל הקורסים של ${yearNow}–${yearNow + 1}`
+    },
+    {
+      id: "prev",
+      label: `${yearPrev}–${yearPrev + 1}`,
+      match: s => typeof s === "string" && s.startsWith(String(yearPrev) + "-"),
+      description: `כל הקורסים של ${yearPrev}–${yearPrev + 1}`
+    }
+  ];
+}
+
+function renderFilterBar(options, activeId) {
+  const bar = document.getElementById("semFilterBar");
+  if (!bar) return;
+  bar.innerHTML = `<span class="sem-filter-label">תצוגה:</span>` +
+    options.map(o => `
+      <button class="sem-pill${o.id === activeId ? " active" : ""}"
+              onclick="setFilter('${o.id}')">
+        ${o.label}
+      </button>`).join("");
+}
+
+function setFilter(filterId) {
+  _activeFilter = filterId;
+  const opts = buildFilterOptions();
+  renderFilterBar(opts, filterId);
+  const active = opts.find(o => o.id === filterId);
+  const lbl = document.getElementById("sem-context-label");
+  if (lbl && active) lbl.textContent = `מציג: ${active.description}`;
+  renderCourses(filterId, opts);
+}
 
 // ─────────────────────────────
 // הסכמת פרטיות — חד-פעמית
@@ -166,7 +294,23 @@ function checkPrivacyConsent() {
 async function loadConfig() {
   const res = await fetch('/config.json?ts=' + Date.now());
   CONFIG = await res.json();
-  renderCourses();
+  const opts = buildFilterOptions();
+  _activeFilter = "current";
+  renderFilterBar(opts, "current");
+  const activOpt = opts.find(o => o.id === "current");
+  const lbl = document.getElementById("sem-context-label");
+  if (lbl && activOpt) lbl.textContent = `מציג: ${activOpt.description}`;
+  renderCourses("current", opts);
+}
+
+// ── Semester meta label: "2025-B" → "סמ׳ ב | 2025–2026" ─────────────────────
+function formatSemesterMeta(s) {
+  if (!s) return "";
+  const [yearStr, code] = s.split("-");
+  const year = parseInt(yearStr, 10);
+  if (!year || !code) return s;
+  const label = { A: "סמ׳ א", B: "סמ׳ ב", Summer: "קיץ" }[code] || code;
+  return `${label} | ${year}–${year + 1}`;
 }
 
 // ── studentId per course (same pattern as waiting_lobby) ─────────────────────
@@ -184,12 +328,25 @@ function getStudentName(courseId) {
   return localStorage.getItem(key) || getStudentId(courseId).slice(0, 8);
 }
 
-function renderCourses() {
-  const courses = CONFIG.my_courses || {};
+function renderCourses(filterId, opts) {
+  const courses   = CONFIG.my_courses || {};
   const container = document.getElementById("course-list");
   container.innerHTML = "";
 
-  for (const [id, course] of Object.entries(courses)) {
+  const filterOpt = (opts || buildFilterOptions()).find(o => o.id === (filterId || _activeFilter || "current"));
+  const matchFn   = filterOpt?.match || (() => true);
+
+  // Only courses that match the filter and have a semester field
+  const visible = Object.entries(courses).filter(([, c]) =>
+    c.semester ? matchFn(c.semester) : !filterId || filterId === "year"
+  );
+
+  if (!visible.length) {
+    container.innerHTML = `<div class="sem-empty">אין קורסים להציג עבור תקופה זו.</div>`;
+    return;
+  }
+
+  for (const [id, course] of visible) {
     const studentId   = getStudentId(id);
     const studentName = getStudentName(id);
     const esc = s => encodeURIComponent(s);
@@ -218,7 +375,7 @@ function renderCourses() {
     card.className = "course-card";
     card.innerHTML = `
       <div class="course-card-name">${course.name || id}</div>
-      <div class="course-card-meta">${course.semester || ""}</div>
+      <div class="course-card-meta">${formatSemesterMeta(course.semester)}</div>
       <div class="course-card-actions">
         <a class="cc-btn cc-btn-live" href="${lobbyUrl}">📡 שיעור חי</a>
         ${projectsSection}
