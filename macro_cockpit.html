@@ -2815,6 +2815,7 @@ async function loadPreSessionMission() {
         data = await res.json();
       } catch (parseError) {
         data = null;
+        console.error("Macro Cockpit Error:", parseError);
       }
       const backendError = String(data?.error || '').trim();
       if (statusEl) statusEl.textContent = backendError || 'שגיאה בפעולה';
@@ -6273,10 +6274,10 @@ async function saveTemplate() {
 async function loadTemplates(classId) {
   if (!classId) return;
   const sel = document.getElementById("template-select");
+  if (!sel) return;
   try {
     const res  = await fetch(`/.netlify/functions/classroom?action=templates&classId=${classId}`);
     const data = await res.json();
-    if (!sel) return;
     sel.innerHTML = '<option value="">— טען תבנית שמורה —</option>';
     Object.entries(data.templates || {})
       .sort(([,a],[,b]) => (b.savedAt||0) - (a.savedAt||0))
