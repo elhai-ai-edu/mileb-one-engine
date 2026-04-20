@@ -378,15 +378,51 @@
           { "id": "warm_up",       "title": "חימום מוחי" },
           { "id": "entry_ticket",  "title": "כרטיס כניסה" },
           { "id": "main_activity", "title": "ניתוח פסקת פתיחה" },
+          { "id": "group_work",    "title": "עבודת צוות" },
           { "id": "discussion",    "title": "דיון כיתתי" },
           { "id": "summary",       "title": "סיכום ורפלקציה" }
         ],
         "_default": [
           { "id": "warm_up",       "title": "חימום מוחי" },
           { "id": "main_activity", "title": "פעילות מרכזית" },
+          { "id": "group_work",    "title": "עבודת צוות" },
           { "id": "discussion",    "title": "דיון כיתתי" },
           { "id": "summary",       "title": "סיכום" }
         ]
+      },
+      "sprintDefinitions": {
+        "unit_01": {
+          "items": [
+            {
+              "id": "unit_01_ai_analysis",
+              "title": "ניתוח פסקת פתיחה",
+              "stationType": "AI_STATION",
+              "instructions": "קראו את הקטע שסופק. זהו את הטענה המרכזית ושני טיעוני תמיכה. השתמשו בבוט לעזרה.",
+              "submissionDescription": "כתבו 2–3 משפטים המסכמים את הטענה המרכזית.",
+              "duration": "10 דקות",
+              "order": 1
+            },
+            {
+              "id": "unit_01_group_analysis",
+              "title": "ניתוח משותף בצוות",
+              "stationType": "GROUP_STATION",
+              "instructions": "השוו את הניתוחים האישיים שלכם. מנסח/ת — סכמו את עיקרי הדיון. מאתגר/ת — הציגו נקודת מבט שונה. מגיב/ה — הוסיפו דוגמה תומכת.",
+              "submissionDescription": "מסמך משותף עם טיעון מוסכם + 2 ראיות תומכות.",
+              "duration": "15 דקות",
+              "groupConfig": { "roles": ["מנסח", "מאתגר", "מגיב"], "autoAssign": true },
+              "order": 2
+            },
+            {
+              "id": "unit_01_plenary",
+              "title": "דיון כיתתי",
+              "stationType": "PLENARY_STATION",
+              "instructions": "כל קבוצה מציגה את הטיעון המוסכם שלה. הכיתה מגיבה ומשווה.",
+              "submissionDescription": "רפלקציה אישית — מה שיניתי לאחר שמיעת הקבוצות האחרות?",
+              "duration": "10 דקות",
+              "order": 3
+            }
+          ]
+        }
       }
     },
 

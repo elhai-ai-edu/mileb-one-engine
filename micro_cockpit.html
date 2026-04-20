@@ -1220,6 +1220,23 @@
         <button class="gate-btn gate-recall" onclick="recallAllStudents()" title="שלח קריאה מיידית לחזרה לשיעור">🚨 קרא לכולם חזרה</button>
       </div>
       <div id="recall-status" class="recall-status"></div>
+
+      <!-- Group Mode quick-activate -->
+      <div id="microGroupModeBox" style="display:none;margin-top:12px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">
+        <div style="font-size:12px;font-weight:800;color:#15803d;margin-bottom:6px;">👥 עבודת צוות זמינה</div>
+        <div id="microGroupSprintName" style="font-size:12px;color:#334155;margin-bottom:8px;"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button id="microActivateGroupBtn" onclick="microActivateGroupMode()"
+            style="padding:6px 14px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
+            👥 הפעל קבוצות
+          </button>
+          <button id="microDeactivateGroupBtn" onclick="microDeactivateGroupMode()" style="display:none;
+            padding:6px 14px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">
+            ✕ סיים קבוצות
+          </button>
+        </div>
+        <div id="microGroupStatusMsg" style="font-size:11px;min-height:14px;margin-top:4px;"></div>
+      </div>
     </div>
 
     </div><!-- /.mc-card-body -->
@@ -2980,6 +2997,7 @@ async function openSession() {
     fetchWaitingPressureForSelectedCourse();
     setOpenAllGateState(false);
     renderDJBooth();
+    initMicroGroupModePanel();
     startPolling();
     gatekeepingPage = 1;
     loadGatekeepingQueue();
@@ -5261,6 +5279,62 @@ document.addEventListener("keydown", (event) => {
     cancelLecturerAvatarCrop();
   }
 });
+
+// ═══════════════════════════════════════════
+// GROUP MODE — quick activate (micro cockpit)
+// ═══════════════════════════════════════════
+let _microGroupSprintDefs = [];
+
+async function initMicroGroupModePanel() {
+  const box = document.getElementById("microGroupModeBox");
+  if (!box) return;
+  const courseId = sessionCourseId || selectedClassId || null;
+  const unitId = sessionLessonId || "unit_01";
+  if (!courseId) return;
+  try {
+    const qs = new URLSearchParams({ action: "lesson_payload", sessionId: sessionId || "preview", courseId, unitId });
+    const res = await (await fetch(`/.netlify/functions/classroom?${qs}`)).json();
+    const defs = Array.isArray(res?.sprintDefinitions) ? res.sprintDefinitions : [];
+    _microGroupSprintDefs = defs.filter(s => String(s.stationType || "").toUpperCase() === "GROUP_STATION");
+  } catch(e) { _microGroupSprintDefs = []; }
+
+  if (!_microGroupSprintDefs.length) return;
+  box.style.display = "";
+  const nameEl = document.getElementById("microGroupSprintName");
+  if (nameEl) nameEl.textContent = _microGroupSprintDefs[0].title || "עבודת צוות";
+}
+
+async function microActivateGroupMode() {
+  if (!sessionId) { alert("פתח שיעור תחילה"); return; }
+  const sprint = _microGroupSprintDefs[0];
+  if (!sprint) return;
+  const statusEl = document.getElementById("microGroupStatusMsg");
+  try {
+    if (statusEl) { statusEl.style.color="#6366f1"; statusEl.textContent="מפעיל..."; }
+    const res = await callClassroom({
+      action: "session_state_update", sessionId, facultyId,
+      activeSprint: String(sprint.id), mode: "group",
+      sprintDefinitions: _microGroupSprintDefs
+    });
+    if (!res.ok) throw new Error(res.error || "שגיאה");
+    document.getElementById("microActivateGroupBtn").disabled = true;
+    document.getElementById("microDeactivateGroupBtn").style.display = "";
+    if (statusEl) { statusEl.style.color="#16a34a"; statusEl.textContent="✅ קבוצות פעילות"; }
+  } catch(e) {
+    if (statusEl) { statusEl.style.color="#dc2626"; statusEl.textContent=e.message; }
+  }
+}
+
+async function microDeactivateGroupMode() {
+  if (!sessionId) return;
+  const statusEl = document.getElementById("microGroupStatusMsg");
+  try {
+    await callClassroom({ action: "session_state_update", sessionId, facultyId, mode: "lesson" });
+    document.getElementById("microActivateGroupBtn").disabled = false;
+    document.getElementById("microDeactivateGroupBtn").style.display = "none";
+    if (statusEl) { statusEl.style.color="#475569"; statusEl.textContent="הסתיים"; }
+  } catch(e) { console.error(e); }
+}
 </script>
 
 <script src="/balance.js"></script>

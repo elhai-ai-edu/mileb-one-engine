@@ -2039,6 +2039,37 @@ body { background: var(--bg) !important; }
       </div>
     </div></div>
 
+    <!-- ─── Group Mode Panel ─── -->
+    <div class="mc-section" id="groupModePanel" style="display:none;">
+    <div class="mc-section-head">👥 עבודת צוות<span class="mc-sub">הפעלת מרחב קבוצתי עבור ספרינט GROUP_STATION</span></div>
+    <div class="mc-section-body" style="display:flex;flex-direction:column;gap:10px;">
+      <div id="groupSprintInfo" style="font-size:13px;color:#334155;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:700;color:#475569;">גודל קבוצה:</label>
+        <select id="groupSizeSelect" style="font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid #cbd5e1;">
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+        </select>
+        <label style="font-size:12px;font-weight:700;color:#475569;">חלוקה:</label>
+        <select id="groupAssignSelect" style="font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid #cbd5e1;">
+          <option value="auto_random">אוטומטית — אקראי</option>
+          <option value="auto_level">אוטומטית — לפי רמה</option>
+        </select>
+      </div>
+      <div id="groupStatusMsg" style="font-size:12px;min-height:18px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="activateGroupSprint()" id="activateGroupBtn"
+          style="padding:8px 18px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          👥 הפעל עבודת קבוצות
+        </button>
+        <button onclick="deactivateGroupMode()" id="deactivateGroupBtn" style="display:none;
+          padding:8px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          ✕ סיים עבודת קבוצות
+        </button>
+      </div>
+    </div></div>
+
 
     </div>
     <aside class="lesson-plan-sidebar" style="grid-template-columns:1fr;">
@@ -4354,6 +4385,7 @@ async function openSession() {
     if (classId) loadTemplates(classId);
     setOpenAllGateState(false);
     renderDJBooth();
+    initGroupModePanel();
     startPolling();
     debugLessonContext("session-open:ready");
   } catch (error) {
@@ -6281,6 +6313,114 @@ async function pushTask(stepIdx) {
     }
   } else {
     alert("שגיאה בדחיפת המשימה: " + (res.error || ""));
+  }
+}
+
+// ═══════════════════════════════════════════
+// GROUP MODE — Team Workspace
+// ═══════════════════════════════════════════
+
+let _groupSprintDefs = [];   // group station sprints for current lesson
+let _groupModeActive = false;
+
+// Called after lesson/session is loaded — scans sprintDefinitions for GROUP_STATION
+async function initGroupModePanel() {
+  const panel = document.getElementById("groupModePanel");
+  if (!panel) return;
+
+  // Fetch sprint definitions from classroom API (lesson_payload)
+  const courseId = resolveRuntimeCourseId();
+  const unitId = sessionUnitId || sessionLessonId || "unit_01";
+  if (!courseId) { panel.style.display = "none"; return; }
+
+  try {
+    const qs = new URLSearchParams({ action: "lesson_payload", sessionId: sessionId || "preview", courseId, unitId });
+    const rawRes = await fetch(`/.netlify/functions/classroom?${qs}`);
+    const res = await rawRes.json();
+    const defs = Array.isArray(res?.sprintDefinitions) ? res.sprintDefinitions : [];
+    _groupSprintDefs = defs.filter(s => String(s.stationType || "").toUpperCase() === "GROUP_STATION");
+  } catch(e) {
+    _groupSprintDefs = [];
+  }
+
+  if (!_groupSprintDefs.length) { panel.style.display = "none"; return; }
+
+  panel.style.display = "";
+  const infoEl = document.getElementById("groupSprintInfo");
+  if (infoEl) {
+    const names = _groupSprintDefs.map(s => macroEscHtml(s.title)).join(" · ");
+    infoEl.innerHTML = `<strong>ספרינטים לעבודת צוות:</strong> ${names}`;
+  }
+}
+
+async function activateGroupSprint() {
+  if (!sessionId) { alert("פתח שיעור תחילה"); return; }
+  const sprint = _groupSprintDefs[0];
+  if (!sprint) { alert("לא נמצא ספרינט GROUP_STATION"); return; }
+
+  const db = getRealtimeDb();
+  const courseId = resolveRuntimeCourseId();
+  const groupSize = parseInt(document.getElementById("groupSizeSelect")?.value || "3", 10);
+
+  const statusEl = document.getElementById("groupStatusMsg");
+  if (statusEl) { statusEl.style.color = "#6366f1"; statusEl.textContent = "מפעיל עבודת קבוצות..."; }
+
+  try {
+    // 1. Write group feature flag to Firebase classes/{classId}/features/groupMode
+    if (db && courseId) {
+      const roles = ["מנסח", "מאתגר", "מגיב"].slice(0, groupSize);
+      await db.ref(`classes/${courseId}/features/groupMode`).set({
+        enabled: true,
+        groupId: `group_${sessionId.slice(-6)}`,
+        roles: roles.reduce((acc, r, i) => { acc[`slot_${i}`] = r; return acc; }, {}),
+        autoAssign: true,
+        groupSize,
+        sprintId: sprint.id,
+        activatedAt: Date.now()
+      });
+    }
+
+    // 2. Activate the sprint + set mode via session_state_update
+    const res = await callClassroom({
+      action: "session_state_update",
+      sessionId,
+      facultyId,
+      activeSprint: String(sprint.id),
+      mode: "group",
+      sprintDefinitions: _groupSprintDefs
+    });
+
+    if (!res.ok) throw new Error(res.error || "שגיאה");
+
+    _groupModeActive = true;
+    const activateBtn = document.getElementById("activateGroupBtn");
+    const deactivateBtn = document.getElementById("deactivateGroupBtn");
+    if (activateBtn) activateBtn.disabled = true;
+    if (deactivateBtn) deactivateBtn.style.display = "";
+    if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.textContent = "✅ עבודת קבוצות פעילה — הסטודנטים עוברים לסביבת הקבוצה"; }
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
+  }
+}
+
+async function deactivateGroupMode() {
+  if (!sessionId) return;
+  const statusEl = document.getElementById("groupStatusMsg");
+  try {
+    await callClassroom({
+      action: "session_state_update",
+      sessionId,
+      facultyId,
+      mode: "lesson"
+    });
+    _groupModeActive = false;
+    const activateBtn = document.getElementById("activateGroupBtn");
+    const deactivateBtn = document.getElementById("deactivateGroupBtn");
+    if (activateBtn) activateBtn.disabled = false;
+    if (deactivateBtn) deactivateBtn.style.display = "none";
+    if (statusEl) { statusEl.style.color = "#475569"; statusEl.textContent = "עבודת הקבוצות הסתיימה."; }
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
   }
 }
 

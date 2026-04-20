@@ -2137,15 +2137,20 @@
           // Lecturers: activate the sprint; students: scroll to sprint card
           if (role === "lecturer") {
             try {
+              const sprintDefs = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
               await callClassroom("POST", {
                 action: "session_state_update",
                 sessionId,
                 facultyId: resolveFacultyActorId(),
-                activeSprint: String(sprint.id)
+                activeSprint: String(sprint.id),
+                sprintDefinitions: sprintDefs
               });
-              lessonData.state = { ...(lessonData.state || {}), active_sprint: String(sprint.id) };
+              const stType = String(sprint.stationType || "").toUpperCase();
+              const newMode = stType === "GROUP_STATION" ? "group" : stType === "TEAM_PROJECT_STATION" ? "team_project" : "lesson";
+              lessonData.state = { ...(lessonData.state || {}), active_sprint: String(sprint.id), mode: newMode };
               renderActiveSprint();
               renderSprintStepper();
+              if (newMode === "group") enterGroupMode(sprint);
             } catch(e) { console.warn("sprint activate failed", e); }
           } else {
             const card = document.querySelector(`[data-sprint-id="${CSS.escape(String(sprint.id))}"]`);
@@ -2220,10 +2225,50 @@
       }
 
       // Reset task-card mode
-      box.classList.remove("has-task-card");
+      box.classList.remove("has-task-card", "has-group-station");
 
       if (!activeSprint) {
         box.innerHTML = "";
+        return;
+      }
+
+      // ── GROUP_STATION: render entry card + auto-enter when mode is already "group" ──
+      if (String(activeSprint.stationType || "").toUpperCase() === "GROUP_STATION") {
+        box.classList.add("has-group-station");
+        const alreadyInGroup = document.getElementById("lessonMain")?.dataset?.mode === "group";
+        box.innerHTML = `
+          <div class="task-card-header" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border-bottom:1px solid #bbf7d0;">
+            <div class="task-card-title" style="color:#14532d;">👥 עבודת צוות</div>
+            <div class="task-card-name">${escapeHtml(activeSprint.title || "")}</div>
+          </div>
+          <div class="task-card-body">
+            <div class="task-section">
+              <div class="task-section-label">משימת הקבוצה</div>
+              <div class="task-section-text">${escapeHtml(activeSprint.instructions || "")}</div>
+            </div>
+            <div class="task-section">
+              <div class="task-section-label">מה מגישים</div>
+              <div class="task-section-text">${escapeHtml(activeSprint.submissionDescription || "")}</div>
+              ${activeSprint.duration ? `<div class="task-duration">⏱ ${escapeHtml(String(activeSprint.duration))}</div>` : ""}
+            </div>
+          </div>
+          ${role === "student" ? `
+          <div class="task-controls">
+            <button class="action-btn primary" id="enterGroupModeBtn" type="button" style="background:linear-gradient(135deg,#059669,#065f46);">
+              👥 ${alreadyInGroup ? "חזור לסביבת הקבוצה" : "כנס לעבודת קבוצה"}
+            </button>
+          </div>` : `
+          <div class="task-controls">
+            <span style="font-size:12px;color:#64748b;font-weight:700;">הסטודנטים עוברים אוטומטית לסביבת הקבוצה</span>
+          </div>`}
+          <div class="task-help">
+            <div class="task-help-q">צריך עזרה?</div>
+            <div class="task-help-text">השתמש בבוט משמאל ←</div>
+          </div>
+        `;
+        const enterBtn = document.getElementById("enterGroupModeBtn");
+        if (enterBtn) enterBtn.onclick = () => enterGroupMode(activeSprint);
+        box.dataset.stationType = "GROUP_STATION";
         return;
       }
 
@@ -3069,7 +3114,8 @@
         if (live.state?.mode !== undefined && live.state.mode !== prevMode) {
           const nextMode = live.state.mode || "lesson";
           if (nextMode === "group") {
-            enterGroupMode();         // starts Firebase listeners + renders sidebar
+            const activeSprint = findActiveSprint();
+            enterGroupMode(activeSprint); // starts Firebase listeners + renders sidebar
           } else if (nextMode === "lesson" && prevMode === "group") {
             exitGroupMode();          // cleans up group listeners
           } else {
@@ -3360,8 +3406,25 @@
       if (exitBtn)  exitBtn.style.display  = "none";
     }
 
-    function enterGroupMode() {
+    function enterGroupMode(sprint) {
       setLessonMode("group");
+      // Populate task title + instructions from the sprint definition
+      if (sprint) {
+        const titleEl = document.getElementById("groupTaskTitleDisplay");
+        if (titleEl) titleEl.textContent = sprint.title || "עבודת צוות";
+        // Inject instructions into a dedicated element if present
+        let instrEl = document.getElementById("groupTaskInstructions");
+        if (!instrEl) {
+          instrEl = document.createElement("div");
+          instrEl.id = "groupTaskInstructions";
+          instrEl.style.cssText = "font-size:13px;color:#334155;line-height:1.7;padding:10px 16px 0;";
+          const headEl = document.querySelector(".group-task-head");
+          if (headEl?.parentNode) headEl.parentNode.insertBefore(instrEl, headEl.nextSibling);
+        }
+        instrEl.textContent = sprint.instructions || "";
+        // Store group_activity_id for Firebase path usage
+        if (sprint.id) lessonData._groupActivityId = sprint.id;
+      }
       renderGroupMembersSidebar();
       renderGroupRoleChips();
       startGroupContribListener();

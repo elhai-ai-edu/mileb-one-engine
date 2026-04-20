@@ -396,9 +396,12 @@ function getCourseLessonBundle(courseNode = {}, lessonId, courseConfig = null) {
     selectedUnits: selectedUnits.length ? selectedUnits : (configBundle?.selectedUnits || []),
     resources: resources.length ? resources : (configBundle?.resources || []),
     courseName: String(courseNode?.name || courseConfig?.name || "").trim() || null,
+    // Priority: Firebase course node → explicit config.json sprintDefinitions → generated fallback
     sprintDefinitions: Array.isArray(courseNode?.sprintDefinitions?.[normalizedLessonId]?.items)
       ? courseNode.sprintDefinitions[normalizedLessonId].items
-      : (sprintConfigBundle?.sprintDefinitions || [])
+      : Array.isArray(courseConfig?.sprintDefinitions?.[normalizedLessonId]?.items)
+        ? courseConfig.sprintDefinitions[normalizedLessonId].items
+        : (sprintConfigBundle?.sprintDefinitions || [])
   };
 }
 
@@ -1826,7 +1829,7 @@ export async function handler(event){
     const normalizedSprints = sprints.map((sprint, index) => ({
       id: String(sprint?.id || `sprint_${String(index + 1).padStart(2, "0")}`),
       title: String(sprint?.title || `Sprint ${index + 1}`).trim(),
-      stationType: ["AI_STATION", "PHYSICAL_STATION", "PLENARY_STATION"].includes(String(sprint?.stationType || "").trim().toUpperCase())
+      stationType: ["AI_STATION", "PHYSICAL_STATION", "PLENARY_STATION", "GROUP_STATION", "TEAM_PROJECT_STATION"].includes(String(sprint?.stationType || "").trim().toUpperCase())
         ? String(sprint.stationType).trim().toUpperCase()
         : "AI_STATION",
       instructions: String(sprint?.instructions || "").trim() || null,
@@ -1963,7 +1966,34 @@ export async function handler(event){
     };
 
     if(body.currentUnit !== undefined) updates.current_unit = normalizeUnitId(body.currentUnit, normalizeUnitId(session.unitId));
-    if(body.activeSprint !== undefined) updates.active_sprint = String(body.activeSprint || "").trim() || null;
+    if(body.activeSprint !== undefined) {
+      const newSprintId = String(body.activeSprint || "").trim() || null;
+      updates.active_sprint = newSprintId;
+
+      // Auto-derive mode from stationType when sprint changes.
+      // Caller may pass sprintDefinitions so we avoid a Firebase round-trip.
+      if(newSprintId) {
+        const defs = Array.isArray(body.sprintDefinitions) ? body.sprintDefinitions : [];
+        const sprintDef = defs.find(s => String(s.id) === newSprintId) || null;
+        const stationType = String(sprintDef?.stationType || "").trim().toUpperCase();
+        if(stationType === "GROUP_STATION") {
+          updates.mode = "group";
+          updates.group_activity_id = newSprintId;
+        } else if(stationType === "TEAM_PROJECT_STATION") {
+          updates.mode = "team_project";
+          updates.group_activity_id = newSprintId;
+        } else if(updates.mode === undefined && body.mode === undefined) {
+          // Returning to a normal station clears group mode if it was set
+          updates.mode = "lesson";
+          updates.group_activity_id = null;
+        }
+      } else {
+        // Sprint cleared — return to lesson mode
+        updates.mode = "lesson";
+        updates.group_activity_id = null;
+      }
+    }
+    if(body.mode !== undefined) updates.mode = String(body.mode || "lesson").trim().toLowerCase();
     if(body.doorStatus !== undefined) updates.door_status = String(body.doorStatus || "auto").trim().toLowerCase();
     if(body.lobbyMode !== undefined) updates.lobby_mode = !!body.lobbyMode;
     if(body.clearPushedResource) updates.pushed_resource = null;
