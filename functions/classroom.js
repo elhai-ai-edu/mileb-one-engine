@@ -325,7 +325,10 @@ function getCourseLessonBundle(courseNode = {}, lessonId, courseConfig = null) {
   const playlists = courseNode?.playlists || {};
   const normalizedLessonId = normalizeUnitId(lessonId, "unit_01");
   const playlist = playlists?.[normalizedLessonId] || null;
+  // configBundle: used for selectedUnits/resources fallback only when Firebase has no units
   const configBundle = !units.length && courseConfig ? buildConfigCourseBundle(courseConfig, normalizedLessonId) : null;
+  // sprintConfigBundle: always built from courseConfig for sprint fallback regardless of Firebase units
+  const sprintConfigBundle = courseConfig ? buildConfigCourseBundle(courseConfig, normalizedLessonId) : null;
   if(!units.length && configBundle?.selectedUnits?.length) {
     units = configBundle.selectedUnits;
   }
@@ -347,7 +350,7 @@ function getCourseLessonBundle(courseNode = {}, lessonId, courseConfig = null) {
     courseName: String(courseNode?.name || courseConfig?.name || "").trim() || null,
     sprintDefinitions: Array.isArray(courseNode?.sprintDefinitions?.[normalizedLessonId]?.items)
       ? courseNode.sprintDefinitions[normalizedLessonId].items
-      : (configBundle?.sprintDefinitions || [])
+      : (sprintConfigBundle?.sprintDefinitions || [])
   };
 }
 
@@ -732,9 +735,11 @@ export async function handler(event){
       };
       const lessonId = normalizeUnitId(state.current_unit || session.unitId || urlUnitId);
       const configCourses = await getConfigCourses();
-      const courseConfig = courseId ? (configCourses?.[courseId] || null) : null;
-      const courseSnap = courseId
-        ? await db.ref(`courses/${courseId}`).once("value")
+      // Try session courseId first; if not in config, fall back to URL courseId param
+      const courseConfig = courseId ? (configCourses?.[courseId] || (urlCourseId && urlCourseId !== courseId ? (configCourses?.[urlCourseId] || null) : null)) : null;
+      const resolvedCourseIdForConfig = courseConfig ? courseId : (urlCourseId || null);
+      const courseSnap = resolvedCourseIdForConfig
+        ? await db.ref(`courses/${resolvedCourseIdForConfig}`).once("value")
         : { val: () => ({}) };
       const courseNode = courseSnap.val() || {};
       const lessonBundle = getCourseLessonBundle(courseNode, lessonId, courseConfig);
