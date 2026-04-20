@@ -299,11 +299,23 @@ function normalizeMoodleMetadata(rawInput) {
   const raw = tryParseJson(rawInput);
   if(!raw || typeof raw !== "object") return null;
 
+  const topLevelMapSections = (
+    !Array.isArray(raw) &&
+    !Array.isArray(raw?.sections) &&
+    !Array.isArray(raw?.course?.sections) &&
+    !Array.isArray(raw?.data?.sections)
+  )
+    ? Object.entries(raw)
+      .filter(([, value]) => Array.isArray(value))
+      .map(([name, items]) => ({ name, items }))
+    : [];
+
   const sections =
     (Array.isArray(raw.sections) && raw.sections) ||
     (Array.isArray(raw?.course?.sections) && raw.course.sections) ||
     (Array.isArray(raw?.data?.sections) && raw.data.sections) ||
     (Array.isArray(raw) && raw) ||
+    topLevelMapSections ||
     [];
 
   const units = sections.map((section, sectionIndex) => {
@@ -1775,6 +1787,9 @@ export async function handler(event){
     if(!courseId) return err("courseId required");
     const normalizedMetadata = normalizeMoodleMetadata(body.metadataJson ?? body.metadata ?? null);
     if(!normalizedMetadata) return err("invalid metadata json");
+    if(!normalizedMetadata.unitCount || !normalizedMetadata.resourceCount){
+      return err("Unsupported Moodle metadata format: no sections/resources found");
+    }
     await db.ref(`courses/${courseId}/metadata`).set(normalizedMetadata);
     return ok({
       ok:true,

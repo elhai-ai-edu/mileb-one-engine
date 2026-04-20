@@ -1376,9 +1376,9 @@ body { background: var(--bg) !important; }
       <div style="margin-bottom:16px;padding:14px;border:1px solid #dbeafe;border-radius:14px;background:#f8fbff;display:grid;gap:12px;">
         <div>
           <div style="font-size:15px;font-weight:800;color:#0f172a;">Moodle Sync</div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px;">הדבק JSON מסקרייפר Moodle. המערכת תנקה כותרות, תמפה יחידות ומשאבים, ותכין Bookshelf לשיעור.</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px;">הדבק JSON מסקרייפר Moodle. נתמכים גם פורמט {"sections":[...]} וגם אובייקט כותרות→מערכי פריטים (למשל {"מבוא":[...],"כללי":[...]}). המערכת תנקה כותרות, תמפה יחידות ומשאבים, ותכין Bookshelf לשיעור.</div>
         </div>
-        <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...] }]} ' style="margin:0;"></textarea>
+        <textarea id="moodleJsonInput" class="lp-textarea" rows="8" placeholder='{"sections":[{"name":"יחידה 1","items":[...]}]}\nאו\n{"מבוא":[{"name":"...","url":"..."}],"כללי":[{"name":"...","url":"..."}]}' style="margin:0;"></textarea>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
           <button class="btn btn-blue" type="button" onclick="importMoodleJson()" style="font-size:12px;padding:7px 14px;">יבא Moodle JSON</button>
           <button class="btn btn-outline" type="button" onclick="loadCourseMetadataWorkspace()" style="font-size:12px;padding:7px 14px;">טען מטא-דאטה קיים</button>
@@ -5353,26 +5353,42 @@ async function importMoodleJson() {
     if (statusEl) statusEl.textContent = 'הדבק JSON לפני יבוא';
     return;
   }
-
-  if (statusEl) statusEl.textContent = 'מייבא...';
-  const res = await callClassroom({
-    action: 'course_metadata_save',
-    courseId,
-    classId: courseId,
-    metadataJson: raw
-  });
-
-  if (!res?.ok) {
-    if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביבוא';
+  try {
+    JSON.parse(raw);
+  } catch (error) {
+    if (statusEl) statusEl.textContent = 'שגיאה בפענוח JSON';
     return;
   }
 
-  importedMetadataCache = res.metadata || null;
-  selectedPlaylistUnitIds = new Set((importedMetadataCache?.units || []).map(unit => unit.unitId));
-  syncLessonResourcesFromMetadata(resolveActiveLessonId(), { rebuildFromMetadata: true });
-  renderImportedUnits();
-  renderLesson();
-  if (statusEl) statusEl.textContent = `יובאו ${importedMetadataCache?.unitCount || 0} יחידות ו-${importedMetadataCache?.resourceCount || 0} משאבים`;
+  try {
+    if (statusEl) statusEl.textContent = 'מייבא...';
+    const res = await callClassroom({
+      action: 'course_metadata_save',
+      courseId,
+      classId: courseId,
+      metadataJson: raw
+    });
+
+    if (!res?.ok) {
+      if (statusEl) statusEl.textContent = res?.error || 'שגיאה ביבוא';
+      return;
+    }
+
+    const metadata = res.metadata || null;
+    if (!metadata?.unitCount || !metadata?.resourceCount) {
+      if (statusEl) statusEl.textContent = 'Unsupported Moodle metadata format: no sections/resources found';
+      return;
+    }
+
+    importedMetadataCache = metadata;
+    selectedPlaylistUnitIds = new Set((importedMetadataCache?.units || []).map(unit => unit.unitId));
+    syncLessonResourcesFromMetadata(resolveActiveLessonId(), { rebuildFromMetadata: true });
+    renderImportedUnits();
+    renderLesson();
+    if (statusEl) statusEl.textContent = `יובאו ${importedMetadataCache?.unitCount || 0} יחידות ו-${importedMetadataCache?.resourceCount || 0} משאבים`;
+  } catch (error) {
+    if (statusEl) statusEl.textContent = 'שגיאה ביבוא';
+  }
 }
 
 async function saveLessonPlaylist() {
