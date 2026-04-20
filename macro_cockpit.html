@@ -3300,6 +3300,115 @@ function normalizeLinkedUnitIds(rawValue) {
       return true;
     });
 }
+const LESSON_LINKED_UNIT_ROLE_NONE = "none";
+const LESSON_LINKED_UNIT_ROLE_OPTIONS = [
+  { value: LESSON_LINKED_UNIT_ROLE_NONE, label: "ללא תפקיד מוגדר" },
+  { value: "opening", label: "פתיחה" },
+  { value: "practice", label: "תרגול" },
+  { value: "deepening", label: "העמקה" },
+  { value: "closure", label: "סיכום" }
+];
+const LESSON_LINKED_UNIT_ROLE_SET = new Set(LESSON_LINKED_UNIT_ROLE_OPTIONS.map(option => option.value));
+function normalizeLinkedUnitRole(value) {
+  const role = String(value || "").trim().toLowerCase();
+  return LESSON_LINKED_UNIT_ROLE_SET.has(role) ? role : LESSON_LINKED_UNIT_ROLE_NONE;
+}
+function normalizeLinkedUnits(rawValue, fallbackLinkedUnitIds = []) {
+  const fromEntries = Array.isArray(rawValue)
+    ? rawValue.map(item => ({
+        unitId: String(item?.unitId || "").trim(),
+        role: normalizeLinkedUnitRole(item?.role)
+      }))
+    : [];
+  const normalizedFallback = normalizeLinkedUnitIds(fallbackLinkedUnitIds)
+    .map(unitId => ({ unitId, role: LESSON_LINKED_UNIT_ROLE_NONE }));
+  const entries = fromEntries.length ? fromEntries : normalizedFallback;
+  const seen = new Set();
+  return entries
+    .filter(item => item.unitId.startsWith("topic_"))
+    .filter(item => {
+      if (seen.has(item.unitId)) return false;
+      seen.add(item.unitId);
+      return true;
+    })
+    .map(item => ({ unitId: item.unitId, role: normalizeLinkedUnitRole(item.role) }));
+}
+function getLessonLinkedUnitsFromRow(lessonRow = {}) {
+  return normalizeLinkedUnits(lessonRow?.linkedUnits, lessonRow?.linkedUnitIds);
+}
+function setLessonLinkedUnitsState(lessonId, linkedUnits, { syncLessonRow = true } = {}) {
+  const resolvedLessonId = normalizeLessonId(lessonId);
+  if (!resolvedLessonId) return [];
+  const normalizedLinkedUnits = normalizeLinkedUnits(linkedUnits);
+  const linkedUnitIds = normalizedLinkedUnits.map(item => item.unitId);
+  const fallbackLesson = createEmptyLesson(resolvedLessonId, resolveLessonTitleById(resolvedLessonId));
+  const lesson = lessonsStore[resolvedLessonId] || fallbackLesson;
+  lessonsStore[resolvedLessonId] = normalizeLessonRecord({
+    ...lesson,
+    id: resolvedLessonId,
+    linkedUnitIds,
+    linkedUnits: normalizedLinkedUnits
+  }, resolvedLessonId);
+  if (currentLesson?.id === resolvedLessonId) currentLesson = lessonsStore[resolvedLessonId];
+  if (syncLessonRow) {
+    lessonsMap[resolvedLessonId] = {
+      ...(lessonsMap[resolvedLessonId] || {}),
+      structureType: "Session",
+      linkedUnitIds,
+      linkedUnits: normalizedLinkedUnits
+    };
+  }
+  persistLessonsStoreDebounced();
+  return normalizedLinkedUnits;
+}
+function resolveLessonLinkedUnitsState(lessonId = resolveActiveLessonId()) {
+  const resolvedLessonId = normalizeLessonId(lessonId);
+  if (!resolvedLessonId) return [];
+  const lesson = currentLesson?.id === resolvedLessonId
+    ? currentLesson
+    : (lessonsStore[resolvedLessonId] || null);
+  const fromLessonState = normalizeLinkedUnits(lesson?.linkedUnits, lesson?.linkedUnitIds);
+  if (fromLessonState.length) return fromLessonState;
+  const fromRow = getLessonLinkedUnitsFromRow(lessonsMap?.[resolvedLessonId] || {});
+  if (!fromRow.length) return [];
+  return setLessonLinkedUnitsState(resolvedLessonId, fromRow, { syncLessonRow: false });
+}
+function buildLessonLinkedUnitPayload(lessonId = resolveActiveLessonId()) {
+  const linkedUnits = resolveLessonLinkedUnitsState(lessonId);
+  const linkedUnitIds = linkedUnits.map(item => item.unitId);
+  return { linkedUnitIds, linkedUnits };
+}
+async function persistLessonLinkedUnitsForLesson(lessonId, linkedUnits) {
+  const resolvedLessonId = normalizeLessonId(lessonId);
+  const courseId = currentCourseForSync();
+  if (!resolvedLessonId || !courseId || !facultyId) return false;
+  const lessonRow = lessonsMap?.[resolvedLessonId] || {};
+  const linkedUnitPayload = normalizeLinkedUnits(linkedUnits);
+  const linkedUnitIds = linkedUnitPayload.map(item => item.unitId);
+  const lessonDate = getLessonDateValue(courseId, resolvedLessonId, lessonRow);
+  const topicName = String(lessonRow.topicName || "").trim();
+  const res = await callClassroom({
+    action: "unit_upsert",
+    userId: facultyId,
+    courseId,
+    unitId: resolvedLessonId,
+    structureType: "Session",
+    topicName,
+    lessonDate,
+    linkedUnitIds,
+    linkedUnits: linkedUnitPayload
+  });
+  if (!res?.ok) return false;
+  lessonsMap[resolvedLessonId] = {
+    ...(lessonsMap[resolvedLessonId] || {}),
+    structureType: "Session",
+    topicName,
+    lessonDate: lessonDate || null,
+    linkedUnitIds,
+    linkedUnits: linkedUnitPayload
+  };
+  return true;
+}
 function splitMacroUnitsMaps(rawMap = {}) {
   const nextLessons = {};
   const nextUnits = {};
@@ -3308,10 +3417,12 @@ function splitMacroUnitsMaps(rawMap = {}) {
     if (!unitId) return;
     const structureType = String(row?.structureType || "").trim();
     if (unitId.startsWith("session_") || structureType === "Session") {
+      const linkedUnits = normalizeLinkedUnits(row?.linkedUnits, row?.linkedUnitIds);
       nextLessons[unitId] = {
         ...(row || {}),
         structureType: "Session",
-        linkedUnitIds: normalizeLinkedUnitIds(row?.linkedUnitIds)
+        linkedUnitIds: linkedUnits.map(item => item.unitId),
+        linkedUnits
       };
       return;
     }
@@ -3332,11 +3443,13 @@ function splitMacroUnitsMaps(rawMap = {}) {
     const legacyTopicRowAsLesson = nextUnits[topicId] || {};
     const lessonRow = nextLessons[sessionId] || {};
     if (!String(lessonRow.topicName || "").trim() && String(legacyTopicRowAsLesson.topicName || "").trim()) {
+      const linkedUnits = normalizeLinkedUnits(lessonRow.linkedUnits, lessonRow.linkedUnitIds);
       nextLessons[sessionId] = {
         ...lessonRow,
         topicName: legacyTopicRowAsLesson.topicName,
         structureType: "Session",
-        linkedUnitIds: normalizeLinkedUnitIds(lessonRow.linkedUnitIds)
+        linkedUnitIds: linkedUnits.map(item => item.unitId),
+        linkedUnits
       };
     }
     // Intentional: session_XX rows were historically reused as unit rows, so we bridge from session slots into topic slots.
@@ -3482,7 +3595,7 @@ async function saveLessonDateForCurrentUnit() {
   const lessonId = resolveActiveLessonId();
   if (!courseId || !lessonId || !facultyId) return;
   const lessonData = lessonsMap[lessonId] || {};
-  const linkedUnitIds = normalizeLinkedUnitIds(lessonData.linkedUnitIds);
+  const { linkedUnitIds, linkedUnits } = buildLessonLinkedUnitPayload(lessonId);
   const lessonDate = getLessonDateValue(courseId, lessonId, lessonData);
   const res = await callClassroom({
     action: "unit_upsert",
@@ -3492,6 +3605,7 @@ async function saveLessonDateForCurrentUnit() {
     topicName: String(lessonData.topicName || "").trim(),
     structureType: "Session",
     linkedUnitIds,
+    linkedUnits,
     lessonDate
   });
   if (res?.ok) {
@@ -3499,6 +3613,7 @@ async function saveLessonDateForCurrentUnit() {
       ...(lessonsMap[lessonId] || {}),
       structureType: "Session",
       linkedUnitIds,
+      linkedUnits,
       lessonDate: lessonDate || null
     };
   }
@@ -3537,22 +3652,32 @@ function renderLinkedLearningUnitsPanel(lessonId = resolveActiveLessonId()) {
     listEl.innerHTML = '<div class="thread-empty">בחר שיעור כדי לראות יחידות ידע מקושרות</div>';
     return;
   }
-  const lessonRow = lessonsMap?.[resolvedLessonId] || {};
-  const linkedUnitIds = normalizeLinkedUnitIds(lessonRow.linkedUnitIds);
-  if (!linkedUnitIds.length) {
+  const linkedUnits = resolveLessonLinkedUnitsState(resolvedLessonId);
+  if (!linkedUnits.length) {
     statusEl.textContent = "0 יחידות מקושרות";
     listEl.innerHTML = '<div class="thread-empty">אין עדיין יחידות מקושרות לשיעור זה — לחץ על \"ניהול שיוך יחידות\" להגדרה.</div>';
     return;
   }
-  statusEl.textContent = `${linkedUnitIds.length} יחידות מקושרות`;
-  listEl.innerHTML = linkedUnitIds.map((unitId, index) => {
+  statusEl.textContent = `${linkedUnits.length} יחידות מקושרות`;
+  listEl.innerHTML = linkedUnits.map((linkedUnit, index) => {
+    const unitId = linkedUnit.unitId;
     const row = learningUnitsMap?.[unitId] || {};
     const title = String(row.topicName || row.title || "").trim() || `יחידת לימוד ${unitId}`;
+    const role = normalizeLinkedUnitRole(linkedUnit.role);
+    const roleOptions = LESSON_LINKED_UNIT_ROLE_OPTIONS.map(option => (
+      `<option value="${escapeHtml(option.value)}"${option.value === role ? " selected" : ""}>${escapeHtml(option.label)}</option>`
+    )).join("");
     return `<div class="lesson-linked-units-item">
-      <div>
-        <div><strong>${escapeHtml(unitId)}</strong> · ${escapeHtml(title)}</div>
+      <div style="display:grid;gap:2px;min-width:0;flex:1;">
+        <div style="font-weight:700;color:#1e293b;word-break:break-word;">${escapeHtml(title)}</div>
+        <div style="font-size:11px;color:#64748b;">${escapeHtml(unitId)}</div>
       </div>
-      <button type="button" class="lesson-linked-units-open-btn" data-role="open-linked-unit" data-unit-id="${escapeHtml(unitId)}">פתח ביחידות לימוד</button>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+        <select data-role="linked-unit-role" data-unit-id="${escapeHtml(unitId)}" style="min-width:132px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font-size:12px;color:#334155;">
+          ${roleOptions}
+        </select>
+        <button type="button" class="lesson-linked-units-open-btn" data-role="open-linked-unit" data-unit-id="${escapeHtml(unitId)}">פתח ביחידות לימוד</button>
+      </div>
     </div>`;
   }).join("");
   listEl.onclick = (event) => {
@@ -3560,6 +3685,25 @@ function renderLinkedLearningUnitsPanel(lessonId = resolveActiveLessonId()) {
     if (!button || !listEl.contains(button)) return;
     const unitId = String(button.getAttribute("data-unit-id") || "").trim();
     openCourseLinkingForActiveLesson({ focusUnitId: unitId });
+  };
+  listEl.onchange = async (event) => {
+    const select = event.target?.closest?.("select[data-role='linked-unit-role']");
+    if (!select || !listEl.contains(select)) return;
+    const unitId = String(select.getAttribute("data-unit-id") || "").trim();
+    if (!unitId.startsWith("topic_")) return;
+    const role = normalizeLinkedUnitRole(select.value);
+    const nextLinkedUnits = resolveLessonLinkedUnitsState(resolvedLessonId).map(item => (
+      item.unitId === unitId ? { ...item, role } : item
+    ));
+    setLessonLinkedUnitsState(resolvedLessonId, nextLinkedUnits);
+    statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות · שומר...`;
+    const persisted = await persistLessonLinkedUnitsForLesson(resolvedLessonId, nextLinkedUnits);
+    if (!persisted) {
+      statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות · שגיאה בשמירה`;
+      return;
+    }
+    statusEl.textContent = `${nextLinkedUnits.length} יחידות מקושרות`;
+    macroRenderLessonsTable();
   };
 }
 function openCourseLinkingForActiveLesson({ focusUnitId = "" } = {}) {
@@ -3677,7 +3821,8 @@ function macroRenderLessonUnitLinking() {
     macroLinkingLessonId = lessonSelect.value || macroToSessionUnitId(1);
     macroRenderLessonUnitLinking();
   };
-  const linkedUnitIds = normalizeLinkedUnitIds(lessonsMap?.[selectedLessonId]?.linkedUnitIds);
+  const linkedUnits = getLessonLinkedUnitsFromRow(lessonsMap?.[selectedLessonId] || {});
+  const linkedUnitIds = linkedUnits.map(item => item.unitId);
   const linkedSet = new Set(linkedUnitIds);
   const learningUnitIds = Array.from({ length: MAX_TOPIC_LESSONS }, (_, i) => macroToTopicUnitId(i + 1));
   unitsList.innerHTML = learningUnitIds.map((unitId, index) => {
@@ -3710,7 +3855,7 @@ async function macroAutoSaveLessonRow(row) {
   if (statusEl) { statusEl.textContent = "שומר..."; statusEl.className = "unit-row-status"; }
   try {
     setLessonDateValue(macroCourseId, lessonId, lessonDate);
-    const linkedUnitIds = normalizeLinkedUnitIds(lessonsMap?.[lessonId]?.linkedUnitIds);
+    const { linkedUnitIds, linkedUnits } = buildLessonLinkedUnitPayload(lessonId);
     const res = await callClassroom({
       action: "unit_upsert",
       userId: facultyId,
@@ -3719,6 +3864,7 @@ async function macroAutoSaveLessonRow(row) {
       structureType: "Session",
       topicName,
       linkedUnitIds,
+      linkedUnits,
       lessonDate
     });
     if (!res?.ok) throw new Error("not ok");
@@ -3727,6 +3873,7 @@ async function macroAutoSaveLessonRow(row) {
       topicName,
       structureType: "Session",
       linkedUnitIds,
+      linkedUnits,
       lessonDate: lessonDate || null
     };
     if (statusEl) {
@@ -3777,6 +3924,12 @@ async function macroSaveLessonLinksFromUi() {
   const linkedUnitIds = normalizeLinkedUnitIds(Array.from(
     unitsList.querySelectorAll("input[data-role='link-unit']:checked")
   ).map(input => input.value));
+  const existingLinkedUnits = resolveLessonLinkedUnitsState(lessonId);
+  const existingRoleMap = new Map(existingLinkedUnits.map(item => [item.unitId, normalizeLinkedUnitRole(item.role)]));
+  const linkedUnits = linkedUnitIds.map(unitId => ({
+    unitId,
+    role: existingRoleMap.get(unitId) || LESSON_LINKED_UNIT_ROLE_NONE
+  }));
   if (statusEl) statusEl.textContent = "שומר שיוך...";
   try {
     const lessonRow = lessonsMap?.[lessonId] || {};
@@ -3790,7 +3943,8 @@ async function macroSaveLessonLinksFromUi() {
       structureType: "Session",
       topicName,
       lessonDate,
-      linkedUnitIds
+      linkedUnitIds,
+      linkedUnits
     });
     if (!res?.ok) throw new Error("not ok");
     lessonsMap[lessonId] = {
@@ -3798,8 +3952,10 @@ async function macroSaveLessonLinksFromUi() {
       structureType: "Session",
       topicName,
       lessonDate: lessonDate || null,
-      linkedUnitIds
+      linkedUnitIds,
+      linkedUnits
     };
+    setLessonLinkedUnitsState(lessonId, linkedUnits, { syncLessonRow: false });
     if (statusEl) statusEl.textContent = `נשמר · ${linkedUnitIds.length} יחידות שויכו`;
     macroRenderLessonsTable();
     renderLinkedLearningUnitsPanel(lessonId);
@@ -5773,7 +5929,9 @@ function createEmptyLesson(id, title) {
     objectives: [],
     steps: [],
     preClass: [],
-    resources: []
+    resources: [],
+    linkedUnitIds: [],
+    linkedUnits: []
   };
 }
 
@@ -5793,7 +5951,9 @@ function normalizeLessonRecord(record = {}, fallbackId = "") {
   const resources = Array.isArray(record?.resources)
     ? record.resources.map((item, index) => normalizeLessonResourceItem(item, index)).filter(item => item.title)
     : [];
-  return { id, title, objectives, steps, preClass, resources };
+  const linkedUnits = normalizeLinkedUnits(record?.linkedUnits, record?.linkedUnitIds);
+  const linkedUnitIds = linkedUnits.map(item => item.unitId);
+  return { id, title, objectives, steps, preClass, resources, linkedUnitIds, linkedUnits };
 }
 
 function normalizeLessonsStorePayload(rawValue) {

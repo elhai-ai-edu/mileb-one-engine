@@ -140,6 +140,42 @@ function normalizeLinkedUnitIds(value) {
     })
     .slice(0, MAX_LINKED_UNITS);
 }
+const LESSON_LINKED_UNIT_ROLE_NONE = "none";
+const LESSON_LINKED_UNIT_ROLE_SET = new Set([
+  LESSON_LINKED_UNIT_ROLE_NONE,
+  "opening",
+  "practice",
+  "deepening",
+  "closure"
+]);
+function normalizeLinkedUnitRole(value) {
+  const role = String(value || "").trim().toLowerCase();
+  return LESSON_LINKED_UNIT_ROLE_SET.has(role) ? role : LESSON_LINKED_UNIT_ROLE_NONE;
+}
+function normalizeLinkedUnits(value, fallbackLinkedUnitIds = []) {
+  const fromEntries = Array.isArray(value)
+    ? value.map(item => ({
+        unitId: String(item?.unitId || "").trim(),
+        role: normalizeLinkedUnitRole(item?.role)
+      }))
+    : [];
+  const fromFallback = normalizeLinkedUnitIds(fallbackLinkedUnitIds)
+    .map(unitId => ({ unitId, role: LESSON_LINKED_UNIT_ROLE_NONE }));
+  const source = fromEntries.length ? fromEntries : fromFallback;
+  const seen = new Set();
+  return source
+    .filter(item => item.unitId.startsWith("topic_"))
+    .filter(item => {
+      if (seen.has(item.unitId)) return false;
+      seen.add(item.unitId);
+      return true;
+    })
+    .slice(0, MAX_LINKED_UNITS)
+    .map(item => ({
+      unitId: item.unitId,
+      role: normalizeLinkedUnitRole(item.role)
+    }));
+}
 
 function normalizeConfigUnitId(value, fallbackIndex = 1) {
   const raw = String(value ?? "").trim();
@@ -1705,8 +1741,15 @@ export async function handler(event){
       entranceTickets: body.entranceTickets || null,
       updatedAt: Date.now()
     };
-    if (Object.prototype.hasOwnProperty.call(body, "linkedUnitIds")) {
-      payload.linkedUnitIds = normalizeLinkedUnitIds(body.linkedUnitIds);
+    if (
+      Object.prototype.hasOwnProperty.call(body, "linkedUnits") ||
+      Object.prototype.hasOwnProperty.call(body, "linkedUnitIds")
+    ) {
+      const normalizedIds = Object.prototype.hasOwnProperty.call(body, "linkedUnitIds")
+        ? normalizeLinkedUnitIds(body.linkedUnitIds)
+        : normalizeLinkedUnits(body.linkedUnits).map(item => item.unitId);
+      payload.linkedUnitIds = normalizedIds;
+      payload.linkedUnits = normalizeLinkedUnits(body.linkedUnits, normalizedIds);
     }
     if (Object.prototype.hasOwnProperty.call(body, "lessonDate")) {
       payload.lessonDate = String(body.lessonDate || "").trim() || null;
