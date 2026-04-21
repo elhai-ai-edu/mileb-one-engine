@@ -342,6 +342,25 @@
     .pp-save-indicator.saving { color: #6366f1; }
     .pp-save-indicator.saved  { color: #059669; }
 
+    /* ── Stage status badges ── */
+    .pp-stage-status {
+      font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .pp-stage-status.pending_review { background: #fef9c3; color: #854d0e; }
+    .pp-stage-status.approved       { background: #dcfce7; color: #166534; }
+    .pp-stage-status.relocked       { background: #fee2e2; color: #991b1b; }
+    .pp-stage-status.completed      { background: #f0fdf4; color: #15803d; }
+
+    /* ── Stage-level alert box ── */
+    .pp-stage-alert {
+      border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 600;
+      margin-bottom: 12px; line-height: 1.6;
+    }
+    .pp-stage-alert.pending { background: #fef9c3; border: 1.5px solid #fde047; color: #713f12; }
+    .pp-stage-alert.approved { background: #dcfce7; border: 1.5px solid #86efac; color: #14532d; }
+    .pp-stage-alert.relocked { background: #fee2e2; border: 1.5px solid #fca5a5; color: #7f1d1d; }
+
     /* ── Modal spring ── */
     @keyframes modalPop {
       from { opacity: 0; transform: scale(.92); }
@@ -429,6 +448,9 @@
         <!-- Submission section -->
         <div id="ppSubmitSection">
           <div class="pp-section-head">📝 הגשת הפעילות</div>
+
+          <!-- Stage status alert (shown when stage has been submitted/approved/relocked) -->
+          <div id="ppStageAlert" class="pp-stage-alert" style="display:none;"></div>
 
           <!-- Previous stage submission (read-only context) -->
           <div id="ppPrevSection" style="display:none;">
@@ -572,6 +594,7 @@
     let _draftTimer    = null;
     let _announcementRef = null;
     let _qaRef           = null;
+    let _stagesRef       = null;
 
     // ── Firebase ────────────────────────────────────────────────────────────
     function getDb() {
@@ -695,14 +718,25 @@
       const allDone = _currentStage >= PP_STAGES.length;
 
       list.innerHTML = PP_STAGES.map((s, i) => {
-        const isDone   = i < _currentStage || !!_stageAnswers[i];
-        const isActive = i === _currentStage && !allDone;
-        const cls      = isDone ? "done" : isActive ? "active" : "";
-        const right    = isDone
-          ? '<span class="pp-stage-check">✓</span>'
-          : isActive
-            ? '<span class="pp-stage-pill">פעיל</span>'
-            : "";
+        const stageData = _stageAnswers[i] || {};
+        const status    = stageData.status || "";
+        const isDone    = i < _currentStage || status === "approved" || status === "completed";
+        const isActive  = i === _currentStage && !allDone;
+        const cls       = isDone ? "done" : isActive ? "active" : "";
+
+        let right = "";
+        if (status === "pending_review") {
+          right = '<span class="pp-stage-status pending_review">🟡 ממתין</span>';
+        } else if (status === "approved" || status === "completed") {
+          right = '<span class="pp-stage-status approved">✅ אושר</span>';
+        } else if (status === "relocked") {
+          right = '<span class="pp-stage-status relocked">🔴 תיקון</span>';
+        } else if (isActive) {
+          right = '<span class="pp-stage-pill">פעיל</span>';
+        } else if (isDone) {
+          right = '<span class="pp-stage-check">✓</span>';
+        }
+
         return `
           <div class="pp-stage-row ${cls}">
             <div class="pp-stage-num">${i + 1}</div>
@@ -735,14 +769,16 @@
 
       if (allDone) return;
 
-      const stage = PP_STAGES[_currentStage];
+      const stage     = PP_STAGES[_currentStage];
+      const stageData = _stageAnswers[_currentStage] || {};
+      const status    = stageData.status || "";
 
       // Subtitle
       const subtitle = document.getElementById("ppProjSubtitle");
       if (subtitle) subtitle.textContent = `שלב פעיל: ${stage.subtitle}`;
 
       // Sprint card
-      const badgeTitle = document.getElementById("ppSprintBadgeTitle");
+      const badgeTitle  = document.getElementById("ppSprintBadgeTitle");
       const sprintTitle = document.getElementById("ppSprintTitle");
       const sprintPrompt = document.getElementById("ppSprintPrompt");
       if (badgeTitle)  badgeTitle.textContent  = stage.title;
@@ -769,11 +805,46 @@
         prevSection.style.display = "none";
       }
 
-      // Current textarea (restore draft)
+      // Stage-level status alert
+      const alertEl = document.getElementById("ppStageAlert");
+      if (alertEl) {
+        if (status === "pending_review") {
+          alertEl.className   = "pp-stage-alert pending";
+          alertEl.textContent = "🟡 ההגשה התקבלה ומחכה לאישור המרצה. לא ניתן לשנות עד לקבלת תגובה.";
+          alertEl.style.display = "";
+        } else if (status === "relocked") {
+          const fb = stageData.feedback ? ` — ${stageData.feedback}` : "";
+          alertEl.className   = "pp-stage-alert relocked";
+          alertEl.textContent = `🔴 המרצה ביקש תיקון${fb}. ערוך ושלח מחדש.`;
+          alertEl.style.display = "";
+        } else if (status === "approved") {
+          alertEl.className   = "pp-stage-alert approved";
+          alertEl.textContent = "✅ השלב אושר. ניתן להמשיך לשלב הבא.";
+          alertEl.style.display = "";
+        } else {
+          alertEl.style.display = "none";
+        }
+      }
+
+      // Current textarea — restore draft, disable when pending/approved
       const currTa    = document.getElementById("ppCurrTa");
       const currLabel = document.getElementById("ppCurrLabel");
-      if (currTa)    currTa.value         = _draft || "";
-      if (currLabel) currLabel.textContent = `תשובה לשלב ${_currentStage + 1} — ${stage.title}:`;
+      const submitBtn = document.getElementById("ppSubmitBtn");
+      const isLocked  = status === "pending_review" || status === "approved" || status === "completed";
+
+      if (currTa) {
+        currTa.value    = isLocked ? (stageData.text || "") : (_draft || "");
+        currTa.readOnly = isLocked;
+        currTa.style.background = isLocked ? "#f1f5f9" : "";
+        currTa.style.color      = isLocked ? "#475569"  : "";
+      }
+      if (currLabel) currLabel.textContent = isLocked
+        ? `תשובה שהוגשה — שלב ${_currentStage + 1}:`
+        : `תשובה לשלב ${_currentStage + 1} — ${stage.title}:`;
+      if (submitBtn) {
+        submitBtn.disabled = isLocked;
+        submitBtn.textContent = isLocked ? "📋 הוגש" : "📋 הגש פעילות";
+      }
     }
 
     // ── Chat iframe ──────────────────────────────────────────────────────────
@@ -801,17 +872,25 @@
 
     async function saveDraft(text) {
       try {
-        await fetch("/.netlify/functions/personal_project", {
+        const res  = await fetch("/.netlify/functions/personal_project", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({ action: "save_draft", courseId, studentId, text })
         });
-        const ind = document.getElementById("ppSaveIndicator");
-        if (ind) { ind.textContent = "נשמר"; ind.className = "pp-save-indicator saved"; }
+        const data = await res.json();
+        const ind  = document.getElementById("ppSaveIndicator");
+        if (ind) {
+          let savedAt = "";
+          if (data.draftSavedAt) {
+            savedAt = new Date(data.draftSavedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+          }
+          ind.textContent = savedAt ? `נשמר ${savedAt}` : "נשמר";
+          ind.className   = "pp-save-indicator saved";
+        }
         setTimeout(() => {
           const i = document.getElementById("ppSaveIndicator");
           if (i) { i.textContent = ""; i.className = "pp-save-indicator"; }
-        }, 2000);
+        }, 3000);
       } catch(e) {
         console.warn("[pp] saveDraft failed:", e.message);
       }
@@ -824,7 +903,9 @@
       const text = String(ta?.value || "").trim();
 
       if (!text) { ta?.focus(); return; }
-      if (!confirm(`האם להגיש את שלב ${_currentStage + 1} — ${PP_STAGES[_currentStage]?.title}?`)) return;
+
+      const stageLabel = PP_STAGES[_currentStage]?.title || `שלב ${_currentStage + 1}`;
+      if (!confirm(`האם להגיש את שלב ${_currentStage + 1} — ${stageLabel}?\n\nלאחר ההגשה לא ניתן לערוך עד שהמרצה יאשר.`)) return;
 
       if (btn) btn.disabled = true;
 
@@ -834,20 +915,23 @@
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
             action:      "submit_stage",
-            courseId, studentId,
+            courseId, studentId, studentName,
             stageIndex:  _currentStage,
+            stageLabel,
             text
           })
         });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error);
 
-        // Update local state
-        _stageAnswers[_currentStage] = { text, submittedAt: Date.now() };
-        _currentStage = Number(data.nextStage ?? _currentStage);
+        // Update local state — stage is now pending_review; do NOT advance yet
+        _stageAnswers[_currentStage] = {
+          text,
+          status:      data.status || "pending_review",
+          submissionId: data.submissionId || null,
+          submittedAt: Date.now()
+        };
         _draft = "";
-
-        if (ta) ta.value = "";
 
         renderAll();
 
@@ -962,11 +1046,36 @@
       _qaRef.on("value", snap => {
         renderQaFeed(snap.val() || {});
       });
+
+      // Student stages — watch for teacher approval/rejection
+      _stagesRef = db.ref(`personal_projects/${courseId}/students/${studentId}/stages`);
+      _stagesRef.on("value", snap => {
+        const stages = snap.val() || {};
+        let changed  = false;
+        Object.entries(stages).forEach(([idx, entry]) => {
+          const i   = Number(idx);
+          const old = _stageAnswers[i] || {};
+          if (entry && old.status !== entry.status) {
+            _stageAnswers[i] = { ...(old || {}), ...entry };
+            changed = true;
+          }
+        });
+        if (changed) {
+          // Re-read currentStage from Firebase in case teacher approved and advanced it
+          db.ref(`personal_projects/${courseId}/students/${studentId}/currentStage`).once("value")
+            .then(s => {
+              const cs = Number(s.val() ?? _currentStage);
+              if (cs !== _currentStage) _currentStage = cs;
+              renderAll();
+            });
+        }
+      });
     }
 
     function stopListeners() {
       if (_announcementRef) { _announcementRef.off(); _announcementRef = null; }
       if (_qaRef)           { _qaRef.off();           _qaRef           = null; }
+      if (_stagesRef)       { _stagesRef.off();       _stagesRef       = null; }
     }
 
     // ── Scroll helper ────────────────────────────────────────────────────────

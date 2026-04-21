@@ -1928,6 +1928,7 @@
 
     let _activeBotType = null;
     let _fetchedCourseConfig = null; // populated by renderBotMenu, used as fallback
+    let _ppCurrentStage = null;      // current stage index when in personal_project mode
 
     function setChatFrame(courseId, botType) {
       const chatFrame = document.getElementById("chatFrame");
@@ -1939,6 +1940,10 @@
       query.set("sessionId", sessionId);
       // Pass stationRoot so chat.js can derive botMode override (Part 34 §34.6)
       query.set("stationRoot", MiledState.root);
+      // Pass personal project stage context when in project mode (Part 34 §34.6)
+      if (MiledState.root === "personal_project" && _ppCurrentStage !== null) {
+        query.set("ppCurrentStage", String(_ppCurrentStage));
+      }
       const newSrc = `/chat.html?${query.toString()}`;
       // Compare against stored src (chatFrame.src is absolute, newSrc is relative)
       if (chatFrame.getAttribute("data-loaded-src") === newSrc) return;

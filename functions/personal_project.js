@@ -5,7 +5,56 @@ import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
 const MAX_STUDENT_NAME_LENGTH = 80;
 const MAX_STAGE_INDEX         = 6;   // PP_STAGES has 7 stages (0–6)
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getDB() {
   return getDatabase(ensureFirebaseAdminApp());
+}
+
+function msgKey() {
+  return `msg_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
+}
+
+// Canonical status values shared with course_progress mirror and micro_cockpit.
+// personal_project uses: pending_review | approved | relocked | completed
+// course_progress uses:  pending_review | unlocked | relocked
+// Mapping approved → unlocked when writing to course_progress.
+const PP_STATUSES = new Set(["pending_review", "approved", "relocked", "completed"]);
+
+// Build a stable synthetic submission ID for a personal-project stage.
+// Prefixed with "pp_" so micro_cockpit can route evaluations back here.
+function ppSubmissionId(courseId, studentId, stageIndex) {
+  return `pp_${String(courseId).slice(0, 20)}_${String(studentId).slice(0, 20)}_${stageIndex}`;
+}
+
+// Mirror a stage entry to course_progress/{courseId}/{studentId} so the
+// gatekeeping course_stage_summary endpoint and the micro_cockpit tracking
+// tab can read personal-project data without a separate API.
+async function mirrorToCourseProgress(db, courseId, studentId, studentName, stageIndex, stageLabel, status, submissionId, extra = {}) {
+  const courseStatus = status === "approved" ? "unlocked" : status; // unlocked ≡ approved
+  const stageKey     = `pp_stage_${stageIndex}`;
+  const update = {
+    studentId,
+    ...(studentName ? { studentName } : {}),
+    [`stages/${stageKey}`]: {
+      stageId:      stageKey,
+      stageLabel:   stageLabel || stageKey,
+      state:        courseStatus,
+      submissionId: submissionId || null,
+      submittedAt:  extra.submittedAt || null,
+      ...(extra.approvedAt  ? { approvedAt:  extra.approvedAt  } : {}),
+      ...(extra.rejectedAt  ? { rejectedAt:  extra.rejectedAt  } : {}),
+      ...(extra.feedback    ? { feedback:    extra.feedback    } : {})
+    },
+    ...(status === "approved" ? { currentStageId: `pp_stage_${stageIndex}` } : {}),
+    updatedAt: Date.now()
+  };
+  try {
+    await db.ref(`course_progress/${courseId}/${studentId}`).update(update);
+  } catch (e) {
+    console.error("PP COURSE_PROGRESS MIRROR ERROR:", e.message);
+  }
 }
 
 const headers = {
@@ -57,7 +106,7 @@ export async function handler(event) {
 
     return ok({
       ok:            true,
-      student:       studentData,
+      student:       { ...studentData, currentStage: Number(studentData.currentStage ?? 0) },
       announcements: announcementsSnap.val() || {},
       teacherQA:     qaSnap.val()            || {}
     });
@@ -67,39 +116,108 @@ export async function handler(event) {
   // Autosaves the current textarea content without advancing the stage.
   if (action === "save_draft") {
     const text = String(body.text || "");
-    await studentRef.update({ draft: text, draftSavedAt: Date.now() });
-    return ok({ ok: true });
+    const now  = Date.now();
+    await studentRef.update({ draft: text, draftSavedAt: now });
+    return ok({ ok: true, draftSavedAt: now });
   }
 
   // ── submit_stage ──────────────────────────────────────────────────────────
-  // Saves the student's answer for a stage and advances to the next stage.
+  // Saves the student's answer for a stage and marks it pending_review.
+  // Does NOT auto-advance currentStage; advancement happens on approve_stage.
   if (action === "submit_stage") {
     const text       = String(body.text || "").trim();
     const stageIndex = Number(body.stageIndex);
+    const stageLabel = String(body.stageLabel || `שלב ${stageIndex + 1}`).slice(0, 80);
 
     if (!text) return err("text required");
     if (isNaN(stageIndex) || stageIndex < 0 || stageIndex > MAX_STAGE_INDEX)
       return err(`invalid stageIndex (must be 0–${MAX_STAGE_INDEX})`);
 
-    const now = Date.now();
+    const now          = Date.now();
+    const submissionId = ppSubmissionId(courseId, studentId, stageIndex);
 
-    await studentRef.child(`stages/${stageIndex}`).set({
+    const stageEntry = {
       text,
-      submittedAt: now
-    });
+      status:       "pending_review",
+      stageId:      `pp_stage_${stageIndex}`,
+      stageLabel,
+      submissionId,
+      submittedAt:  now
+    };
 
-    const studentSnap  = await studentRef.once("value");
-    const studentData  = studentSnap.val() || {};
-    const currentStage = Number(studentData.currentStage ?? 0);
+    await studentRef.child(`stages/${stageIndex}`).set(stageEntry);
+    await studentRef.update({ draft: "", draftSavedAt: now, lastSeen: now });
 
-    const updates = { draft: "", draftSavedAt: now };
-    // Advance to next stage only when submitting the currently active stage
-    if (stageIndex === currentStage && stageIndex < 6) {
-      updates.currentStage = stageIndex + 1;
+    // Sync to course_progress on submission — pass studentId correctly
+    await mirrorToCourseProgress(
+      db, courseId, studentId, studentName, stageIndex, stageLabel,
+      "pending_review", submissionId, { submittedAt: now }
+    );
+
+    return ok({ ok: true, status: "pending_review", submissionId });
+  }
+
+  // ── approve_stage ─────────────────────────────────────────────────────────
+  // Teacher approves, rejects, or requests revision on a student's stage.
+  // Accessible only from teacher-facing surfaces (micro_cockpit, personal_project teacher view).
+  if (action === "approve_stage") {
+    const targetStudentId = String(body.targetStudentId || body.studentId || "").trim();
+    const stageIndex      = Number(body.stageIndex);
+    const newStatus       = String(body.status || "").trim().toLowerCase();
+    const feedback        = String(body.feedback || "").trim();
+
+    if (!targetStudentId) return err("targetStudentId required");
+    if (isNaN(stageIndex) || stageIndex < 0 || stageIndex > MAX_STAGE_INDEX)
+      return err(`invalid stageIndex (must be 0–${MAX_STAGE_INDEX})`);
+    if (!PP_STATUSES.has(newStatus)) return err(`invalid status (must be: ${[...PP_STATUSES].join(", ")})`);
+
+    const targetStudentRef  = projRef.child(`students/${targetStudentId}`);
+    const targetStudentSnap = await targetStudentRef.once("value");
+    const targetData        = targetStudentSnap.val() || {};
+    const stageEntry        = targetData.stages?.[stageIndex] || {};
+    const now               = Date.now();
+    const stageLabel        = stageEntry.stageLabel || `שלב ${stageIndex + 1}`;
+
+    const stageUpdates = {
+      status: newStatus,
+      ...(feedback ? { feedback } : {}),
+      evaluatedAt: now
+    };
+    if (newStatus === "approved") stageUpdates.approvedAt = now;
+    if (newStatus === "relocked") stageUpdates.rejectedAt = now;
+
+    await targetStudentRef.child(`stages/${stageIndex}`).update(stageUpdates);
+
+    // Advance currentStage when approved, unless already past this index
+    const studentUpdates = {};
+    const currentStage   = Number(targetData.currentStage ?? 0);
+    if (newStatus === "approved" && stageIndex === currentStage && stageIndex < MAX_STAGE_INDEX) {
+      studentUpdates.currentStage = stageIndex + 1;
     }
-    await studentRef.update(updates);
+    if (Object.keys(studentUpdates).length) await targetStudentRef.update(studentUpdates);
 
-    return ok({ ok: true, nextStage: updates.currentStage ?? currentStage });
+    // Post teacher reply to Q&A feed if feedback was provided
+    if (feedback) {
+      const key = msgKey();
+      await projRef.child(`teacherQA/${targetStudentId}/${key}`).set({
+        text:     feedback,
+        from:     "teacher",
+        postedAt: now
+      });
+    }
+
+    await mirrorToCourseProgress(
+      db, courseId, targetStudentId, targetData.studentName || targetStudentId,
+      stageIndex, stageLabel, newStatus, stageEntry.submissionId || null,
+      {
+        submittedAt: stageEntry.submittedAt || null,
+        approvedAt:  newStatus === "approved" ? now : (stageEntry.approvedAt || null),
+        rejectedAt:  newStatus === "relocked" ? now : (stageEntry.rejectedAt || null),
+        feedback
+      }
+    );
+
+    return ok({ ok: true, status: newStatus, nextStage: studentUpdates.currentStage ?? currentStage });
   }
 
   // ── ask_teacher ───────────────────────────────────────────────────────────
@@ -108,12 +226,42 @@ export async function handler(event) {
     const text = String(body.text || "").trim();
     if (!text) return err("text required");
 
-    const key = `msg_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`;
-    await projRef.child(`teacherQA/${studentId}/${key}`).set({
+    await projRef.child(`teacherQA/${studentId}/${msgKey()}`).set({
       text,
       from:        "student",
       postedAt:    Date.now(),
       studentName: studentName.slice(0, 60)
+    });
+
+    return ok({ ok: true });
+  }
+
+  // ── reply_teacher ─────────────────────────────────────────────────────────
+  // Teacher replies to a student's Q&A message.
+  if (action === "reply_teacher") {
+    const targetStudentId = String(body.targetStudentId || "").trim();
+    const text            = String(body.text || "").trim();
+    if (!targetStudentId) return err("targetStudentId required");
+    if (!text)            return err("text required");
+
+    await projRef.child(`teacherQA/${targetStudentId}/${msgKey()}`).set({
+      text,
+      from:     "teacher",
+      postedAt: Date.now()
+    });
+
+    return ok({ ok: true });
+  }
+
+  // ── teacher_announce ──────────────────────────────────────────────────────
+  // Teacher posts a course-wide announcement visible to all students.
+  if (action === "teacher_announce") {
+    const text = String(body.text || "").trim();
+    if (!text) return err("text required");
+
+    await projRef.child(`announcements/${msgKey()}`).set({
+      text,
+      postedAt: Date.now()
     });
 
     return ok({ ok: true });
