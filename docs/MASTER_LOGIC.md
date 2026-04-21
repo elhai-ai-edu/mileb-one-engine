@@ -1835,3 +1835,204 @@ The page has no authentication gate of its own — it inherits the faculty sessi
 | `docs/BOT_ARCHITECT_SP.md` | The System Prompt loaded by the Studio's chat engine |
 
 ---
+
+## PART 34 — LESSON RUNTIME STATE MACHINE (v1.0)
+
+### 34.1 Overview
+
+This part defines the canonical runtime state model for a live lesson session. It reconciles the pedagogical layer model (Core → Social → Workspace) with the actual station taxonomy implemented in `lesson_view.html`, and bridges the gap between `__classFeatures`, `lessonData`, and `data-mode` — which previously held state in an uncoordinated way.
+
+**Design decision basis:** The document's layer model (MiledState, transitions, bot-per-layer) is architecturally more advanced. The code's station taxonomy (5 types) and sprint model are implementation-wise more advanced. Part 34 adopts both.
+
+---
+
+### 34.2 MiledState Schema
+
+Every active lesson session carries a single runtime state object. This object is the authoritative source of truth for all UI, bot, and Firebase decisions during the session.
+
+```
+MiledState {
+  root:        "lesson" | "group" | "team_project" | "personal_project"
+  sub:         "waiting" | "empty" | "doing" | "submitted" | "peer_review" | "completed"
+  overlay:     null | "peer_insight" | "peer_review"
+  sprintIndex: number           // 0-based index of the active sprint in sprintDefinitions[]
+  activityId:  string | null    // active task activityId (from ATS or sprint definition)
+  botMode:     "open" | "guided" | "gatekept"   // DERIVED — not authored directly
+}
+```
+
+**Field semantics:**
+- `root` maps to the lesson's workspace layer (see §34.3). Changed by lecturer sprint activation.
+- `sub` tracks student progress within the current sprint. Changed by student actions (start, submit, peer review).
+- `overlay` is a transient display layer on top of the root workspace (e.g., peer review panel visible while still in `doing` state).
+- `sprintIndex` is kept in sync with `lessonData.state.active_sprint` — the index, not the sprint ID.
+- `activityId` is populated from the active sprint's `activityId` field (fed by ATS) or null if not ATS-linked.
+- `botMode` is **always derived** from `root` (see §34.6). It is never written directly.
+
+**Relationship to existing variables:**
+- Replaces: `data-mode` attribute (presentation layer only; `MiledState.root` is the authority)
+- Replaces: ad-hoc `lessonData.state.mode` string checks scattered across sprint activation
+- Extends: `__classFeatures` (peerReview and groupMode still read from Firebase; `MiledState` consumes them)
+
+---
+
+### 34.3 Station Taxonomy
+
+Six station types are recognized. Each maps to a `MiledState.root` value:
+
+| stationType | MiledState.root | Layer | Character |
+|---|---|---|---|
+| `AI_STATION` | `lesson` | Core | Individual AI-assisted work |
+| `PLENARY_STATION` | `lesson` | Core | Class-wide discussion; bot in standby |
+| `PHYSICAL_STATION` | `lesson` | Core | Off-screen activity; evidence upload on return |
+| `GROUP_STATION` | `group` | Social | Synchronous small-group task |
+| `TEAM_PROJECT_STATION` | `team_project` | Workspace | Asynchronous multi-session project |
+| `PERSONAL_PROJECT_STATION` | `personal_project` | Workspace | Individual multi-stage personal project |
+
+`PERSONAL_PROJECT_STATION` is new in v1.0. It connects the CSS `data-mode="project"` layout (already implemented) to a formal station type with its own bot behavior and project stepper.
+
+---
+
+### 34.4 Sub-States and Valid Transitions
+
+```
+waiting → empty → doing → submitted → peer_review → completed
+```
+
+**Transition rules:**
+- **Students** can only move forward (no backward transitions).
+- **Lecturers** can move to any sub-state at any time.
+- **No-Skip rule** (Kernel §2): students cannot transition from `empty` directly to `submitted` — the `doing` state is mandatory.
+- `peer_review` is optional (controlled by `peerReview.mode`); if mode is `"disabled"`, the path is `submitted → completed`.
+
+**`canTransition(currentSub, nextSub, actor)` logic:**
+
+```js
+// actor: "student" | "teacher"
+// Returns true if the transition is permitted
+STUDENT_FORWARD = {
+  waiting:     ["empty"],
+  empty:       ["doing"],
+  doing:       ["submitted"],
+  submitted:   ["peer_review", "completed"],
+  peer_review: ["completed"],
+  completed:   []
+}
+```
+
+**Runtime hookup (implemented in lesson_view.html):**
+- `renderLesson()` — door_status determines initial `sub` (`"waiting"` | `"empty"`)
+- `startSprintBtn` click → `canTransition(sub, "doing", "student")` → `MiledState.sub = "doing"`
+- `completeSprintBtn` click → `canTransition(sub, "submitted", "student")` → `MiledState.sub = "submitted"`
+- `submitStudentWork()` → `canTransition(sub, "submitted", "student")` → `MiledState.sub = "submitted"`
+- `showPeerReviewPanel()` → `MiledState.overlay = "peer_review"`
+- `closePeerReviewPanel()` → `MiledState.overlay = null`
+- `submitPeerReview()` → `canTransition(sub, "completed", "student")` → `MiledState.sub = "completed"`, `overlay = null`
+
+---
+
+### 34.5 Peer Review Mode (replaces `peerReview.enabled: boolean`)
+
+The `peerReview` feature flag (stored in Firebase `classes/{classId}/features`) is upgraded from a boolean to a mode enum.
+
+**New schema (`classes/{classId}/features.peerReview`):**
+```json
+{
+  "mode":      "embedded_light" | "extended_structured" | "disabled",
+  "triggerBy": "system" | "teacher" | "activity",
+  "rubricId":  "default" | "<custom-rubric-id>"
+}
+```
+
+**Mode definitions:**
+- `embedded_light` — the current behavior: peer review panel appears after submission; emoji + one free-text comment field; renders `DEFAULT_RUBRIC_QUESTIONS` (3 questions).
+- `extended_structured` — rubric-based, multi-criteria evaluation; renders `EXTENDED_RUBRIC_QUESTIONS` (5 questions: clarity, depth, evidence, originality, applicability). Panel title changes to "🔬 הערכת עמיתים — מורחבת".
+- `disabled` — no peer review for this class.
+
+**Trigger definitions:**
+- `system` — peer review activates automatically after every submission.
+- `teacher` — lecturer manually enables the panel from Cockpit.
+- `activity` — `peerReview.mode` is determined by the ATS `primaryType` field: `analysis` → `extended_structured`; `writing` or `reflection` → `embedded_light`.
+
+**Legacy compatibility:** If `mode` is absent but `enabled: true` is present, runtime treats it as `mode: "embedded_light", triggerBy: "system"`.
+
+**`resolvePeerReviewMode()` — runtime resolver:**
+```js
+// Returns: { mode, triggerBy }
+// Reads from __classFeatures.peerReview
+// Falls back gracefully to legacy boolean
+```
+
+**Cockpit UI:** `macro_cockpit.html` exposes a "📝 הערכת עמיתים" panel (`#peerReviewSettingsPanel`) with two dropdowns (`#prModeSelect`, `#prTriggerSelect`) and a save button. `savePeerReviewSettings()` writes to `classes/{classId}/features/peerReview`. Settings are loaded via `loadPeerReviewSettings()` on session open.
+
+---
+
+### 34.6 Bot Mode Derivation from stationRoot
+
+`botMode` is derived server-side in `chat.js` based on the `stationRoot` field sent with every chat request. The derivation table:
+
+| MiledState.root | Derived botMode | Bot behaviour |
+|---|---|---|
+| `lesson` | from `config.json` | Normal operation — respects bot's configured `processMode` |
+| `group` | `guided` | Planning and structuring mode; bot helps coordinate, not teach |
+| `team_project` | `guided` | Long-arc project support; bot tracks milestones |
+| `personal_project` | `gatekept` | Gatekeeper mode; bot enforces stage-by-stage progression |
+| (any) + overlay `peer_review` | `open` | Reflection prompts; bot cannot give answers |
+
+**Implementation:** `stationRoot` is passed as a URL param to `chat.html` and included in every POST to `/api/chat`. In `chat.js`, it overrides the context block — it does not modify `botConfig` directly, preserving the One-Engine principle.
+
+**Auto bot-switch:** When `setLessonMode("project")` fires (triggered by `PERSONAL_PROJECT_STATION`), the runtime automatically calls `switchBot("personal_project_bot", ...)`. When any other mode is set, `setChatFrame()` restores the lesson's default `botType` from `lessonData`.
+
+---
+
+### 34.7 ATS → Runtime Bridge
+
+The Activity Tracking System (`journal_api.js`, activity_bank) feeds into the runtime via the sprint's `activityId` field. The bridge works as follows:
+
+1. Lecturer assigns an activity from the activity_bank to a sprint (via Cockpit).
+2. The sprint definition includes `activityId` and (optionally) `primaryType`.
+3. At runtime, `lesson_view.html` reads `activeSprint.activityId` → sets `MiledState.activityId`.
+4. If `peerReview.triggerBy === "activity"`, the runtime reads `activeSprint.primaryType` to resolve `peerReview.mode` dynamically.
+
+**primaryType → mode mapping:**
+- `analysis`, `research` → `extended_structured`
+- `writing`, `reflection`, `discussion` → `embedded_light`
+- `physical`, `plenary` → `disabled`
+
+**Teacher-trigger broadcast:** When `triggerBy === "teacher"`, the Cockpit's "🔔 הפעל הערכת עמיתים עכשיו" button (`broadcastPeerReview()`) writes `sessions/{sessionId}/peer_review_broadcast_at = Date.now()`. The lesson_view session listener detects the new timestamp and calls `showPeerReviewPanel()` only for students who are already in `MiledState.sub === "submitted"`.
+
+---
+
+### 34.8 Session Continuity Token — MiledState.sub Mirror
+
+When key runtime transitions occur, `lesson_view.html` writes `miled_sub` + `lastStage` to `sessions/{studentId}/{courseId}` via the Firebase RTDB. This allows `chat.js` to inject the student's sprint state into the bot context on the next message.
+
+**`writeMiledSubToSession(sub, sprintId)` — helper:**
+- Called after `submitStudentWork()` → writes `miled_sub: "submitted"`, `lastStage: "sprint_{sprintId}_submitted"`
+- Called after `submitPeerReview()` → writes `miled_sub: "completed"`, no lastStage override
+- Fire-and-forget; errors are non-fatal
+
+**`chat.js` context injection:**
+```
+מצב ספרינט: submitted|completed
+```
+Injected only when `sessionCtx.miled_sub` is present. Allows the bot to respond appropriately (e.g., offer reflection prompts after submission, acknowledge completion after peer review).
+
+**Relationship to Part 8:** The Session Continuity Token (`<!-- META: ... -->`) is emitted by the **bot** at the end of each response. `miled_sub` is written by the **runtime** (lesson_view). They are complementary channels: bot-side tracks stage progression; runtime-side tracks submission lifecycle.
+
+---
+
+### 34.9 Relationship to Other Parts
+
+| Part | Relationship |
+|------|-------------|
+| Part 2 — Kernel Principles | `canTransition()` enforces the No-Skip principle (§2.2) |
+| Part 8 — Session Continuity | `writeMiledSubToSession()` mirrors sprint state to Firebase so the next bot context includes `miled_sub` and `lastStage` |
+| Part 31 — Bot Architect Engine | Bot Architect is unaffected; architects produce `config.json` entries, not MiledState |
+| Part 32 — Architect Studio | Unaffected |
+| Part 33 — Student Model Schema | `MiledState.activityId` connects to `skills_mastery` writes in `chat.js` |
+| `lesson_view.html` | Primary implementor of MiledState; holds the live object |
+| `functions/chat.js` | Receives `stationRoot` and `miled_sub`; injects both into context block |
+| `config.json` | `PERSONAL_PROJECT_STATION` bot type registered in universal bots |
+
+---

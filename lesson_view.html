@@ -1460,7 +1460,7 @@
 
         <!-- ─── Peer Review Panel ─── -->
         <div class="peer-review-panel" id="peerReviewPanel">
-          <div class="peer-review-head">📊 הערכת עמיתים</div>
+          <div class="peer-review-head" id="peerReviewPanelTitle">📊 הערכת עמיתים</div>
           <!-- Split-view: my answer | peer answer -->
           <div id="peerCompareWrap" style="display:none;gap:10px;margin-bottom:14px;">
             <div style="flex:1;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:10px 12px;min-width:0;">
@@ -1485,7 +1485,7 @@
                    font-size:13px;resize:none;min-height:56px;background:#f8fafc;margin-bottom:10px;"></textarea>
           <button class="action-btn primary" id="peerSubmitBtn" onclick="submitPeerReview()"
             style="width:100%;padding:10px;font-size:14px;font-weight:800;">שלח הערכת עמיתים</button>
-          <button onclick="document.getElementById('peerReviewPanel').style.display='none'"
+          <button onclick="closePeerReviewPanel()"
             style="width:100%;margin-top:6px;padding:8px;font-size:13px;color:#64748b;background:none;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">דלג</button>
           <div id="peerReviewSent" style="display:none;margin-top:8px;padding:10px 14px;
                background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;
@@ -1937,6 +1937,8 @@
       if (courseId) query.set("classId", courseId);
       if (effectiveBotType) query.set("botType", effectiveBotType);
       query.set("sessionId", sessionId);
+      // Pass stationRoot so chat.js can derive botMode override (Part 34 §34.6)
+      query.set("stationRoot", MiledState.root);
       const newSrc = `/chat.html?${query.toString()}`;
       // Compare against stored src (chatFrame.src is absolute, newSrc is relative)
       if (chatFrame.getAttribute("data-loaded-src") === newSrc) return;
@@ -2161,7 +2163,13 @@
                 sprintDefinitions: sprintDefs
               });
               const stType = String(sprint.stationType || "").toUpperCase();
-              const newMode = stType === "GROUP_STATION" ? "group" : stType === "TEAM_PROJECT_STATION" ? "team_project" : "lesson";
+              const newMode = stType === "GROUP_STATION" ? "group"
+                : stType === "TEAM_PROJECT_STATION" ? "team_project"
+                : stType === "PERSONAL_PROJECT_STATION" ? "project"
+                : "lesson";
+              // Update sprintIndex in MiledState (Part 34 §34.2)
+              const allSprintDefs = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
+              MiledState.sprintIndex = allSprintDefs.findIndex(s => String(s.id) === String(sprint.id));
               lessonData.state = { ...(lessonData.state || {}), active_sprint: String(sprint.id), mode: newMode };
               renderActiveSprint();
               renderSprintStepper();
@@ -2247,6 +2255,9 @@
         return;
       }
 
+      // Sync MiledState.activityId from active sprint (Part 34 §34.2)
+      MiledState.activityId = activeSprint.activityId || null;
+
       // ── GROUP_STATION: render entry card + auto-enter when mode is already "group" ──
       if (String(activeSprint.stationType || "").toUpperCase() === "GROUP_STATION") {
         box.classList.add("has-group-station");
@@ -2287,6 +2298,36 @@
         return;
       }
 
+      // ── PERSONAL_PROJECT_STATION: enter project mode + render project card ──
+      if (String(activeSprint.stationType || "").toUpperCase() === "PERSONAL_PROJECT_STATION") {
+        box.classList.add("has-task-card");
+        const alreadyInProject = document.getElementById("lessonMain")?.dataset?.mode === "project";
+        if (!alreadyInProject) setLessonMode("project");
+        box.innerHTML = `
+          <div class="task-card-header" style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-bottom:1px solid #ddd6fe;">
+            <div class="task-card-title" style="color:#4c1d95;">🗂 פרויקט אישי</div>
+            <div class="task-card-name">${escapeHtml(activeSprint.title || "")}</div>
+          </div>
+          <div class="task-card-body">
+            <div class="task-section">
+              <div class="task-section-label">מה עושים בשלב זה</div>
+              <div class="task-section-text">${escapeHtml(activeSprint.instructions || "")}</div>
+            </div>
+            ${activeSprint.submissionDescription ? `
+            <div class="task-section">
+              <div class="task-section-label">מה מגישים</div>
+              <div class="task-section-text">${escapeHtml(activeSprint.submissionDescription)}</div>
+              ${activeSprint.duration ? `<div class="task-duration">⏱ ${escapeHtml(String(activeSprint.duration))}</div>` : ""}
+            </div>` : ""}
+          </div>
+          <div class="task-help">
+            <div class="task-help-q">צריך עזרה?</div>
+            <div class="task-help-text">השתמש בבוט משמאל ← (בוט Gatekeeper)</div>
+          </div>
+        `;
+        box.dataset.stationType = "PERSONAL_PROJECT_STATION";
+        return;
+      }
       const guidanceBox = guidance ? `<div class="guidance-box ${guidance.pathDecision === "fast" ? "fast" : ""}">${escapeHtml(guidance.guidance)}</div>` : "";
       const plenaryNote = String(activeSprint.stationType || "").toUpperCase() === "PLENARY_STATION"
         ? '<div class="guidance-box">Plenary Station: המסך ממוקד בשיח כיתתי. הסטודנטים אמורים להקשיב, להשוות, ולחזור לשיחה בהמשך.</div>'
@@ -2441,6 +2482,8 @@
             pathDecision: response.pacing.pathDecision,
             guidance: response.pacing.guidance
           } : null;
+          // Sync MiledState.sub — enforce No-Skip (Part 34 §34.3)
+          if (canTransition(MiledState.sub, "doing", "student")) MiledState.sub = "doing";
           renderActiveSprint();
         });
       }
@@ -2466,6 +2509,8 @@
             pathDecision: response.pacing.pathDecision,
             guidance: response.pacing.guidance
           } : null;
+          // Sync MiledState.sub — enforce No-Skip (Part 34 §34.3)
+          if (canTransition(MiledState.sub, "submitted", "student")) MiledState.sub = "submitted";
           renderActiveSprint();
         });
       }
@@ -2735,6 +2780,9 @@
           const courseName = lessonData?.courseName || lessonData?.courseId || "";
           if (courseName) document.getElementById("waitingTitle").textContent = `ממתינים לפתיחת השיעור — ${courseName}`;
         }
+        // Sync MiledState.sub from door state (Part 34 §34.2)
+        if (canTransition(MiledState.sub, showWaiting ? "waiting" : "empty", "teacher"))
+          MiledState.sub = showWaiting ? "waiting" : "empty";
       }
 
       const activeSprint = findActiveSprint();
@@ -3223,6 +3271,17 @@
           // Students list changed while speaker stage is open — refresh peer bubbles
           renderSpeakerFocusBanner(lessonData.speakerFocus);
         }
+        // Teacher-triggered peer review broadcast (Part 34 §34.5)
+        // Cockpit writes sessions/{sessionId}/peer_review_broadcast_at = Date.now()
+        // Only fire once per broadcast (compare against last seen timestamp)
+        if (role === "student" && live.peer_review_broadcast_at) {
+          const prMode = resolvePeerReviewMode();
+          if (prMode.triggerBy === "teacher" && prMode.mode !== "disabled" &&
+              live.peer_review_broadcast_at !== _lastPeerReviewBroadcastAt) {
+            _lastPeerReviewBroadcastAt = live.peer_review_broadcast_at;
+            if (MiledState.sub === "submitted") showPeerReviewPanel();
+          }
+        }
       });
     }
 
@@ -3236,9 +3295,11 @@
     // ═══════════════════════════════════════════════
     // Peer Review Ready — Firebase listener
     // Path: submissions/{classId}/{activityId}/{studentId}/peer_review_ready
+    // Also: sessions/{sessionId}/peer_review_broadcast_at for teacher-triggered mode
     // Re-registers whenever the active task changes.
     // ═══════════════════════════════════════════════
     let _peerReviewReadyRef = null;
+    let _lastPeerReviewBroadcastAt = null;  // tracks last seen teacher-broadcast timestamp
 
     function startPeerReviewListener(activityId) {
       stopPeerReviewListener();
@@ -3249,7 +3310,9 @@
       _peerReviewReadyRef = db.ref(`submissions/${classId}/${activityId}/${studentId}/peer_review_ready`);
       _peerReviewReadyRef.on("value", snap => {
         const isReady = snap.val();
-        if (isReady === true) showPeerReviewPanel();
+        // Respect teacher-triggered peer review (triggerBy: "teacher") via Firebase ready flag (Part 34 §34.5)
+        const prMode = resolvePeerReviewMode();
+        if (isReady === true && prMode.mode !== "disabled") showPeerReviewPanel();
       });
     }
 
@@ -3264,6 +3327,65 @@
     // Feature Flags — classes/{classId}/features
     // ═══════════════════════════════════════════════
     let __classFeatures = {};
+
+    // ═══════════════════════════════════════════════
+    // MiledState — canonical runtime state (Part 34)
+    // ═══════════════════════════════════════════════
+    const MiledState = {
+      root:        "lesson",   // "lesson"|"group"|"team_project"|"personal_project"
+      sub:         "empty",    // "waiting"|"empty"|"doing"|"submitted"|"peer_review"|"completed"
+      overlay:     null,       // null|"peer_insight"|"peer_review"
+      sprintIndex: 0,          // 0-based index in sprintDefinitions[]
+      activityId:  null,       // ATS activityId or null
+      botMode:     "open"      // DERIVED from root — see deriveBotMode()
+    };
+
+    // Derive botMode from MiledState.root (Part 34 §34.6)
+    function deriveBotMode(root) {
+      if (root === "personal_project") return "gatekept";
+      if (root === "group" || root === "team_project") return "guided";
+      return "open"; // "lesson" — follows config.json processMode
+    }
+
+    // Transition guardrail — enforces No-Skip principle (Part 34 §34.5)
+    // actor: "student" | "teacher"
+    const STUDENT_FORWARD_TRANSITIONS = {
+      waiting:     ["empty"],
+      empty:       ["doing"],
+      doing:       ["submitted"],
+      submitted:   ["peer_review", "completed"],
+      peer_review: ["completed"],
+      completed:   []
+    };
+
+    function canTransition(currentSub, nextSub, actor) {
+      if (actor === "teacher") return true;
+      return (STUDENT_FORWARD_TRANSITIONS[currentSub] || []).includes(nextSub);
+    }
+
+    // Resolve peer review mode from __classFeatures (Part 34 §34.5)
+    // Supports new schema (mode field) and legacy boolean (enabled field)
+    function resolvePeerReviewMode() {
+      const pr = __classFeatures?.peerReview;
+      if (!pr) return { mode: "disabled", triggerBy: "system" };
+      // New schema: mode field present
+      if (pr.mode) return { mode: pr.mode, triggerBy: pr.triggerBy || "system" };
+      // Legacy schema: boolean enabled
+      if (pr.enabled === false) return { mode: "disabled", triggerBy: "system" };
+      return { mode: "embedded_light", triggerBy: "system" };
+    }
+
+    // ATS → peer review mode bridge (Part 34 §34.7)
+    function resolvePeerReviewModeForActivity(activeSprint) {
+      const pr = resolvePeerReviewMode();
+      if (pr.triggerBy !== "activity") return pr;
+      const primaryType = String(activeSprint?.primaryType || "").toLowerCase();
+      if (["analysis", "research"].includes(primaryType))
+        return { mode: "extended_structured", triggerBy: "activity" };
+      if (["writing", "reflection", "discussion"].includes(primaryType))
+        return { mode: "embedded_light", triggerBy: "activity" };
+      return { mode: "disabled", triggerBy: "activity" };
+    }
 
     async function loadClassFeatures() {
       const classId = lessonData?.courseId || courseIdFromUrl;
@@ -3302,6 +3424,25 @@
     // Call Teacher
     // ═══════════════════════════════════════════════
     let _callTeacherCooldown = false;
+
+    // ═══════════════════════════════════════════════
+    // Session Continuity Token helper (Part 34 §34.8)
+    // Writes miled_sub + lastStage to sessions/{studentId}/{courseId} so that
+    // chat.js injects the sprint state into the bot context on next message.
+    // Fire-and-forget — errors are non-fatal.
+    // ═══════════════════════════════════════════════
+    function writeMiledSubToSession(sub, sprintId) {
+      const db = getRealtimeDb();
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (!db || !studentId || !courseId || studentId === "anonymous") return;
+      const update = {
+        miled_sub: sub,
+        miled_sub_updated_at: Date.now()
+      };
+      if (sprintId) update.lastStage = `sprint_${String(sprintId)}_${sub}`;
+      db.ref(`sessions/${studentId}/${courseId}`).update(update)
+        .catch(e => console.warn("[MilEd] writeMiledSubToSession failed:", e.message));
+    }
 
     async function callTeacher() {
       if (_callTeacherCooldown) return;
@@ -3367,6 +3508,11 @@
     function setLessonMode(mode) {
       const main = document.getElementById("lessonMain");
       if (main) main.dataset.mode = mode;
+      // Sync MiledState.root (Part 34 §34.2)
+      // data-mode "project" maps to MiledState root "personal_project"
+      const DATA_MODE_TO_ROOT = { lesson: "lesson", group: "group", team_project: "team_project", project: "personal_project" };
+      MiledState.root = DATA_MODE_TO_ROOT[mode] || "lesson";
+      MiledState.botMode = deriveBotMode(MiledState.root);
       // Close bot float panel whenever mode changes
       if (mode !== "lesson") {
         main?.classList.remove("bot-float");
@@ -3383,6 +3529,14 @@
       if (mode === "project") {
         renderProjectStepper();
         renderSprintStepper();
+      }
+      // Reload chat frame so it picks up the updated stationRoot (Part 34 §34.6)
+      // When entering personal_project mode, auto-switch to personal_project_bot (Part 34 §34.6)
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (mode === "project") {
+        switchBot("personal_project_bot", "פרויקט אישי");
+      } else if (courseId) {
+        setChatFrame(courseId, lessonData?.botType || "");
       }
     }
 
@@ -4022,6 +4176,14 @@
       { id: "q2", text: "עד כמה הטיעון מגובה בדוגמאות?" },
       { id: "q3", text: "עד כמה ניתן לראות מאמץ אישי בתשובה?" }
     ];
+
+    const EXTENDED_RUBRIC_QUESTIONS = [
+      { id: "e1", text: "בהירות — עד כמה הרעיון הוצג בצורה ברורה ומסודרת?" },
+      { id: "e2", text: "עומק — עד כמה הניתוח מגיע לשורש הבעיה?" },
+      { id: "e3", text: "ראיות — האם הטענות מגובות בדוגמאות או בנתונים?" },
+      { id: "e4", text: "מקוריות — עד כמה ניתן לזהות חשיבה עצמאית?" },
+      { id: "e5", text: "יישומיות — עד כמה ניתן לממש את הרעיון בפועל?" }
+    ];
     const DEFAULT_RUBRIC_LABELS = ["כלל לא", "במידה מועטה", "ברובה", "בהחלט ✓"];
 
     // ── Rubric cache: rubricId → { questions, labels } ───────────────────────
@@ -4125,6 +4287,13 @@
       panel.classList.add("visible");
     }
 
+    function closePeerReviewPanel() {
+      const panel = document.getElementById("peerReviewPanel");
+      if (panel) panel.style.display = "none";
+      // Sync MiledState.overlay (Part 34 §34.4)
+      MiledState.overlay = null;
+    }
+
     async function showPeerReviewPanel(reviewedText = null) {
       const panel = document.getElementById("peerReviewPanel");
       if (!panel) return;
@@ -4135,10 +4304,32 @@
       document.getElementById("peerCommentTa").value = "";
       const submitBtn = document.getElementById("peerSubmitBtn");
       if (submitBtn) submitBtn.style.display = "";
-      // Load rubric from Firebase (or fallback to default)
+      // Load rubric: Firebase-backed if rubricId is set, otherwise mode-aware static rubric (Part 34 §34.5)
       const rubricId = __classFeatures?.peerReview?.rubricId || "default";
-      const { questions, labels } = await loadRubricQuestions(rubricId);
-      renderPeerRubric(questions, labels);
+      let rubricQuestions, rubricLabels;
+      if (rubricId !== "default") {
+        const loaded = await loadRubricQuestions(rubricId);
+        rubricQuestions = loaded.questions;
+        rubricLabels    = loaded.labels;
+      } else {
+        // Fall back to mode-aware static rubric (extended_structured vs default)
+        const activeSprint = findActiveSprint();
+        const prMode = resolvePeerReviewModeForActivity(activeSprint);
+        rubricQuestions = prMode.mode === "extended_structured"
+          ? EXTENDED_RUBRIC_QUESTIONS
+          : DEFAULT_RUBRIC_QUESTIONS;
+        rubricLabels = DEFAULT_RUBRIC_LABELS;
+      }
+      renderPeerRubric(rubricQuestions, rubricLabels);
+      // Update panel title to reflect mode
+      const panelTitle = document.getElementById("peerReviewPanelTitle");
+      if (panelTitle) {
+        const activeSprint2 = findActiveSprint();
+        const prMode2 = resolvePeerReviewModeForActivity(activeSprint2);
+        panelTitle.textContent = (rubricId !== "default" || prMode2.mode === "extended_structured")
+          ? "🔬 הערכת עמיתים — מורחבת"
+          : "📝 הערכת עמיתים";
+      }
       renderEmojiBank();
 
       const compareWrap  = document.getElementById("peerCompareWrap");
@@ -4166,6 +4357,8 @@
 
       panel.classList.add("visible");
       setTimeout(() => panel.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
+      // Sync MiledState.overlay (Part 34 §34.4)
+      MiledState.overlay = "peer_review";
     }
 
     async function submitPeerReview() {
@@ -4188,6 +4381,11 @@
       document.getElementById("peerReviewSent").style.display = "block";
       const submitBtn = document.getElementById("peerSubmitBtn");
       if (submitBtn) submitBtn.style.display = "none";
+      // Sync MiledState after peer review submit (Part 34 §34.4)
+      if (canTransition(MiledState.sub, "completed", "student")) MiledState.sub = "completed";
+      MiledState.overlay = null;
+      // Session Continuity Token: mirror completed state to Firebase (Part 34 §34.8)
+      writeMiledSubToSession("completed", null);
     }
 
     // ─── Student Avatar ────────────────────────────────────────────────────
@@ -4253,10 +4451,19 @@
         setWriteStatus("✓ עבודה הוגשה", "ok");
         _lastSubmittedText = text;
         appendStudentBubble(text, "submission");
+        // Sync MiledState.sub — enforce No-Skip (Part 34 §34.3)
+        if (canTransition(MiledState.sub, "submitted", "student")) MiledState.sub = "submitted";
+        // Session Continuity Token: mirror MiledState.sub to Firebase so chat.js injects
+        // miled_sub + lastStage into the next bot context (Part 8 / Part 34 §34.8)
+        writeMiledSubToSession("submitted", activeSprint?.id || null);
         document.getElementById("subSuccessBanner").style.display = "flex";
         document.getElementById("writePanel")?.classList.add("submitted");
         loadPeerInsight();
-        if (__classFeatures?.peerReview?.enabled !== false) {
+        // Use resolvePeerReviewModeForActivity for ATS-aware peer review triggering (Part 34 §34.5)
+        // Show panel for both "system" (always-on) and "activity" (ATS-derived) triggers.
+        // "teacher" trigger is handled separately via Firebase peer_review_ready listener.
+        const prMode = resolvePeerReviewModeForActivity(activeSprint);
+        if (prMode.mode !== "disabled" && (prMode.triggerBy === "system" || prMode.triggerBy === "activity")) {
           showPeerReviewPanel();
         }
       } catch (e) { setWriteStatus(e.message, "err"); }

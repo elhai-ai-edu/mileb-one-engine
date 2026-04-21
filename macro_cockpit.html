@@ -2120,8 +2120,38 @@ body { background: var(--bg) !important; }
       </div>
     </div></div>
 
+    <!-- ─── Peer Review Settings Panel ─── -->
+    <div class="mc-section" id="peerReviewSettingsPanel">
+    <div class="mc-section-head">📝 הערכת עמיתים<span class="mc-sub">הגדרות מצב הערכת עמיתים לכיתה</span></div>
+    <div class="mc-section-body" style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <label style="font-size:12px;font-weight:700;color:#475569;">מצב:</label>
+        <select id="prModeSelect" style="font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid #cbd5e1;">
+          <option value="disabled">כבוי</option>
+          <option value="embedded_light">בסיסי (embedded_light)</option>
+          <option value="extended_structured">מורחב — רב-קריטריוני (extended_structured)</option>
+        </select>
+        <label style="font-size:12px;font-weight:700;color:#475569;">הפעלה:</label>
+        <select id="prTriggerSelect" style="font-size:13px;padding:4px 8px;border-radius:6px;border:1px solid #cbd5e1;">
+          <option value="system">אוטומטי (system)</option>
+          <option value="teacher">ידני — מרצה (teacher)</option>
+          <option value="activity">לפי פעילות ATS (activity)</option>
+        </select>
+      </div>
+      <div id="prStatusMsg" style="font-size:12px;min-height:18px;"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="savePeerReviewSettings()"
+          style="padding:8px 18px;background:linear-gradient(135deg,#6366f1,#4338ca);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          💾 שמור הגדרות הערכת עמיתים
+        </button>
+        <button id="prBroadcastBtn" onclick="broadcastPeerReview()"
+          style="padding:8px 18px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          🔔 הפעל הערכת עמיתים עכשיו
+        </button>
+      </div>
+    </div></div>
 
-    </div>
+
     <aside class="lesson-plan-sidebar" style="grid-template-columns:1fr;">
       <div class="lesson-plan-card">
         <div class="lesson-plan-sidebar-title">📋 רשימת שיעורים</div>
@@ -4176,8 +4206,83 @@ async function loadMacroLifecycle(courseId) {
     const snap = await fetch(`${dbUrl}/classes/${encodeURIComponent(courseId)}.json`).then(r => r.json());
     if (snap?.lockDate)      document.getElementById("macro-lock-date").value      = snap.lockDate;
     if (snap?.retentionDate) document.getElementById("macro-retention-date").value = snap.retentionDate;
+
+    // ─── RETENTION CLEANUP PROMPT (Part 33 §33.4) ───
+    // If retentionDate is in the past, show a warning banner offering to delete
+    // all skills_mastery records for this course (privacy compliance).
+    const retentionBanner = document.getElementById("macro-retention-banner");
+    if (retentionBanner) retentionBanner.remove(); // clear previous banner
+    if (snap?.retentionDate) {
+      const retentionTs = new Date(snap.retentionDate).getTime();
+      if (!isNaN(retentionTs) && retentionTs < Date.now()) {
+        const banner = document.createElement("div");
+        banner.id = "macro-retention-banner";
+        banner.style.cssText = "margin-top:10px;padding:10px 12px;background:#fef3c7;border:1.5px solid #f59e0b;border-radius:8px;font-size:12px;color:#92400e;line-height:1.5;";
+        banner.innerHTML = `
+          <strong>⚠️ תאריך שמירת הנתונים פג (${snap.retentionDate})</strong><br>
+          נתוני מודל הלומד (<code>skills_mastery</code>) של קורס זה חרגו מתאריך השמירה המוגדר.<br>
+          למחיקת הנתונים לצורך עמידה בדרישות הפרטיות:
+          <button onclick="macroDeleteExpiredData('${courseId}')"
+            style="margin-top:6px;display:block;padding:5px 12px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;">
+            🗑️ מחק נתוני skills_mastery לקורס זה
+          </button>
+          <div id="macro-retention-delete-msg" style="margin-top:4px;font-size:11px;min-height:14px;"></div>
+        `;
+        document.getElementById("macro-lifecycle-msg").before(banner);
+      }
+    }
   } catch (error) {
     console.error("Macro Cockpit Error:", error);
+  }
+}
+
+/**
+ * macroDeleteExpiredData (Part 33 §33.4 — Privacy / Retention Integration)
+ *
+ * Iterates over all student keys in skills_mastery and removes the per-course
+ * node for the given courseId. Fire-and-forget per student; reports aggregate result.
+ *
+ * Firebase path deleted: skills_mastery/{studentId}/{courseId}
+ */
+async function macroDeleteExpiredData(courseId) {
+  const msgEl = document.getElementById("macro-retention-delete-msg");
+  if (!msgEl) return;
+  const db = getRealtimeDb();
+  if (!db || !courseId) {
+    msgEl.style.color = "#ef4444";
+    msgEl.textContent = "Firebase לא מחובר.";
+    return;
+  }
+  if (!confirm(`האם למחוק את כל נתוני skills_mastery עבור קורס "${courseId}"?\nפעולה זו אינה הפיכה.`)) return;
+  msgEl.style.color = "#6366f1";
+  msgEl.textContent = "מוחק…";
+  try {
+    const snap = await db.ref("skills_mastery").get();
+    if (!snap.exists()) {
+      msgEl.style.color = "#16a34a";
+      msgEl.textContent = "✅ אין נתונים למחיקה.";
+      return;
+    }
+    const updates = {};
+    snap.forEach(studentSnap => {
+      if (studentSnap.hasChild(courseId)) {
+        updates[`skills_mastery/${studentSnap.key}/${courseId}`] = null;
+      }
+    });
+    const deleteCount = Object.keys(updates).length;
+    if (deleteCount === 0) {
+      msgEl.style.color = "#16a34a";
+      msgEl.textContent = "✅ אין נתונים למחיקה עבור קורס זה.";
+      return;
+    }
+    await db.ref().update(updates);
+    msgEl.style.color = "#16a34a";
+    msgEl.textContent = `✅ נמחקו נתוני ${deleteCount} סטודנטים.`;
+    // Reload lifecycle to clear the banner after deletion
+    setTimeout(() => loadMacroLifecycle(courseId), 1500);
+  } catch (e) {
+    msgEl.style.color = "#ef4444";
+    msgEl.textContent = e.message;
   }
 }
 
@@ -4188,49 +4293,6 @@ function macroLoadProjectsForm() {
   document.getElementById("macro-team-proj-title").value   = c.teamProject?.title     || "";
   document.getElementById("macro-personal-proj-title").value = c.personalProject?.title || "";
   document.getElementById("macro-personal-proj-url").value   = c.personalProject?.url   || "";
-}
-
-async function macroSaveProjects() {
-  const msgEl = document.getElementById("macro-projects-msg");
-  if (!macroCourseId) {
-    msgEl.style.color = "#ef4444"; msgEl.textContent = "לא צוין קורס."; return;
-  }
-  msgEl.style.color = "#6366f1"; msgEl.textContent = "שומר...";
-
-  const teamId    = document.getElementById("macro-team-proj-id").value.trim();
-  const teamTitle = document.getElementById("macro-team-proj-title").value.trim();
-  const perTitle  = document.getElementById("macro-personal-proj-title").value.trim();
-  const perUrl    = document.getElementById("macro-personal-proj-url").value.trim();
-
-  if (!CONFIG.my_courses) CONFIG.my_courses = {};
-  if (!CONFIG.my_courses[macroCourseId]) CONFIG.my_courses[macroCourseId] = {};
-  const course = CONFIG.my_courses[macroCourseId];
-
-  if (teamId) {
-    course.teamProject = { projectId: teamId, title: teamTitle || course.name || macroCourseId };
-  } else {
-    delete course.teamProject;
-  }
-  if (perTitle) {
-    course.personalProject = {
-      title: perTitle,
-      url: perUrl || `/chat.html?botType=task_final_project&courseId=${macroCourseId}`
-    };
-  } else {
-    delete course.personalProject;
-  }
-
-  try {
-    await fetch("/api/saveConfig", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(CONFIG)
-    });
-    msgEl.style.color = "#16a34a"; msgEl.textContent = "✅ פרויקטים נשמרו.";
-    setTimeout(() => { msgEl.textContent = ""; }, 3000);
-  } catch(e) {
-    msgEl.style.color = "#ef4444"; msgEl.textContent = e.message;
-  }
 }
 
 async function macroSaveLifecycle() {
@@ -4486,6 +4548,7 @@ async function openSession() {
     setOpenAllGateState(false);
     renderDJBooth();
     initGroupModePanel();
+    loadPeerReviewSettings();
     startPolling();
     debugLessonContext("session-open:ready");
   } catch (error) {
@@ -6645,9 +6708,72 @@ async function reassignGroupRole(studentId, newRole, courseId) {
   }
 }
 
-// ═══════════════════════════════════════════
-// EXPORT — Teaching Journal
-// ═══════════════════════════════════════════
+// ─── Peer Review Settings ───────────────────────────────────────────────────
+
+async function loadPeerReviewSettings() {
+  const db = getRealtimeDb();
+  const courseId = resolveRuntimeCourseId();
+  if (!db || !courseId) return;
+  try {
+    const snap = await db.ref(`classes/${courseId}/features/peerReview`).get();
+    const pr = snap.val() || {};
+    const modeEl    = document.getElementById("prModeSelect");
+    const triggerEl = document.getElementById("prTriggerSelect");
+    if (modeEl)    modeEl.value    = pr.mode    || "disabled";
+    if (triggerEl) triggerEl.value = pr.triggerBy || "system";
+  } catch(e) {
+    console.warn("[Cockpit] peer review settings load failed:", e);
+  }
+}
+
+async function savePeerReviewSettings() {
+  const db = getRealtimeDb();
+  const courseId = resolveRuntimeCourseId();
+  const statusEl = document.getElementById("prStatusMsg");
+  if (!db || !courseId) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "נדרש courseId."; }
+    return;
+  }
+  const mode      = document.getElementById("prModeSelect")?.value    || "disabled";
+  const triggerBy = document.getElementById("prTriggerSelect")?.value || "system";
+  if (statusEl) { statusEl.style.color = "#6366f1"; statusEl.textContent = "שומר..."; }
+  try {
+    await db.ref(`classes/${courseId}/features/peerReview`).set({ mode, triggerBy });
+    if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.textContent = "✅ הגדרות נשמרו"; }
+    setTimeout(() => { if (statusEl) statusEl.textContent = ""; }, 3000);
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = `שגיאה: ${e.message}`; }
+  }
+}
+
+// Teacher broadcasts peer review to all submitted students (triggerBy: "teacher")
+// Writes sessions/{sessionId}/peer_review_broadcast_at; lesson_view session listener reacts.
+async function broadcastPeerReview() {
+  const db = getRealtimeDb();
+  const statusEl = document.getElementById("prStatusMsg");
+  if (!sessionId) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "פתח שיעור תחילה"; }
+    return;
+  }
+  if (!db) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "Firebase לא זמין"; }
+    return;
+  }
+  const btn = document.getElementById("prBroadcastBtn");
+  if (btn) btn.disabled = true;
+  if (statusEl) { statusEl.style.color = "#6366f1"; statusEl.textContent = "משדר הערכת עמיתים לסטודנטים..."; }
+  try {
+    await db.ref(`sessions/${sessionId}/peer_review_broadcast_at`).set(Date.now());
+    if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.textContent = "✅ הערכת עמיתים הופעלה לכל הסטודנטים שהגישו"; }
+    setTimeout(() => {
+      if (statusEl) statusEl.textContent = "";
+      if (btn) btn.disabled = false;
+    }, 5000);
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = `שגיאה: ${e.message}`; }
+    if (btn) btn.disabled = false;
+  }
+}
 
 async function exportSession() {
   if (!sessionId) { alert("אין שיעור פעיל לייצוא"); return; }

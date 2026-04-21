@@ -260,6 +260,26 @@ async function handleArchitectChat(event) {
     console.error("ARCHITECT CHAT: failed to save conversation:", error.message);
   }
 
+  // ─── STRESS TEST LOG (Part 31 §31.3 Stage 2) ───
+  // The Bot Architect signals stress test resolution via %%ST_RESOLVED:ST-N%% tokens in its reply.
+  // Each resolved token is appended to architect_sessions/{sessionId}/stressTestLog[].
+  if (sessionId) {
+    const stResolvedMatches = [...reply.matchAll(/%%ST_RESOLVED:(ST-\d+)%%/g)];
+    if (stResolvedMatches.length > 0) {
+      const logEntries = stResolvedMatches.map(m => ({
+        stressTestId: m[1],
+        resolvedAt:   new Date().toISOString(),
+        turn:         messages.filter(x => x.role === "user").length
+      }));
+      db.ref(`architect_sessions/${sessionId}/stressTestLog`)
+        .transaction(existing => {
+          const current = Array.isArray(existing) ? existing : [];
+          return [...current, ...logEntries];
+        })
+        .catch(e => console.error("ARCHITECT CHAT: stressTestLog write error:", e.message));
+    }
+  }
+
   return {
     statusCode: 200,
     headers,

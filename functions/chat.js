@@ -276,9 +276,14 @@ function analyzeMessage(message) {
 // KERNEL GUARDS
 // ─────────────────────────────────────────
 
+// Part 18 §18.3 Never-Do Guard — full pattern set from MASTER_LOGIC.md
 function detectFullSolutionRequest(message) {
   const lower = message.toLowerCase();
   return (
+    /כתוב( לי)?/.test(lower) ||
+    /פתור( לי)?/.test(lower) ||
+    /תן( לי)? תשובה( מלאה)?/.test(lower) ||
+    /עשה( זאת)? בשבילי/.test(lower) ||
     lower.includes("תפתור לי") ||
     lower.includes("תכתוב לי את העבודה") ||
     lower.includes("תענה במקומי") ||
@@ -287,12 +292,252 @@ function detectFullSolutionRequest(message) {
   );
 }
 
+// Part 18 §18.3 Agency Guard — semantic heuristic (length + solution markers)
 function looksLikeFullAnswer(reply) {
-  return reply.length > 1200;
+  if (reply.length > 1200) return true;
+  const solutionMarkers = ["הנה הפתרון המלא", "הפתרון הוא:", "הכתיבה המלאה:", "הנה התשובה המלאה"];
+  const lower = reply.toLowerCase();
+  return solutionMarkers.some(m => lower.includes(m));
+}
+
+// Part 18 §18.3 Language Gate — Post-model Hebrew ratio check
+function hebrewCharRatio(text) {
+  const stripped = text.replace(/\s/g, "");
+  if (stripped.length === 0) return 1;
+  const hebrewCount = (text.match(/[\u0590-\u05FF]/g) || []).length;
+  return hebrewCount / stripped.length;
+}
+
+// Part 18 §18.4 Enforcement event logger (fire-and-forget)
+function logEnforcementEvent(studentId, sessionId, botInstanceId, stage, eventData) {
+  if (!studentId || studentId === "anonymous") return;
+  getDB()
+    .ref(`enforcement_log/${studentId}`)
+    .push({
+      ...eventData,
+      timestamp:    Date.now(),
+      botInstanceID: botInstanceId || null,
+      sessionId:    sessionId || null,
+      stage:        stage || null,
+      userRole:     "student"
+    })
+    .catch(e => console.error("ENFORCEMENT LOG ERROR:", e.message));
 }
 
 const DEFAULT_PROMPT =
   "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
+
+
+// ─────────────────────────────────────────
+// PART 17 §17.5 — TWO-STAGE AWARENESS MODEL
+// ─────────────────────────────────────────
+
+/**
+ * Infer the current CONTEXT_STAGE from available session signals.
+ *
+ * CONTEXT_STAGE is dynamic — set by the bot at runtime from student behaviour.
+ * Values: initial / understanding / attempting / struggling / ready / reflecting
+ *
+ * Signal priority (highest first):
+ *  1. emotionalTrajectory from soft context — "frustrated" → struggling
+ *  2. progress_flags — completions present → ready / reflecting
+ *  3. miled_sub state — "submitted" / "completed" → reflecting
+ *  4. session history depth → rough proxy for engagement stage
+ *  5. session_count — cross-session experience
+ */
+function inferContextStage(sessionCtx, historyLength) {
+  if (!sessionCtx) return "initial";
+
+  const trajectory = sessionCtx.emotionalTrajectory ||
+                     sessionCtx.tokenMetadata?.emotionalTrajectory || "";
+  if (trajectory === "frustrated" || trajectory === "struggling") return "struggling";
+
+  const miledSub = sessionCtx.miled_sub || "";
+  if (miledSub === "completed") return "reflecting";
+  if (miledSub === "submitted") return "ready";
+
+  const flags = sessionCtx.progress_flags;
+  const completedCount = flags && typeof flags === "object"
+    ? Object.values(flags).filter(v => v === true).length
+    : 0;
+  if (completedCount >= 3) return "reflecting";
+  if (completedCount >= 1) return "ready";
+
+  // Use in-session history depth as a proxy for engagement stage
+  if (historyLength >= 10) return "attempting";
+  if (historyLength >= 4)  return "understanding";
+
+  const sessionCount = sessionCtx.session_count || 0;
+  if (sessionCount >= 3) return "understanding";
+
+  return "initial";
+}
+
+/**
+ * Build the Two-Stage Awareness context block (Part 17 §17.5).
+ *
+ * Injected only when at least one stage dimension is known.
+ * Teaching Stage (T1_TOPIC_STAGE) is structural — declared by the instructor.
+ * Learning Stage (CONTEXT_STAGE) is dynamic — inferred at runtime.
+ *
+ * The block instructs the bot:
+ *  - Apply phase enforcement based on Teaching Stage (locked)
+ *  - Modulate pacing/tone based on Learning Stage (adaptive)
+ *  - NEVER change evaluation gate policy due to Learning Stage alone
+ */
+function buildTwoStageBlock(t1TopicStage, contextStage) {
+  if (!t1TopicStage && !contextStage) return "";
+
+  const lines = ["## מודל שני-השלבים (Part 17 §17.5)"];
+
+  if (t1TopicStage)
+    lines.push(`שלב הוראה (T1_TOPIC_STAGE): ${t1TopicStage} — מבני, נקבע על-ידי המרצה, נעול לאורך הסשן.`);
+
+  if (contextStage) {
+    const stageDescriptions = {
+      initial:      "התחלה — הלומד טרם עיבד את החומר.",
+      understanding:"הבנה — הלומד בונה מודל מנטלי ראשוני.",
+      attempting:   "ניסיון — הלומד מנסה ליישם.",
+      struggling:   "קושי — הלומד מתקשה; הכוון אמפתי לפני לחץ קוגניטיבי.",
+      ready:        "מוכנות — הלומד מוכן למעבר שלב.",
+      reflecting:   "רפלקציה — הלומד מסכם ומשייך."
+    };
+    const desc = stageDescriptions[contextStage] || contextStage;
+    lines.push(`שלב למידה (CONTEXT_STAGE): ${contextStage} — ${desc}`);
+  }
+
+  if (t1TopicStage && contextStage) {
+    const isStruggling = contextStage === "struggling";
+    const isEvalPhase  = t1TopicStage === "evaluation" || t1TopicStage === "diagnostic";
+    if (isEvalPhase && isStruggling) {
+      lines.push("הנחיה: שלב הוראה = הערכה + שלב למידה = קושי. רכך קצב, הגבר תמיכה — אל תשנה את מדיניות שער ההערכה.");
+    }
+  }
+
+  return lines.join("\n");
+}
+
+
+// ─────────────────────────────────────────
+// PART 28 — OPAL POPULATION ROUTING
+// ─────────────────────────────────────────
+
+/**
+ * OPAL (Online Pedagogical Adaptive Library) track routing.
+ *
+ * learner_population values → track assignment:
+ *   "immigrant_m1" / "immigrant_m2" / "immigrant_m3" → Immigrant Track
+ *   "haredi_h1"    / "haredi_h2"    / "haredi_h3"    → Haredi Track
+ *   "general" or unknown → General Track (no special OPAL tools)
+ *
+ * Immigrant Track tools (Tiers 1–6, M-track):
+ *   Word-in-Context, Register Ladder, Course Glossary, Connector Hunt,
+ *   Register Upgrader (immigrant variant), Loanword Bridge (general),
+ *   Source Analyzer, Source Synthesizer, Citation Coach
+ *
+ * Haredi Track tools (Tiers 1–6, H-track):
+ *   Style Bridge, Sentence Splitter, Loanword Bridge (Talmudic),
+ *   Register Upgrader (Haredi variant), Voice Identifier, Logic Judge
+ *
+ * The block instructs the LLM *which* OPAL tools are available —
+ * it does NOT invoke them; the bot decides when to use them based on context.
+ */
+function buildOpalTrackBlock(learnerPopulation) {
+  if (!learnerPopulation || learnerPopulation === "general") return "";
+
+  const isImmigrant = learnerPopulation.startsWith("immigrant_");
+  const isHaredi    = learnerPopulation.startsWith("haredi_");
+
+  if (!isImmigrant && !isHaredi) return "";
+
+  if (isImmigrant) {
+    return `## מסלול OPAL — עולים (${learnerPopulation})
+כלים פדגוגיים זמינים עבור לומד זה (מסלול עולים):
+- Word-in-Context: מילה + הגדרה + 3 משפטים + תיקון 2 שגיאות נפוצות.
+- Register Ladder: אותו רעיון ב-4 רמות: שפה יומיומית → פורמלית → אקדמית → מחקרית.
+- Course Glossary: 20 מונחי מפתח של הקורס, מותאמים לרמת עברית + שפת האם.
+- Connector Hunt: סימון מילות קישור לפי פונקציה (כי, אולם, לכן…).
+- Register Upgrader (גרסת עולים): שפה יומיומית → 3 גרסאות (בסיסית/אקדמית/מחקרית).
+- Source Analyzer: ניתוח קטע: טענה + ראיה + אמינות + שיטת ציטוט.
+- Citation Coach: בדיקת שילוב ציטוטים + עמידה ב-APA + זרימה.
+השתמש בכלים אלה כאשר הלומד מתקשה בשפה האקדמית. הפעל כלי בהתאם לצורך — אל תפרסם את רשימת הכלים ישירות ללומד.`;
+  }
+
+  // Haredi track
+  return `## מסלול OPAL — חרדים (${learnerPopulation})
+כלים פדגוגיים זמינים עבור לומד זה (מסלול חרדים):
+- Style Bridge: טקסט ישיבתי → עברית אקדמית, זה-לצד-זה, עד 3 תיקונים בסיבוב.
+- Sentence Splitter: משפט ישיבתי ארוך → ספירת רעיונות + משפטים אקדמיים קצרים.
+- Loanword Bridge: מונח אקדמי זר + אטימולוגיה + גישור תלמודי מושגי.
+- Register Upgrader (גרסת חרדים): המרת שפה ישיבתית → עברית אקדמית סטנדרטית.
+- Voice Identifier: זיהוי קולות שונים בטקסט ומתחים ביניהם.
+- Logic Judge: זיהוי קפיצות לוגיות, סתירות, ניתוק — דוח אבחוני.
+השתמש בכלים אלה כאשר הלומד מתקשה במעבר לרגיסטר אקדמי. הפעל כלי בהתאם לצורך — אל תפרסם את רשימת הכלים ישירות ללומד.`;
+}
+
+
+// ─────────────────────────────────────────
+// STUDENT MODEL (Part 33)
+// ─────────────────────────────────────────
+
+// Load skills_mastery snapshot for a student+course (fire-and-forget safe)
+async function loadStudentModel(studentId, courseId) {
+  if (!studentId || studentId === "anonymous" || !courseId) return null;
+  try {
+    const snap = await getDB()
+      .ref(`skills_mastery/${studentId}/${courseId}`)
+      .get();
+    return snap.exists() ? snap.val() : null;
+  } catch (e) {
+    console.error("STUDENT MODEL LOAD ERROR:", e.message);
+    return null;
+  }
+}
+
+// Build a Hebrew context block from the Student Model (Part 33 §33.1)
+// Injects: skill_levels, error_patterns, attempt_history, learner_population, session_count, progress_flags
+function buildStudentModelContextBlock(skillsMastery, sessionCtx) {
+  const lines = [];
+
+  if (skillsMastery && typeof skillsMastery === "object") {
+    // skill_levels — list skills at "developing" or "proven" status (cap at 5)
+    const skillSummaries = [];
+    const weakPoints = [];
+    for (const [skillId, data] of Object.entries(skillsMastery)) {
+      if (!data || typeof data !== "object") continue;
+      if (data.status && data.status !== "none") {
+        skillSummaries.push(`${skillId}: ${data.status} (${data.mastery_pct ?? 0}%)`);
+      }
+      // error_patterns — collect recent_weak_points across skills
+      if (Array.isArray(data.recent_weak_points)) {
+        weakPoints.push(...data.recent_weak_points);
+      }
+    }
+    if (skillSummaries.length > 0)
+      lines.push("רמות שליטה: " + skillSummaries.slice(0, 5).join(", "));
+
+    if (weakPoints.length > 0) {
+      const unique = [...new Set(weakPoints)].slice(0, 3);
+      lines.push("דפוסי שגיאה: " + unique.join(", "));
+    }
+  }
+
+  // learner_population and session_count live in sessions/{studentId}/{courseId}
+  if (sessionCtx?.learner_population)
+    lines.push(`אוכלוסיית לומד: ${sessionCtx.learner_population}`);
+  if (sessionCtx?.session_count)
+    lines.push(`מספר שיחות קודמות: ${sessionCtx.session_count}`);
+
+  // progress_flags — boolean milestone map
+  const flags = sessionCtx?.progress_flags;
+  if (flags && typeof flags === "object") {
+    const done = Object.entries(flags).filter(([, v]) => v === true).map(([k]) => k);
+    if (done.length > 0)
+      lines.push("אבני דרך שהושלמו: " + done.join(", "));
+  }
+
+  return lines.length ? "## מודל הלומד\n" + lines.join("\n") : "";
+}
 
 
 // ─────────────────────────────────────────
@@ -423,7 +668,9 @@ export async function handler(event) {
       currentStep      = null,          // ← active project stage sent by workspace.html
       isNewBotSession  = false,         // ← prevents loading stale history on bot switch
       skillMode        = false,         // ← true when request originates from skills hub
-      waveId           = null           // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
+      waveId           = null,          // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
+      stationRoot      = "lesson",      // ← MiledState.root from lesson_view (Part 34 §34.6)
+      t1TopicStage     = null           // ← Teaching Stage (Part 17 §17.5) — declared by instructor at config or runtime
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -458,7 +705,12 @@ export async function handler(event) {
 
     // ─── LOAD SESSION CONTEXT ───
     const courseId   = classId;
-    const sessionCtx = await loadSessionContext(studentId, courseId);
+    const [sessionCtx, studentSkillsMastery] = await Promise.all([
+      loadSessionContext(studentId, courseId),
+      // Skip Student Model load for anonymous users — loadStudentModel guards internally,
+      // but avoiding the Promise.all entry removes the unnecessary async overhead.
+      studentId && studentId !== "anonymous" ? loadStudentModel(studentId, courseId) : Promise.resolve(null)
+    ]);
 
     let contextBlock  = "";
     let savedHistory  = [];
@@ -469,6 +721,10 @@ export async function handler(event) {
       if (sessionCtx.gender)      parts.push(`פנייה: ${sessionCtx.gender}`);
       if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
       if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
+      // ─── RESTORE MILED_SUB (Part 34 §34.8) ───
+      // Written by lesson_view.html when student submits work or completes peer review.
+      // Lets the bot adapt its response to the student's current sprint state.
+      if (sessionCtx.miled_sub)   parts.push(`מצב ספרינט: ${sessionCtx.miled_sub}`);
 
       // ─── RESTORE SOFT CONTEXT (process bots via %%SESSION_UPDATE%%) ───
       // tone and emotionalTrajectory may be written directly to the session node
@@ -516,6 +772,35 @@ export async function handler(event) {
       contextBlock = [contextBlock, gatekeepingBlock].filter(Boolean).join("\n\n");
     }
 
+    // ─── INJECT STUDENT MODEL CONTEXT (Part 33) ───
+    // skill_levels, error_patterns, attempt_history, learner_population, session_count, progress_flags
+    const studentModelBlock = buildStudentModelContextBlock(studentSkillsMastery, sessionCtx);
+    if (studentModelBlock) {
+      contextBlock = [contextBlock, studentModelBlock].filter(Boolean).join("\n\n");
+    }
+
+    // ─── INJECT OPAL TRACK INSTRUCTIONS (Part 28) ───
+    // Routes the bot to the appropriate OPAL tool subset based on learner_population.
+    // Immigrant track: language-foundation and genre tools.
+    // Haredi track: style-conversion and conceptual-bridging tools.
+    // No block injected for "general" population.
+    const opalTrackBlock = buildOpalTrackBlock(sessionCtx?.learner_population);
+    if (opalTrackBlock) {
+      contextBlock = [contextBlock, opalTrackBlock].filter(Boolean).join("\n\n");
+    }
+
+    // ─── INJECT TWO-STAGE AWARENESS (Part 17 §17.5) ───
+    // Teaching Stage (T1_TOPIC_STAGE): structural, declared by instructor.
+    //   Source priority: request body → botConfig.t1TopicStage → null
+    // Learning Stage (CONTEXT_STAGE): dynamic, inferred from session signals.
+    // Both stages are injected together as a single block.
+    const effectiveT1 = t1TopicStage || botConfig.t1TopicStage || null;
+    const contextStage = inferContextStage(sessionCtx, savedHistory.length);
+    const twoStageBlock = buildTwoStageBlock(effectiveT1, contextStage);
+    if (twoStageBlock) {
+      contextBlock = [contextBlock, twoStageBlock].filter(Boolean).join("\n\n");
+    }
+
     // ─── INJECT COURSE CONTEXT ───
     // Tells the bot which course the student is in (e.g. optics vs management).
     const courseConfig = config.my_courses?.[courseId];
@@ -527,6 +812,21 @@ export async function handler(event) {
         .filter(Boolean).join("\n\n");
     }
     
+    // ─── INJECT STATION MODE CONTEXT (Part 34 §34.6) ───
+    // Derives bot mode from stationRoot and injects it into the context block.
+    // This does not override botConfig; it adds a behavioural instruction layer on top.
+    if (stationRoot && stationRoot !== "lesson") {
+      const STATION_MODE_INSTRUCTIONS = {
+        group: "## מצב תחנה\nמצב: עבודת קבוצה (GROUP_STATION). תפקידך: סייע לקבוצה לתכנן ולמבן את עבודתם המשותפת. עודד דיאלוג בין חברי הקבוצה. אל תיתן תשובות ישירות — כוון לתהליך.",
+        team_project: "## מצב תחנה\nמצב: פרויקט צוות (TEAM_PROJECT_STATION). תפקידך: ליווי פרויקט רב-שלבי. עקוב אחר מטרות הפרויקט, בדוק שהסטודנטים מגיעים לאבני הדרך. שמור על רציפות בין פגישות.",
+        personal_project: "## מצב תחנה\nמצב: פרויקט אישי — Gatekeeper (PERSONAL_PROJECT_STATION). תפקידך: לאמת כל שלב לפי הקריטריונים שהוגדרו. אל תאפשר מעבר לשלב הבא ללא אישור מפורש. בדוק שהתוצר עומד בדרישות לפני שאתה מאשר."
+      };
+      const stationInstruction = STATION_MODE_INSTRUCTIONS[stationRoot];
+      if (stationInstruction) {
+        contextBlock = [contextBlock, stationInstruction].filter(Boolean).join("\n\n");
+      }
+    }
+
     // ─── SERVER-SIDE STAGE LOCK ───
     // If the bot is invoked with an active project step, check whether that step's
     // unlock state allows further interaction. States that block: "pending_review"
@@ -551,6 +851,28 @@ export async function handler(event) {
           })
         };
       }
+    }
+
+    // ─── CLASSROOM MANAGER STAGE LOCK (Part 30) ───
+    // Instructor can lock student-level stage advancement via cockpit lockStudent().
+    // Reads sessions/{studentId}/{courseId}/stageLock (boolean).
+    // Blocks any message except __INIT__ when stageLock === true.
+    if (message !== "__INIT__" && sessionCtx?.stageLock === true) {
+      const stageLockReply = "שלב זה נעול כרגע ⛔ — המרצה השהה את ההתקדמות. אנא המתן לפתיחה מחדש.";
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "stage_lock_classroom",
+        principleTriggered: "No-Skip",
+        userAttempt:        message.slice(0, 80),
+        systemAction:       "blocked"
+      });
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          reply: stageLockReply,
+          botType, botName: botConfig.name, model: "stage-lock-guard", isThinking: false
+        })
+      };
     }
 
     // ─── GENDER GATE ───
@@ -631,6 +953,12 @@ export async function handler(event) {
       .slice(-14);
 
     if (effectiveNoFullSolution && detectFullSolutionRequest(message)) {
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "never_do_trigger",
+        principleTriggered: "No-Substitution",
+        userAttempt:        message.slice(0, 80),
+        systemAction:       "blocked"
+      });
       return {
         statusCode: 200,
         headers,
@@ -672,8 +1000,30 @@ export async function handler(event) {
     let reply = data.choices?.[0]?.message?.content
       || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
 
-    if (effectiveNoFullSolution && looksLikeFullAnswer(reply))
+    if (effectiveNoFullSolution && looksLikeFullAnswer(reply)) {
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "agency_guard_triggered",
+        principleTriggered: "No-Substitution",
+        userAttempt:        message.slice(0, 80),
+        systemAction:       "rewritten"
+      });
       reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
+    }
+
+    // ─── LANGUAGE GATE (Post-model, Part 18 §18.3) ───
+    // If output has fewer than 30% Hebrew characters when Hebrew output is required,
+    // rewrite to a Hebrew fallback and log the violation.
+    if (hebrewCharRatio(reply) < 0.30 && reply.length > 50) {
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "language_violation",
+        principleTriggered: "Language-Gate",
+        direction:          "post",
+        detected:           "low_hebrew_ratio",
+        required:           "he_standard",
+        systemAction:       "rewritten"
+      });
+      reply = "מצטער, אנסה שוב בעברית. " + reply;
+    }
 
     // ─── EXTRACT SESSION UPDATE ───
     let sessionUpdate = null;
