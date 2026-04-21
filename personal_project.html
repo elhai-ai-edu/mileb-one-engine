@@ -880,7 +880,10 @@
         const data = await res.json();
         const ind  = document.getElementById("ppSaveIndicator");
         if (ind) {
-          const savedAt = data.draftSavedAt ? new Date(data.draftSavedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) : "";
+          let savedAt = "";
+          if (data.draftSavedAt) {
+            savedAt = new Date(data.draftSavedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+          }
           ind.textContent = savedAt ? `נשמר ${savedAt}` : "נשמר";
           ind.className   = "pp-save-indicator saved";
         }

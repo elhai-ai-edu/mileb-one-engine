@@ -106,7 +106,7 @@ export async function handler(event) {
 
     return ok({
       ok:            true,
-      student:       { currentStage: 0, ...studentData },
+      student:       { ...studentData, currentStage: Number(studentData.currentStage ?? 0) },
       announcements: announcementsSnap.val() || {},
       teacherQA:     qaSnap.val()            || {}
     });

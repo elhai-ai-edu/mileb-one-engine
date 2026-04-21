@@ -5466,7 +5466,6 @@ function renderStageSummaryTable() {
 
   const stageFilter = (document.getElementById("stagesStageFilter")?.value || "").trim().toLowerCase();
   const statusFilter = (document.getElementById("stagesStatusFilter")?.value || "").trim().toLowerCase();
-  const STUCK_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
   const nowTs = Date.now();
 
   const students = _stageSummaryData.filter(student => {
@@ -5492,13 +5491,9 @@ function renderStageSummaryTable() {
     return;
   }
 
-  const STATE_LABELS = {
-    "unlocked":       "🟢 מאושר",
-    "pending_review": "🟡 ממתין",
-    "relocked":       "🔴 נדחה"
-  };
-
-  const nowTs = Date.now();
+  const MINUTE_MS = 60_000;
+  const HOUR_MS   = 3_600_000;
+  const DAY_MS    = 86_400_000;
 
   container.innerHTML = students.map(student => {
     const name = escapeHtml(student.studentName || student.studentId || "—");
@@ -5526,10 +5521,10 @@ function renderStageSummaryTable() {
     const lastSeenAge = lastSeenMs ? nowTs - lastSeenMs : Infinity;
     const isStuck = lastSeenAge > PP_STUCK_THRESHOLD_MS && rowState !== "unlocked";
     const lastSeenLabel = !lastSeenMs ? ""
-      : lastSeenAge < 60_000 ? "כעת"
-      : lastSeenAge < 3_600_000 ? `לפני ${Math.floor(lastSeenAge/60_000)} דק'`
-      : lastSeenAge < 86_400_000 ? `לפני ${Math.floor(lastSeenAge/3_600_000)} שע'`
-      : `לפני ${Math.floor(lastSeenAge/86_400_000)} ימים`;
+      : lastSeenAge < MINUTE_MS ? "כעת"
+      : lastSeenAge < HOUR_MS   ? `לפני ${Math.floor(lastSeenAge / MINUTE_MS)} דק'`
+      : lastSeenAge < DAY_MS    ? `לפני ${Math.floor(lastSeenAge / HOUR_MS)} שע'`
+      : `לפני ${Math.floor(lastSeenAge / DAY_MS)} ימים`;
 
     const stuckBadge = isStuck
       ? `<span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:#fef3c7;color:#92400e;margin-right:4px;" title="לא פעיל מעל 7 ימים">⚠️ תקוע</span>`
