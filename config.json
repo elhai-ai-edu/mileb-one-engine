@@ -434,7 +434,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח טקסט",
-        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_optics"
+        "url": "/project_workspace.html?courseId=hebrew_advanced_optics"
       },
       "sprintDefinitions": {
         "unit_01": {
@@ -489,7 +489,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח טקסט",
-        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_optics_a"
+        "url": "/project_workspace.html?courseId=hebrew_advanced_optics_a"
       }
     },
 
@@ -510,7 +510,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח מקרה",
-        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_management"
+        "url": "/project_workspace.html?courseId=hebrew_advanced_management"
       }
     },
 
@@ -531,7 +531,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח מקרה",
-        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_management_a"
+        "url": "/project_workspace.html?courseId=hebrew_advanced_management_a"
       }
     },
 
@@ -549,7 +549,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — גרונטולוגיה",
-        "url": "/chat.html?botType=task_final_project&courseId=gerontology_mechina"
+        "url": "/project_workspace.html?courseId=gerontology_mechina"
       }
     },
 
@@ -567,7 +567,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — גרונטולוגיה",
-        "url": "/chat.html?botType=task_final_project&courseId=gerontology_mechina_a"
+        "url": "/project_workspace.html?courseId=gerontology_mechina_a"
       }
     },
 

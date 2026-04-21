@@ -91,7 +91,8 @@ if (!sessionId){
 let facultyId = sessionStorage.getItem('facultyId') || null;
 
 const params      = new URLSearchParams(window.location.search);
-const classId     = params.get('classId');
+// Accept both classId and courseId — personalProject URLs use courseId
+const classId     = params.get('classId') || params.get('courseId') || null;
 const skillMode   = params.get('skillMode') === 'true';
 // stationRoot — passed from lesson_view setChatFrame(); used by chat.js for bot mode override (Part 34 §34.6)
 const stationRoot = params.get('stationRoot') || 'lesson';
