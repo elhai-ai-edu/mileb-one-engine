@@ -280,10 +280,10 @@ function analyzeMessage(message) {
 function detectFullSolutionRequest(message) {
   const lower = message.toLowerCase();
   return (
-    /כתוב(\ לי)?/.test(lower) ||
-    /פתור(\ לי)?/.test(lower) ||
-    /תן(\ לי)?\ תשובה(\ מלאה)?/.test(lower) ||
-    /עשה(\ זאת)?\ בשבילי/.test(lower) ||
+    /כתוב( לי)?/.test(lower) ||
+    /פתור( לי)?/.test(lower) ||
+    /תן( לי)? תשובה( מלאה)?/.test(lower) ||
+    /עשה( זאת)? בשבילי/.test(lower) ||
     lower.includes("תפתור לי") ||
     lower.includes("תכתוב לי את העבודה") ||
     lower.includes("תענה במקומי") ||
@@ -558,7 +558,9 @@ export async function handler(event) {
     const courseId   = classId;
     const [sessionCtx, studentSkillsMastery] = await Promise.all([
       loadSessionContext(studentId, courseId),
-      loadStudentModel(studentId, courseId)
+      // Skip Student Model load for anonymous users — loadStudentModel guards internally,
+      // but avoiding the Promise.all entry removes the unnecessary async overhead.
+      studentId && studentId !== "anonymous" ? loadStudentModel(studentId, courseId) : Promise.resolve(null)
     ]);
 
     let contextBlock  = "";
