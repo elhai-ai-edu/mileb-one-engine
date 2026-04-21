@@ -88,9 +88,11 @@ if (!sessionId){
 
 let facultyId = sessionStorage.getItem('facultyId') || null;
 
-const params    = new URLSearchParams(window.location.search);
-const classId   = params.get('classId');
-const skillMode = params.get('skillMode') === 'true';
+const params      = new URLSearchParams(window.location.search);
+const classId     = params.get('classId');
+const skillMode   = params.get('skillMode') === 'true';
+// stationRoot — passed from lesson_view setChatFrame(); used by chat.js for bot mode override (Part 34 §34.6)
+const stationRoot = params.get('stationRoot') || 'lesson';
 
 const chatWindow = document.getElementById('chat-window');
 const input      = document.getElementById('user-input');
@@ -171,6 +173,7 @@ async function triggerBotOpening() {
         sessionId:       sessionId,
         skillMode:       skillMode,
         waveId:          waveId,
+        stationRoot:     stationRoot,
         history:         [],
         isNewBotSession: true
       })
@@ -222,15 +225,16 @@ async function sendMessage(){
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message:   text,
-        botType:   currentBotType,
-        classId:   classId,
-        studentId: studentId,
-        facultyId: facultyId,
-        sessionId: sessionId,
-        skillMode: skillMode,
-        waveId:    waveId,
-        history:   chatHistory
+        message:     text,
+        botType:     currentBotType,
+        classId:     classId,
+        studentId:   studentId,
+        facultyId:   facultyId,
+        sessionId:   sessionId,
+        skillMode:   skillMode,
+        waveId:      waveId,
+        stationRoot: stationRoot,
+        history:     chatHistory
       })
     });
 

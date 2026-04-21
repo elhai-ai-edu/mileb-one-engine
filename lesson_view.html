@@ -1922,6 +1922,8 @@
       if (courseId) query.set("classId", courseId);
       if (effectiveBotType) query.set("botType", effectiveBotType);
       query.set("sessionId", sessionId);
+      // Pass stationRoot so chat.js can derive botMode override (Part 34 §34.6)
+      query.set("stationRoot", MiledState.root);
       const newSrc = `/chat.html?${query.toString()}`;
       // Compare against stored src (chatFrame.src is absolute, newSrc is relative)
       if (chatFrame.getAttribute("data-loaded-src") === newSrc) return;
@@ -2146,7 +2148,13 @@
                 sprintDefinitions: sprintDefs
               });
               const stType = String(sprint.stationType || "").toUpperCase();
-              const newMode = stType === "GROUP_STATION" ? "group" : stType === "TEAM_PROJECT_STATION" ? "team_project" : "lesson";
+              const newMode = stType === "GROUP_STATION" ? "group"
+                : stType === "TEAM_PROJECT_STATION" ? "team_project"
+                : stType === "PERSONAL_PROJECT_STATION" ? "project"
+                : "lesson";
+              // Update sprintIndex in MiledState (Part 34 §34.2)
+              const sprintDefs2 = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
+              MiledState.sprintIndex = sprintDefs2.findIndex(s => String(s.id) === String(sprint.id));
               lessonData.state = { ...(lessonData.state || {}), active_sprint: String(sprint.id), mode: newMode };
               renderActiveSprint();
               renderSprintStepper();
@@ -2232,6 +2240,9 @@
         return;
       }
 
+      // Sync MiledState.activityId from active sprint (Part 34 §34.2)
+      MiledState.activityId = activeSprint.activityId || null;
+
       // ── GROUP_STATION: render entry card + auto-enter when mode is already "group" ──
       if (String(activeSprint.stationType || "").toUpperCase() === "GROUP_STATION") {
         box.classList.add("has-group-station");
@@ -2272,6 +2283,36 @@
         return;
       }
 
+      // ── PERSONAL_PROJECT_STATION: enter project mode + render project card ──
+      if (String(activeSprint.stationType || "").toUpperCase() === "PERSONAL_PROJECT_STATION") {
+        box.classList.add("has-task-card");
+        const alreadyInProject = document.getElementById("lessonMain")?.dataset?.mode === "project";
+        if (!alreadyInProject) setLessonMode("project");
+        box.innerHTML = `
+          <div class="task-card-header" style="background:linear-gradient(135deg,#faf5ff,#ede9fe);border-bottom:1px solid #ddd6fe;">
+            <div class="task-card-title" style="color:#4c1d95;">🗂 פרויקט אישי</div>
+            <div class="task-card-name">${escapeHtml(activeSprint.title || "")}</div>
+          </div>
+          <div class="task-card-body">
+            <div class="task-section">
+              <div class="task-section-label">מה עושים בשלב זה</div>
+              <div class="task-section-text">${escapeHtml(activeSprint.instructions || "")}</div>
+            </div>
+            ${activeSprint.submissionDescription ? `
+            <div class="task-section">
+              <div class="task-section-label">מה מגישים</div>
+              <div class="task-section-text">${escapeHtml(activeSprint.submissionDescription)}</div>
+              ${activeSprint.duration ? `<div class="task-duration">⏱ ${escapeHtml(String(activeSprint.duration))}</div>` : ""}
+            </div>` : ""}
+          </div>
+          <div class="task-help">
+            <div class="task-help-q">צריך עזרה?</div>
+            <div class="task-help-text">השתמש בבוט משמאל ← (בוט Gatekeeper)</div>
+          </div>
+        `;
+        box.dataset.stationType = "PERSONAL_PROJECT_STATION";
+        return;
+      }
       const guidanceBox = guidance ? `<div class="guidance-box ${guidance.pathDecision === "fast" ? "fast" : ""}">${escapeHtml(guidance.guidance)}</div>` : "";
       const plenaryNote = String(activeSprint.stationType || "").toUpperCase() === "PLENARY_STATION"
         ? '<div class="guidance-box">Plenary Station: המסך ממוקד בשיח כיתתי. הסטודנטים אמורים להקשיב, להשוות, ולחזור לשיחה בהמשך.</div>'
@@ -3234,7 +3275,9 @@
       _peerReviewReadyRef = db.ref(`submissions/${classId}/${activityId}/${studentId}/peer_review_ready`);
       _peerReviewReadyRef.on("value", snap => {
         const isReady = snap.val();
-        if (isReady === true) showPeerReviewPanel();
+        // Respect teacher-triggered peer review (triggerBy: "teacher") via Firebase ready flag (Part 34 §34.5)
+        const prMode = resolvePeerReviewMode();
+        if (isReady === true && prMode.mode !== "disabled") showPeerReviewPanel();
       });
     }
 
@@ -3249,6 +3292,64 @@
     // Feature Flags — classes/{classId}/features
     // ═══════════════════════════════════════════════
     let __classFeatures = {};
+
+    // ═══════════════════════════════════════════════
+    // MiledState — canonical runtime state (Part 34)
+    // ═══════════════════════════════════════════════
+    const MiledState = {
+      root:        "lesson",   // "lesson"|"group"|"team_project"|"personal_project"
+      sub:         "empty",    // "waiting"|"empty"|"doing"|"submitted"|"peer_review"|"completed"
+      overlay:     null,       // null|"peer_insight"|"peer_review"
+      sprintIndex: 0,          // 0-based index in sprintDefinitions[]
+      activityId:  null,       // ATS activityId or null
+      botMode:     "open"      // DERIVED from root — see deriveBotMode()
+    };
+
+    // Derive botMode from MiledState.root (Part 34 §34.6)
+    function deriveBotMode(root) {
+      if (root === "personal_project") return "gatekept";
+      if (root === "group" || root === "team_project") return "guided";
+      return "open"; // "lesson" — follows config.json processMode
+    }
+
+    // Transition guardrail — enforces No-Skip principle (Part 34 §34.5)
+    // actor: "student" | "teacher"
+    function canTransition(currentSub, nextSub, actor) {
+      if (actor === "teacher") return true;
+      const STUDENT_FORWARD = {
+        waiting:     ["empty"],
+        empty:       ["doing"],
+        doing:       ["submitted"],
+        submitted:   ["peer_review", "completed"],
+        peer_review: ["completed"],
+        completed:   []
+      };
+      return (STUDENT_FORWARD[currentSub] || []).includes(nextSub);
+    }
+
+    // Resolve peer review mode from __classFeatures (Part 34 §34.5)
+    // Supports new schema (mode field) and legacy boolean (enabled field)
+    function resolvePeerReviewMode() {
+      const pr = __classFeatures?.peerReview;
+      if (!pr) return { mode: "disabled", triggerBy: "system" };
+      // New schema: mode field present
+      if (pr.mode) return { mode: pr.mode, triggerBy: pr.triggerBy || "system" };
+      // Legacy schema: boolean enabled
+      if (pr.enabled === false) return { mode: "disabled", triggerBy: "system" };
+      return { mode: "embedded_light", triggerBy: "system" };
+    }
+
+    // ATS → peer review mode bridge (Part 34 §34.7)
+    function resolvePeerReviewModeForActivity(activeSprint) {
+      const pr = resolvePeerReviewMode();
+      if (pr.triggerBy !== "activity") return pr;
+      const primaryType = String(activeSprint?.primaryType || "").toLowerCase();
+      if (["analysis", "research"].includes(primaryType))
+        return { mode: "extended_structured", triggerBy: "activity" };
+      if (["writing", "reflection", "discussion"].includes(primaryType))
+        return { mode: "embedded_light", triggerBy: "activity" };
+      return { mode: "disabled", triggerBy: "activity" };
+    }
 
     async function loadClassFeatures() {
       const classId = lessonData?.courseId || courseIdFromUrl;
@@ -3346,6 +3447,10 @@
     function setLessonMode(mode) {
       const main = document.getElementById("lessonMain");
       if (main) main.dataset.mode = mode;
+      // Sync MiledState.root (Part 34 §34.2)
+      // data-mode "project" maps to MiledState root "personal_project"
+      MiledState.root = mode === "project" ? "personal_project" : mode;
+      MiledState.botMode = deriveBotMode(MiledState.root);
       // Close bot float panel whenever mode changes
       if (mode !== "lesson") {
         main?.classList.remove("bot-float");
@@ -3363,6 +3468,9 @@
         renderProjectStepper();
         renderSprintStepper();
       }
+      // Reload chat frame so it picks up the updated stationRoot (Part 34 §34.6)
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (courseId) setChatFrame(courseId, lessonData?.botType || "");
     }
 
     function toggleBotFloat() {
@@ -4058,7 +4166,9 @@
         document.getElementById("subSuccessBanner").style.display = "flex";
         document.getElementById("writePanel")?.classList.add("submitted");
         loadPeerInsight();
-        if (__classFeatures?.peerReview?.enabled !== false) {
+        // Use resolvePeerReviewModeForActivity for ATS-aware peer review triggering (Part 34 §34.5)
+        const prMode = resolvePeerReviewModeForActivity(activeSprint);
+        if (prMode.mode !== "disabled" && prMode.triggerBy === "system") {
           showPeerReviewPanel();
         }
       } catch (e) { setWriteStatus(e.message, "err"); }

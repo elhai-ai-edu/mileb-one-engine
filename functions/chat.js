@@ -423,7 +423,8 @@ export async function handler(event) {
       currentStep      = null,          // ← active project stage sent by workspace.html
       isNewBotSession  = false,         // ← prevents loading stale history on bot switch
       skillMode        = false,         // ← true when request originates from skills hub
-      waveId           = null           // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
+      waveId           = null,          // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
+      stationRoot      = "lesson"       // ← MiledState.root from lesson_view (Part 34 §34.6)
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -527,6 +528,21 @@ export async function handler(event) {
         .filter(Boolean).join("\n\n");
     }
     
+    // ─── INJECT STATION MODE CONTEXT (Part 34 §34.6) ───
+    // Derives bot mode from stationRoot and injects it into the context block.
+    // This does not override botConfig; it adds a behavioural instruction layer on top.
+    if (stationRoot && stationRoot !== "lesson") {
+      const STATION_MODE_INSTRUCTIONS = {
+        group: "## מצב תחנה\nמצב: עבודת קבוצה (GROUP_STATION). תפקידך: סייע לקבוצה לתכנן ולמבן את עבודתם המשותפת. עודד דיאלוג בין חברי הקבוצה. אל תיתן תשובות ישירות — כוון לתהליך.",
+        team_project: "## מצב תחנה\nמצב: פרויקט צוות (TEAM_PROJECT_STATION). תפקידך: ליווי פרויקט רב-שלבי. עקוב אחר מטרות הפרויקט, בדוק שהסטודנטים מגיעים לאבני הדרך. שמור על רציפות בין פגישות.",
+        personal_project: "## מצב תחנה\nמצב: פרויקט אישי — Gatekeeper (PERSONAL_PROJECT_STATION). תפקידך: לאמת כל שלב לפי הקריטריונים שהוגדרו. אל תאפשר מעבר לשלב הבא ללא אישור מפורש. בדוק שהתוצר עומד בדרישות לפני שאתה מאשר."
+      };
+      const stationInstruction = STATION_MODE_INSTRUCTIONS[stationRoot];
+      if (stationInstruction) {
+        contextBlock = [contextBlock, stationInstruction].filter(Boolean).join("\n\n");
+      }
+    }
+
     // ─── SERVER-SIDE STAGE LOCK ───
     // If the bot is invoked with an active project step, check whether that step's
     // unlock state allows further interaction. States that block: "pending_review"
