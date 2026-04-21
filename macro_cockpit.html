@@ -4295,6 +4295,40 @@ function macroLoadProjectsForm() {
   document.getElementById("macro-personal-proj-url").value   = c.personalProject?.url   || "";
 }
 
+async function macroSaveProjects() {
+  const msgEl = document.getElementById("macro-projects-msg");
+  if (!macroCourseId || !CONFIG?.my_courses?.[macroCourseId]) {
+    if (msgEl) { msgEl.style.color = "#ef4444"; msgEl.textContent = "לא נבחר קורס."; }
+    return;
+  }
+  const teamId    = (document.getElementById("macro-team-proj-id")?.value    || "").trim();
+  const teamTitle = (document.getElementById("macro-team-proj-title")?.value  || "").trim();
+  const persTitle = (document.getElementById("macro-personal-proj-title")?.value || "").trim();
+  const persUrl   = (document.getElementById("macro-personal-proj-url")?.value   || "").trim();
+
+  const course = CONFIG.my_courses[macroCourseId];
+  if (teamId || teamTitle) {
+    course.teamProject = { ...(course.teamProject || {}), projectId: teamId, title: teamTitle };
+  }
+  if (persTitle || persUrl) {
+    course.personalProject = { ...(course.personalProject || {}), title: persTitle, url: persUrl };
+  }
+
+  if (msgEl) { msgEl.style.color = "#6366f1"; msgEl.textContent = "שומר..."; }
+  try {
+    const res = await fetch("/api/saveConfig", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(CONFIG)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (msgEl) { msgEl.style.color = "#16a34a"; msgEl.textContent = "✅ נשמר."; }
+    setTimeout(() => { if (msgEl) msgEl.textContent = ""; }, 3000);
+  } catch (e) {
+    if (msgEl) { msgEl.style.color = "#ef4444"; msgEl.textContent = e.message; }
+  }
+}
+
 async function macroSaveLifecycle() {
   const msgEl = document.getElementById("macro-lifecycle-msg");
   const lockDate      = document.getElementById("macro-lock-date").value;
@@ -6922,10 +6956,21 @@ document.addEventListener("keydown", (event) => {
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 <script src="/firebase-init.js"></script>
-<script src="/firebase-auth.js"></script>
-<script src="/auth-guard.js"></script>
+<script src="/firebase-auth.js?v=2"></script>
+<script src="/auth-guard.js?v=2"></script>
 <script>
-  window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html");
+  // Safety: if enforcePageAccess hangs or throws, restore visibility after 8s
+  const _accessTimer = setTimeout(() => {
+    document.documentElement.style.visibility = "";
+    console.warn("enforcePageAccess safety timeout fired");
+  }, 8000);
+
+  (window.MiledAccess?.enforcePageAccess(["lecturer", "institution_admin", "system_admin"], "/index.html") || Promise.resolve())
+    .catch(e => {
+      console.error("enforcePageAccess failed, showing page anyway:", e);
+      document.documentElement.style.visibility = "";
+    })
+    .finally(() => clearTimeout(_accessTimer));
 </script>
 </body>
 </html>
