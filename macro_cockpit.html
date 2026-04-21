@@ -1329,6 +1329,14 @@ body { background: var(--bg) !important; }
     <div class="phase-card-title">📋 עיצוב שיעור</div>
     <div class="phase-card-meta"><span class="phase-card-status" id="lesson-phase-status-badge">ממתין לעיצוב קורס</span></div>
   </div>
+  <div class="phase-divider-arrow" aria-hidden="true">&#x2192;</div>
+  <div class="phase-card" id="phase-card-projects" role="button" tabindex="0"
+       onclick="switchPhase('projects')"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchPhase('projects');}">
+    <div class="phase-card-phase">שלב 3</div>
+    <div class="phase-card-title">📁 פרויקטים</div>
+    <div class="phase-card-meta"><span class="phase-card-status" id="projects-phase-status-badge">הגדר פרויקטים</span></div>
+  </div>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {
@@ -2163,6 +2171,203 @@ body { background: var(--bg) !important; }
     </div>
 
   </div><!-- /phase-lesson -->
+
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PHASE 3 — פרויקטים (Projects)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="phase-projects" style="display:none;">
+
+    <!-- Gate: no course selected -->
+    <div id="projects-gate" style="display:none;text-align:center;padding:60px 20px;">
+      <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+      <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:8px;">יש לבחור קורס פעיל תחילה</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:16px;">עבור לשלב עיצוב הקורס ובחר קורס</div>
+      <button class="btn btn-outline" onclick="switchPhase('course')">&#x2190; עיצוב קורס</button>
+    </div>
+
+    <div id="projects-content" style="display:none;">
+
+      <!-- ── Sub-tab navigation ── -->
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <button id="proj-tab-btn-team" onclick="switchProjectTab('team')"
+          style="flex:1;padding:11px 16px;border-radius:10px;border:2px solid #86efac;background:#f0fdf4;color:#15803d;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;">
+          👥 פרויקט צוות
+        </button>
+        <button id="proj-tab-btn-personal" onclick="switchProjectTab('personal')"
+          style="flex:1;padding:11px 16px;border-radius:10px;border:2px solid #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:14px;font-weight:700;cursor:pointer;opacity:.55;transition:opacity .15s;">
+          📝 פרויקט אישי
+        </button>
+      </div>
+
+      <!-- ══ TEAM PROJECT panel ══ -->
+      <div id="proj-panel-team">
+
+        <!-- Basic info -->
+        <div class="mc-section">
+          <div class="mc-section-head">👥 פרויקט צוות — פרטים בסיסיים</div>
+          <div class="mc-section-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">שם תצוגה</label>
+                <input id="proj-team-title" type="text" placeholder="פרויקט צוות — ניתוח טקסט"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">מזהה פרויקט (projectId)</label>
+                <input id="proj-team-id" type="text" dir="ltr" placeholder="proj_optics_2025b"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">בוט משויך</label>
+                <select id="proj-team-bot"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                  <option value="team_project">team_project</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">משקל בציון הסופי (%)</label>
+                <input id="proj-team-grade" type="number" min="0" max="100" placeholder="30"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">מועד הגשה סופי</label>
+                <input id="proj-team-deadline" type="date"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">מטרת הפרויקט</label>
+                <input id="proj-team-goal" type="text" placeholder="תיאור קצר של מטרה ותוצר"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="mc-section" style="margin-top:14px;">
+          <div class="mc-section-head">🔍 מיומנויות מקושרות<span class="mc-sub">בחר מיומנויות שהפרויקט מפתח</span></div>
+          <div class="mc-section-body">
+            <div id="proj-team-skills-list" style="display:flex;flex-wrap:wrap;gap:8px;min-height:36px;">
+              <span style="font-size:12px;color:#94a3b8;">טוען...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stages -->
+        <div class="mc-section" style="margin-top:14px;">
+          <div class="mc-section-head">📋 שלבי הפרויקט<span class="mc-sub">כל שלב: כותרת, הנחיות, תאריך הגשה, משקל בציון</span></div>
+          <div class="mc-section-body">
+            <div id="proj-team-stages"></div>
+            <button onclick="addProjectStage('team')"
+              style="margin-top:8px;padding:7px 16px;border-radius:8px;border:1.5px dashed #86efac;background:#f0fdf4;color:#15803d;font-size:12px;font-weight:600;cursor:pointer;">
+              + הוסף שלב
+            </button>
+          </div>
+        </div>
+
+        <!-- Bot system prompt -->
+        <div class="mc-section" style="margin-top:14px;">
+          <div class="mc-section-head">🤖 הגדרות הבוט<span class="mc-sub">System Prompt מותאם לפרויקט זה (ריק = ברירת מחדל)</span></div>
+          <div class="mc-section-body">
+            <textarea id="proj-team-sp" rows="6" dir="ltr"
+              placeholder="השאר ריק לשימוש ב-SP המובנה של הבוט. הזן כאן prompt מותאם כדי להחליפו עבור פרויקט זה בלבד."
+              style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;font-family:monospace;box-sizing:border-box;resize:vertical;"></textarea>
+          </div>
+        </div>
+
+      </div><!-- /proj-panel-team -->
+
+      <!-- ══ PERSONAL PROJECT panel ══ -->
+      <div id="proj-panel-personal" style="display:none;">
+
+        <!-- Basic info -->
+        <div class="mc-section">
+          <div class="mc-section-head">📝 פרויקט אישי — פרטים בסיסיים</div>
+          <div class="mc-section-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">שם תצוגה</label>
+                <input id="proj-pers-title" type="text" placeholder="פרויקט גמר אישי"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">URL (ריק = נוצר אוטומטית)</label>
+                <input id="proj-pers-url" type="text" dir="ltr" placeholder="/project_workspace.html?courseId=..."
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">בוט משויך</label>
+                <select id="proj-pers-bot"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+                  <option value="task_final_project">task_final_project</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">משקל בציון הסופי (%)</label>
+                <input id="proj-pers-grade" type="number" min="0" max="100" placeholder="40"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">מועד הגשה סופי</label>
+                <input id="proj-pers-deadline" type="date"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">מטרת הפרויקט</label>
+                <input id="proj-pers-goal" type="text" placeholder="תיאור קצר של מטרה ותוצר"
+                  style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills -->
+        <div class="mc-section" style="margin-top:14px;">
+          <div class="mc-section-head">🔍 מיומנויות מקושרות<span class="mc-sub">בחר מיומנויות שהפרויקט מפתח</span></div>
+          <div class="mc-section-body">
+            <div id="proj-pers-skills-list" style="display:flex;flex-wrap:wrap;gap:8px;min-height:36px;">
+              <span style="font-size:12px;color:#94a3b8;">טוען...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stages -->
+        <div class="mc-section" style="margin-top:14px;">
+          <div class="mc-section-head">📋 שלבי הפרויקט<span class="mc-sub">כל שלב: כותרת, הנחיות, תאריך הגשה, משקל בציון</span></div>
+          <div class="mc-section-body">
+            <div id="proj-pers-stages"></div>
+            <button onclick="addProjectStage('personal')"
+              style="margin-top:8px;padding:7px 16px;border-radius:8px;border:1.5px dashed #bfdbfe;background:#eff6ff;color:#1d4ed8;font-size:12px;font-weight:600;cursor:pointer;">
+              + הוסף שלב
+            </button>
+          </div>
+        </div>
+
+        <!-- Bot system prompt -->
+        <div class="mc-section" style="margin-top:14px;">
+          <div class="mc-section-head">🤖 הגדרות הבוט<span class="mc-sub">System Prompt מותאם לפרויקט זה (ריק = ברירת מחדל)</span></div>
+          <div class="mc-section-body">
+            <textarea id="proj-pers-sp" rows="6" dir="ltr"
+              placeholder="השאר ריק לשימוש ב-SP המובנה של הבוט. הזן כאן prompt מותאם כדי להחליפו עבור פרויקט זה בלבד."
+              style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;font-family:monospace;box-sizing:border-box;resize:vertical;"></textarea>
+          </div>
+        </div>
+
+      </div><!-- /proj-panel-personal -->
+
+      <!-- ── Save bar ── -->
+      <div style="margin-top:22px;display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;">
+        <button onclick="saveProjectsTab()"
+          style="padding:10px 28px;border-radius:10px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:14px;font-weight:700;">
+          💾 שמור פרויקטים
+        </button>
+        <span id="proj-save-msg" style="font-size:13px;min-height:20px;"></span>
+      </div>
+
+    </div><!-- /projects-content -->
+
+  </div><!-- /phase-projects -->
 
 
   <!-- Live Legacy (hidden — used by micro cockpit live view) -->
@@ -4328,6 +4533,248 @@ async function macroSaveProjects() {
     if (msgEl) { msgEl.style.color = "#ef4444"; msgEl.textContent = e.message; }
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PHASE 3 — Projects Tab logic
+// ─────────────────────────────────────────────────────────────────────────────
+
+let _projTeamStages     = [];
+let _projPersonalStages = [];
+let _currentProjectTab  = 'team';
+
+function switchProjectTab(tab) {
+  _currentProjectTab = tab;
+  document.getElementById('proj-panel-team').style.display     = tab === 'team'     ? '' : 'none';
+  document.getElementById('proj-panel-personal').style.display = tab === 'personal' ? '' : 'none';
+  const teamBtn = document.getElementById('proj-tab-btn-team');
+  const persBtn = document.getElementById('proj-tab-btn-personal');
+  if (teamBtn) teamBtn.style.opacity = tab === 'team'     ? '1' : '0.55';
+  if (persBtn) persBtn.style.opacity = tab === 'personal' ? '1' : '0.55';
+}
+
+function _projStageRow(type, idx, stage) {
+  const color  = type === 'team' ? '#15803d' : '#1d4ed8';
+  const border = type === 'team' ? '#86efac' : '#bfdbfe';
+  const bg     = type === 'team' ? '#f0fdf4' : '#eff6ff';
+  return `<div class="proj-stage-row" id="proj-${type}-stage-${idx}"
+    style="border:1.5px solid ${border};border-radius:10px;padding:12px;margin-bottom:8px;background:${bg};">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+      <span style="font-size:12px;font-weight:700;color:${color};min-width:46px;">שלב ${idx + 1}</span>
+      <input type="text" id="proj-${type}-stage-${idx}-title" value="${escapeHtml(stage.title||'')}"
+        placeholder="כותרת השלב"
+        style="flex:1;min-width:130px;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">
+      <input type="date" id="proj-${type}-stage-${idx}-deadline" value="${stage.deadline||''}"
+        style="padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;width:140px;">
+      <div style="display:flex;align-items:center;gap:4px;">
+        <input type="number" min="0" max="100" id="proj-${type}-stage-${idx}-grade"
+          value="${stage.gradeShare||''}" placeholder="0"
+          style="width:56px;padding:5px 6px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;">
+        <span style="font-size:10px;color:#94a3b8;">% ציון</span>
+      </div>
+      <button onclick="removeProjectStage('${type}',${idx})"
+        style="background:none;border:none;cursor:pointer;color:#ef4444;font-size:17px;line-height:1;padding:0 2px;" title="מחק שלב">✕</button>
+    </div>
+    <textarea id="proj-${type}-stage-${idx}-instructions" rows="2"
+      placeholder="הנחיות לשלב זה — מה הסטודנט אמור לעשות, לחשוב, לייצר"
+      style="width:100%;padding:7px;border:1px solid #e2e8f0;border-radius:6px;font-size:12px;resize:vertical;box-sizing:border-box;">${escapeHtml(stage.instructions||'')}</textarea>
+  </div>`;
+}
+
+function _renderProjStages(type) {
+  const arr = type === 'team' ? _projTeamStages : _projPersonalStages;
+  const container = document.getElementById(`proj-${type}-stages`);
+  if (!container) return;
+  container.innerHTML = arr.length
+    ? arr.map((s, i) => _projStageRow(type, i, s)).join('')
+    : `<div style="font-size:12px;color:#94a3b8;padding:8px 0;">אין שלבים — לחץ "+ הוסף שלב" כדי להתחיל</div>`;
+}
+
+function addProjectStage(type) {
+  _syncProjStagesToMem(type);
+  const arr = type === 'team' ? _projTeamStages : _projPersonalStages;
+  arr.push({ id: 'stage_' + Date.now(), title: '', instructions: '', deadline: '', gradeShare: 0 });
+  _renderProjStages(type);
+}
+
+function removeProjectStage(type, idx) {
+  _syncProjStagesToMem(type);
+  const arr = type === 'team' ? _projTeamStages : _projPersonalStages;
+  arr.splice(idx, 1);
+  _renderProjStages(type);
+}
+
+function _syncProjStagesToMem(type) {
+  const arr = type === 'team' ? _projTeamStages : _projPersonalStages;
+  arr.forEach((s, i) => {
+    s.title        = document.getElementById(`proj-${type}-stage-${i}-title`)?.value        || '';
+    s.instructions = document.getElementById(`proj-${type}-stage-${i}-instructions`)?.value || '';
+    s.deadline     = document.getElementById(`proj-${type}-stage-${i}-deadline`)?.value     || '';
+    s.gradeShare   = parseInt(document.getElementById(`proj-${type}-stage-${i}-grade`)?.value || '0') || 0;
+  });
+}
+
+function _buildProjSkillsChecklist(type, selectedIds) {
+  const container = document.getElementById(`proj-${type}-skills-list`);
+  if (!container) return;
+  const items = CONFIG?.branches?.skills?.items || {};
+  if (!Object.keys(items).length) {
+    container.innerHTML = '<span style="font-size:12px;color:#94a3b8;">אין מיומנויות מוגדרות</span>';
+    return;
+  }
+  const selected = new Set(selectedIds || []);
+  container.innerHTML = Object.entries(items).map(([id, skill]) => {
+    const on = selected.has(id);
+    return `<label style="display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1.5px solid ${on?'#6366f1':'#e2e8f0'};background:${on?'#ede9fe':'#f8fafc'};cursor:pointer;font-size:12px;white-space:nowrap;transition:.12s;">
+      <input type="checkbox" value="${escapeHtml(id)}" ${on?'checked':''} onchange="updateSkillBadge(this)"
+        style="width:13px;height:13px;accent-color:#6366f1;">
+      ${escapeHtml(skill.name || id)}
+    </label>`;
+  }).join('');
+}
+
+function updateSkillBadge(cb) {
+  const label = cb.closest('label');
+  if (!label) return;
+  label.style.borderColor = cb.checked ? '#6366f1' : '#e2e8f0';
+  label.style.background  = cb.checked ? '#ede9fe' : '#f8fafc';
+}
+
+function _getSelectedSkills(type) {
+  const container = document.getElementById(`proj-${type}-skills-list`);
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('input[type=checkbox]:checked')).map(cb => cb.value);
+}
+
+function _populateProjBotSelect(selectId, defaultVal) {
+  const sel = document.getElementById(selectId);
+  if (!sel || !CONFIG) return;
+  const bots = new Set();
+  Object.values(CONFIG.branches || {}).forEach(b => {
+    Object.values(b.items || {}).forEach(item => { if (item.botType) bots.add(item.botType); });
+  });
+  // ensure the current value is included even if not in branches
+  if (defaultVal) bots.add(defaultVal);
+  sel.innerHTML = Array.from(bots).sort().map(b =>
+    `<option value="${b}" ${b === defaultVal ? 'selected' : ''}>${b}</option>`
+  ).join('');
+}
+
+function loadProjectsTab() {
+  const gate    = document.getElementById('projects-gate');
+  const content = document.getElementById('projects-content');
+  if (!macroCourseId || !CONFIG?.my_courses?.[macroCourseId]) {
+    if (gate)    gate.style.display = '';
+    if (content) content.style.display = 'none';
+    return;
+  }
+  if (gate)    gate.style.display = 'none';
+  if (content) content.style.display = '';
+
+  const c  = CONFIG.my_courses[macroCourseId];
+  const tp = c.teamProject     || {};
+  const pp = c.personalProject || {};
+
+  // ── Team fields ──
+  document.getElementById('proj-team-title').value    = tp.title            || '';
+  document.getElementById('proj-team-id').value       = tp.projectId        || '';
+  document.getElementById('proj-team-grade').value    = tp.gradeWeight != null ? tp.gradeWeight : '';
+  document.getElementById('proj-team-deadline').value = tp.finalDeadline    || '';
+  document.getElementById('proj-team-goal').value     = tp.goal             || '';
+  document.getElementById('proj-team-sp').value       = tp.systemPromptOverride || '';
+
+  // ── Personal fields ──
+  document.getElementById('proj-pers-title').value    = pp.title            || '';
+  document.getElementById('proj-pers-url').value      = pp.url              || '';
+  document.getElementById('proj-pers-grade').value    = pp.gradeWeight != null ? pp.gradeWeight : '';
+  document.getElementById('proj-pers-deadline').value = pp.finalDeadline    || '';
+  document.getElementById('proj-pers-goal').value     = pp.goal             || '';
+  document.getElementById('proj-pers-sp').value       = pp.systemPromptOverride || '';
+
+  // ── Bot selects ──
+  _populateProjBotSelect('proj-team-bot', tp.botType || 'team_project');
+  _populateProjBotSelect('proj-pers-bot', pp.botType || 'task_final_project');
+
+  // ── Skills ──
+  _buildProjSkillsChecklist('team',     tp.linkedSkills || []);
+  _buildProjSkillsChecklist('personal', pp.linkedSkills || []);
+
+  // ── Stages ──
+  _projTeamStages     = (tp.stages || []).map(s => ({ ...s }));
+  _projPersonalStages = (pp.stages || []).map(s => ({ ...s }));
+  _renderProjStages('team');
+  _renderProjStages('personal');
+
+  // restore active sub-tab
+  switchProjectTab(_currentProjectTab);
+
+  // update phase badge
+  const badge = document.getElementById('projects-phase-status-badge');
+  if (badge) {
+    const hasTeam = !!(tp.title || tp.projectId);
+    const hasPers = !!(pp.title);
+    badge.textContent = hasTeam && hasPers ? '✓ מוגדר' : hasTeam || hasPers ? 'חלקי' : 'הגדר פרויקטים';
+    badge.style.background = hasTeam && hasPers ? '#d1fae5' : '';
+    badge.style.color      = hasTeam && hasPers ? '#065f46' : '';
+  }
+}
+
+async function saveProjectsTab() {
+  const msgEl = document.getElementById('proj-save-msg');
+  if (!macroCourseId || !CONFIG?.my_courses?.[macroCourseId]) {
+    if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = 'לא נבחר קורס.'; }
+    return;
+  }
+
+  _syncProjStagesToMem('team');
+  _syncProjStagesToMem('personal');
+
+  const course = CONFIG.my_courses[macroCourseId];
+  const autoUrl = `/project_workspace.html?courseId=${macroCourseId}`;
+
+  course.teamProject = {
+    ...(course.teamProject || {}),
+    title:                (document.getElementById('proj-team-title').value    || '').trim(),
+    projectId:            (document.getElementById('proj-team-id').value       || '').trim(),
+    botType:               document.getElementById('proj-team-bot').value,
+    gradeWeight:          parseInt(document.getElementById('proj-team-grade').value    || '0') || 0,
+    finalDeadline:         document.getElementById('proj-team-deadline').value || '',
+    goal:                 (document.getElementById('proj-team-goal').value     || '').trim(),
+    systemPromptOverride: (document.getElementById('proj-team-sp').value       || '').trim(),
+    linkedSkills:         _getSelectedSkills('team'),
+    stages:               _projTeamStages,
+  };
+
+  course.personalProject = {
+    ...(course.personalProject || {}),
+    title:                (document.getElementById('proj-pers-title').value    || '').trim(),
+    url:                  (document.getElementById('proj-pers-url').value      || '').trim() || autoUrl,
+    botType:               document.getElementById('proj-pers-bot').value,
+    gradeWeight:          parseInt(document.getElementById('proj-pers-grade').value    || '0') || 0,
+    finalDeadline:         document.getElementById('proj-pers-deadline').value || '',
+    goal:                 (document.getElementById('proj-pers-goal').value     || '').trim(),
+    systemPromptOverride: (document.getElementById('proj-pers-sp').value       || '').trim(),
+    linkedSkills:         _getSelectedSkills('personal'),
+    stages:               _projPersonalStages,
+  };
+
+  if (msgEl) { msgEl.style.color = '#6366f1'; msgEl.textContent = 'שומר...'; }
+  try {
+    const res = await fetch('/api/saveConfig', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(CONFIG)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ נשמר בהצלחה.'; }
+    setTimeout(() => { if (msgEl) msgEl.textContent = ''; }, 3000);
+    // refresh badge
+    loadProjectsTab();
+  } catch (e) {
+    if (msgEl) { msgEl.style.color = '#ef4444'; msgEl.textContent = e.message; }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 async function macroSaveLifecycle() {
   const msgEl = document.getElementById("macro-lifecycle-msg");
@@ -6819,14 +7266,18 @@ let currentWizardStep = 1;
 const courseStepDone = { 1: false, 2: false, 3: false, 4: false, 5: false };
 
 function switchPhase(view) {
-  currentView = view === 'lesson' ? 'lesson' : 'course';
-  document.getElementById('phase-card-course')?.classList.toggle('active', currentView === 'course');
-  document.getElementById('phase-card-lesson')?.classList.toggle('active', currentView === 'lesson');
-  const courseBlock = document.getElementById('phase-course');
-  const lessonBlock = document.getElementById('phase-lesson');
-  if (courseBlock) courseBlock.style.display = currentView === 'course' ? '' : 'none';
-  if (lessonBlock) lessonBlock.style.display = currentView === 'lesson' ? '' : 'none';
-  if (currentView === 'lesson') checkLessonGate();
+  currentView = ['lesson', 'projects'].includes(view) ? view : 'course';
+  document.getElementById('phase-card-course')?.classList.toggle('active',    currentView === 'course');
+  document.getElementById('phase-card-lesson')?.classList.toggle('active',    currentView === 'lesson');
+  document.getElementById('phase-card-projects')?.classList.toggle('active',  currentView === 'projects');
+  const courseBlock    = document.getElementById('phase-course');
+  const lessonBlock    = document.getElementById('phase-lesson');
+  const projectsBlock  = document.getElementById('phase-projects');
+  if (courseBlock)   courseBlock.style.display   = currentView === 'course'   ? '' : 'none';
+  if (lessonBlock)   lessonBlock.style.display   = currentView === 'lesson'   ? '' : 'none';
+  if (projectsBlock) projectsBlock.style.display = currentView === 'projects' ? '' : 'none';
+  if (currentView === 'lesson')   checkLessonGate();
+  if (currentView === 'projects') loadProjectsTab();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
