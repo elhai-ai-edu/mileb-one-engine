@@ -854,6 +854,14 @@
     }
     .gm-status-dot.online { background: #22c55e; box-shadow: 0 0 0 2px #dcfce7; }
 
+    /* Group Pulse */
+    .pulse-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .pulse-label { font-size: 11px; font-weight: 700; color: #334155; min-width: 60px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pulse-track { flex: 1; height: 8px; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
+    .pulse-fill  { height: 100%; border-radius: 4px; transition: width .4s ease; }
+    .pulse-pct   { font-size: 10px; color: #64748b; min-width: 28px; text-align: left; }
+    .pulse-fill.dominant { background: #f59e0b; }
+
     /* Group task area */
     .group-task-area {
       display: none; flex-direction: column; overflow-y: auto;
@@ -1128,8 +1136,9 @@
         <div class="chip" id="hebrewLevelChip" style="display:none;background:#f0fdf4;color:#166534;border-color:#bbf7d0;"></div>
         <div class="chip" id="teamRoleChip"    style="display:none;background:#faf5ff;color:#6b21a8;border-color:#d8b4fe;"></div>
         <!-- Functional mode buttons (shown via JS when relevant) -->
-        <button class="tp-enter-btn" id="tpEnterBtn" onclick="enterTeamProjectMode()">📁 פרויקט הצוות ←</button>
-        <button class="tp-exit-btn"  id="tpExitBtn"  onclick="exitTeamProjectMode()">← חזרה לשיעור</button>
+        <button class="tp-enter-btn" id="tpEnterBtn"       onclick="enterTeamProjectMode()">👥 פרויקט צוות ←</button>
+        <button class="tp-enter-btn" id="ppEnterBtn"       onclick="enterPersonalProjectMode()" style="display:none;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;">📝 פרויקט אישי ←</button>
+        <button class="tp-exit-btn"  id="tpExitBtn"        onclick="exitTeamProjectMode()">← חזרה לשיעור</button>
         <button class="group-enter-btn" id="groupEnterBtn" onclick="enterGroupMode()">👥 סביבת קבוצה ←</button>
         <button class="group-exit-btn"  id="groupExitBtn"  onclick="exitGroupMode()">← יציאה מקבוצה</button>
         <div    class="group-mode-badge" id="groupModeBadge">👥 מצב קבוצתי</div>
@@ -1259,6 +1268,12 @@
         <div class="panel-group-members" id="groupMembersPanel">
           <div class="panel-head-group">👥 חברי הקבוצה</div>
           <div id="groupMembersList"></div>
+          <!-- Pulse — contribution balance meter -->
+          <div id="groupPulsePanel" style="display:none;padding:10px 14px 12px;">
+            <div style="font-size:10px;font-weight:800;color:#64748b;letter-spacing:.4px;
+                        text-transform:uppercase;margin-bottom:8px;">מצפן קבוצתי</div>
+            <div id="groupPulseBars"></div>
+          </div>
         </div>
         <!-- Bookshelf — hidden in group mode -->
         <div class="panel-head panel-head-bookshelf">📚 חומרים לפעילות</div>
@@ -3398,6 +3413,11 @@
         const btn = document.getElementById("tpEnterBtn");
         if (btn) btn.style.display = "flex";
       }
+      // Show personal project button if course has a personalProjectUrl
+      if (role === "student" && lessonData?.personalProjectUrl) {
+        const btn = document.getElementById("ppEnterBtn");
+        if (btn) btn.style.display = "flex";
+      }
     }
 
     // ═══════════════════════════════════════════════
@@ -3482,6 +3502,7 @@
     let _groupVetoRef          = null;
     let _groupTimerInterval    = null;
     let _groupPresenceRefs     = [];
+    let _groupAssignmentsRef   = null;
 
     // ── Mode switching ──────────────────────────────
     function setLessonMode(mode) {
@@ -3537,7 +3558,9 @@
         projectId:   teamProjectId,
         studentId:   studentId   || "",
         studentName: studentName || studentId || "",
-        courseId:    lessonData?.courseId || courseIdFromUrl || ""
+        courseId:    lessonData?.courseId || courseIdFromUrl || "",
+        unitId:      lessonData?.lessonId || unitIdFromUrl   || "",
+        source:      "lesson"
       });
       const frame = document.getElementById("teamProjectFrame");
       if (frame) frame.src = `/team_project.html?${params.toString()}`;
@@ -3558,6 +3581,12 @@
       const hasTeamProject = !!lessonData?.teamProjectId;
       if (enterBtn) enterBtn.style.display = hasTeamProject ? "flex" : "none";
       if (exitBtn)  exitBtn.style.display  = "none";
+    }
+
+    function enterPersonalProjectMode() {
+      const url = lessonData?.personalProjectUrl;
+      if (!url) { alert("לא הוגדר פרויקט אישי לקורס זה."); return; }
+      window.open(url, "_blank", "noopener");
     }
 
     function enterGroupMode(sprint) {
@@ -3583,6 +3612,16 @@
       renderGroupRoleChips();
       startGroupContribListener();
       startGroupPresenceListener();
+
+      // Role assignment: claim slot if autoAssign, then enforce restrictions
+      const classId = lessonData?.courseId || courseIdFromUrl;
+      const gm = __classFeatures.groupMode;
+      if (classId && gm?.autoAssign) {
+        claimGroupRoleIfNeeded(classId, gm).then(applyGroupRoleRestrictions);
+      } else {
+        applyGroupRoleRestrictions();
+      }
+      startGroupAssignmentsListener(classId);
     }
 
     function exitGroupMode() {
@@ -3595,12 +3634,12 @@
     function renderGroupMembersSidebar() {
       const el = document.getElementById("groupMembersList");
       if (!el) return;
-      const gm      = __classFeatures.groupMode;
-      const members = gm?.members || [];
-      const roles   = gm?.roles   || {};
+      const gm          = __classFeatures.groupMode;
+      const members     = gm?.members || [];
+      const assignments = gm?.assignments || {};
       if (!members.length) { el.innerHTML = '<div style="color:#94a3b8;font-size:12px;padding:8px;">אין חברי קבוצה.</div>'; return; }
       el.innerHTML = members.map(sid => {
-        const role    = roles[sid] || "חבר/ת קבוצה";
+        const role    = assignments[sid] || "חבר/ת קבוצה";
         const isMe    = sid === studentId;
         const initial = (sid.charAt(0) || "?").toUpperCase();
         const colors  = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
@@ -3619,16 +3658,28 @@
 
     // ── Role chips ──────────────────────────────────
     function renderGroupRoleChips() {
-      const row   = document.getElementById("groupRolesRow");
+      const row = document.getElementById("groupRolesRow");
       if (!row) return;
-      const gm    = __classFeatures.groupMode;
-      const roles = gm?.roles || {};
-      const me    = roles[studentId] || null;
-      const allRoles = [...new Set(Object.values(roles))];
-      row.innerHTML = allRoles.map(r =>
-        `<div class="role-chip${r === me ? " me" : ""}">${escapeHtml(r)}</div>`
-      ).join("");
-      // Also update task title if available
+      const gm          = __classFeatures.groupMode;
+      const assignments = gm?.assignments || {};
+      const hasAssigned = Object.keys(assignments).length > 0;
+
+      if (hasAssigned) {
+        // Show each assigned student with their role; highlight current user
+        row.innerHTML = Object.entries(assignments).map(([sid, r]) =>
+          `<div class="role-chip${sid === studentId ? " me" : ""}" title="${escapeHtml(sid)}">${escapeHtml(r)}</div>`
+        ).join("");
+      } else {
+        // No assignments yet — show slot-based role list as placeholders
+        const slotRoles = Object.entries(gm?.roles || {})
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([, r]) => r);
+        row.innerHTML = slotRoles.map(r =>
+          `<div class="role-chip">${escapeHtml(r)}</div>`
+        ).join("");
+      }
+
+      // Sync task title if available
       const titleEl = document.getElementById("groupTaskTitleDisplay");
       if (titleEl && lessonData?.activeTask?.title) titleEl.textContent = lessonData.activeTask.title;
     }
@@ -3638,19 +3689,93 @@
       const gm = __classFeatures.groupMode;
       if (!gm?.enabled) return;
 
-      __groupRole = gm.roles?.[studentId] || null;
+      // Role comes from assignments map (keyed by studentId), not slot-based roles
+      __groupRole = gm.assignments?.[studentId] || null;
 
       // Reveal the enter button; mode stays "lesson" until student clicks it
       const btn = document.getElementById("groupEnterBtn");
       if (btn) btn.style.display = "flex";
 
+      applyGroupRoleRestrictions();
+    }
+
+    // ── Apply UI restrictions based on current __groupRole ───────────────────
+    function applyGroupRoleRestrictions() {
+      const isMnasach = __groupRole === "מנסח";
+
+      // Role badge
+      const badge = document.getElementById("groupRoleBadge");
+      if (badge) {
+        badge.textContent   = __groupRole ? `תפקידך: ${__groupRole}` : "";
+        badge.style.display = __groupRole ? "inline-block" : "none";
+      }
+
       // Editor section: only מנסח gets the draft textarea
       const editorSection = document.getElementById("masterDraftEditorSection");
-      if (editorSection) editorSection.style.display = __groupRole === "מנסח" ? "" : "none";
+      if (editorSection) editorSection.style.display = isMnasach ? "" : "none";
 
-      // Initiate-veto button: only מנסח sees it initially
+      // Initiate-veto button: only מנסח sees it initially (renderGroupVeto may re-evaluate)
       const initiateBtn = document.getElementById("groupInitiateVetoBtn");
-      if (initiateBtn) initiateBtn.style.display = __groupRole === "מנסח" ? "" : "none";
+      if (initiateBtn) initiateBtn.style.display = isMnasach ? "" : "none";
+
+      // Re-render role chips to reflect current assignment
+      renderGroupRoleChips();
+    }
+
+    // ── Auto-assign role via Firebase transaction ────────────────────────────
+    async function claimGroupRoleIfNeeded(classId, gm) {
+      const db = getRealtimeDb();
+      if (!db || !gm?.autoAssign) return;
+
+      const assignmentsRef = db.ref(`classes/${classId}/features/groupMode/assignments`);
+      const snap           = await assignmentsRef.once("value");
+      const assignments    = snap.val() || {};
+
+      // Already assigned — just sync local state
+      if (assignments[studentId]) {
+        __groupRole = assignments[studentId];
+        if (__classFeatures.groupMode) __classFeatures.groupMode.assignments = assignments;
+        return;
+      }
+
+      // Build ordered role list from the slot-keyed roles object
+      const slotRoles = Object.entries(gm.roles || {})
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([, r]) => r);
+
+      // Find first role not yet claimed
+      const taken     = Object.values(assignments);
+      const available = slotRoles.find(r => !taken.includes(r));
+      if (!available) return; // group is full
+
+      // Atomic claim: transaction writes only if the slot is still null
+      await db.ref(`classes/${classId}/features/groupMode/assignments/${studentId}`)
+        .transaction(current => current === null ? available : current);
+
+      // Re-read confirmed value
+      const updated = (await assignmentsRef.once("value")).val() || {};
+      __groupRole   = updated[studentId] || null;
+      if (__classFeatures.groupMode) __classFeatures.groupMode.assignments = updated;
+    }
+
+    // ── Real-time listener for assignment changes ────────────────────────────
+    function startGroupAssignmentsListener(classId) {
+      const db = getRealtimeDb();
+      if (!db || !classId) return;
+      if (_groupAssignmentsRef) { _groupAssignmentsRef.off(); _groupAssignmentsRef = null; }
+
+      _groupAssignmentsRef = db.ref(`classes/${classId}/features/groupMode/assignments`);
+      _groupAssignmentsRef.on("value", snap => {
+        const assignments = snap.val() || {};
+        if (__classFeatures.groupMode) __classFeatures.groupMode.assignments = assignments;
+        const newRole = assignments[studentId] || null;
+        if (newRole !== __groupRole) {
+          __groupRole = newRole;
+          applyGroupRoleRestrictions();
+        } else {
+          renderGroupRoleChips(); // refresh chips even if my role didn't change
+        }
+      });
     }
 
     // ── Firebase listener ───────────────────────────
@@ -3678,9 +3803,10 @@
     }
 
     function stopGroupListeners() {
-      if (_groupContribRef) { _groupContribRef.off(); _groupContribRef = null; }
-      if (_groupVetoRef)    { _groupVetoRef.off();    _groupVetoRef    = null; }
-      if (_groupTimerInterval) { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
+      if (_groupContribRef)     { _groupContribRef.off();     _groupContribRef     = null; }
+      if (_groupVetoRef)        { _groupVetoRef.off();        _groupVetoRef        = null; }
+      if (_groupAssignmentsRef) { _groupAssignmentsRef.off(); _groupAssignmentsRef = null; }
+      if (_groupTimerInterval)  { clearInterval(_groupTimerInterval); _groupTimerInterval = null; }
       stopGroupPresenceListeners();
     }
 
@@ -3734,14 +3860,14 @@
       }
       const items    = Object.values(contribs).sort((a, b) => a.addedAt - b.addedAt);
       const typeIcon = { content: "✍️", challenge: "🤔", comment: "💬" };
-      const gm       = __classFeatures.groupMode;
-      const roles    = gm?.roles || {};
-      const colors   = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
+      const gm          = __classFeatures.groupMode;
+      const assignments = gm?.assignments || {};
+      const colors      = ["#3730a3","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
       el.innerHTML = items.map(c => {
         const isMe    = c.authorId === studentId;
         const initial = ((c.authorName || c.authorId || "?").charAt(0)).toUpperCase();
         const color   = colors[Math.abs((c.authorId || "").split("").reduce((a, ch) => a + ch.charCodeAt(0), 0)) % colors.length];
-        const role    = roles[c.authorId] || "";
+        const role    = assignments[c.authorId] || "";
         const time    = new Date(c.addedAt).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
         return `
           <div class="group-contrib-item${isMe ? " mine" : ""}">
@@ -3757,6 +3883,47 @@
           </div>`;
       }).join("");
       el.scrollTop = el.scrollHeight;
+
+      // Update Pulse after contribs render
+      renderGroupPulse(items);
+    }
+
+    function renderGroupPulse(items) {
+      const panel = document.getElementById("groupPulsePanel");
+      const bars  = document.getElementById("groupPulseBars");
+      if (!panel || !bars) return;
+
+      if (!items || !items.length) { panel.style.display = "none"; return; }
+
+      // Count characters contributed per author
+      const totals = {};
+      items.forEach(c => {
+        const id   = c.authorId || "?";
+        const name = c.authorName || id;
+        totals[id] = totals[id] || { name, chars: 0 };
+        totals[id].chars += (c.text || "").length;
+      });
+
+      const entries    = Object.entries(totals).sort((a, b) => b[1].chars - a[1].chars);
+      const grandTotal = entries.reduce((s, [, v]) => s + v.chars, 0) || 1;
+      const COLORS     = ["#6366f1","#0369a1","#059669","#dc2626","#d97706","#7c3aed"];
+
+      bars.innerHTML = entries.map(([id, { name, chars }], i) => {
+        const pct      = Math.round((chars / grandTotal) * 100);
+        const dominant = pct > 60;
+        const color    = dominant ? "#f59e0b" : COLORS[i % COLORS.length];
+        return `
+          <div class="pulse-row">
+            <div class="pulse-label" title="${escapeHtml(name)}">${escapeHtml(name.split(" ")[0])}</div>
+            <div class="pulse-track">
+              <div class="pulse-fill${dominant ? " dominant" : ""}"
+                   style="width:${pct}%;background:${dominant ? "#f59e0b" : color};"></div>
+            </div>
+            <div class="pulse-pct">${pct}%</div>
+          </div>`;
+      }).join("");
+
+      panel.style.display = "";
     }
 
     function renderMasterDraftReadonly(draft) {
@@ -4017,9 +4184,38 @@
       { id: "e4", text: "מקוריות — עד כמה ניתן לזהות חשיבה עצמאית?" },
       { id: "e5", text: "יישומיות — עד כמה ניתן לממש את הרעיון בפועל?" }
     ];
-    const RUBRIC_LABELS = ["כלל לא", "במידה מועטה", "ברובה", "בהחלט ✓"];
+    const DEFAULT_RUBRIC_LABELS = ["כלל לא", "במידה מועטה", "ברובה", "בהחלט ✓"];
 
-    function renderPeerRubric(questions = DEFAULT_RUBRIC_QUESTIONS) {
+    // ── Rubric cache: rubricId → { questions, labels } ───────────────────────
+    const _rubricCache = {};
+
+    async function loadRubricQuestions(rubricId) {
+      if (!rubricId || rubricId === "default") return { questions: DEFAULT_RUBRIC_QUESTIONS, labels: DEFAULT_RUBRIC_LABELS };
+      if (_rubricCache[rubricId]) return _rubricCache[rubricId];
+
+      try {
+        const db   = getRealtimeDb();
+        const snap = db ? await db.ref(`rubrics/${rubricId}`).once("value") : null;
+        const data = snap?.val();
+        if (data?.questions?.length) {
+          const result = {
+            questions: data.questions,
+            labels:    Array.isArray(data.labels) && data.labels.length ? data.labels : DEFAULT_RUBRIC_LABELS
+          };
+          _rubricCache[rubricId] = result;
+          return result;
+        }
+      } catch(e) {
+        console.warn("[MilEd] rubric load failed:", e);
+      }
+
+      // Fallback — cache the default so we don't retry on every open
+      const fallback = { questions: DEFAULT_RUBRIC_QUESTIONS, labels: DEFAULT_RUBRIC_LABELS };
+      _rubricCache[rubricId] = fallback;
+      return fallback;
+    }
+
+    function renderPeerRubric(questions = DEFAULT_RUBRIC_QUESTIONS, labels = DEFAULT_RUBRIC_LABELS) {
       const container = document.getElementById("peerRubric");
       if (!container) return;
       _peerRubricScores = {};
@@ -4027,7 +4223,7 @@
         <div class="rubric-item">
           <div class="rubric-q">${escapeHtml(q.text)}</div>
           <div class="rubric-scale">
-            ${RUBRIC_LABELS.map((label, i) => `
+            ${labels.map((label, i) => `
               <button class="rubric-scale-pill"
                       data-group="${escapeHtml(q.id)}"
                       data-level="${i + 1}"
@@ -4098,7 +4294,7 @@
       MiledState.overlay = null;
     }
 
-    function showPeerReviewPanel(reviewedText = null) {
+    async function showPeerReviewPanel(reviewedText = null) {
       const panel = document.getElementById("peerReviewPanel");
       if (!panel) return;
       // Reset
@@ -4108,17 +4304,29 @@
       document.getElementById("peerCommentTa").value = "";
       const submitBtn = document.getElementById("peerSubmitBtn");
       if (submitBtn) submitBtn.style.display = "";
-      // Populate rubric — use extended criteria for extended_structured mode (Part 34 §34.5)
-      const activeSprint = findActiveSprint();
-      const prMode = resolvePeerReviewModeForActivity(activeSprint);
-      const rubricQuestions = prMode.mode === "extended_structured"
-        ? EXTENDED_RUBRIC_QUESTIONS
-        : DEFAULT_RUBRIC_QUESTIONS;
-      renderPeerRubric(rubricQuestions);
+      // Load rubric: Firebase-backed if rubricId is set, otherwise mode-aware static rubric (Part 34 §34.5)
+      const rubricId = __classFeatures?.peerReview?.rubricId || "default";
+      let rubricQuestions, rubricLabels;
+      if (rubricId !== "default") {
+        const loaded = await loadRubricQuestions(rubricId);
+        rubricQuestions = loaded.questions;
+        rubricLabels    = loaded.labels;
+      } else {
+        // Fall back to mode-aware static rubric (extended_structured vs default)
+        const activeSprint = findActiveSprint();
+        const prMode = resolvePeerReviewModeForActivity(activeSprint);
+        rubricQuestions = prMode.mode === "extended_structured"
+          ? EXTENDED_RUBRIC_QUESTIONS
+          : DEFAULT_RUBRIC_QUESTIONS;
+        rubricLabels = DEFAULT_RUBRIC_LABELS;
+      }
+      renderPeerRubric(rubricQuestions, rubricLabels);
       // Update panel title to reflect mode
       const panelTitle = document.getElementById("peerReviewPanelTitle");
       if (panelTitle) {
-        panelTitle.textContent = prMode.mode === "extended_structured"
+        const activeSprint2 = findActiveSprint();
+        const prMode2 = resolvePeerReviewModeForActivity(activeSprint2);
+        panelTitle.textContent = (rubricId !== "default" || prMode2.mode === "extended_structured")
           ? "🔬 הערכת עמיתים — מורחבת"
           : "📝 הערכת עמיתים";
       }
@@ -4644,6 +4852,11 @@
       sendHeartbeat(); // immediate — registers student in session.students right away
       heartbeatTimer = setInterval(sendHeartbeat, 30000);
       window.addEventListener("beforeunload", () => { stopSessionListener(); stopWafListener(); stopPeerReviewListener(); stopGroupListeners(); _writeGroupPresence(false); });
+
+      // team_project.html signals exit when opened as iframe with source=lesson
+      window.addEventListener("message", e => {
+        if (e.data?.type === "tp_exit") exitTeamProjectMode();
+      });
     }
 
     init();

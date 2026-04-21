@@ -9,6 +9,10 @@
   directory = "functions"
   included_files = ["config.json", "kernel.txt"]
 
+[[scheduled-functions]]
+  name = "project_curator"
+  cron = "0 8 * * *"
+
 [[headers]]
   for = "/*"
   [headers.values]

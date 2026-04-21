@@ -1412,6 +1412,12 @@ body.management-theme .btn.btn-xs {
             <span style="font-size:12px;color:#64748b;">לחץ לעדכון או החלפת תמונת פרופיל</span>
           </div>
         </div>
+        <div id="microGroupStatusMsg" style="font-size:11px;min-height:14px;margin-top:4px;"></div>
+        <!-- Live assignments — shown after activation -->
+        <div id="microGroupAssignmentsBox" style="display:none;margin-top:8px;">
+          <div style="font-size:11px;font-weight:700;color:#475569;margin-bottom:4px;">שיבוץ תפקידים</div>
+          <div id="microGroupAssignmentsTable"></div>
+        </div>
 
         <div id="activeCourseIndicatorLive" style="display:none;padding:8px 12px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;color:#166534;font-weight:600;margin-bottom:10px;"></div>
 
@@ -5548,7 +5554,8 @@ document.addEventListener("keydown", (event) => {
 // ═══════════════════════════════════════════
 // GROUP MODE — quick activate (micro cockpit)
 // ═══════════════════════════════════════════
-let _microGroupSprintDefs = [];
+let _microGroupSprintDefs          = [];
+let _microGroupAssignmentsWatchRef = null;
 
 async function initMicroGroupModePanel() {
   const box = document.getElementById("microGroupModeBox");
@@ -5585,6 +5592,8 @@ async function microActivateGroupMode() {
     document.getElementById("microActivateGroupBtn").disabled = true;
     document.getElementById("microDeactivateGroupBtn").style.display = "";
     if (statusEl) { statusEl.style.color="#16a34a"; statusEl.textContent="✅ קבוצות פעילות"; }
+    const activeCourseId = sessionCourseId || selectedClassId || null;
+    if (activeCourseId) startMicroGroupAssignmentsWatch(activeCourseId);
   } catch(e) {
     if (statusEl) { statusEl.style.color="#dc2626"; statusEl.textContent=e.message; }
   }
@@ -5595,10 +5604,49 @@ async function microDeactivateGroupMode() {
   const statusEl = document.getElementById("microGroupStatusMsg");
   try {
     await callClassroom({ action: "session_state_update", sessionId, facultyId, mode: "lesson" });
+    if (_microGroupAssignmentsWatchRef) { _microGroupAssignmentsWatchRef.off(); _microGroupAssignmentsWatchRef = null; }
     document.getElementById("microActivateGroupBtn").disabled = false;
     document.getElementById("microDeactivateGroupBtn").style.display = "none";
+    const assignBox = document.getElementById("microGroupAssignmentsBox");
+    if (assignBox) assignBox.style.display = "none";
     if (statusEl) { statusEl.style.color="#475569"; statusEl.textContent="הסתיים"; }
   } catch(e) { console.error(e); }
+}
+
+function startMicroGroupAssignmentsWatch(courseId) {
+  if (_microGroupAssignmentsWatchRef) { _microGroupAssignmentsWatchRef.off(); _microGroupAssignmentsWatchRef = null; }
+  const db = getRealtimeDb();
+  if (!db || !courseId) return;
+  const box = document.getElementById("microGroupAssignmentsBox");
+  if (box) box.style.display = "";
+  _microGroupAssignmentsWatchRef = db.ref(`classes/${courseId}/features/groupMode/assignments`);
+  _microGroupAssignmentsWatchRef.on("value", snap => {
+    renderMicroGroupAssignmentsTable(snap.val() || {});
+  });
+}
+
+function _microSafe(s) {
+  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function renderMicroGroupAssignmentsTable(assignments) {
+  const container = document.getElementById("microGroupAssignmentsTable");
+  if (!container) return;
+  const entries = Object.entries(assignments);
+  if (!entries.length) {
+    container.innerHTML = '<div style="font-size:11px;color:#94a3b8;">ממתין לכניסת סטודנטים...</div>';
+    return;
+  }
+  const ROLE_COLORS = { "מנסח": "#3730a3", "מאתגר": "#0369a1", "מגיב": "#059669" };
+  container.innerHTML = entries.map(([sid, role]) => {
+    const color = ROLE_COLORS[role] || "#475569";
+    return `<div style="display:flex;align-items:center;justify-content:space-between;
+                padding:3px 0;font-size:11px;border-bottom:1px solid #f1f5f9;">
+      <span style="color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;">${_microSafe(sid)}</span>
+      <span style="padding:1px 7px;border-radius:999px;background:${color}20;color:${color};
+                   font-weight:700;font-size:10px;white-space:nowrap;">${_microSafe(role)}</span>
+    </div>`;
+  }).join("");
 }
 </script>
 

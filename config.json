@@ -377,7 +377,7 @@
   "my_courses": {
     "hebrew_advanced_optics": {
       "templateId": "hebrew_advanced_problem_solving",
-      "name": "עברית מתקדמים א׳ — אופטיקה",
+      "name": "עברית מתקדמים א׳ — אופטיקה (סמ׳ ב)",
       "language": "ar",
       "hebrew_level": "he_a2_arabic",
       "semester": "2025-B",
@@ -402,6 +402,39 @@
           { "id": "discussion",    "title": "דיון כיתתי" },
           { "id": "summary",       "title": "סיכום" }
         ]
+      },
+      "resources": {
+        "unit_01": [
+          {
+            "id": "r1",
+            "title": "פסקת פתיחה — ניתוח לשוני",
+            "type": "article",
+            "description": "טקסט הבסיס לשיעור: מבנה הפסקה, מילות קישור וטיעון מרכזי",
+            "url": ""
+          },
+          {
+            "id": "r2",
+            "title": "מדריך — כתיבה אקדמית בעברית",
+            "type": "pdf",
+            "description": "מינוח, מבנה טיעון, ציטוט ומקורות",
+            "url": ""
+          },
+          {
+            "id": "r3",
+            "title": "סרטון — ניתוח פסקת פתיחה (8 דק')",
+            "type": "video",
+            "description": "דוגמה מודרכת לניתוח טקסט אקדמי",
+            "url": ""
+          }
+        ]
+      },
+      "teamProject": {
+        "projectId": "proj_optics_2025b",
+        "title": "פרויקט צוות — ניתוח טקסט אקדמי"
+      },
+      "personalProject": {
+        "title": "פרויקט גמר אישי — ניתוח טקסט",
+        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_optics"
       },
       "sprintDefinitions": {
         "unit_01": {
@@ -439,9 +472,30 @@
       }
     },
 
+    "hebrew_advanced_optics_a": {
+      "templateId": "hebrew_advanced_problem_solving",
+      "name": "עברית מתקדמים א׳ — אופטיקה (סמ׳ א)",
+      "language": "ar",
+      "hebrew_level": "he_a2_arabic",
+      "semester": "2025-A",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "course_hebrew_advanced_companion", "label": "🤖 בוט הקורס" },
+        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      },
+      "teamProject": {
+        "projectId": "proj_optics_2025a",
+        "title": "פרויקט צוות — ניתוח טקסט אקדמי"
+      },
+      "personalProject": {
+        "title": "פרויקט גמר אישי — ניתוח טקסט",
+        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_optics_a"
+      }
+    },
+
     "hebrew_advanced_management": {
       "templateId": "hebrew_advanced_problem_solving",
-      "name": "עברית מתקדמים א׳ — ניהול",
+      "name": "עברית מתקדמים א׳ — ניהול (סמ׳ ב)",
       "language": "ar",
       "hebrew_level": "he_a2_arabic",
       "semester": "2025-B",
@@ -449,19 +503,71 @@
       "bots": {
         "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
         "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      },
+      "teamProject": {
+        "projectId": "proj_management_2025b",
+        "title": "פרויקט צוות — ניתוח בעיה ניהולית"
+      },
+      "personalProject": {
+        "title": "פרויקט גמר אישי — ניתוח מקרה",
+        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_management"
+      }
+    },
+
+    "hebrew_advanced_management_a": {
+      "templateId": "hebrew_advanced_problem_solving",
+      "name": "עברית מתקדמים א׳ — ניהול (סמ׳ א)",
+      "language": "ar",
+      "hebrew_level": "he_a2_arabic",
+      "semester": "2025-A",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "socratic_student", "label": "🤖 בוט הקורס" },
+        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      },
+      "teamProject": {
+        "projectId": "proj_management_2025a",
+        "title": "פרויקט צוות — ניתוח בעיה ניהולית"
+      },
+      "personalProject": {
+        "title": "פרויקט גמר אישי — ניתוח מקרה",
+        "url": "/chat.html?botType=task_final_project&courseId=hebrew_advanced_management_a"
       }
     },
 
     "gerontology_mechina": {
       "templateId": "gerontology_mechina",
-      "name": "מבוא לגרונטולוגיה — מכינה",
+      "name": "מבוא לגרונטולוגיה — מכינה (סמ׳ ב)",
       "language": "he",
       "hebrew_level": "he_b1_haredi",
       "semester": "2025-B",
       "status": "active",
       "bots": {
         "main": { "botType": "course_gerontology", "label": "🤖 בוט הקורס" },
-        "research": { "botType": "course_qualitative_research", "label": "🔎 מחקר איכותני" }
+        "research": { "botType": "course_qualitative_research", "label": "🔎 מחקר איכותני" },
+        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      },
+      "personalProject": {
+        "title": "פרויקט גמר אישי — גרונטולוגיה",
+        "url": "/chat.html?botType=task_final_project&courseId=gerontology_mechina"
+      }
+    },
+
+    "gerontology_mechina_a": {
+      "templateId": "gerontology_mechina",
+      "name": "מבוא לגרונטולוגיה — מכינה (סמ׳ א)",
+      "language": "he",
+      "hebrew_level": "he_b1_haredi",
+      "semester": "2025-A",
+      "status": "active",
+      "bots": {
+        "main": { "botType": "course_gerontology", "label": "🤖 בוט הקורס" },
+        "research": { "botType": "course_qualitative_research", "label": "🔎 מחקר איכותני" },
+        "final_project": { "botType": "task_final_project", "label": "📝 פרויקט גמר" }
+      },
+      "personalProject": {
+        "title": "פרויקט גמר אישי — גרונטולוגיה",
+        "url": "/chat.html?botType=task_final_project&courseId=gerontology_mechina_a"
       }
     },
 

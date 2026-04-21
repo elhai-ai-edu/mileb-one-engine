@@ -1782,6 +1782,47 @@ body { background: var(--bg) !important; }
         <div id="macro-lifecycle-msg" style="font-size:12px;min-height:16px;"></div>
       </div>
       </div></div>
+      <!-- ─── Projects ─── -->
+      <div class="mc-section" style="margin-top:14px;">
+      <div class="mc-section-head">📁 פרויקטים<span class="mc-sub">הגדרת פרויקט צוות ופרויקט גמר אישי לקורס זה</span></div>
+      <div class="mc-section-body">
+        <div style="display:grid;gap:10px;">
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;">
+            <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:8px;">👥 פרויקט צוות מתמשך</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מזהה פרויקט (projectId)</label>
+                <input id="macro-team-proj-id" type="text" dir="ltr" placeholder="proj_optics_2025b (ריק = ללא)"
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם תצוגה</label>
+                <input id="macro-team-proj-title" type="text" placeholder="פרויקט צוות — ניתוח טקסט"
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+            </div>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;">
+            <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:8px;">📝 פרויקט גמר אישי</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם תצוגה</label>
+                <input id="macro-personal-proj-title" type="text" placeholder="פרויקט גמר אישי (ריק = ללא)"
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">URL</label>
+                <input id="macro-personal-proj-url" type="text" dir="ltr" placeholder="/chat.html?botType=task_final_project&courseId=..."
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+            </div>
+          </div>
+          <button onclick="macroSaveProjects()"
+            style="width:100%;padding:9px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600;">שמור פרויקטים</button>
+          <div id="macro-projects-msg" style="font-size:12px;min-height:16px;"></div>
+        </div>
+      </div></div>
+
       <div class="phase-step-nav" style="display:flex;justify-content:flex-start;margin-top:12px;">
         <button class="btn btn-outline" onclick="switchWizardStep(4)" style="font-size:13px;">&#x2190; יחידות הקורס</button>
       </div>
@@ -2060,6 +2101,13 @@ body { background: var(--bg) !important; }
         </select>
       </div>
       <div id="groupStatusMsg" style="font-size:12px;min-height:18px;"></div>
+
+      <!-- Live role assignments table — shown after activation -->
+      <div id="groupAssignmentsBox" style="display:none;margin-top:4px;">
+        <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:6px;">שיבוץ תפקידים</div>
+        <div id="groupAssignmentsTable"></div>
+      </div>
+
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button onclick="activateGroupSprint()" id="activateGroupBtn"
           style="padding:8px 18px;background:linear-gradient(135deg,#059669,#065f46);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
@@ -4236,6 +4284,15 @@ async function macroDeleteExpiredData(courseId) {
     msgEl.style.color = "#ef4444";
     msgEl.textContent = e.message;
   }
+}
+
+function macroLoadProjectsForm() {
+  if (!macroCourseId || !CONFIG?.my_courses?.[macroCourseId]) return;
+  const c = CONFIG.my_courses[macroCourseId];
+  document.getElementById("macro-team-proj-id").value      = c.teamProject?.projectId || "";
+  document.getElementById("macro-team-proj-title").value   = c.teamProject?.title     || "";
+  document.getElementById("macro-personal-proj-title").value = c.personalProject?.title || "";
+  document.getElementById("macro-personal-proj-url").value   = c.personalProject?.url   || "";
 }
 
 async function macroSaveLifecycle() {
@@ -6457,8 +6514,9 @@ async function pushTask(stepIdx) {
 // GROUP MODE — Team Workspace
 // ═══════════════════════════════════════════
 
-let _groupSprintDefs = [];   // group station sprints for current lesson
-let _groupModeActive = false;
+let _groupSprintDefs          = [];   // group station sprints for current lesson
+let _groupModeActive          = false;
+let _groupAssignmentsWatchRef = null;
 
 // Called after lesson/session is loaded — scans sprintDefinitions for GROUP_STATION
 async function initGroupModePanel() {
@@ -6526,18 +6584,30 @@ async function activateGroupSprint() {
         mode: "group",
         sprintDefinitions: _groupSprintDefs
       });
-    }, statusEl, { successMessage: "✅ עבודת קבוצות פעילה — הסטודנטים עוברים לסביבת הקבוצה" });
-  if (!res) {
-    if (statusEl) statusEl.style.color = "#dc2626";
-    return;
-  }
+    }
 
-  _groupModeActive = true;
-  const activateBtn = document.getElementById("activateGroupBtn");
-  const deactivateBtn = document.getElementById("deactivateGroupBtn");
-  if (activateBtn) activateBtn.disabled = true;
-  if (deactivateBtn) deactivateBtn.style.display = "";
-  if (statusEl) statusEl.style.color = "#16a34a";
+    // 2. Activate the sprint + set mode via session_state_update
+    const res = await callClassroom({
+      action: "session_state_update",
+      sessionId,
+      facultyId,
+      activeSprint: String(sprint.id),
+      mode: "group",
+      sprintDefinitions: _groupSprintDefs
+    });
+
+    if (!res.ok) throw new Error(res.error || "שגיאה");
+
+    _groupModeActive = true;
+    const activateBtn = document.getElementById("activateGroupBtn");
+    const deactivateBtn = document.getElementById("deactivateGroupBtn");
+    if (activateBtn) activateBtn.disabled = true;
+    if (deactivateBtn) deactivateBtn.style.display = "";
+    if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.textContent = "✅ עבודת קבוצות פעילה — הסטודנטים עוברים לסביבת הקבוצה"; }
+    startGroupAssignmentsWatch(courseId);
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
+  }
 }
 
 async function deactivateGroupMode() {
@@ -6549,17 +6619,93 @@ async function deactivateGroupMode() {
       sessionId,
       facultyId,
       mode: "lesson"
-    }), statusEl);
-  if (!res) {
-    if (statusEl) statusEl.style.color = "#dc2626";
+    });
+    _groupModeActive = false;
+    if (_groupAssignmentsWatchRef) { _groupAssignmentsWatchRef.off(); _groupAssignmentsWatchRef = null; }
+    const activateBtn = document.getElementById("activateGroupBtn");
+    const deactivateBtn = document.getElementById("deactivateGroupBtn");
+    const assignmentsBox = document.getElementById("groupAssignmentsBox");
+    if (activateBtn) activateBtn.disabled = false;
+    if (deactivateBtn) deactivateBtn.style.display = "none";
+    if (assignmentsBox) assignmentsBox.style.display = "none";
+    if (statusEl) { statusEl.style.color = "#475569"; statusEl.textContent = "עבודת הקבוצות הסתיימה."; }
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "שגיאה: " + e.message; }
+  }
+}
+
+// ── Live assignments watch ───────────────────────────────────────────────────
+function startGroupAssignmentsWatch(courseId) {
+  if (_groupAssignmentsWatchRef) { _groupAssignmentsWatchRef.off(); _groupAssignmentsWatchRef = null; }
+  const db = getRealtimeDb();
+  if (!db || !courseId) return;
+
+  const box = document.getElementById("groupAssignmentsBox");
+  if (box) box.style.display = "";
+
+  _groupAssignmentsWatchRef = db.ref(`classes/${courseId}/features/groupMode/assignments`);
+  _groupAssignmentsWatchRef.on("value", snap => {
+    renderGroupAssignmentsTable(snap.val() || {}, courseId);
+  });
+}
+
+function renderGroupAssignmentsTable(assignments, courseId) {
+  const container = document.getElementById("groupAssignmentsTable");
+  if (!container) return;
+
+  const gm    = null; // slot-based roles pulled from sprint config
+  const sprint = _groupSprintDefs[0];
+  const slotRoles = sprint?.groupConfig?.roles
+    ? [...sprint.groupConfig.roles]
+    : ["מנסח", "מאתגר", "מגיב"];
+
+  const entries = Object.entries(assignments);
+
+  if (!entries.length) {
+    container.innerHTML = '<div style="font-size:12px;color:#94a3b8;">ממתין לכניסת סטודנטים לסביבת הקבוצה...</div>';
     return;
   }
-  _groupModeActive = false;
-  const activateBtn = document.getElementById("activateGroupBtn");
-  const deactivateBtn = document.getElementById("deactivateGroupBtn");
-  if (activateBtn) activateBtn.disabled = false;
-  if (deactivateBtn) deactivateBtn.style.display = "none";
-  if (statusEl) statusEl.style.color = "#475569";
+
+  container.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead>
+        <tr style="background:#f1f5f9;">
+          <th style="padding:5px 8px;text-align:right;color:#475569;font-weight:700;">סטודנט</th>
+          <th style="padding:5px 8px;text-align:right;color:#475569;font-weight:700;">תפקיד</th>
+          <th style="padding:5px 8px;text-align:right;color:#475569;font-weight:700;">שינוי</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${entries.map(([sid, role]) => `
+          <tr style="border-top:1px solid #e2e8f0;">
+            <td style="padding:5px 8px;color:#1e293b;">${macroEscHtml(sid)}</td>
+            <td style="padding:5px 8px;">
+              <span style="display:inline-block;padding:2px 8px;border-radius:999px;
+                background:#e0e7ff;color:#3730a3;font-weight:700;font-size:11px;">
+                ${macroEscHtml(role)}
+              </span>
+            </td>
+            <td style="padding:5px 8px;">
+              <select onchange="reassignGroupRole('${macroEscHtml(sid)}', this.value, '${macroEscHtml(courseId)}')"
+                style="font-size:11px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;color:#334155;">
+                ${slotRoles.map(r =>
+                  `<option value="${macroEscHtml(r)}"${r === role ? " selected" : ""}>${macroEscHtml(r)}</option>`
+                ).join("")}
+              </select>
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function reassignGroupRole(studentId, newRole, courseId) {
+  const db = getRealtimeDb();
+  if (!db || !courseId || !studentId || !newRole) return;
+  try {
+    await db.ref(`classes/${courseId}/features/groupMode/assignments/${studentId}`).set(newRole);
+  } catch(e) {
+    console.warn("[MilEd] reassign role failed:", e);
+  }
 }
 
 // ─── Peer Review Settings ───────────────────────────────────────────────────
@@ -6679,6 +6825,7 @@ function switchWizardStep(step) {
     const panel = document.getElementById('ws-panel-' + i);
     if (panel) panel.style.display = i === step ? '' : 'none';
   }
+  if (step === 5) macroLoadProjectsForm();
 }
 
 function markWizardStepDone(step) {

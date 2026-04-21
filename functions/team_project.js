@@ -344,5 +344,89 @@ export async function handler(event) {
     return ok({ ok: true, submittedAt: now });
   }
 
+  // ── redline_add ───────────────────────────────────────────────────────────────
+  // Skeptic adds a redline (objection) to a document block.
+  // Only one open redline per block at a time.
+  if (action === "redline_add") {
+    const blockId = String(body.blockId || "").trim();
+    const note    = String(body.note    || "").trim().slice(0, 500);
+    if (!blockId) return err("blockId required");
+    if (!note)    return err("note required");
+
+    const [projSnap, blockSnap] = await Promise.all([
+      projRef.once("value"),
+      db.ref(`team_projects/${projectId}/document/blocks/${blockId}`).once("value")
+    ]);
+    if (!projSnap.val()) return err("project not found");
+    if (!blockSnap.val()) return err("block not found");
+
+    const existing = await db.ref(`team_projects/${projectId}/redlines/${blockId}`).once("value");
+    if (existing.val()?.status === "open") return err("block already has an open redline");
+
+    const now = Date.now();
+    await db.ref(`team_projects/${projectId}/redlines/${blockId}`).set({
+      blockId,
+      authorId:   studentId,
+      authorName: studentName || null,
+      note,
+      status:     "open",
+      createdAt:  now,
+      resolvedAt: null,
+      resolution: null
+    });
+
+    return ok({ ok: true });
+  }
+
+  // ── redline_resolve ───────────────────────────────────────────────────────────
+  // Drafter (מנסח) accepts or dismisses an open redline.
+  if (action === "redline_resolve") {
+    const blockId    = String(body.blockId    || "").trim();
+    const resolution = ["accept","dismiss"].includes(body.resolution) ? body.resolution : null;
+    if (!blockId)    return err("blockId required");
+    if (!resolution) return err("resolution must be 'accept' or 'dismiss'");
+
+    const redlineSnap = await db.ref(`team_projects/${projectId}/redlines/${blockId}`).once("value");
+    const redline     = redlineSnap.val();
+    if (!redline || redline.status !== "open") return err("no open redline for this block");
+
+    const now = Date.now();
+    await db.ref(`team_projects/${projectId}/redlines/${blockId}`).update({
+      status:     "resolved",
+      resolution,
+      resolvedBy: studentId,
+      resolvedAt: now
+    });
+
+    return ok({ ok: true, resolution });
+  }
+
+  // ── board_post ────────────────────────────────────────────────────────────────
+  // Append a message to the project's bulletin board.
+  // type ∈ "update" | "question" | "pin"
+  if (action === "board_post") {
+    const text = String(body.text || "").trim();
+    if (!text) return err("text required");
+
+    const type = ["update", "question", "pin"].includes(body.type) ? body.type : "update";
+
+    const projSnap = await projRef.once("value");
+    if (!projSnap.val()) return err("project not found");
+
+    const now    = Date.now();
+    const postId = `post_${now}_${Math.random().toString(36).slice(2, 6)}`;
+
+    await db.ref(`team_projects/${projectId}/board/${postId}`).set({
+      id:         postId,
+      authorId:   studentId,
+      authorName: studentName || null,
+      text,
+      type,
+      postedAt:   now
+    });
+
+    return ok({ ok: true, postId });
+  }
+
   return err(`Unknown action: ${action}`);
 }

@@ -749,12 +749,14 @@
           const topbarName = document.getElementById("topbarCourseName");
           if (topbarName) topbarName.textContent = course.name;
         }
-        // Show personal project button if course has a project
-        if (course?.projectUrl || course?.project) {
+        // Show personal project button if course has a personalProject configured
+        const personalProj = config?.my_courses?.[courseId]?.personalProject;
+        if (personalProj?.url) {
           const btn = document.getElementById("personalProjectBtn");
           if (btn) {
-            btn.href = course.projectUrl || `/project_workspace.html?courseId=${encodeURIComponent(courseId)}`;
-            btn.onclick = null; // enable link
+            btn.href = personalProj.url;
+            btn.textContent = `📝 ${personalProj.title || "פרויקט גמר אישי"} ←`;
+            btn.onclick = null;
           }
         }
         // Show team project button if configured
