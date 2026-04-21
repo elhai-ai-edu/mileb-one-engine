@@ -7278,9 +7278,9 @@ function switchPhase(view) {
   const courseBlock    = document.getElementById('phase-course');
   const lessonBlock    = document.getElementById('phase-lesson');
   const projectsBlock  = document.getElementById('phase-projects');
-  if (courseBlock)   courseBlock.style.display   = currentView === 'course'   ? '' : 'none';
-  if (lessonBlock)   lessonBlock.style.display   = currentView === 'lesson'   ? '' : 'none';
-  if (projectsBlock) projectsBlock.style.display = currentView === 'projects' ? '' : 'none';
+  if (courseBlock)   courseBlock.style.display   = currentView === 'course'   ? 'block' : 'none';
+  if (lessonBlock)   lessonBlock.style.display   = currentView === 'lesson'   ? 'block' : 'none';
+  if (projectsBlock) projectsBlock.style.display = currentView === 'projects' ? 'block' : 'none';
   if (currentView === 'lesson')   checkLessonGate();
   if (currentView === 'projects') loadProjectsTab();
   window.scrollTo({ top: 0, behavior: 'smooth' });
