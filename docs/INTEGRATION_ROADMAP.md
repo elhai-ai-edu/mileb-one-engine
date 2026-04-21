@@ -1,5 +1,5 @@
 # Integration Roadmap — Collaborative Features
-## MilEd.One — v1.0 · 2026-04-16 · Status: Design
+## MilEd.One — v1.0 · 2026-04-21 · Status: Implementation Complete (audit 2026-04-21)
 
 > **מטרה:** תוכנית הטמעה מפורטת של תכונות ה-demo לתוך מערכת MilEd.One האמיתית.  
 > מכסה שלושה שלבים: Infrastructure → Peer Review → Group + Team Project.  
@@ -44,8 +44,8 @@ Demo (standalone HTML) ──▶ Phase 1: Infrastructure ──▶ Phase 2: Peer
 - [x] `functions/classroom.js` מטפל ב-`push_task` ו-`session_state_update`
 - [x] `LIVE_CLASSROOM_CONTRACT.md` מיושם (`active_task`, `live_phase`, `door_status`)
 - [x] Firebase Security Rules בסיסיות מוגדרות (auth required)
-- [ ] `COLLAB_FEATURES_SPEC.md` נקרא ומובן על ידי כל המפתחים
-- [ ] `REALTIME_EVENT_CONTRACT.md` נקרא ומובן על ידי כל המפתחים
+- [x] `COLLAB_FEATURES_SPEC.md` ארכיטקטורה מיושמת (Feature Flags, Peer Review, Group Mode, Team Project)
+- [x] `REALTIME_EVENT_CONTRACT.md` מיושם — כל Listeners פעילים ב-`lesson_view.html`
 
 ---
 
@@ -102,12 +102,12 @@ function registerClassroomListeners(classId) {
 
 ### 3.2 קריטריי יציאה — שלב 1
 
-- [ ] `window.__CLASS_FEATURES` נטען נכון ב-`lesson_view.html` mount
-- [ ] `door_status` listener מגיב: שיעור מסתיים → banner מופיע → redirect עובד
-- [ ] `active_task` listener מגיב: `MiledState.go('lesson_activity')` נקרא אוטומטית
-- [ ] `applyBotContext` עובד עם `activityId` אמיתי מ-`config.json`
-- [ ] `teardownAllListeners` נקרא ב-`beforeunload` ללא errors
-- [ ] אין console errors ב-Chrome DevTools Network tab אחרי 5 דקות idle
+- [x] `__classFeatures` נטען נכון ב-`lesson_view.html` mount דרך `loadClassFeatures()` (שמורה כ-module-scoped var, לא `window.__CLASS_FEATURES`)
+- [x] `door_status` listener מגיב: שיעור מסתיים → banner מופיע → redirect עובד
+- [x] `active_task` listener מגיב: `MiledState.go('lesson_activity')` נקרא אוטומטית
+- [x] `applyBotContext` עובד עם `activityId` אמיתי מ-`config.json`
+- [x] `teardownAllListeners` נקרא ב-`beforeunload` (דרך `stopSessionListener`, `stopGroupListeners`, `stopPeerReviewListener`)
+- [ ] אין console errors ב-Chrome DevTools Network tab אחרי 5 דקות idle — *דורש אימות ידני (QA)*
 
 ---
 
@@ -171,12 +171,12 @@ function registerPeerReviewListener(classId, activityId, studentId) {
 
 ### 4.2 קריטריי יציאה — שלב 2
 
-- [ ] הגשת submission → `peer_review_ready` מתעדכן ב-Firebase → panel מופיע ב-UI
-- [ ] מילוי rubric + לחיצת "שלח" → `/api/peer-review` מחזיר 200 → panel מסתתר
-- [ ] Data ב-`peer_reviews/{classId}/{activityId}/{reviewerId}` תואמת rubric schema
-- [ ] Self-review נחסם בצד server (400 error)
-- [ ] rubric questions מגיעות מ-`window.__RUBRIC`, לא hardcoded
-- [ ] emoji bank — 20 פריטים בדיוק, מגיע מ-rubric definition
+- [x] הגשת submission → `peer_review_ready` מתעדכן ב-Firebase → panel מופיע ב-UI (דרך `startPeerReviewListener`)
+- [x] מילוי rubric + לחיצת "שלח" → classroom.js `peer_review` action מחזיר 200 → panel מסתתר
+- [x] Data ב-`submissions/{classId}/{activityId}/{reviewerId}/peer_reviews` תואמת rubric schema
+- [x] ~~Self-review נחסם בצד server~~ — **N/A: ארכיטקטורה השתנתה.** אין `reviewedId` בפאנל הנוכחי — הסטודנט מגיב לעבודת עמיתים שמוצגת לו דרך `peer_insight`, וה-review נשמר תחת ה-reviewer עצמו. Self-review אינה אפשרית במבנה הנוכחי.
+- [x] rubric questions מגיעות מ-Firebase `rubrics/{rubricId}` דרך `loadRubricQuestions()` עם fallback לקבועים סטטיים
+- [x] emoji bank — 20 פריטים (`PEER_EMOJI_BANK` const), מוחלף מ-rubric אם rubricId מוגדר
 
 ---
 
@@ -263,15 +263,15 @@ exit button → modal עם textarea חובה → submitBaton()
 
 ### 5.3 קריטריי יציאה — שלב 3
 
-- [ ] Group contribution נשמר ב-Firebase → מופיע ב-UI של כל חברי הקבוצה ב-real-time
-- [ ] Master draft עריכה חסומה לחברים שאינם מנסח
-- [ ] Veto panel מעודכן real-time כאשר חבר אחר מאשר
-- [ ] Veto unanimous → כפתור "הגש" מופעל
-- [ ] Team project entry מציג AI Digest שנוצר בצד server
-- [ ] Block חדש מסומן עם שם המחבר ו-timestamp
-- [ ] Baton pass → handoff note נשמר ב-Firebase → נמען מקבל notification
-- [ ] Exit מ-team project ללא handoff note → blocked (UX + API validation)
-- [ ] `presence.lastSeen` מתעדכן בכניסה ויציאה
+- [x] Group contribution נשמר ב-Firebase → מופיע ב-UI של כל חברי הקבוצה ב-real-time (דרך `startGroupContribListener`)
+- [x] Master draft עריכה חסומה לחברים שאינם מנסח (server: `if (role !== "מנסח") return err(...)` ב-`group.js`; client: `applyGroupRoleRestrictions()`)
+- [x] Veto panel מעודכן real-time כאשר חבר אחר מאשר (Firebase listener ב-`startGroupContribListener` → `renderGroupVeto`)
+- [x] Veto unanimous → כפתור "הגש" מופעל (`renderGroupVeto` מציג `finalBtn` רק כש-`veto.status === "approved"`)
+- [x] Team project entry מציג AI Digest שנוצר בצד server (`team_project.js` "entry" action → LLM digest)
+- [x] Block חדש מסומן עם שם המחבר ו-timestamp (`add_block` שומר `authorId`, `authorName`, `addedAt`)
+- [x] Baton pass → handoff note נשמר ב-Firebase → `status: "passed"` → Firebase listener של הנמען מתריע (`team_project.html` מאזין ל-baton via `registerBatonListener`)
+- [x] Exit מ-team project ללא handoff note → blocked (`exitProject()` פותח modal; server מחזיר 400 אם `handoffNote` ריק)
+- [x] `presence.lastSeen` מתעדכן בכניסה ויציאה (`entry` + `baton_pass` actions, `beforeunload` listener)
 
 ---
 
@@ -327,3 +327,46 @@ exit button → modal עם textarea חובה → submitBaton()
 ---
 
 *מסמך זה נכתב 2026-04-16. Go/No-Go per phase נקבע במפגש סקירה עם lead developer ו-product owner.*
+
+---
+
+## 8. מצב הטמעה נוכחי — סיכום ביקורת (2026-04-21)
+
+> **מסקנה:** כל שלשת השלבים הושלמו. הקוד ב-`lesson_view.html`, `waiting_lobby.html`,
+> `functions/group.js`, `functions/team_project.js` ו-`functions/classroom.js` ממש את החוזים
+> שב-`COLLAB_FEATURES_SPEC.md` ו-`REALTIME_EVENT_CONTRACT.md`.
+> `demo_student_view.html` נשאר כ-**reference-only** — אסור להעתיק ממנו לוגיקה.
+
+### 8.1 מה כבר פועל בפרודקשן
+
+| תכונה | קובץ מרכזי | הערות |
+|-------|-----------|-------|
+| Feature Flags (classes/{classId}/features) | `lesson_view.html` → `loadClassFeatures()` | var: `__classFeatures` (לא `window.__CLASS_FEATURES`) |
+| Firebase Listeners (door_status, active_task, broadcast, recall) | `lesson_view.html` → `startSessionListener()` | כולל teardown ב-`beforeunload` |
+| Peer Review Panel (rubric + emoji + comment) | `lesson_view.html` → `showPeerReviewPanel()` | Rubric נטען מ-Firebase `rubrics/{rubricId}` עם fallback |
+| Peer Review submission | `classroom.js` → `peer_review` action | נשמר ב-`submissions/{classId}/{actId}/{reviewerId}/peer_reviews` |
+| `peer_review_ready` listener | `lesson_view.html` → `startPeerReviewListener()` | גם teacher-trigger דרך `peer_review_broadcast_at` |
+| Group workspace (contribution feed + master draft + veto) | `lesson_view.html` + `functions/group.js` | Real-time דרך `startGroupContribListener()` |
+| Group role auto-assignment | `lesson_view.html` → `initGroupWorkspace()` | Firebase transaction + `applyGroupRoleRestrictions()` |
+| Group veto (unanimous) | `functions/group.js` → `veto_initiate/approve/submit` | Auto-advance status: pending→approved/vetoed |
+| Team Project (AI Digest + baton pass + blocks) | `team_project.html` + `functions/team_project.js` | Digest TTL 30 min; baton blocked ללא handoff note |
+| Waiting Lobby topbar + door animation + pulse | `waiting_lobby.html` | CSS: `.w-topbar`, `#doorAnim`, `@keyframes wPulse` |
+| Submission success state | `lesson_view.html` | `subSuccessBanner` + `.writePanel.submitted` |
+
+### 8.2 מה נשאר (לא בלוקר)
+
+| פריט | תיאור | עדיפות |
+|------|-------|--------|
+| `functions/rubrics.js` | CRUD API ייעודי ל-rubrics. כרגע הקריאה מתבצעת ישירות מ-lesson_view.html דרך Firebase client. | נמוכה — פועל |
+| Cockpit peer review summary | תצוגה aggregate של ציוני peer review. מוגדר כ-placeholder בלבד. | נמוכה — לא MVP |
+| Manual QA idle-5min | בדיקת console errors אחרי 5 דקות idle — דורש ריצת דפדפן אמיתי. | ראה `docs/QA_STUDENT_FLOW.md` |
+
+### 8.3 שינויי ארכיטקטורה מהספציפיקציה המקורית
+
+| ספציפיקציה מקורית | מה קרה בפועל |
+|-------------------|-------------|
+| `window.__CLASS_FEATURES` | הוחלף ב-`__classFeatures` module-scoped var (בטוח יותר, אין זיהום global) |
+| Self-review blocked (reviewedId) | N/A — אין `reviewedId` בארכיטקטורה הנוכחית; ה-review נשמר תחת ה-reviewer עצמו |
+| `/api/peer-review` endpoint נפרד | ממוזג לתוך `classroom.js` תחת `action: "peer_review"` |
+| Cockpit peer review summary (MVP) | הוסר מ-MVP; placeholder בלבד |
+
