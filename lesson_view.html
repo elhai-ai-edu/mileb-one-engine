@@ -2153,8 +2153,8 @@
                 : stType === "PERSONAL_PROJECT_STATION" ? "project"
                 : "lesson";
               // Update sprintIndex in MiledState (Part 34 §34.2)
-              const sprintDefs2 = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
-              MiledState.sprintIndex = sprintDefs2.findIndex(s => String(s.id) === String(sprint.id));
+              const allSprintDefs = Array.isArray(lessonData?.sprintDefinitions) ? lessonData.sprintDefinitions : [];
+              MiledState.sprintIndex = allSprintDefs.findIndex(s => String(s.id) === String(sprint.id));
               lessonData.state = { ...(lessonData.state || {}), active_sprint: String(sprint.id), mode: newMode };
               renderActiveSprint();
               renderSprintStepper();
@@ -3314,17 +3314,18 @@
 
     // Transition guardrail — enforces No-Skip principle (Part 34 §34.5)
     // actor: "student" | "teacher"
+    const STUDENT_FORWARD_TRANSITIONS = {
+      waiting:     ["empty"],
+      empty:       ["doing"],
+      doing:       ["submitted"],
+      submitted:   ["peer_review", "completed"],
+      peer_review: ["completed"],
+      completed:   []
+    };
+
     function canTransition(currentSub, nextSub, actor) {
       if (actor === "teacher") return true;
-      const STUDENT_FORWARD = {
-        waiting:     ["empty"],
-        empty:       ["doing"],
-        doing:       ["submitted"],
-        submitted:   ["peer_review", "completed"],
-        peer_review: ["completed"],
-        completed:   []
-      };
-      return (STUDENT_FORWARD[currentSub] || []).includes(nextSub);
+      return (STUDENT_FORWARD_TRANSITIONS[currentSub] || []).includes(nextSub);
     }
 
     // Resolve peer review mode from __classFeatures (Part 34 §34.5)
@@ -3449,7 +3450,8 @@
       if (main) main.dataset.mode = mode;
       // Sync MiledState.root (Part 34 §34.2)
       // data-mode "project" maps to MiledState root "personal_project"
-      MiledState.root = mode === "project" ? "personal_project" : mode;
+      const DATA_MODE_TO_ROOT = { lesson: "lesson", group: "group", team_project: "team_project", project: "personal_project" };
+      MiledState.root = DATA_MODE_TO_ROOT[mode] || "lesson";
       MiledState.botMode = deriveBotMode(MiledState.root);
       // Close bot float panel whenever mode changes
       if (mode !== "lesson") {
@@ -4167,8 +4169,10 @@
         document.getElementById("writePanel")?.classList.add("submitted");
         loadPeerInsight();
         // Use resolvePeerReviewModeForActivity for ATS-aware peer review triggering (Part 34 §34.5)
+        // Show panel for both "system" (always-on) and "activity" (ATS-derived) triggers.
+        // "teacher" trigger is handled separately via Firebase peer_review_ready listener.
         const prMode = resolvePeerReviewModeForActivity(activeSprint);
-        if (prMode.mode !== "disabled" && prMode.triggerBy === "system") {
+        if (prMode.mode !== "disabled" && (prMode.triggerBy === "system" || prMode.triggerBy === "activity")) {
           showPeerReviewPanel();
         }
       } catch (e) { setWriteStatus(e.message, "err"); }
