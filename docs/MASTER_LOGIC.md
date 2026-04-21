@@ -1920,6 +1920,15 @@ STUDENT_FORWARD = {
 }
 ```
 
+**Runtime hookup (implemented in lesson_view.html):**
+- `renderLesson()` — door_status determines initial `sub` (`"waiting"` | `"empty"`)
+- `startSprintBtn` click → `canTransition(sub, "doing", "student")` → `MiledState.sub = "doing"`
+- `completeSprintBtn` click → `canTransition(sub, "submitted", "student")` → `MiledState.sub = "submitted"`
+- `submitStudentWork()` → `canTransition(sub, "submitted", "student")` → `MiledState.sub = "submitted"`
+- `showPeerReviewPanel()` → `MiledState.overlay = "peer_review"`
+- `closePeerReviewPanel()` → `MiledState.overlay = null`
+- `submitPeerReview()` → `canTransition(sub, "completed", "student")` → `MiledState.sub = "completed"`, `overlay = null`
+
 ---
 
 ### 34.5 Peer Review Mode (replaces `peerReview.enabled: boolean`)

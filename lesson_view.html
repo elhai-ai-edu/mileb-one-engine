@@ -1470,7 +1470,7 @@
                    font-size:13px;resize:none;min-height:56px;background:#f8fafc;margin-bottom:10px;"></textarea>
           <button class="action-btn primary" id="peerSubmitBtn" onclick="submitPeerReview()"
             style="width:100%;padding:10px;font-size:14px;font-weight:800;">שלח הערכת עמיתים</button>
-          <button onclick="document.getElementById('peerReviewPanel').style.display='none'"
+          <button onclick="closePeerReviewPanel()"
             style="width:100%;margin-top:6px;padding:8px;font-size:13px;color:#64748b;background:none;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;">דלג</button>
           <div id="peerReviewSent" style="display:none;margin-top:8px;padding:10px 14px;
                background:#f0fdf4;border:1.5px solid #86efac;border-radius:10px;
@@ -2467,6 +2467,8 @@
             pathDecision: response.pacing.pathDecision,
             guidance: response.pacing.guidance
           } : null;
+          // Sync MiledState.sub — enforce No-Skip (Part 34 §34.3)
+          if (canTransition(MiledState.sub, "doing", "student")) MiledState.sub = "doing";
           renderActiveSprint();
         });
       }
@@ -2492,6 +2494,8 @@
             pathDecision: response.pacing.pathDecision,
             guidance: response.pacing.guidance
           } : null;
+          // Sync MiledState.sub — enforce No-Skip (Part 34 §34.3)
+          if (canTransition(MiledState.sub, "submitted", "student")) MiledState.sub = "submitted";
           renderActiveSprint();
         });
       }
@@ -2761,6 +2765,9 @@
           const courseName = lessonData?.courseName || lessonData?.courseId || "";
           if (courseName) document.getElementById("waitingTitle").textContent = `ממתינים לפתיחת השיעור — ${courseName}`;
         }
+        // Sync MiledState.sub from door state (Part 34 §34.2)
+        if (canTransition(MiledState.sub, showWaiting ? "waiting" : "empty", "teacher"))
+          MiledState.sub = showWaiting ? "waiting" : "empty";
       }
 
       const activeSprint = findActiveSprint();
@@ -4039,6 +4046,13 @@
       panel.classList.add("visible");
     }
 
+    function closePeerReviewPanel() {
+      const panel = document.getElementById("peerReviewPanel");
+      if (panel) panel.style.display = "none";
+      // Sync MiledState.overlay (Part 34 §34.4)
+      MiledState.overlay = null;
+    }
+
     function showPeerReviewPanel(reviewedText = null) {
       const panel = document.getElementById("peerReviewPanel");
       if (!panel) return;
@@ -4078,6 +4092,8 @@
 
       panel.classList.add("visible");
       setTimeout(() => panel.scrollIntoView({ behavior: "smooth", block: "nearest" }), 100);
+      // Sync MiledState.overlay (Part 34 §34.4)
+      MiledState.overlay = "peer_review";
     }
 
     async function submitPeerReview() {
@@ -4100,6 +4116,9 @@
       document.getElementById("peerReviewSent").style.display = "block";
       const submitBtn = document.getElementById("peerSubmitBtn");
       if (submitBtn) submitBtn.style.display = "none";
+      // Sync MiledState after peer review submit (Part 34 §34.4)
+      if (canTransition(MiledState.sub, "completed", "student")) MiledState.sub = "completed";
+      MiledState.overlay = null;
     }
 
     // ─── Student Avatar ────────────────────────────────────────────────────
@@ -4165,6 +4184,8 @@
         setWriteStatus("✓ עבודה הוגשה", "ok");
         _lastSubmittedText = text;
         appendStudentBubble(text, "submission");
+        // Sync MiledState.sub — enforce No-Skip (Part 34 §34.3)
+        if (canTransition(MiledState.sub, "submitted", "student")) MiledState.sub = "submitted";
         document.getElementById("subSuccessBanner").style.display = "flex";
         document.getElementById("writePanel")?.classList.add("submitted");
         loadPeerInsight();
