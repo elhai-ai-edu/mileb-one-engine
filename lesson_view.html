@@ -3413,8 +3413,8 @@
         const btn = document.getElementById("tpEnterBtn");
         if (btn) btn.style.display = "flex";
       }
-      // Show personal project button if course has a personalProjectUrl
-      if (role === "student" && lessonData?.personalProjectUrl) {
+      // Show personal project button if course has a personalProjectUrl or personalProject config
+      if (role === "student" && (lessonData?.personalProjectUrl || lessonData?.personalProject || courseIdFromUrl)) {
         const btn = document.getElementById("ppEnterBtn");
         if (btn) btn.style.display = "flex";
       }
@@ -3584,9 +3584,15 @@
     }
 
     function enterPersonalProjectMode() {
-      const url = lessonData?.personalProjectUrl;
-      if (!url) { alert("לא הוגדר פרויקט אישי לקורס זה."); return; }
-      window.open(url, "_blank", "noopener");
+      const cId = lessonData?.courseId || courseIdFromUrl;
+      if (!cId) { alert("לא הוגדר קורס — לא ניתן לפתוח פרויקט אישי."); return; }
+      const params = new URLSearchParams({
+        courseId:    cId,
+        studentId:   studentId   || "",
+        studentName: studentName || studentId || "",
+        source:      "lesson"
+      });
+      window.open(`/personal_project.html?${params.toString()}`, "_blank", "noopener");
     }
 
     function enterGroupMode(sprint) {

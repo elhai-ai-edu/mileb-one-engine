@@ -30,6 +30,11 @@
     X-Frame-Options = "SAMEORIGIN"
 
 [[headers]]
+  for = "/personal_project.html"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+
+[[headers]]
   for = "/api/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
@@ -85,6 +90,11 @@
 [[redirects]]
   from = "/api/team-project"
   to   = "/.netlify/functions/team_project"
+  status = 200
+
+[[redirects]]
+  from = "/api/personal-project"
+  to   = "/.netlify/functions/personal_project"
   status = 200
 
 [[redirects]]
