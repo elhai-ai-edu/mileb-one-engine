@@ -148,8 +148,9 @@ export async function handler(event) {
     await studentRef.child(`stages/${stageIndex}`).set(stageEntry);
     await studentRef.update({ draft: "", draftSavedAt: now, lastSeen: now });
 
+    // Sync to course_progress on submission — pass studentId correctly
     await mirrorToCourseProgress(
-      db, courseId, studentName /* use name not id */, studentName, stageIndex, stageLabel,
+      db, courseId, studentId, studentName, stageIndex, stageLabel,
       "pending_review", submissionId, { submittedAt: now }
     );
 

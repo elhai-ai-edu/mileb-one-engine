@@ -4501,6 +4501,19 @@ function escapeHtml(str) {
   return String(str || "").replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// escAttr — escapes for use inside HTML attribute values (including single/double quotes)
+function escAttr(str) {
+  return String(str || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// STUCK_THRESHOLD_MS — shared constant for personal-project stuck detection (7 days)
+const PP_STUCK_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+
 function currentCourseForSync() {
   return currentLessonId || getSelectedTeachingContext().classId || null;
 }
@@ -5464,7 +5477,7 @@ function renderStageSummaryTable() {
       const lastSeenMs = Number(student.lastSeen || student.updatedAt || 0);
       const stageEntries = Object.values(student.stages || {});
       const allUnlocked  = stageEntries.length > 0 && stageEntries.every(s => s?.state === "unlocked");
-      return !allUnlocked && lastSeenMs > 0 && (nowTs - lastSeenMs) > STUCK_THRESHOLD_MS;
+      return !allUnlocked && lastSeenMs > 0 && (nowTs - lastSeenMs) > PP_STUCK_THRESHOLD_MS;
     }
     if (statusFilter) {
       const stageEntries = Object.values(student.stages || {});
@@ -5485,8 +5498,7 @@ function renderStageSummaryTable() {
     "relocked":       "🔴 נדחה"
   };
 
-  const STUCK_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-  const now = Date.now();
+  const nowTs = Date.now();
 
   container.innerHTML = students.map(student => {
     const name = escapeHtml(student.studentName || student.studentId || "—");
@@ -5511,8 +5523,8 @@ function renderStageSummaryTable() {
 
     // Last-seen / stuck indicator
     const lastSeenMs = Number(student.lastSeen || student.updatedAt || 0);
-    const lastSeenAge = lastSeenMs ? now - lastSeenMs : Infinity;
-    const isStuck = lastSeenAge > STUCK_THRESHOLD_MS && rowState !== "unlocked";
+    const lastSeenAge = lastSeenMs ? nowTs - lastSeenMs : Infinity;
+    const isStuck = lastSeenAge > PP_STUCK_THRESHOLD_MS && rowState !== "unlocked";
     const lastSeenLabel = !lastSeenMs ? ""
       : lastSeenAge < 60_000 ? "כעת"
       : lastSeenAge < 3_600_000 ? `לפני ${Math.floor(lastSeenAge/60_000)} דק'`
@@ -5526,20 +5538,27 @@ function renderStageSummaryTable() {
       ? `<span style="font-size:10px;color:#94a3b8;margin-right:8px;" title="כניסה אחרונה">🕐 ${escapeHtml(lastSeenLabel)}</span>`
       : "";
 
+    // Use escAttr() for any value placed inside onclick attributes to prevent XSS
+    const safeStudentId  = escAttr(student.studentId || "");
+    const safeSubId      = escAttr(submissionId || "");
+
     const approveBtn = pendingEntry && submissionId
       ? `<button class="btn btn-xs btn-ghost-green" 
-          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','approved')">✔ אשר</button>
+          onclick="quickEvaluate('${safeStudentId}','${safeSubId}','approved')">✔ אשר</button>
          <button class="btn btn-xs btn-ghost-red"
-          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','rejected')">✖ דחה</button>
+          onclick="quickEvaluate('${safeStudentId}','${safeSubId}','rejected')">✖ דחה</button>
          <button class="btn btn-xs btn-ghost" style="font-size:10px;"
-          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','review_required')">↩ תיקון</button>`
+          onclick="quickEvaluate('${safeStudentId}','${safeSubId}','review_required')">↩ תיקון</button>`
       : "";
 
     // Link to student personal project page (if pp_ stage)
     const isPpStage = String(student.currentStageId || "").startsWith("pp_");
-    const ppLink = isPpStage && student.studentId
-      ? `<a href="/personal_project.html?courseId=${encodeURIComponent(student.courseId || document.getElementById('botSelect')?.value || '')}&studentId=${encodeURIComponent(student.studentId)}&studentName=${encodeURIComponent(student.studentName || student.studentId)}" target="_blank" class="btn btn-xs btn-ghost" style="font-size:10px;text-decoration:none;">📋 פתח</a>`
-      : "";
+    const ppLink = (function() {
+      if (!isPpStage || !student.studentId) return "";
+      const courseVal = student.courseId || document.getElementById("botSelect")?.value || "";
+      const url = `/personal_project.html?courseId=${encodeURIComponent(courseVal)}&studentId=${encodeURIComponent(student.studentId)}&studentName=${encodeURIComponent(student.studentName || student.studentId)}`;
+      return `<a href="${escAttr(url)}" target="_blank" class="btn btn-xs btn-ghost" style="font-size:10px;text-decoration:none;">📋 פתח</a>`;
+    })();
 
     return `<div class="stage-row state-${rowState}${isStuck ? ' stuck' : ''}">
       <div class="stage-row-name">${name}${lastStage ? `<span style="font-size:11px;font-weight:400;color:inherit;opacity:.7;margin-right:6px;">· ${lastStage}</span>` : ""}</div>
