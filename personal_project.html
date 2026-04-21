@@ -643,6 +643,7 @@
     let _recordingChunks = [];
     let _recordTimer     = null;
     let _recordSeconds   = 0;
+    const MAX_FILE_BYTES = 10 * 1024 * 1024;  // 10 MB per attachment
 
     // ── Firebase ────────────────────────────────────────────────────────────
     function getDb() {
@@ -889,6 +890,8 @@
       const isLocked  = status === "pending_review" || status === "approved" || status === "completed";
 
       if (currTa) {
+        // Read submitted text — prefer new submission.text field, fall back to legacy text field
+        // (stages submitted before the submission schema migration have only stageData.text)
         currTa.value    = isLocked ? (stageData.submission?.text || stageData.text || "") : (_draft || "");
         currTa.readOnly = isLocked;
         currTa.style.background = isLocked ? "#f1f5f9" : "";
@@ -1192,7 +1195,7 @@
           : "";
         const meta   = [sizeKb, dur.trim()].filter(Boolean).join(" · ");
         const dl     = a.downloadUrl
-          ? `<a href="${escHtml(a.downloadUrl)}" target="_blank" rel="noopener" class="pp-attach-download">⬇ הורד</a>`
+          ? `<a href="${escAttr(a.downloadUrl)}" target="_blank" rel="noopener" class="pp-attach-download">⬇ הורד</a>`
           : "";
         const rm     = !isLocked
           ? `<button class="pp-attach-remove" onclick="removeAttachment(${idx})" title="הסר">✕</button>`
@@ -1225,9 +1228,8 @@
       if (!file) return;
       input.value = "";  // reset so same file can be picked again
 
-      const MAX_BYTES = 10 * 1024 * 1024;  // 10 MB
-      if (file.size > MAX_BYTES) {
-        alert(`הקובץ גדול מ-10 MB. אנא בחר/י קובץ קטן יותר.`);
+      if (file.size > MAX_FILE_BYTES) {
+        alert(`הקובץ גדול מ-${MAX_FILE_BYTES / 1024 / 1024} MB. אנא בחר/י קובץ קטן יותר.`);
         return;
       }
 
@@ -1236,7 +1238,8 @@
 
       try {
         const storage = getStorage();
-        const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        // Sanitize filename: allow alphanumeric, hyphen, underscore only (no dots to prevent path traversal)
+        const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_-]/g, "_")}`;
         const path = `pp_attachments/${courseId}/${studentId}/${_currentStage}/${safeName}`;
         let downloadUrl = "";
         if (storage) {
@@ -1311,9 +1314,11 @@
     async function _saveRecording(mimeType) {
       const blob = new Blob(_recordingChunks, { type: mimeType });
       const ext  = mimeType.includes("webm") ? "webm" : "ogg";
-      const timeStr = new Date().toLocaleTimeString("he-IL").replace(/:/g, "_");
-      const name = `הקלטה_${timeStr}.${ext}`;
-      const path = `pp_attachments/${courseId}/${studentId}/${_currentStage}/${Date.now()}_audio.${ext}`;
+      const timeStr = new Date().toLocaleTimeString("he-IL").replace(/[^0-9]/g, "_");
+      const name    = `הקלטה_${timeStr}.${ext}`;
+      // Use the same sanitized naming pattern as file uploads
+      const safeName = `${Date.now()}_audio_${timeStr}.${ext}`;
+      const path = `pp_attachments/${courseId}/${studentId}/${_currentStage}/${safeName}`;
 
       const ind = document.getElementById("ppSaveIndicator");
       if (ind) { ind.textContent = "שומר הקלטה..."; ind.className = "pp-save-indicator saving"; }
@@ -1376,6 +1381,11 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+    }
+    // Use escAttr when placing values inside HTML attribute values (e.g. href, onclick).
+    // Escapes double quotes in addition to the standard HTML entities.
+    function escAttr(str) {
+      return escHtml(str).replace(/"/g, "&quot;");
     }
 
     // ── Boot ─────────────────────────────────────────────────────────────────

@@ -373,7 +373,7 @@ function renderCourses(filterId, opts) {
 
     const personalBtn = personalProj ? `
       <a class="cc-btn cc-btn-personal"
-         href="${personalProj.url || `/chat.html?botType=task_final_project&courseId=${esc(id)}&studentId=${esc(studentId)}`}">
+         href="${personalProj.url || `/personal_project.html?courseId=${esc(id)}&studentId=${esc(studentId)}&studentName=${esc(studentName)}`}">
         📝 ${personalProj.title || "פרויקט גמר אישי"}
       </a>` : "";
 
