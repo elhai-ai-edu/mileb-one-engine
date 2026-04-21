@@ -106,9 +106,15 @@ async function bootstrapStudentsAccess() {
   if (!access?.ok) return;
 
   sessionUser = window.MiledAccess?.getSessionUser?.()
-    || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId)
+    || window.MiledAccess?.buildSessionUser?.(access.authUser, access.canonicalRole, access.institutionId, access.courseId, access.classId)
     || null;
   canonicalRole = access.canonicalRole || sessionUser?.canonicalRole || window.MiledAccess?.normalizeRole?.(sessionUser?.role) || "";
+
+  // Enroll filter: if user has a courseId assignment, show only that course
+  // Privileged roles (lecturer/admin doing student preview) see all courses
+  if (sessionUser?.courseId && canonicalRole === "student") {
+    _myCourseId = sessionUser.courseId;
+  }
   previewExitTarget = window.MiledAccess?.getRoleHome?.(canonicalRole) || "/index.html";
 
   if (window.MiledAccess?.isStudentPreviewEnabled?.(canonicalRole)) {
@@ -132,6 +138,7 @@ window.navigateHome = function() {
 
 let CONFIG = null;
 let _activeFilter = null;   // set after config loads
+let _myCourseId   = null;   // set from auth — filters view to enrolled course only
 
 // ─────────────────────────────
 // לוגיקת סמסטר ושנה אקדמית
@@ -336,10 +343,12 @@ function renderCourses(filterId, opts) {
   const filterOpt = (opts || buildFilterOptions()).find(o => o.id === (filterId || _activeFilter || "current"));
   const matchFn   = filterOpt?.match || (() => true);
 
-  // Only courses that match the filter and have a semester field
-  const visible = Object.entries(courses).filter(([, c]) =>
-    c.semester ? matchFn(c.semester) : !filterId || filterId === "year"
-  );
+  // Only courses that match the filter and have a semester field.
+  // If the student has a courseId assignment, restrict to that course only.
+  const visible = Object.entries(courses).filter(([id, c]) => {
+    if (_myCourseId && id !== _myCourseId) return false;
+    return c.semester ? matchFn(c.semester) : !filterId || filterId === "year";
+  });
 
   if (!visible.length) {
     container.innerHTML = `<div class="sem-empty">אין קורסים להציג עבור תקופה זו.</div>`;
@@ -347,8 +356,9 @@ function renderCourses(filterId, opts) {
   }
 
   for (const [id, course] of visible) {
-    const studentId   = getStudentId(id);
-    const studentName = getStudentName(id);
+    // Prefer uid from auth session (stable, cross-device); fall back to local random
+    const studentId   = sessionUser?.uid || getStudentId(id);
+    const studentName = sessionUser?.displayName || getStudentName(id);
     const esc = s => encodeURIComponent(s);
 
     const lobbyUrl   = `/waiting_lobby.html?courseId=${esc(id)}`;

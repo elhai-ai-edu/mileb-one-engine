@@ -6561,32 +6561,19 @@ async function activateGroupSprint() {
   const statusEl = document.getElementById("groupStatusMsg");
   if (statusEl) { statusEl.style.color = "#6366f1"; statusEl.textContent = "מפעיל עבודת קבוצות..."; }
 
-  const res = await safeAsync(async () => {
-      // 1. Write group feature flag to Firebase classes/{classId}/features/groupMode
-      if (db && courseId) {
-        const roles = ["מנסח", "מאתגר", "מגיב"].slice(0, groupSize);
-        await db.ref(`classes/${courseId}/features/groupMode`).set({
-          enabled: true,
-          groupId: `group_${sessionId.slice(-6)}`,
-          roles: roles.reduce((acc, r, i) => { acc[`slot_${i}`] = r; return acc; }, {}),
-          autoAssign: true,
-          groupSize,
-          sprintId: sprint.id,
-          activatedAt: Date.now()
-        });
-      }
-      // 2. Activate the sprint + set mode via session_state_update
-      return callClassroom({
-        action: "session_state_update",
-        sessionId,
-        facultyId,
-        activeSprint: String(sprint.id),
-        mode: "group",
-        sprintDefinitions: _groupSprintDefs
+  try {
+    if (db && courseId) {
+      const roles = ["מנסח", "מאתגר", "מגיב"].slice(0, groupSize);
+      await db.ref(`classes/${courseId}/features/groupMode`).set({
+        enabled: true,
+        groupId: `group_${sessionId.slice(-6)}`,
+        roles: roles.reduce((acc, r, i) => { acc[`slot_${i}`] = r; return acc; }, {}),
+        autoAssign: true,
+        groupSize,
+        sprintId: sprint.id,
+        activatedAt: Date.now()
       });
     }
-
-    // 2. Activate the sprint + set mode via session_state_update
     const res = await callClassroom({
       action: "session_state_update",
       sessionId,
@@ -6595,9 +6582,7 @@ async function activateGroupSprint() {
       mode: "group",
       sprintDefinitions: _groupSprintDefs
     });
-
     if (!res.ok) throw new Error(res.error || "שגיאה");
-
     _groupModeActive = true;
     const activateBtn = document.getElementById("activateGroupBtn");
     const deactivateBtn = document.getElementById("deactivateGroupBtn");
@@ -6614,12 +6599,9 @@ async function deactivateGroupMode() {
   if (!sessionId) return;
   const statusEl = document.getElementById("groupStatusMsg");
   if (statusEl) statusEl.style.color = "#6366f1";
-  const res = await safeAsync(() => callClassroom({
-      action: "session_state_update",
-      sessionId,
-      facultyId,
-      mode: "lesson"
-    });
+  try {
+    const res = await callClassroom({ action: "session_state_update", sessionId, facultyId, mode: "lesson" });
+    if (!res?.ok) throw new Error(res?.error || "שגיאה");
     _groupModeActive = false;
     if (_groupAssignmentsWatchRef) { _groupAssignmentsWatchRef.off(); _groupAssignmentsWatchRef = null; }
     const activateBtn = document.getElementById("activateGroupBtn");

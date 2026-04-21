@@ -73,8 +73,10 @@
 
 window.__LAST_EXPORT_PROMPT = null;
 
-let studentId = sessionStorage.getItem('studentId');
-if (!studentId){
+// Prefer Firebase Auth uid (stable, cross-device) — fall back to random session id
+const _authSession = window.MiledAccess?.getSessionUser?.();
+let studentId = _authSession?.uid || sessionStorage.getItem('studentId');
+if (!studentId) {
   studentId = 's_' + Math.random().toString(36).slice(2,10);
   sessionStorage.setItem('studentId', studentId);
 }

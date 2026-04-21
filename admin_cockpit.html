@@ -134,16 +134,30 @@
 
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
       <div style="font-size:13px;font-weight:700;margin-bottom:10px;">+ הוסף הרשאה אישית</div>
-      <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:8px;align-items:end;">
         <div>
           <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">כתובת מייל</label>
           <input id="new-auth-email" type="email" placeholder="name@example.com" dir="ltr"
             style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
         </div>
         <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">קורס (courseId)</label>
+          <select id="new-auth-course"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            <option value="">ללא</option>
+            <option value="hebrew_advanced_optics">עברית אופטומטריה (ב)</option>
+            <option value="hebrew_advanced_optics_a">עברית אופטומטריה (א)</option>
+            <option value="hebrew_advanced_management">עברית ניהול (ב)</option>
+            <option value="hebrew_advanced_management_a">עברית ניהול (א)</option>
+            <option value="gerontology_mechina">גרונטולוגיה (ב)</option>
+            <option value="gerontology_mechina_a">גרונטולוגיה (א)</option>
+          </select>
+        </div>
+        <div>
           <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תפקיד</label>
           <select id="new-auth-role"
             style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            <option value="student">סטודנט (student)</option>
             <option value="faculty">מרצה (faculty)</option>
             <option value="institution">הנהלה (institution)</option>
             <option value="superadmin">מנהל (superadmin)</option>
@@ -173,11 +187,24 @@
     </div>
 
     <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:12px;">
         <div>
           <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם כיתה / קבוצה</label>
           <input id="batch-class" type="text" placeholder="Cohort_A / כיתה-א" dir="ltr"
             style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">קורס (courseId)</label>
+          <select id="batch-course"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+            <option value="">ללא שיוך קורס</option>
+            <option value="hebrew_advanced_optics">עברית מתקדמים — אופטומטריה (ב)</option>
+            <option value="hebrew_advanced_optics_a">עברית מתקדמים — אופטומטריה (א)</option>
+            <option value="hebrew_advanced_management">עברית מתקדמים — ניהול (ב)</option>
+            <option value="hebrew_advanced_management_a">עברית מתקדמים — ניהול (א)</option>
+            <option value="gerontology_mechina">מבוא לגרונטולוגיה (ב)</option>
+            <option value="gerontology_mechina_a">מבוא לגרונטולוגיה (א)</option>
+          </select>
         </div>
         <div>
           <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תפקיד</label>
@@ -934,10 +961,10 @@ function renderUserRows(entries) {
         style="width:14px;height:14px;cursor:pointer;accent-color:#6366f1;flex-shrink:0;">
       <span style="font-weight:600;font-size:13px;direction:ltr;color:#1e1b4b;flex:2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${email}">${email}</span>
       <span style="font-size:11px;padding:3px 9px;border-radius:8px;background:#eef2ff;color:${ROLE_COLOR[val.role]||'#374151'};font-weight:700;white-space:nowrap;min-width:70px;">${val.role || '—'}</span>
-      ${val.classId
-        ? `<span style="font-size:12px;padding:3px 10px;border-radius:8px;background:#fef3c7;color:#92400e;font-weight:700;white-space:nowrap;border:1px solid #fde68a;min-width:100px;">📚 ${val.classId}</span>`
-        : `<span style="font-size:12px;color:#cbd5e1;white-space:nowrap;min-width:100px;">ללא כיתה</span>`
-      }
+      <span style="min-width:120px;display:flex;flex-direction:column;gap:3px;">
+        ${val.classId ? `<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:#fef3c7;color:#92400e;font-weight:700;border:1px solid #fde68a;">📚 ${val.classId}</span>` : `<span style="font-size:11px;color:#cbd5e1;">ללא כיתה</span>`}
+        ${val.courseId ? `<span style="font-size:11px;padding:2px 8px;border-radius:6px;background:#eff6ff;color:#1d4ed8;font-weight:600;border:1px solid #bfdbfe;">📝 ${val.courseId}</span>` : ""}
+      </span>
       <span style="font-size:11px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;">${val.institutionId || ''}</span>
       <div style="display:flex;gap:5px;min-width:120px;">
         <button onclick="toggleBypassLock('${key}', ${!!val.isBypassingLock})"
@@ -987,16 +1014,17 @@ async function deleteSelectedUsers() {
 }
 
 async function addUserRole() {
-  const email  = document.getElementById("new-auth-email").value.trim().toLowerCase();
-  const role   = document.getElementById("new-auth-role").value;
-  const instId = document.getElementById("new-auth-inst").value.trim() || "manual";
-  const msg    = document.getElementById("auth-user-msg");
+  const email    = document.getElementById("new-auth-email").value.trim().toLowerCase();
+  const courseId = document.getElementById("new-auth-course").value.trim() || null;
+  const role     = document.getElementById("new-auth-role").value;
+  const instId   = document.getElementById("new-auth-inst").value.trim() || "manual";
+  const msg      = document.getElementById("auth-user-msg");
   if (!email || !email.includes("@")) { msg.style.color="#ef4444"; msg.innerText="נא להזין כתובת מייל תקינה."; return; }
   try {
     const key = email.replace(/\./g, "_").replace(/@/g, "_at_");
     await dbFetch(`/authorized_users/${key}.json`, {
       method: "PUT",
-      body: JSON.stringify({ email, role, institutionId: instId, createdAt: Date.now() })
+      body: JSON.stringify({ email, role, institutionId: instId, ...(courseId ? { courseId } : {}), createdAt: Date.now() })
     });
     msg.style.color="#16a34a"; msg.innerText=`✅ נוסף: ${email} → ${role}`;
     document.getElementById("new-auth-email").value = "";
@@ -1025,10 +1053,11 @@ document.addEventListener("input", function(e) {
 });
 
 async function batchImport() {
-  const rawText = document.getElementById("batch-emails").value;
-  const classId = document.getElementById("batch-class").value.trim() || "batch";
-  const role    = document.getElementById("batch-role").value;
-  const instId  = document.getElementById("batch-inst").value.trim() || "manual";
+  const rawText  = document.getElementById("batch-emails").value;
+  const classId  = document.getElementById("batch-class").value.trim() || "batch";
+  const courseId = document.getElementById("batch-course").value.trim() || null;
+  const role     = document.getElementById("batch-role").value;
+  const instId   = document.getElementById("batch-inst").value.trim() || "manual";
   const progress = document.getElementById("batch-progress");
 
   const emails = rawText.split(/[\n,;]+/)
@@ -1054,7 +1083,7 @@ async function batchImport() {
       try {
         await dbFetch(`/authorized_users/${key}.json`, {
           method: "PUT",
-          body: JSON.stringify({ email, role, institutionId: instId, classId, createdAt: now })
+          body: JSON.stringify({ email, role, institutionId: instId, classId, ...(courseId ? { courseId } : {}), createdAt: now })
         });
         success++;
       } catch { failed++; }

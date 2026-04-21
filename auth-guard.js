@@ -145,7 +145,7 @@ window.MiledAccess = (() => {
     };
   }
 
-  function buildSessionUser(authUser, canonicalRole, institutionId) {
+  function buildSessionUser(authUser, canonicalRole, institutionId, courseId, classId) {
     if (!authUser || !canonicalRole) return null;
     return {
       uid: authUser.uid,
@@ -154,7 +154,9 @@ window.MiledAccess = (() => {
       photoURL: authUser.photoURL || "",
       role: toLegacyRole(canonicalRole),
       canonicalRole,
-      institutionId: institutionId || null
+      institutionId: institutionId || null,
+      courseId: courseId || null,
+      classId: classId || null
     };
   }
 
@@ -214,10 +216,10 @@ window.MiledAccess = (() => {
     });
   }
 
-  function persistSession(authUser, canonicalRole, institutionId) {
+  function persistSession(authUser, canonicalRole, institutionId, courseId, classId) {
     if (!authUser || !canonicalRole) return;
 
-    const sessionUser = buildSessionUser(authUser, canonicalRole, institutionId);
+    const sessionUser = buildSessionUser(authUser, canonicalRole, institutionId, courseId, classId);
     if (!sessionUser) return;
 
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionUser));
@@ -330,6 +332,8 @@ window.MiledAccess = (() => {
       inLecturerWhitelist,
       domainAuthorized,
       institutionId: authorizedUserNode?.institutionId || null,
+      courseId: authorizedUserNode?.courseId || null,
+      classId: authorizedUserNode?.classId || null,
       reason: authorized ? "ok" : "blocked"
     };
   }
@@ -355,7 +359,7 @@ window.MiledAccess = (() => {
     }
 
     if (context.authUser) {
-      persistSession(context.authUser, context.canonicalRole, context.institutionId);
+      persistSession(context.authUser, context.canonicalRole, context.institutionId, context.courseId, context.classId);
     }
     document.documentElement.style.visibility = "";
     return { ok: true, ...context };
