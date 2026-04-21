@@ -751,10 +751,11 @@
         }
         // Show personal project button if course has a personalProject configured
         const personalProj = config?.my_courses?.[courseId]?.personalProject;
-        if (personalProj?.url) {
+        if (personalProj) {
           const btn = document.getElementById("personalProjectBtn");
           if (btn) {
-            btn.href = personalProj.url;
+            const sName = encodeURIComponent(localStorage.getItem(`miled_student_name_${courseId}`) || studentId);
+            btn.href    = `/personal_project.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${sName}`;
             btn.textContent = `📝 ${personalProj.title || "פרויקט גמר אישי"} ←`;
             btn.onclick = null;
           }
