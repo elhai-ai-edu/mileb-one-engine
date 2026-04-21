@@ -3,7 +3,8 @@
 import { getDatabase } from "firebase-admin/database";
 import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
-function getDB() {
+const MAX_STUDENT_NAME_LENGTH = 80;
+const MAX_STAGE_INDEX         = 6;   // PP_STAGES has 7 stages (0–6)
   return getDatabase(ensureFirebaseAdminApp());
 }
 
@@ -31,7 +32,7 @@ export async function handler(event) {
   const action      = String(body.action      || "").trim();
   const courseId    = String(body.courseId    || "").trim();
   const studentId   = String(body.studentId   || "").trim();
-  const studentName = String(body.studentName || studentId).slice(0, 80);
+  const studentName = String(body.studentName || studentId).slice(0, MAX_STUDENT_NAME_LENGTH);
 
   if (!courseId)  return err("courseId required");
   if (!studentId) return err("studentId required");
@@ -77,8 +78,8 @@ export async function handler(event) {
     const stageIndex = Number(body.stageIndex);
 
     if (!text) return err("text required");
-    if (isNaN(stageIndex) || stageIndex < 0 || stageIndex > 6)
-      return err("invalid stageIndex (must be 0–6)");
+    if (isNaN(stageIndex) || stageIndex < 0 || stageIndex > MAX_STAGE_INDEX)
+      return err(`invalid stageIndex (must be 0–${MAX_STAGE_INDEX})`);
 
     const now = Date.now();
 
