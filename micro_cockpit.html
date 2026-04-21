@@ -2029,6 +2029,7 @@ body.management-theme .btn.btn-xs {
           <option value="unlocked">מאושר</option>
           <option value="relocked">נדחה</option>
           <option value="none">לא התחיל</option>
+          <option value="stuck">תקוע (7+ ימים)</option>
         </select>
       </div>
 
@@ -5452,11 +5453,19 @@ function renderStageSummaryTable() {
 
   const stageFilter = (document.getElementById("stagesStageFilter")?.value || "").trim().toLowerCase();
   const statusFilter = (document.getElementById("stagesStatusFilter")?.value || "").trim().toLowerCase();
+  const STUCK_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000;
+  const nowTs = Date.now();
 
   const students = _stageSummaryData.filter(student => {
     if (stageFilter && !(student.currentStageId || "").toLowerCase().includes(stageFilter)) return false;
     if (statusFilter === "none") return !student.currentStageId;
     if (statusFilter === "pending_review") return student.pendingApproval;
+    if (statusFilter === "stuck") {
+      const lastSeenMs = Number(student.lastSeen || student.updatedAt || 0);
+      const stageEntries = Object.values(student.stages || {});
+      const allUnlocked  = stageEntries.length > 0 && stageEntries.every(s => s?.state === "unlocked");
+      return !allUnlocked && lastSeenMs > 0 && (nowTs - lastSeenMs) > STUCK_THRESHOLD_MS;
+    }
     if (statusFilter) {
       const stageEntries = Object.values(student.stages || {});
       const hasStatus = stageEntries.some(s => (s?.state || "").toLowerCase() === statusFilter);
@@ -5475,6 +5484,9 @@ function renderStageSummaryTable() {
     "pending_review": "🟡 ממתין",
     "relocked":       "🔴 נדחה"
   };
+
+  const STUCK_THRESHOLD_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const now = Date.now();
 
   container.innerHTML = students.map(student => {
     const name = escapeHtml(student.studentName || student.studentId || "—");
@@ -5497,18 +5509,46 @@ function renderStageSummaryTable() {
     const pendingStageId = student.pendingStageId || pendingEntry?.stageId || null;
     const submissionId = pendingEntry?.submissionId || null;
 
+    // Last-seen / stuck indicator
+    const lastSeenMs = Number(student.lastSeen || student.updatedAt || 0);
+    const lastSeenAge = lastSeenMs ? now - lastSeenMs : Infinity;
+    const isStuck = lastSeenAge > STUCK_THRESHOLD_MS && rowState !== "unlocked";
+    const lastSeenLabel = !lastSeenMs ? ""
+      : lastSeenAge < 60_000 ? "כעת"
+      : lastSeenAge < 3_600_000 ? `לפני ${Math.floor(lastSeenAge/60_000)} דק'`
+      : lastSeenAge < 86_400_000 ? `לפני ${Math.floor(lastSeenAge/3_600_000)} שע'`
+      : `לפני ${Math.floor(lastSeenAge/86_400_000)} ימים`;
+
+    const stuckBadge = isStuck
+      ? `<span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:999px;background:#fef3c7;color:#92400e;margin-right:4px;" title="לא פעיל מעל 7 ימים">⚠️ תקוע</span>`
+      : "";
+    const lastSeenHtml = lastSeenLabel
+      ? `<span style="font-size:10px;color:#94a3b8;margin-right:8px;" title="כניסה אחרונה">🕐 ${escapeHtml(lastSeenLabel)}</span>`
+      : "";
+
     const approveBtn = pendingEntry && submissionId
       ? `<button class="btn btn-xs btn-ghost-green" 
           onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','approved')">✔ אשר</button>
          <button class="btn btn-xs btn-ghost-red"
-          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','rejected')">✖ דחה</button>`
+          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','rejected')">✖ דחה</button>
+         <button class="btn btn-xs btn-ghost" style="font-size:10px;"
+          onclick="quickEvaluate('${escapeHtml(student.studentId)}','${escapeHtml(submissionId)}','review_required')">↩ תיקון</button>`
       : "";
 
-    return `<div class="stage-row state-${rowState}">
+    // Link to student personal project page (if pp_ stage)
+    const isPpStage = String(student.currentStageId || "").startsWith("pp_");
+    const ppLink = isPpStage && student.studentId
+      ? `<a href="/personal_project.html?courseId=${encodeURIComponent(student.courseId || document.getElementById('botSelect')?.value || '')}&studentId=${encodeURIComponent(student.studentId)}&studentName=${encodeURIComponent(student.studentName || student.studentId)}" target="_blank" class="btn btn-xs btn-ghost" style="font-size:10px;text-decoration:none;">📋 פתח</a>`
+      : "";
+
+    return `<div class="stage-row state-${rowState}${isStuck ? ' stuck' : ''}">
       <div class="stage-row-name">${name}${lastStage ? `<span style="font-size:11px;font-weight:400;color:inherit;opacity:.7;margin-right:6px;">· ${lastStage}</span>` : ""}</div>
       <div class="stage-row-stage">${activeStage}</div>
-      <span class="stage-row-badge" style="background:rgba(0,0,0,.06);">${badgeLabel}</span>
-      <div class="stage-row-actions">${approveBtn}</div>
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+        <span class="stage-row-badge" style="background:rgba(0,0,0,.06);">${badgeLabel}</span>
+        ${stuckBadge}${lastSeenHtml}
+      </div>
+      <div class="stage-row-actions">${approveBtn}${ppLink}</div>
     </div>`;
   }).join("");
 }
@@ -5517,12 +5557,39 @@ async function quickEvaluate(studentId, submissionId, status) {
   const courseId = document.getElementById("botSelect")?.value || currentLessonId;
   if (!courseId || !studentId || !submissionId || !status) return;
   try {
-    const res = await fetch("/.netlify/functions/gatekeeping", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "evaluate", studentId, courseId, submissionId, status })
-    });
-    const data = await res.json();
+    let data;
+    if (String(submissionId).startsWith("pp_")) {
+      // Personal-project submission — route to personal_project API.
+      // Extract stageIndex from submissionId: pp_{courseId}_{studentId}_{stageIndex}
+      const parts      = String(submissionId).split("_");
+      const stageIndex = Number(parts[parts.length - 1]);
+      // Map gatekeeping status names to personal_project status names
+      const ppStatus = status === "approved" ? "approved"
+        : status === "rejected" ? "relocked"
+        : status === "review_required" ? "relocked"
+        : status;
+      const res = await fetch("/.netlify/functions/personal_project", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve_stage",
+          courseId,
+          studentId,            // used for auth only
+          targetStudentId: studentId,
+          stageIndex,
+          status: ppStatus
+        })
+      });
+      data = await res.json();
+    } else {
+      // Standard gatekeeping submission
+      const res = await fetch("/.netlify/functions/gatekeeping", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "evaluate", studentId, courseId, submissionId, status })
+      });
+      data = await res.json();
+    }
     if (!data.ok) throw new Error(data.error || "שגיאה בביצוע הפעולה");
     await loadStageSummary();
   } catch (e) {
