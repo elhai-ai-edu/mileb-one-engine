@@ -1945,8 +1945,8 @@ The `peerReview` feature flag (stored in Firebase `classes/{classId}/features`) 
 ```
 
 **Mode definitions:**
-- `embedded_light` — the current behavior: peer review panel appears after submission; emoji + one free-text comment field.
-- `extended_structured` — rubric-based, multi-criteria evaluation; requires `rubricId` to be set.
+- `embedded_light` — the current behavior: peer review panel appears after submission; emoji + one free-text comment field; renders `DEFAULT_RUBRIC_QUESTIONS` (3 questions).
+- `extended_structured` — rubric-based, multi-criteria evaluation; renders `EXTENDED_RUBRIC_QUESTIONS` (5 questions: clarity, depth, evidence, originality, applicability). Panel title changes to "🔬 הערכת עמיתים — מורחבת".
 - `disabled` — no peer review for this class.
 
 **Trigger definitions:**
@@ -1963,6 +1963,8 @@ The `peerReview` feature flag (stored in Firebase `classes/{classId}/features`) 
 // Falls back gracefully to legacy boolean
 ```
 
+**Cockpit UI:** `macro_cockpit.html` exposes a "📝 הערכת עמיתים" panel (`#peerReviewSettingsPanel`) with two dropdowns (`#prModeSelect`, `#prTriggerSelect`) and a save button. `savePeerReviewSettings()` writes to `classes/{classId}/features/peerReview`. Settings are loaded via `loadPeerReviewSettings()` on session open.
+
 ---
 
 ### 34.6 Bot Mode Derivation from stationRoot
@@ -1978,6 +1980,8 @@ The `peerReview` feature flag (stored in Firebase `classes/{classId}/features`) 
 | (any) + overlay `peer_review` | `open` | Reflection prompts; bot cannot give answers |
 
 **Implementation:** `stationRoot` is passed as a URL param to `chat.html` and included in every POST to `/api/chat`. In `chat.js`, it overrides the context block — it does not modify `botConfig` directly, preserving the One-Engine principle.
+
+**Auto bot-switch:** When `setLessonMode("project")` fires (triggered by `PERSONAL_PROJECT_STATION`), the runtime automatically calls `switchBot("personal_project_bot", ...)`. When any other mode is set, `setChatFrame()` restores the lesson's default `botType` from `lessonData`.
 
 ---
 

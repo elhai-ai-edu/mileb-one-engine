@@ -1445,7 +1445,7 @@
 
         <!-- ─── Peer Review Panel ─── -->
         <div class="peer-review-panel" id="peerReviewPanel">
-          <div class="peer-review-head">📊 הערכת עמיתים</div>
+          <div class="peer-review-head" id="peerReviewPanelTitle">📊 הערכת עמיתים</div>
           <!-- Split-view: my answer | peer answer -->
           <div id="peerCompareWrap" style="display:none;gap:10px;margin-bottom:14px;">
             <div style="flex:1;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:10px 12px;min-width:0;">
@@ -3478,8 +3478,13 @@
         renderSprintStepper();
       }
       // Reload chat frame so it picks up the updated stationRoot (Part 34 §34.6)
+      // When entering personal_project mode, auto-switch to personal_project_bot (Part 34 §34.6)
       const courseId = lessonData?.courseId || courseIdFromUrl;
-      if (courseId) setChatFrame(courseId, lessonData?.botType || "");
+      if (mode === "project") {
+        switchBot("personal_project_bot", "פרויקט אישי");
+      } else if (courseId) {
+        setChatFrame(courseId, lessonData?.botType || "");
+      }
     }
 
     function toggleBotFloat() {
@@ -3972,6 +3977,14 @@
       { id: "q2", text: "עד כמה הטיעון מגובה בדוגמאות?" },
       { id: "q3", text: "עד כמה ניתן לראות מאמץ אישי בתשובה?" }
     ];
+
+    const EXTENDED_RUBRIC_QUESTIONS = [
+      { id: "e1", text: "בהירות — עד כמה הרעיון הוצג בצורה ברורה ומסודרת?" },
+      { id: "e2", text: "עומק — עד כמה הניתוח מגיע לשורש הבעיה?" },
+      { id: "e3", text: "ראיות — האם הטענות מגובות בדוגמאות או בנתונים?" },
+      { id: "e4", text: "מקוריות — עד כמה ניתן לזהות חשיבה עצמאית?" },
+      { id: "e5", text: "יישומיות — עד כמה ניתן לממש את הרעיון בפועל?" }
+    ];
     const RUBRIC_LABELS = ["כלל לא", "במידה מועטה", "ברובה", "בהחלט ✓"];
 
     function renderPeerRubric(questions = DEFAULT_RUBRIC_QUESTIONS) {
@@ -4063,8 +4076,20 @@
       document.getElementById("peerCommentTa").value = "";
       const submitBtn = document.getElementById("peerSubmitBtn");
       if (submitBtn) submitBtn.style.display = "";
-      // Populate rubric + emojis
-      renderPeerRubric(DEFAULT_RUBRIC_QUESTIONS);
+      // Populate rubric — use extended criteria for extended_structured mode (Part 34 §34.5)
+      const activeSprint = findActiveSprint();
+      const prMode = resolvePeerReviewModeForActivity(activeSprint);
+      const rubricQuestions = prMode.mode === "extended_structured"
+        ? EXTENDED_RUBRIC_QUESTIONS
+        : DEFAULT_RUBRIC_QUESTIONS;
+      renderPeerRubric(rubricQuestions);
+      // Update panel title to reflect mode
+      const panelTitle = document.getElementById("peerReviewPanelTitle");
+      if (panelTitle) {
+        panelTitle.textContent = prMode.mode === "extended_structured"
+          ? "🔬 הערכת עמיתים — מורחבת"
+          : "📝 הערכת עמיתים";
+      }
       renderEmojiBank();
 
       const compareWrap  = document.getElementById("peerCompareWrap");
