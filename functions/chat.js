@@ -276,9 +276,14 @@ function analyzeMessage(message) {
 // KERNEL GUARDS
 // ─────────────────────────────────────────
 
+// Part 18 §18.3 Never-Do Guard — full pattern set from MASTER_LOGIC.md
 function detectFullSolutionRequest(message) {
   const lower = message.toLowerCase();
   return (
+    /כתוב(\ לי)?/.test(lower) ||
+    /פתור(\ לי)?/.test(lower) ||
+    /תן(\ לי)?\ תשובה(\ מלאה)?/.test(lower) ||
+    /עשה(\ זאת)?\ בשבילי/.test(lower) ||
     lower.includes("תפתור לי") ||
     lower.includes("תכתוב לי את העבודה") ||
     lower.includes("תענה במקומי") ||
@@ -287,12 +292,104 @@ function detectFullSolutionRequest(message) {
   );
 }
 
+// Part 18 §18.3 Agency Guard — semantic heuristic (length + solution markers)
 function looksLikeFullAnswer(reply) {
-  return reply.length > 1200;
+  if (reply.length > 1200) return true;
+  const solutionMarkers = ["הנה הפתרון המלא", "הפתרון הוא:", "הכתיבה המלאה:", "הנה התשובה המלאה"];
+  const lower = reply.toLowerCase();
+  return solutionMarkers.some(m => lower.includes(m));
+}
+
+// Part 18 §18.3 Language Gate — Post-model Hebrew ratio check
+function hebrewCharRatio(text) {
+  const stripped = text.replace(/\s/g, "");
+  if (stripped.length === 0) return 1;
+  const hebrewCount = (text.match(/[\u0590-\u05FF]/g) || []).length;
+  return hebrewCount / stripped.length;
+}
+
+// Part 18 §18.4 Enforcement event logger (fire-and-forget)
+function logEnforcementEvent(studentId, sessionId, botInstanceId, stage, eventData) {
+  if (!studentId || studentId === "anonymous") return;
+  getDB()
+    .ref(`enforcement_log/${studentId}`)
+    .push({
+      ...eventData,
+      timestamp:    Date.now(),
+      botInstanceID: botInstanceId || null,
+      sessionId:    sessionId || null,
+      stage:        stage || null,
+      userRole:     "student"
+    })
+    .catch(e => console.error("ENFORCEMENT LOG ERROR:", e.message));
 }
 
 const DEFAULT_PROMPT =
   "אתה עוזר לימודי סוקרטי וחם. ענה בעברית ושאל שאלות במקום לתת תשובות ישירות.";
+
+
+// ─────────────────────────────────────────
+// STUDENT MODEL (Part 33)
+// ─────────────────────────────────────────
+
+// Load skills_mastery snapshot for a student+course (fire-and-forget safe)
+async function loadStudentModel(studentId, courseId) {
+  if (!studentId || studentId === "anonymous" || !courseId) return null;
+  try {
+    const snap = await getDB()
+      .ref(`skills_mastery/${studentId}/${courseId}`)
+      .get();
+    return snap.exists() ? snap.val() : null;
+  } catch (e) {
+    console.error("STUDENT MODEL LOAD ERROR:", e.message);
+    return null;
+  }
+}
+
+// Build a Hebrew context block from the Student Model (Part 33 §33.1)
+// Injects: skill_levels, error_patterns, attempt_history, learner_population, session_count, progress_flags
+function buildStudentModelContextBlock(skillsMastery, sessionCtx) {
+  const lines = [];
+
+  if (skillsMastery && typeof skillsMastery === "object") {
+    // skill_levels — list skills at "developing" or "proven" status (cap at 5)
+    const skillSummaries = [];
+    const weakPoints = [];
+    for (const [skillId, data] of Object.entries(skillsMastery)) {
+      if (!data || typeof data !== "object") continue;
+      if (data.status && data.status !== "none") {
+        skillSummaries.push(`${skillId}: ${data.status} (${data.mastery_pct ?? 0}%)`);
+      }
+      // error_patterns — collect recent_weak_points across skills
+      if (Array.isArray(data.recent_weak_points)) {
+        weakPoints.push(...data.recent_weak_points);
+      }
+    }
+    if (skillSummaries.length > 0)
+      lines.push("רמות שליטה: " + skillSummaries.slice(0, 5).join(", "));
+
+    if (weakPoints.length > 0) {
+      const unique = [...new Set(weakPoints)].slice(0, 3);
+      lines.push("דפוסי שגיאה: " + unique.join(", "));
+    }
+  }
+
+  // learner_population and session_count live in sessions/{studentId}/{courseId}
+  if (sessionCtx?.learner_population)
+    lines.push(`אוכלוסיית לומד: ${sessionCtx.learner_population}`);
+  if (sessionCtx?.session_count)
+    lines.push(`מספר שיחות קודמות: ${sessionCtx.session_count}`);
+
+  // progress_flags — boolean milestone map
+  const flags = sessionCtx?.progress_flags;
+  if (flags && typeof flags === "object") {
+    const done = Object.entries(flags).filter(([, v]) => v === true).map(([k]) => k);
+    if (done.length > 0)
+      lines.push("אבני דרך שהושלמו: " + done.join(", "));
+  }
+
+  return lines.length ? "## מודל הלומד\n" + lines.join("\n") : "";
+}
 
 
 // ─────────────────────────────────────────
@@ -459,7 +556,10 @@ export async function handler(event) {
 
     // ─── LOAD SESSION CONTEXT ───
     const courseId   = classId;
-    const sessionCtx = await loadSessionContext(studentId, courseId);
+    const [sessionCtx, studentSkillsMastery] = await Promise.all([
+      loadSessionContext(studentId, courseId),
+      loadStudentModel(studentId, courseId)
+    ]);
 
     let contextBlock  = "";
     let savedHistory  = [];
@@ -521,6 +621,13 @@ export async function handler(event) {
       contextBlock = [contextBlock, gatekeepingBlock].filter(Boolean).join("\n\n");
     }
 
+    // ─── INJECT STUDENT MODEL CONTEXT (Part 33) ───
+    // skill_levels, error_patterns, attempt_history, learner_population, session_count, progress_flags
+    const studentModelBlock = buildStudentModelContextBlock(studentSkillsMastery, sessionCtx);
+    if (studentModelBlock) {
+      contextBlock = [contextBlock, studentModelBlock].filter(Boolean).join("\n\n");
+    }
+
     // ─── INJECT COURSE CONTEXT ───
     // Tells the bot which course the student is in (e.g. optics vs management).
     const courseConfig = config.my_courses?.[courseId];
@@ -571,6 +678,28 @@ export async function handler(event) {
           })
         };
       }
+    }
+
+    // ─── CLASSROOM MANAGER STAGE LOCK (Part 30) ───
+    // Instructor can lock student-level stage advancement via cockpit lockStudent().
+    // Reads sessions/{studentId}/{courseId}/stageLock (boolean).
+    // Blocks any message except __INIT__ when stageLock === true.
+    if (message !== "__INIT__" && sessionCtx?.stageLock === true) {
+      const stageLockReply = "שלב זה נעול כרגע ⛔ — המרצה השהה את ההתקדמות. אנא המתן לפתיחה מחדש.";
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "stage_lock_classroom",
+        principleTriggered: "No-Skip",
+        userAttempt:        message.slice(0, 80),
+        systemAction:       "blocked"
+      });
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          reply: stageLockReply,
+          botType, botName: botConfig.name, model: "stage-lock-guard", isThinking: false
+        })
+      };
     }
 
     // ─── GENDER GATE ───
@@ -651,6 +780,12 @@ export async function handler(event) {
       .slice(-14);
 
     if (effectiveNoFullSolution && detectFullSolutionRequest(message)) {
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "never_do_trigger",
+        principleTriggered: "No-Substitution",
+        userAttempt:        message.slice(0, 80),
+        systemAction:       "blocked"
+      });
       return {
         statusCode: 200,
         headers,
@@ -692,8 +827,30 @@ export async function handler(event) {
     let reply = data.choices?.[0]?.message?.content
       || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
 
-    if (effectiveNoFullSolution && looksLikeFullAnswer(reply))
+    if (effectiveNoFullSolution && looksLikeFullAnswer(reply)) {
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "agency_guard_triggered",
+        principleTriggered: "No-Substitution",
+        userAttempt:        message.slice(0, 80),
+        systemAction:       "rewritten"
+      });
       reply = "בוא נבנה את זה יחד 🙂 מהו הצעד הראשון לדעתך?";
+    }
+
+    // ─── LANGUAGE GATE (Post-model, Part 18 §18.3) ───
+    // If output has fewer than 30% Hebrew characters when Hebrew output is required,
+    // rewrite to a Hebrew fallback and log the violation.
+    if (hebrewCharRatio(reply) < 0.30 && reply.length > 50) {
+      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+        eventType:          "language_violation",
+        principleTriggered: "Language-Gate",
+        direction:          "post",
+        detected:           "low_hebrew_ratio",
+        required:           "he_standard",
+        systemAction:       "rewritten"
+      });
+      reply = "מצטער, אנסה שוב בעברית. " + reply;
+    }
 
     // ─── EXTRACT SESSION UPDATE ───
     let sessionUpdate = null;
