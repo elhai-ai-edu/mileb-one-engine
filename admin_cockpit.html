@@ -69,6 +69,7 @@
 <!-- ─── TAB NAV ─── -->
 <div class="mgmt-tabs">
   <button id="tab-btn-security" class="mgmt-tab-btn active" onclick="switchTab('security')">🔐 משתמשים ואבטחה</button>
+  <button id="tab-btn-courses"  class="mgmt-tab-btn"        onclick="switchTab('courses')">📋 קורסים</button>
   <button id="tab-btn-config"   class="mgmt-tab-btn"        onclick="switchTab('config')">⚙️ עורך Config</button>
   <button id="tab-btn-textlab"  class="mgmt-tab-btn"        onclick="switchTab('textlab')">🧪 מעבדת טקסט</button>
   <button id="tab-btn-lexicon"  class="mgmt-tab-btn"        onclick="switchTab('lexicon')">📚 לקסיקון</button>
@@ -232,6 +233,143 @@
       <div class="miled-spinner">טוען קבוצות...</div>
     </div>
     <p id="lifecycle-msg" style="font-size:12px;margin:6px 0 0;min-height:16px;"></p>
+  </div>
+
+</div>
+
+<!-- ─── COURSES TAB ─── -->
+<div id="tab-courses" style="display:none;">
+
+  <!-- Course list -->
+  <div class="panel" style="margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <h2 style="margin:0;">📋 קורסים מוגדרים</h2>
+      <button class="btn btn-green" onclick="openCourseForm(null)" style="margin-right:auto;">+ קורס חדש</button>
+      <span id="courses-save-msg" style="font-size:12px;min-height:16px;"></span>
+    </div>
+    <div id="courses-list" style="min-height:32px;">
+      <div class="miled-spinner">טוען קורסים...</div>
+    </div>
+  </div>
+
+  <!-- Add / Edit form -->
+  <div id="course-form-panel" class="panel" style="display:none;">
+    <h2 id="course-form-title">קורס חדש</h2>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מזהה קורס (courseId) <span style="color:#ef4444;">*</span></label>
+        <input id="cf-id" type="text" dir="ltr" placeholder="hebrew_advanced_optics_b"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        <span style="font-size:11px;color:#94a3b8;">אותיות קטנות + קו תחתי, ללא רווחים. לא ניתן לשינוי לאחר יצירה.</span>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם תצוגה <span style="color:#ef4444;">*</span></label>
+        <input id="cf-name" type="text" placeholder="עברית מתקדמים א׳ — אופטיקה (סמ׳ ב)"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שנה אקדמית</label>
+        <input id="cf-sem-year" type="number" min="2020" max="2040" placeholder="2025"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">סמסטר</label>
+        <select id="cf-sem-code"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="A">סמ׳ א</option>
+          <option value="B">סמ׳ ב</option>
+          <option value="Summer">קיץ</option>
+          <option value="Annual">שנתי</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">סטטוס</label>
+        <select id="cf-status"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="active">פעיל</option>
+          <option value="locked">נעול</option>
+          <option value="archived">ארכיון</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;">
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שפת הסטודנטים</label>
+        <select id="cf-language"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="ar">ערבית</option>
+          <option value="he">עברית</option>
+          <option value="ru">רוסית</option>
+          <option value="am">אמהרית</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">רמת עברית</label>
+        <select id="cf-hebrew-level"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+          <option value="he_a1_arabic">A1 — ערבית</option>
+          <option value="he_a2_arabic">A2 — ערבית</option>
+          <option value="he_b1_arabic">B1 — ערבית</option>
+          <option value="he_b1_haredi">B1 — חרדי</option>
+          <option value="he_b2_haredi">B2 — חרדי</option>
+          <option value="he_native">שפת אם</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">תבנית (templateId)</label>
+        <input id="cf-template" type="text" dir="ltr" placeholder="hebrew_advanced_problem_solving"
+          style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+      </div>
+    </div>
+
+    <!-- Projects -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:10px;">📁 פרויקטים</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">פרויקט צוות — מזהה (projectId)</label>
+          <input id="cf-team-id" type="text" dir="ltr" placeholder="proj_optics_2025b (ריק = ללא פרויקט צוות)"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">פרויקט צוות — שם תצוגה</label>
+          <input id="cf-team-title" type="text" placeholder="פרויקט צוות — ניתוח טקסט"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">פרויקט אישי — שם תצוגה</label>
+          <input id="cf-personal-title" type="text" placeholder="פרויקט גמר אישי (ריק = ללא)"
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">פרויקט אישי — URL</label>
+          <input id="cf-personal-url" type="text" dir="ltr" placeholder="/chat.html?botType=task_final_project&courseId=..."
+            style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Bots -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:13px;font-weight:700;">🤖 בוטים</span>
+        <button class="btn btn-green" onclick="addCourseBot()" style="font-size:11px;padding:4px 10px;">+ הוסף</button>
+      </div>
+      <div id="cf-bots-list"></div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-blue" onclick="saveCourse()">💾 שמור קורס</button>
+      <button class="btn btn-outline" onclick="closeCourseForm()">ביטול</button>
+      <span id="course-form-msg" style="font-size:12px;min-height:16px;"></span>
+    </div>
   </div>
 
 </div>
@@ -614,14 +752,15 @@ document.addEventListener("click", function(e) {
 
 // ─── TAB SWITCHING ───
 function switchTab(tab){
-  ["config","security","textlab","lexicon"].forEach(t => {
+  ["config","security","textlab","lexicon","courses"].forEach(t => {
     document.getElementById("tab-" + t).style.display = tab === t ? "" : "none";
     const btn = document.getElementById("tab-btn-" + t);
     if (btn) btn.classList.toggle("active", tab === t);
   });
-  if(tab === "config" && config && Object.keys(config).length) render();
+  if(tab === "config"  && config && Object.keys(config).length) render();
   if(tab === "security") { loadInstitutions(); loadAuthorizedUsers(); loadClassLifecycle(); loadClassXP(); }
   if(tab === "lexicon")  { loadLexiconWords(); }
+  if(tab === "courses")  { loadCourses(); }
 }
 
 // ─── Firebase REST helpers ───
@@ -1026,6 +1165,231 @@ async function saveConfig(){
     body:JSON.stringify(config)
   });
   alert("config נשמר בהצלחה");
+}
+
+// ─── COURSES MANAGEMENT ─────────────────────────────────────────────────────
+
+let _editingCourseId = null;   // null = new course
+let _courseBots = [];          // [{slot, botType, label}] — working copy for form
+
+const LANG_LABELS  = { ar:"ערבית", he:"עברית", ru:"רוסית", am:"אמהרית" };
+const SEM_LABELS   = { A:"סמ׳ א", B:"סמ׳ ב", Summer:"קיץ", Annual:"שנתי" };
+const STATUS_LABELS= { active:"פעיל", locked:"נעול", archived:"ארכיון" };
+const STATUS_COLORS= { active:"#16a34a", locked:"#dc2626", archived:"#94a3b8" };
+
+function semesterDisplay(semStr) {
+  if (!semStr) return "—";
+  const [yearStr, code] = semStr.split("-");
+  const year = parseInt(yearStr, 10);
+  if (!year || !code) return semStr;
+  const label = SEM_LABELS[code] || code;
+  return `${label} ${year}–${year + 1}`;
+}
+
+function loadCourses() {
+  const el = document.getElementById("courses-list");
+  if (!el) return;
+  const courses = config?.my_courses || {};
+  const entries = Object.entries(courses);
+  if (!entries.length) {
+    el.innerHTML = '<p style="font-size:13px;color:#94a3b8;">אין קורסים מוגדרים עדיין.</p>';
+    return;
+  }
+
+  // Sort: by semester desc, then name
+  entries.sort(([, a], [, b]) => {
+    const semA = a.semester || "";
+    const semB = b.semester || "";
+    if (semB !== semA) return semB.localeCompare(semA);
+    return (a.name || "").localeCompare(b.name || "");
+  });
+
+  el.innerHTML = entries.map(([id, c]) => {
+    const statusColor = STATUS_COLORS[c.status] || "#94a3b8";
+    const statusLabel = STATUS_LABELS[c.status] || c.status || "—";
+    const semLabel    = semesterDisplay(c.semester);
+    const langLabel   = LANG_LABELS[c.language] || c.language || "";
+    const hasTeam     = !!c.teamProject?.projectId;
+    const hasPersonal = !!c.personalProject?.title;
+    const botCount    = Object.keys(c.bots || {}).length;
+
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                  background:#f8fafc;border-radius:10px;margin-bottom:8px;
+                  border:1.5px solid #e2e8f0;flex-wrap:wrap;">
+        <div style="flex:1;min-width:180px;">
+          <div style="font-weight:700;font-size:13px;color:#1e1b4b;">${c.name || id}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;direction:ltr;">${id}</div>
+        </div>
+        <span style="font-size:11px;background:#eff6ff;color:#1d4ed8;padding:3px 9px;border-radius:20px;white-space:nowrap;">${semLabel}</span>
+        <span style="font-size:11px;color:${statusColor};font-weight:700;">${statusLabel}</span>
+        <span style="font-size:11px;color:#64748b;">${langLabel}</span>
+        <span style="font-size:11px;color:#94a3b8;">${botCount} בוטים${hasTeam ? " · 👥 צוות" : ""}${hasPersonal ? " · 📝 אישי" : ""}</span>
+        <button onclick="openCourseForm('${id}')"
+          style="background:#eff6ff;color:#4338ca;border:1.5px solid #c7d2fe;border-radius:7px;
+                 padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">✏️ ערוך</button>
+        <button onclick="deleteCourse('${id}')"
+          style="background:none;border:1px solid #fca5a5;border-radius:7px;color:#ef4444;
+                 cursor:pointer;font-size:12px;padding:5px 10px;white-space:nowrap;">🗑 מחק</button>
+      </div>`;
+  }).join("");
+}
+
+function openCourseForm(courseId) {
+  _editingCourseId = courseId;
+  const isNew = !courseId;
+  const c     = isNew ? {} : (config?.my_courses?.[courseId] || {});
+
+  document.getElementById("course-form-title").textContent = isNew ? "+ קורס חדש" : `✏️ עריכת קורס: ${c.name || courseId}`;
+
+  // Basic fields
+  const idEl = document.getElementById("cf-id");
+  idEl.value    = isNew ? "" : courseId;
+  idEl.readOnly = !isNew;
+  idEl.style.background = isNew ? "" : "#f1f5f9";
+
+  document.getElementById("cf-name").value    = c.name    || "";
+  document.getElementById("cf-status").value  = c.status  || "active";
+  document.getElementById("cf-language").value= c.language|| "ar";
+  document.getElementById("cf-hebrew-level").value = c.hebrew_level || "he_a2_arabic";
+  document.getElementById("cf-template").value= c.templateId || "";
+
+  // Semester: split "2025-B" → year=2025, code=B
+  const [semYear, semCode] = (c.semester || "").split("-");
+  document.getElementById("cf-sem-year").value = semYear || new Date().getFullYear() - 1;
+  document.getElementById("cf-sem-code").value = semCode || "B";
+
+  // Projects
+  document.getElementById("cf-team-id").value      = c.teamProject?.projectId || "";
+  document.getElementById("cf-team-title").value   = c.teamProject?.title     || "";
+  document.getElementById("cf-personal-title").value = c.personalProject?.title || "";
+  document.getElementById("cf-personal-url").value   = c.personalProject?.url   || "";
+
+  // Bots
+  _courseBots = Object.entries(c.bots || {}).map(([slot, b]) => ({ slot, botType: b.botType || "", label: b.label || "" }));
+  renderCourseBots();
+
+  document.getElementById("course-form-msg").textContent = "";
+  document.getElementById("course-form-panel").style.display = "";
+  document.getElementById("course-form-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function closeCourseForm() {
+  document.getElementById("course-form-panel").style.display = "none";
+  _editingCourseId = null;
+  _courseBots = [];
+}
+
+function renderCourseBots() {
+  const el = document.getElementById("cf-bots-list");
+  if (!el) return;
+  if (!_courseBots.length) {
+    el.innerHTML = '<p style="font-size:12px;color:#94a3b8;margin:0;">אין בוטים מוגדרים.</p>';
+    return;
+  }
+  el.innerHTML = _courseBots.map((b, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px;">
+      <input value="${escAttr(b.slot)}" placeholder="שם slot (main, final_project...)"
+        dir="ltr" onchange="_courseBots[${i}].slot=this.value"
+        style="padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+      <input value="${escAttr(b.botType)}" placeholder="botType"
+        dir="ltr" onchange="_courseBots[${i}].botType=this.value"
+        style="padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+      <input value="${escAttr(b.label)}" placeholder="תווית (🤖 בוט הקורס)"
+        onchange="_courseBots[${i}].label=this.value"
+        style="padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+      <button onclick="_courseBots.splice(${i},1);renderCourseBots()"
+        style="background:none;border:1px solid #fca5a5;border-radius:7px;color:#ef4444;
+               cursor:pointer;font-size:12px;padding:5px 8px;">✕</button>
+    </div>`).join("");
+}
+
+function addCourseBot() {
+  _courseBots.push({ slot: "", botType: "", label: "" });
+  renderCourseBots();
+}
+
+function escAttr(s) { return String(s || "").replace(/"/g, "&quot;"); }
+
+async function saveCourse() {
+  const msgEl = document.getElementById("course-form-msg");
+  msgEl.style.color = "#6366f1";
+  msgEl.textContent = "שומר...";
+
+  const id = document.getElementById("cf-id").value.trim();
+  if (!id) { msgEl.style.color="#ef4444"; msgEl.textContent="נדרש מזהה קורס"; return; }
+  if (!/^[a-z0-9_]+$/.test(id)) { msgEl.style.color="#ef4444"; msgEl.textContent="מזהה: אותיות קטנות, ספרות וקו-תחתי בלבד"; return; }
+
+  const name = document.getElementById("cf-name").value.trim();
+  if (!name) { msgEl.style.color="#ef4444"; msgEl.textContent="נדרש שם תצוגה"; return; }
+
+  const semYear = document.getElementById("cf-sem-year").value.trim();
+  const semCode = document.getElementById("cf-sem-code").value;
+  const semester = semCode === "Annual" ? `${semYear}-Annual` : `${semYear}-${semCode}`;
+
+  // Build bots object
+  const bots = {};
+  for (const b of _courseBots) {
+    if (b.slot && b.botType) bots[b.slot] = { botType: b.botType, label: b.label || b.botType };
+  }
+
+  // Build course entry (preserve existing fields not in the form)
+  const existing = config?.my_courses?.[id] || {};
+  const teamId    = document.getElementById("cf-team-id").value.trim();
+  const teamTitle = document.getElementById("cf-team-title").value.trim();
+  const perTitle  = document.getElementById("cf-personal-title").value.trim();
+  const perUrl    = document.getElementById("cf-personal-url").value.trim();
+
+  const course = {
+    ...existing,
+    name,
+    semester,
+    status:         document.getElementById("cf-status").value,
+    language:       document.getElementById("cf-language").value,
+    hebrew_level:   document.getElementById("cf-hebrew-level").value,
+    templateId:     document.getElementById("cf-template").value.trim() || undefined,
+    bots:           Object.keys(bots).length ? bots : (existing.bots || {}),
+    teamProject:    teamId ? { projectId: teamId, title: teamTitle || name } : undefined,
+    personalProject: perTitle ? { title: perTitle, url: perUrl || `/chat.html?botType=task_final_project&courseId=${id}` } : undefined
+  };
+
+  // Remove undefined keys
+  Object.keys(course).forEach(k => course[k] === undefined && delete course[k]);
+
+  if (!config.my_courses) config.my_courses = {};
+  config.my_courses[id] = course;
+
+  try {
+    await fetch("/api/saveConfig", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config)
+    });
+    msgEl.style.color = "#16a34a";
+    msgEl.textContent = "✅ נשמר בהצלחה";
+    loadCourses();
+    setTimeout(closeCourseForm, 1200);
+  } catch(e) {
+    msgEl.style.color = "#ef4444";
+    msgEl.textContent = "שגיאה: " + e.message;
+  }
+}
+
+async function deleteCourse(id) {
+  if (!confirm(`למחוק את הקורס "${config?.my_courses?.[id]?.name || id}"?\nהפעולה אינה הפיכה.`)) return;
+  delete config.my_courses[id];
+  try {
+    await fetch("/api/saveConfig", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(config)
+    });
+    const msg = document.getElementById("courses-save-msg");
+    if (msg) { msg.style.color="#16a34a"; msg.textContent="✅ קורס נמחק"; setTimeout(()=>msg.textContent="",2000); }
+    loadCourses();
+  } catch(e) {
+    alert("שגיאה במחיקה: " + e.message);
+  }
 }
 
 // ─── Class Lifecycle Management ───
