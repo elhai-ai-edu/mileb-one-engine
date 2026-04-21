@@ -1686,7 +1686,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 
       <!-- Layer 2: Peer Review Panel (revealed inline after submission) -->
       <div class="peer-review-panel" id="peerReviewPanel" style="display:none">
-        <div class="sub-panel-head">📊 הערכת עמיתים — ניתוח טקסט</div>
+        <div class="sub-panel-head" id="peerReviewPanelTitle">📊 הערכת עמיתים</div>
         <div class="sub-hint">קראו את התשובה הבאה והעריכו אותה לפי הקריטריונים</div>
 
         <div class="peer-answer-card">
@@ -2123,6 +2123,8 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
   <div class="sep"></div>
   <button class="demo-btn red"    onclick="toggleRecall()">🚨 Recall</button>
   <button class="demo-btn amber"  onclick="toggleBroadcast()">📡 Broadcast</button>
+  <div class="sep"></div>
+  <button class="demo-btn slate" id="demoPrModeBtn" onclick="toggleDemoPeerReviewMode()">📊 PR: בסיסי</button>
 </div>
 
 <script>
@@ -2138,13 +2140,18 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
 ══════════════════════════════════════════════════════ */
 const MiledState = {
   current: 'waiting',
+  // ── Semantic sub-state (mirrors lesson_view Part 34) ──
+  sub:     'empty',   // "waiting"|"empty"|"doing"|"submitted"|"peer_review"|"completed"
+  overlay:  null,     // null|"peer_review"
 
   config: {
     waiting: {
       screen: 'waiting',
+      sub: 'waiting',
     },
     lesson_empty: {
       screen: 'lesson', mode: 'lesson',
+      sub: 'empty',
       activityEmpty: true,  activityCard: false,
       submission: false, peerInsight: false, peerReview: false,
       bubbleText: 'שאל שאלה חופשית',
@@ -2154,6 +2161,7 @@ const MiledState = {
     },
     lesson_activity: {
       screen: 'lesson', mode: 'lesson',
+      sub: 'doing',
       activityEmpty: false, activityCard: true,
       submission: true, peerInsight: true, peerReview: false,
       bubbleText: 'צריך עזרה בניתוח?',
@@ -2164,22 +2172,19 @@ const MiledState = {
         document.querySelector('.submission-panel')?.classList.remove('submitted');
         const wta = document.getElementById('writeTa');
         if (wta) wta.value = '';
-        // Hide peer review, reset rubric + emoji
-        const pr = document.getElementById('peerReviewPanel');
-        if (pr) pr.style.display = 'none';
-        document.querySelectorAll('.rubric-scale-pill').forEach(b => b.classList.remove('sel'));
-        document.querySelectorAll('.emoji-item').forEach(b => b.classList.remove('sel'));
-        const pft = document.getElementById('peerFeedbackTa');
-        if (pft) pft.value = '';
+        // Hide peer review — rubric/emoji/comment are reset inside showPeerReviewPanel() when next opened
+        closePeerReviewPanel();
         loadCourseBotChat();
       },
     },
     project: {
       screen: 'lesson', mode: 'project',
+      sub: 'doing',
       onEnter() { loadProjectBotChat(); },
     },
     group: {
       screen: 'lesson', mode: 'group',
+      sub: 'doing',
       onEnter() {
         // Reset veto + workspace state
         document.querySelector('.group-workspace').style.display = '';
@@ -2198,6 +2203,7 @@ const MiledState = {
     },
     team_project: {
       screen: 'team_project',
+      sub: 'doing',
       onEnter() { replyIdx = 0; setTimeout(() => showDigestModal(), 350); },
     },
   },
@@ -2207,6 +2213,10 @@ const MiledState = {
     if (!s) return;
     const prev = this.current;
     this.current = name;
+
+    // ── Sync semantic sub-state (teacher-privileged reset for demo) ──
+    if (s.sub) { this.sub = s.sub; }
+    this.overlay = null;
 
     // ── Screen ──
     document.getElementById('waitingScreen').classList.toggle('active',     s.screen === 'waiting');
@@ -2254,6 +2264,102 @@ const MiledState = {
     return ['lesson_empty','lesson_activity'].includes(this.current);
   },
 };
+
+/* ════════════════ Sub-state transition guardrail (Part 34 §34.5) ════════════ */
+const STUDENT_FORWARD_TRANSITIONS = {
+  waiting:     ['empty'],
+  empty:       ['doing'],
+  doing:       ['submitted'],
+  submitted:   ['peer_review', 'completed'],
+  peer_review: ['completed'],
+  completed:   []
+};
+
+function canTransition(currentSub, nextSub, actor) {
+  // actor='teacher' is demo-only — production uses server-side role verification (see chat.js verifyFacultyId)
+  if (actor === 'teacher') return true;
+  return (STUDENT_FORWARD_TRANSITIONS[currentSub] || []).includes(nextSub);
+}
+
+/* ════════════════ Peer Review Mode (mirrors lesson_view resolvePeerReviewMode) ═ */
+// Demo config — toggled via demo bar button
+let _demoPeerReviewMode = { mode: 'embedded_light', triggerBy: 'system' };
+
+function resolvePeerReviewMode() { return _demoPeerReviewMode; }
+
+function toggleDemoPeerReviewMode() {
+  _demoPeerReviewMode = _demoPeerReviewMode.mode === 'embedded_light'
+    ? { mode: 'extended_structured', triggerBy: 'system' }
+    : { mode: 'embedded_light',      triggerBy: 'system' };
+  const btn = document.getElementById('demoPrModeBtn');
+  if (btn) btn.textContent = '📊 PR: ' + (_demoPeerReviewMode.mode === 'extended_structured' ? 'מורחב' : 'בסיסי');
+}
+
+/* ════════════════ Rubric Data + Dynamic Renderer (mirrors lesson_view §34.5) ══ */
+const DEFAULT_RUBRIC_QUESTIONS = [
+  { id: 'q1', text: 'עד כמה הרעיון הוצג בבהירות?' },
+  { id: 'q2', text: 'עד כמה הטיעון מגובה בדוגמאות?' },
+  { id: 'q3', text: 'עד כמה ניתן לראות מאמץ אישי בתשובה?' }
+];
+const EXTENDED_RUBRIC_QUESTIONS = [
+  { id: 'e1', text: 'בהירות — עד כמה הרעיון הוצג בצורה ברורה ומסודרת?' },
+  { id: 'e2', text: 'עומק — עד כמה הניתוח מגיע לשורש הבעיה?' },
+  { id: 'e3', text: 'ראיות — האם הטענות מגובות בדוגמאות או בנתונים?' },
+  { id: 'e4', text: 'מקוריות — עד כמה ניתן לזהות חשיבה עצמאית?' },
+  { id: 'e5', text: 'יישומיות — עד כמה ניתן לממש את הרעיון בפועל?' }
+];
+const RUBRIC_LABELS = ['כלל לא', 'במידה מועטה', 'ברובה', 'בהחלט ✓'];
+
+function renderPeerRubric(questions) {
+  const container = document.querySelector('.peer-rubric');
+  if (!container) return;
+  container.innerHTML = questions.map(q =>
+    `<div class="rubric-item">
+       <div class="rubric-q">${q.text}</div>
+       <div class="rubric-scale">
+         ${RUBRIC_LABELS.map((label, i) =>
+           `<button class="rubric-scale-pill" data-group="${q.id}" data-level="${i + 1}" onclick="selectRubric(this)">${label}</button>`
+         ).join('')}
+       </div>
+     </div>`
+  ).join('');
+}
+
+/* ════════════════ Peer Review Panel — open / close ═════════════════════════ */
+function showPeerReviewPanel() {
+  const panel = document.getElementById('peerReviewPanel');
+  if (!panel) return;
+
+  // Determine rubric to render based on mode
+  const mode = resolvePeerReviewMode().mode;
+  const questions = mode === 'extended_structured' ? EXTENDED_RUBRIC_QUESTIONS : DEFAULT_RUBRIC_QUESTIONS;
+  renderPeerRubric(questions);
+
+  // Update panel title
+  const title = document.getElementById('peerReviewPanelTitle');
+  if (title) {
+    title.textContent = mode === 'extended_structured'
+      ? '🔬 הערכת עמיתים — מורחבת'
+      : '📝 הערכת עמיתים';
+  }
+
+  // Reset emoji + comment
+  document.querySelectorAll('.emoji-item').forEach(b => b.classList.remove('sel'));
+  const pft = document.getElementById('peerFeedbackTa');
+  if (pft) pft.value = '';
+
+  panel.style.display = 'block';
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+
+  // Sync MiledState.overlay
+  MiledState.overlay = 'peer_review';
+}
+
+function closePeerReviewPanel() {
+  const panel = document.getElementById('peerReviewPanel');
+  if (panel) panel.style.display = 'none';
+  MiledState.overlay = null;
+}
 
 /* ════════════════ Demo Controls ════════════════ */
 function showWaiting()        { MiledState.go('waiting'); }
@@ -2592,9 +2698,10 @@ function sendSubmit() {
   btn.textContent = '✅ הוגש!'; btn.style.background = '#16a34a';
   setTimeout(() => {
     document.querySelector('.submission-panel').classList.add('submitted');
-    const pr = document.getElementById('peerReviewPanel');
-    pr.style.display = 'block';
-    pr.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Sync MiledState.sub (student transition: doing → submitted)
+    if (canTransition(MiledState.sub, 'submitted', 'student')) MiledState.sub = 'submitted';
+    // Show peer review panel with correct mode + rubric
+    showPeerReviewPanel();
   }, 1400);
 }
 
@@ -2620,8 +2727,10 @@ function selectEmoji(btn) {
 }
 
 function sendPeerReview() {
-  // Require at least one rubric criterion answered
-  const answered = ['q1','q2','q3'].filter(g => document.querySelector(`.rubric-scale-pill.sel[data-group="${g}"]`));
+  // Require at least one rubric criterion answered — single DOM pass (O(n))
+  const answered = [...new Set(
+    Array.from(document.querySelectorAll('.rubric-scale-pill.sel')).map(b => b.dataset.group)
+  )];
   if (answered.length === 0) {
     document.querySelector('.peer-rubric').style.outline = '2px solid #ef4444';
     setTimeout(() => document.querySelector('.peer-rubric').style.outline = '', 1600);
@@ -2634,9 +2743,12 @@ function sendPeerReview() {
       <div style="font-size:15px;font-weight:800;color:#16a34a;">המשוב נשלח!</div>
       <div style="font-size:13px;color:var(--muted);">תודה — המשוב שלך עוזר לעמית/ה להשתפר.</div>
     </div>`;
+  // Sync MiledState after peer review submit (Part 34 §34.4)
+  if (canTransition(MiledState.sub, 'completed', 'student')) MiledState.sub = 'completed';
+  MiledState.overlay = null;
 }
 function skipPeerReview() {
-  document.getElementById('peerReviewPanel').style.display = 'none';
+  closePeerReviewPanel();
 }
 
 /* ════════════════ Layer 3 — Group Mode ════════════════ */
