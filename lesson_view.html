@@ -3256,6 +3256,17 @@
           // Students list changed while speaker stage is open — refresh peer bubbles
           renderSpeakerFocusBanner(lessonData.speakerFocus);
         }
+        // Teacher-triggered peer review broadcast (Part 34 §34.5)
+        // Cockpit writes sessions/{sessionId}/peer_review_broadcast_at = Date.now()
+        // Only fire once per broadcast (compare against last seen timestamp)
+        if (role === "student" && live.peer_review_broadcast_at) {
+          const prMode = resolvePeerReviewMode();
+          if (prMode.triggerBy === "teacher" && prMode.mode !== "disabled" &&
+              live.peer_review_broadcast_at !== _lastPeerReviewBroadcastAt) {
+            _lastPeerReviewBroadcastAt = live.peer_review_broadcast_at;
+            if (MiledState.sub === "submitted") showPeerReviewPanel();
+          }
+        }
       });
     }
 
@@ -3269,9 +3280,11 @@
     // ═══════════════════════════════════════════════
     // Peer Review Ready — Firebase listener
     // Path: submissions/{classId}/{activityId}/{studentId}/peer_review_ready
+    // Also: sessions/{sessionId}/peer_review_broadcast_at for teacher-triggered mode
     // Re-registers whenever the active task changes.
     // ═══════════════════════════════════════════════
     let _peerReviewReadyRef = null;
+    let _lastPeerReviewBroadcastAt = null;  // tracks last seen teacher-broadcast timestamp
 
     function startPeerReviewListener(activityId) {
       stopPeerReviewListener();
@@ -3391,6 +3404,25 @@
     // Call Teacher
     // ═══════════════════════════════════════════════
     let _callTeacherCooldown = false;
+
+    // ═══════════════════════════════════════════════
+    // Session Continuity Token helper (Part 34 §34.8)
+    // Writes miled_sub + lastStage to sessions/{studentId}/{courseId} so that
+    // chat.js injects the sprint state into the bot context on next message.
+    // Fire-and-forget — errors are non-fatal.
+    // ═══════════════════════════════════════════════
+    function writeMiledSubToSession(sub, sprintId) {
+      const db = getRealtimeDb();
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (!db || !studentId || !courseId || studentId === "anonymous") return;
+      const update = {
+        miled_sub: sub,
+        miled_sub_updated_at: Date.now()
+      };
+      if (sprintId) update.lastStage = `sprint_${String(sprintId)}_${sub}`;
+      db.ref(`sessions/${studentId}/${courseId}`).update(update)
+        .catch(e => console.warn("[MilEd] writeMiledSubToSession failed:", e.message));
+    }
 
     async function callTeacher() {
       if (_callTeacherCooldown) return;
@@ -4144,6 +4176,8 @@
       // Sync MiledState after peer review submit (Part 34 §34.4)
       if (canTransition(MiledState.sub, "completed", "student")) MiledState.sub = "completed";
       MiledState.overlay = null;
+      // Session Continuity Token: mirror completed state to Firebase (Part 34 §34.8)
+      writeMiledSubToSession("completed", null);
     }
 
     // ─── Student Avatar ────────────────────────────────────────────────────
@@ -4211,6 +4245,9 @@
         appendStudentBubble(text, "submission");
         // Sync MiledState.sub — enforce No-Skip (Part 34 §34.3)
         if (canTransition(MiledState.sub, "submitted", "student")) MiledState.sub = "submitted";
+        // Session Continuity Token: mirror MiledState.sub to Firebase so chat.js injects
+        // miled_sub + lastStage into the next bot context (Part 8 / Part 34 §34.8)
+        writeMiledSubToSession("submitted", activeSprint?.id || null);
         document.getElementById("subSuccessBanner").style.display = "flex";
         document.getElementById("writePanel")?.classList.add("submitted");
         loadPeerInsight();

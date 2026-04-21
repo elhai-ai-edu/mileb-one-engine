@@ -2091,10 +2091,16 @@ body { background: var(--bg) !important; }
         </select>
       </div>
       <div id="prStatusMsg" style="font-size:12px;min-height:18px;"></div>
-      <button onclick="savePeerReviewSettings()"
-        style="padding:8px 18px;background:linear-gradient(135deg,#6366f1,#4338ca);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;align-self:flex-start;">
-        💾 שמור הגדרות הערכת עמיתים
-      </button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button onclick="savePeerReviewSettings()"
+          style="padding:8px 18px;background:linear-gradient(135deg,#6366f1,#4338ca);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          💾 שמור הגדרות הערכת עמיתים
+        </button>
+        <button id="prBroadcastBtn" onclick="broadcastPeerReview()"
+          style="padding:8px 18px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">
+          🔔 הפעל הערכת עמיתים עכשיו
+        </button>
+      </div>
     </div></div>
 
 
@@ -6516,6 +6522,35 @@ async function savePeerReviewSettings() {
     setTimeout(() => { if (statusEl) statusEl.textContent = ""; }, 3000);
   } catch(e) {
     if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = `שגיאה: ${e.message}`; }
+  }
+}
+
+// Teacher broadcasts peer review to all submitted students (triggerBy: "teacher")
+// Writes sessions/{sessionId}/peer_review_broadcast_at; lesson_view session listener reacts.
+async function broadcastPeerReview() {
+  const db = getRealtimeDb();
+  const statusEl = document.getElementById("prStatusMsg");
+  if (!sessionId) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "פתח שיעור תחילה"; }
+    return;
+  }
+  if (!db) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = "Firebase לא זמין"; }
+    return;
+  }
+  const btn = document.getElementById("prBroadcastBtn");
+  if (btn) btn.disabled = true;
+  if (statusEl) { statusEl.style.color = "#6366f1"; statusEl.textContent = "משדר הערכת עמיתים לסטודנטים..."; }
+  try {
+    await db.ref(`sessions/${sessionId}/peer_review_broadcast_at`).set(Date.now());
+    if (statusEl) { statusEl.style.color = "#16a34a"; statusEl.textContent = "✅ הערכת עמיתים הופעלה לכל הסטודנטים שהגישו"; }
+    setTimeout(() => {
+      if (statusEl) statusEl.textContent = "";
+      if (btn) btn.disabled = false;
+    }, 5000);
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = "#dc2626"; statusEl.textContent = `שגיאה: ${e.message}`; }
+    if (btn) btn.disabled = false;
   }
 }
 

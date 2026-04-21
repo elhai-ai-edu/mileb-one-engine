@@ -1999,19 +1999,40 @@ The Activity Tracking System (`journal_api.js`, activity_bank) feeds into the ru
 - `writing`, `reflection`, `discussion` → `embedded_light`
 - `physical`, `plenary` → `disabled`
 
+**Teacher-trigger broadcast:** When `triggerBy === "teacher"`, the Cockpit's "🔔 הפעל הערכת עמיתים עכשיו" button (`broadcastPeerReview()`) writes `sessions/{sessionId}/peer_review_broadcast_at = Date.now()`. The lesson_view session listener detects the new timestamp and calls `showPeerReviewPanel()` only for students who are already in `MiledState.sub === "submitted"`.
+
 ---
 
-### 34.8 Relationship to Other Parts
+### 34.8 Session Continuity Token — MiledState.sub Mirror
+
+When key runtime transitions occur, `lesson_view.html` writes `miled_sub` + `lastStage` to `sessions/{studentId}/{courseId}` via the Firebase RTDB. This allows `chat.js` to inject the student's sprint state into the bot context on the next message.
+
+**`writeMiledSubToSession(sub, sprintId)` — helper:**
+- Called after `submitStudentWork()` → writes `miled_sub: "submitted"`, `lastStage: "sprint_{sprintId}_submitted"`
+- Called after `submitPeerReview()` → writes `miled_sub: "completed"`, no lastStage override
+- Fire-and-forget; errors are non-fatal
+
+**`chat.js` context injection:**
+```
+מצב ספרינט: submitted|completed
+```
+Injected only when `sessionCtx.miled_sub` is present. Allows the bot to respond appropriately (e.g., offer reflection prompts after submission, acknowledge completion after peer review).
+
+**Relationship to Part 8:** The Session Continuity Token (`<!-- META: ... -->`) is emitted by the **bot** at the end of each response. `miled_sub` is written by the **runtime** (lesson_view). They are complementary channels: bot-side tracks stage progression; runtime-side tracks submission lifecycle.
+
+---
+
+### 34.9 Relationship to Other Parts
 
 | Part | Relationship |
 |------|-------------|
 | Part 2 — Kernel Principles | `canTransition()` enforces the No-Skip principle (§2.2) |
-| Part 8 — Session Continuity | `MiledState` is not persisted to Firebase; session continuity token stores `sub` only via `lastStage` |
+| Part 8 — Session Continuity | `writeMiledSubToSession()` mirrors sprint state to Firebase so the next bot context includes `miled_sub` and `lastStage` |
 | Part 31 — Bot Architect Engine | Bot Architect is unaffected; architects produce `config.json` entries, not MiledState |
 | Part 32 — Architect Studio | Unaffected |
 | Part 33 — Student Model Schema | `MiledState.activityId` connects to `skills_mastery` writes in `chat.js` |
 | `lesson_view.html` | Primary implementor of MiledState; holds the live object |
-| `functions/chat.js` | Receives `stationRoot`; injects derived botMode into context block |
+| `functions/chat.js` | Receives `stationRoot` and `miled_sub`; injects both into context block |
 | `config.json` | `PERSONAL_PROJECT_STATION` bot type registered in universal bots |
 
 ---

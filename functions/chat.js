@@ -470,6 +470,10 @@ export async function handler(event) {
       if (sessionCtx.gender)      parts.push(`פנייה: ${sessionCtx.gender}`);
       if (sessionCtx.lastStage)   parts.push(`שלב אחרון: ${sessionCtx.lastStage}`);
       if (sessionCtx.nextStep)    parts.push(`הצעד הבא: ${sessionCtx.nextStep}`);
+      // ─── RESTORE MILED_SUB (Part 34 §34.8) ───
+      // Written by lesson_view.html when student submits work or completes peer review.
+      // Lets the bot adapt its response to the student's current sprint state.
+      if (sessionCtx.miled_sub)   parts.push(`מצב ספרינט: ${sessionCtx.miled_sub}`);
 
       // ─── RESTORE SOFT CONTEXT (process bots via %%SESSION_UPDATE%%) ───
       // tone and emotionalTrajectory may be written directly to the session node
