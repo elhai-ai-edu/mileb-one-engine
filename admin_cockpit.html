@@ -144,13 +144,7 @@
           <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">קורס (courseId)</label>
           <select id="new-auth-course"
             style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-            <option value="">ללא</option>
-            <option value="hebrew_advanced_optics">עברית אופטומטריה (ב)</option>
-            <option value="hebrew_advanced_optics_a">עברית אופטומטריה (א)</option>
-            <option value="hebrew_advanced_management">עברית ניהול (ב)</option>
-            <option value="hebrew_advanced_management_a">עברית ניהול (א)</option>
-            <option value="gerontology_mechina">גרונטולוגיה (ב)</option>
-            <option value="gerontology_mechina_a">גרונטולוגיה (א)</option>
+            <option value="">טוען קורסים...</option>
           </select>
         </div>
         <div>
@@ -197,13 +191,7 @@
           <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">קורס (courseId)</label>
           <select id="batch-course"
             style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
-            <option value="">ללא שיוך קורס</option>
-            <option value="hebrew_advanced_optics">עברית מתקדמים — אופטומטריה (ב)</option>
-            <option value="hebrew_advanced_optics_a">עברית מתקדמים — אופטומטריה (א)</option>
-            <option value="hebrew_advanced_management">עברית מתקדמים — ניהול (ב)</option>
-            <option value="hebrew_advanced_management_a">עברית מתקדמים — ניהול (א)</option>
-            <option value="gerontology_mechina">מבוא לגרונטולוגיה (ב)</option>
-            <option value="gerontology_mechina_a">מבוא לגרונטולוגיה (א)</option>
+            <option value="">טוען קורסים...</option>
           </select>
         </div>
         <div>
@@ -681,6 +669,21 @@ async function init(){
   } catch {}
   const res = await fetch("/config.json");
   config = await res.json();
+  populateCourseSelects();
+}
+
+// ─── Populate courseId dropdowns from live config ───
+function populateCourseSelects() {
+  const courses = config?.my_courses || {};
+  const opts = '<option value="">ללא שיוך קורס</option>' +
+    Object.entries(courses)
+      .sort(([, a], [, b]) => (b.semester || "").localeCompare(a.semester || ""))
+      .map(([id, c]) => `<option value="${id}">${c.name || id}</option>`)
+      .join("");
+  ["batch-course", "new-auth-course"].forEach(selId => {
+    const el = document.getElementById(selId);
+    if (el) el.innerHTML = opts;
+  });
 }
 
 init();
