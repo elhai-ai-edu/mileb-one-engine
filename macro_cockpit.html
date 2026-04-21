@@ -1782,6 +1782,47 @@ body { background: var(--bg) !important; }
         <div id="macro-lifecycle-msg" style="font-size:12px;min-height:16px;"></div>
       </div>
       </div></div>
+      <!-- ─── Projects ─── -->
+      <div class="mc-section" style="margin-top:14px;">
+      <div class="mc-section-head">📁 פרויקטים<span class="mc-sub">הגדרת פרויקט צוות ופרויקט גמר אישי לקורס זה</span></div>
+      <div class="mc-section-body">
+        <div style="display:grid;gap:10px;">
+          <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px;">
+            <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:8px;">👥 פרויקט צוות מתמשך</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">מזהה פרויקט (projectId)</label>
+                <input id="macro-team-proj-id" type="text" dir="ltr" placeholder="proj_optics_2025b (ריק = ללא)"
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם תצוגה</label>
+                <input id="macro-team-proj-title" type="text" placeholder="פרויקט צוות — ניתוח טקסט"
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+            </div>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;">
+            <div style="font-size:12px;font-weight:700;color:#1d4ed8;margin-bottom:8px;">📝 פרויקט גמר אישי</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">שם תצוגה</label>
+                <input id="macro-personal-proj-title" type="text" placeholder="פרויקט גמר אישי (ריק = ללא)"
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:#64748b;display:block;margin-bottom:3px;">URL</label>
+                <input id="macro-personal-proj-url" type="text" dir="ltr" placeholder="/chat.html?botType=task_final_project&courseId=..."
+                  style="width:100%;padding:7px 9px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:12px;box-sizing:border-box;">
+              </div>
+            </div>
+          </div>
+          <button onclick="macroSaveProjects()"
+            style="width:100%;padding:9px;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;font-size:13px;font-weight:600;">שמור פרויקטים</button>
+          <div id="macro-projects-msg" style="font-size:12px;min-height:16px;"></div>
+        </div>
+      </div></div>
+
       <div class="phase-step-nav" style="display:flex;justify-content:flex-start;margin-top:12px;">
         <button class="btn btn-outline" onclick="switchWizardStep(4)" style="font-size:13px;">&#x2190; יחידות הקורס</button>
       </div>
@@ -4137,6 +4178,58 @@ async function loadMacroLifecycle(courseId) {
     if (snap?.retentionDate) document.getElementById("macro-retention-date").value = snap.retentionDate;
   } catch (error) {
     console.error("Macro Cockpit Error:", error);
+  }
+}
+
+function macroLoadProjectsForm() {
+  if (!macroCourseId || !CONFIG?.my_courses?.[macroCourseId]) return;
+  const c = CONFIG.my_courses[macroCourseId];
+  document.getElementById("macro-team-proj-id").value      = c.teamProject?.projectId || "";
+  document.getElementById("macro-team-proj-title").value   = c.teamProject?.title     || "";
+  document.getElementById("macro-personal-proj-title").value = c.personalProject?.title || "";
+  document.getElementById("macro-personal-proj-url").value   = c.personalProject?.url   || "";
+}
+
+async function macroSaveProjects() {
+  const msgEl = document.getElementById("macro-projects-msg");
+  if (!macroCourseId) {
+    msgEl.style.color = "#ef4444"; msgEl.textContent = "לא צוין קורס."; return;
+  }
+  msgEl.style.color = "#6366f1"; msgEl.textContent = "שומר...";
+
+  const teamId    = document.getElementById("macro-team-proj-id").value.trim();
+  const teamTitle = document.getElementById("macro-team-proj-title").value.trim();
+  const perTitle  = document.getElementById("macro-personal-proj-title").value.trim();
+  const perUrl    = document.getElementById("macro-personal-proj-url").value.trim();
+
+  if (!CONFIG.my_courses) CONFIG.my_courses = {};
+  if (!CONFIG.my_courses[macroCourseId]) CONFIG.my_courses[macroCourseId] = {};
+  const course = CONFIG.my_courses[macroCourseId];
+
+  if (teamId) {
+    course.teamProject = { projectId: teamId, title: teamTitle || course.name || macroCourseId };
+  } else {
+    delete course.teamProject;
+  }
+  if (perTitle) {
+    course.personalProject = {
+      title: perTitle,
+      url: perUrl || `/chat.html?botType=task_final_project&courseId=${macroCourseId}`
+    };
+  } else {
+    delete course.personalProject;
+  }
+
+  try {
+    await fetch("/api/saveConfig", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(CONFIG)
+    });
+    msgEl.style.color = "#16a34a"; msgEl.textContent = "✅ פרויקטים נשמרו.";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
+  } catch(e) {
+    msgEl.style.color = "#ef4444"; msgEl.textContent = e.message;
   }
 }
 
@@ -6606,6 +6699,7 @@ function switchWizardStep(step) {
     const panel = document.getElementById('ws-panel-' + i);
     if (panel) panel.style.display = i === step ? '' : 'none';
   }
+  if (step === 5) macroLoadProjectsForm();
 }
 
 function markWizardStepDone(step) {
