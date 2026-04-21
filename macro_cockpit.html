@@ -2178,8 +2178,8 @@ body { background: var(--bg) !important; }
        ══════════════════════════════════════════════════════════════ -->
   <div id="phase-projects" style="display:none;">
 
-    <!-- Gate: no course selected -->
-    <div id="projects-gate" style="display:none;text-align:center;padding:60px 20px;">
+    <!-- Gate: no course selected (visible by default; loadProjectsTab hides it when a course is ready) -->
+    <div id="projects-gate" style="text-align:center;padding:60px 20px;">
       <div style="font-size:40px;margin-bottom:12px;">🔒</div>
       <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:8px;">יש לבחור קורס פעיל תחילה</div>
       <div style="font-size:13px;color:#64748b;margin-bottom:16px;">עבור לשלב עיצוב הקורס ובחר קורס</div>
@@ -4663,58 +4663,63 @@ function loadProjectsTab() {
   const gate    = document.getElementById('projects-gate');
   const content = document.getElementById('projects-content');
   if (!macroCourseId || !CONFIG?.my_courses?.[macroCourseId]) {
-    if (gate)    gate.style.display = '';
+    if (gate)    gate.style.display = 'block';
     if (content) content.style.display = 'none';
     return;
   }
   if (gate)    gate.style.display = 'none';
-  if (content) content.style.display = '';
+  if (content) content.style.display = 'block';
 
-  const c  = CONFIG.my_courses[macroCourseId];
-  const tp = c.teamProject     || {};
-  const pp = c.personalProject || {};
+  try {
+    const c  = CONFIG.my_courses[macroCourseId];
+    const tp = c.teamProject     || {};
+    const pp = c.personalProject || {};
 
-  // ── Team fields ──
-  document.getElementById('proj-team-title').value    = tp.title            || '';
-  document.getElementById('proj-team-id').value       = tp.projectId        || '';
-  document.getElementById('proj-team-grade').value    = tp.gradeWeight != null ? tp.gradeWeight : '';
-  document.getElementById('proj-team-deadline').value = tp.finalDeadline    || '';
-  document.getElementById('proj-team-goal').value     = tp.goal             || '';
-  document.getElementById('proj-team-sp').value       = tp.systemPromptOverride || '';
+    // ── Team fields ──
+    document.getElementById('proj-team-title').value    = tp.title            || '';
+    document.getElementById('proj-team-id').value       = tp.projectId        || '';
+    document.getElementById('proj-team-grade').value    = tp.gradeWeight != null ? tp.gradeWeight : '';
+    document.getElementById('proj-team-deadline').value = tp.finalDeadline    || '';
+    document.getElementById('proj-team-goal').value     = tp.goal             || '';
+    document.getElementById('proj-team-sp').value       = tp.systemPromptOverride || '';
 
-  // ── Personal fields ──
-  document.getElementById('proj-pers-title').value    = pp.title            || '';
-  document.getElementById('proj-pers-url').value      = pp.url              || '';
-  document.getElementById('proj-pers-grade').value    = pp.gradeWeight != null ? pp.gradeWeight : '';
-  document.getElementById('proj-pers-deadline').value = pp.finalDeadline    || '';
-  document.getElementById('proj-pers-goal').value     = pp.goal             || '';
-  document.getElementById('proj-pers-sp').value       = pp.systemPromptOverride || '';
+    // ── Personal fields ──
+    document.getElementById('proj-pers-title').value    = pp.title            || '';
+    document.getElementById('proj-pers-url').value      = pp.url              || '';
+    document.getElementById('proj-pers-grade').value    = pp.gradeWeight != null ? pp.gradeWeight : '';
+    document.getElementById('proj-pers-deadline').value = pp.finalDeadline    || '';
+    document.getElementById('proj-pers-goal').value     = pp.goal             || '';
+    document.getElementById('proj-pers-sp').value       = pp.systemPromptOverride || '';
 
-  // ── Bot selects ──
-  _populateProjBotSelect('proj-team-bot', tp.botType || 'team_project');
-  _populateProjBotSelect('proj-pers-bot', pp.botType || 'task_final_project');
+    // ── Bot selects ──
+    _populateProjBotSelect('proj-team-bot', tp.botType || 'team_project');
+    _populateProjBotSelect('proj-pers-bot', pp.botType || 'task_final_project');
 
-  // ── Skills ──
-  _buildProjSkillsChecklist('team',     tp.linkedSkills || []);
-  _buildProjSkillsChecklist('personal', pp.linkedSkills || []);
+    // ── Skills ──
+    _buildProjSkillsChecklist('team',     tp.linkedSkills || []);
+    _buildProjSkillsChecklist('personal', pp.linkedSkills || []);
 
-  // ── Stages ──
-  _projTeamStages     = (tp.stages || []).map(s => ({ ...s }));
-  _projPersonalStages = (pp.stages || []).map(s => ({ ...s }));
-  _renderProjStages('team');
-  _renderProjStages('personal');
+    // ── Stages ──
+    _projTeamStages     = (tp.stages || []).map(s => ({ ...s }));
+    _projPersonalStages = (pp.stages || []).map(s => ({ ...s }));
+    _renderProjStages('team');
+    _renderProjStages('personal');
 
-  // restore active sub-tab
-  switchProjectTab(_currentProjectTab);
+    // restore active sub-tab
+    switchProjectTab(_currentProjectTab);
 
-  // update phase badge
-  const badge = document.getElementById('projects-phase-status-badge');
-  if (badge) {
-    const hasTeam = !!(tp.title || tp.projectId);
-    const hasPers = !!(pp.title);
-    badge.textContent = hasTeam && hasPers ? '✓ מוגדר' : hasTeam || hasPers ? 'חלקי' : 'הגדר פרויקטים';
-    badge.style.background = hasTeam && hasPers ? '#d1fae5' : '';
-    badge.style.color      = hasTeam && hasPers ? '#065f46' : '';
+    // update phase badge
+    const badge = document.getElementById('projects-phase-status-badge');
+    if (badge) {
+      const hasTeam = !!(tp.title || tp.projectId);
+      const hasPers = !!(pp.title);
+      badge.textContent = hasTeam && hasPers ? '✓ מוגדר' : hasTeam || hasPers ? 'חלקי' : 'הגדר פרויקטים';
+      badge.style.background = hasTeam && hasPers ? '#d1fae5' : '';
+      badge.style.color      = hasTeam && hasPers ? '#065f46' : '';
+    }
+  } catch (err) {
+    console.error('[Projects tab] loadProjectsTab error:', err);
+    if (content) content.innerHTML = `<div style="padding:32px;color:#ef4444;font-size:13px;">שגיאה בטעינת הפרויקטים: ${err.message}</div>`;
   }
 }
 
