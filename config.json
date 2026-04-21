@@ -440,7 +440,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח טקסט",
-        "url": "/project_workspace.html?courseId=hebrew_advanced_optics"
+        "url": "/personal_project.html?courseId=hebrew_advanced_optics"
       },
       "sprintDefinitions": {
         "unit_01": {
@@ -495,7 +495,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח טקסט",
-        "url": "/project_workspace.html?courseId=hebrew_advanced_optics_a"
+        "url": "/personal_project.html?courseId=hebrew_advanced_optics_a"
       }
     },
 
@@ -516,7 +516,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח מקרה",
-        "url": "/project_workspace.html?courseId=hebrew_advanced_management"
+        "url": "/personal_project.html?courseId=hebrew_advanced_management"
       }
     },
 
@@ -537,7 +537,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — ניתוח מקרה",
-        "url": "/project_workspace.html?courseId=hebrew_advanced_management_a"
+        "url": "/personal_project.html?courseId=hebrew_advanced_management_a"
       }
     },
 
@@ -555,7 +555,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — גרונטולוגיה",
-        "url": "/project_workspace.html?courseId=gerontology_mechina"
+        "url": "/personal_project.html?courseId=gerontology_mechina"
       }
     },
 
@@ -573,7 +573,7 @@
       },
       "personalProject": {
         "title": "פרויקט גמר אישי — גרונטולוגיה",
-        "url": "/project_workspace.html?courseId=gerontology_mechina_a"
+        "url": "/personal_project.html?courseId=gerontology_mechina_a"
       }
     },
 

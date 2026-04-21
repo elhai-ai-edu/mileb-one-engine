@@ -2293,7 +2293,7 @@ body { background: var(--bg) !important; }
               </div>
               <div>
                 <label style="font-size:11px;color:#64748b;font-weight:600;display:block;margin-bottom:4px;">URL (ריק = נוצר אוטומטית)</label>
-                <input id="proj-pers-url" type="text" dir="ltr" placeholder="/project_workspace.html?courseId=..."
+                <input id="proj-pers-url" type="text" dir="ltr" placeholder="/personal_project.html?courseId=..."
                   style="width:100%;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;box-sizing:border-box;">
               </div>
               <div>
@@ -4729,7 +4729,7 @@ async function saveProjectsTab() {
   _syncProjStagesToMem('personal');
 
   const course = CONFIG.my_courses[macroCourseId];
-  const autoUrl = `/project_workspace.html?courseId=${macroCourseId}`;
+  const autoUrl = `/personal_project.html?courseId=${macroCourseId}`;
 
   course.teamProject = {
     ...(course.teamProject || {}),

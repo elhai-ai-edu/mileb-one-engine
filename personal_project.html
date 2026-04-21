@@ -366,11 +366,44 @@
       from { opacity: 0; transform: scale(.92); }
       to   { opacity: 1; transform: scale(1); }
     }
+
+    /* ── Attachment list ── */
+    .pp-attach-list { margin: 8px 0 4px; display: flex; flex-direction: column; gap: 6px; }
+    .pp-attach-item {
+      display: flex; align-items: center; gap: 8px;
+      background: #f8f7ff; border: 1.5px solid #c4b5fd;
+      border-radius: 8px; padding: 6px 10px; font-size: 12px; color: #4c1d95;
+    }
+    .pp-attach-icon { font-size: 15px; flex-shrink: 0; }
+    .pp-attach-name { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+    .pp-attach-size { color: #7c3aed; font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+    .pp-attach-download {
+      color: #6366f1; text-decoration: none; font-size: 11px; font-weight: 700;
+      padding: 2px 7px; border-radius: 5px; background: #ede9fe; white-space: nowrap; flex-shrink: 0;
+    }
+    .pp-attach-download:hover { background: #c4b5fd; }
+    .pp-attach-remove {
+      background: none; border: none; cursor: pointer; color: #dc2626;
+      font-size: 14px; padding: 0 2px; line-height: 1; flex-shrink: 0;
+    }
+    .pp-attach-remove:hover { color: #991b1b; }
+    /* Recording status bar */
+    .pp-recording-bar {
+      display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+      background: #fff1f2; border: 1.5px solid #fca5a5; border-radius: 8px;
+      margin-top: 8px; font-size: 12px; color: #dc2626; font-weight: 700;
+    }
+    .pp-recording-dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #dc2626;
+      animation: pp-blink 1s ease-in-out infinite; flex-shrink: 0;
+    }
+    @keyframes pp-blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
   </style>
 
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
   <script src="/firebase-init.js"></script>
   <script src="/auth-guard.js?v=20260409a"></script>
 </head>
@@ -466,9 +499,19 @@
           <div class="pp-save-indicator" id="ppSaveIndicator"></div>
 
           <div class="pp-action-row">
-            <button class="pp-btn pp-btn-ghost" onclick="handleFileUpload()" title="העלאת קובץ">📎 העלו קובץ</button>
-            <button class="pp-btn pp-btn-record" onclick="handleRecord()" title="הקלטה">🎤 הקליטו</button>
+            <button class="pp-btn pp-btn-ghost" id="ppFileBtn" onclick="handleFileUpload()" title="העלאת קובץ">📎 העלו קובץ</button>
+            <button class="pp-btn pp-btn-record" id="ppRecordBtn" onclick="handleRecord()" title="הקלטה">🎤 הקליטו</button>
             <button class="pp-btn pp-btn-submit" id="ppSubmitBtn" onclick="submitStage()">📋 הגש פעילות</button>
+          </div>
+
+          <!-- Hidden file picker -->
+          <input type="file" id="ppFileInput" style="display:none;" accept="*/*" onchange="onFilePicked(this)">
+          <!-- In-progress attachment list (editable) and recording status -->
+          <div id="ppAttachList" class="pp-attach-list"></div>
+          <div id="ppRecordingBar" class="pp-recording-bar" style="display:none;">
+            <div class="pp-recording-dot"></div>
+            <span id="ppRecordingTime">מקליט...</span>
+            <button class="pp-btn pp-btn-ghost" style="padding:4px 10px;font-size:11px;margin-right:auto;" onclick="stopRecord()">⏹ עצור</button>
           </div>
         </div>
       </div>
@@ -595,6 +638,11 @@
     let _announcementRef = null;
     let _qaRef           = null;
     let _stagesRef       = null;
+    let _attachments     = [];  // [{kind,name,size,contentType,storageRef,downloadUrl,uploadedAt,durationSec?}]
+    let _mediaRecorder   = null;
+    let _recordingChunks = [];
+    let _recordTimer     = null;
+    let _recordSeconds   = 0;
 
     // ── Firebase ────────────────────────────────────────────────────────────
     function getDb() {
@@ -602,6 +650,13 @@
       if (!firebase.apps.length) firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
       if (typeof firebase.database !== "function") return null;
       return firebase.database();
+    }
+
+    function getStorage() {
+      if (!window.firebase || !window.MILED_FIREBASE_CONFIG) return null;
+      if (!firebase.apps.length) firebase.initializeApp(window.MILED_FIREBASE_CONFIG);
+      if (typeof firebase.storage !== "function") return null;
+      return firebase.storage();
     }
 
     // ── Boot ────────────────────────────────────────────────────────────────
@@ -621,6 +676,7 @@
         _currentStage  = Number(data.student?.currentStage ?? 0);
         _stageAnswers  = data.student?.stages || {};
         _draft         = data.student?.draft  || "";
+        _attachments   = Array.isArray(data.student?.draftAttachments) ? [...data.student.draftAttachments] : [];
 
         // Show status pill
         const pill = document.getElementById("ppStatusPill");
@@ -833,7 +889,7 @@
       const isLocked  = status === "pending_review" || status === "approved" || status === "completed";
 
       if (currTa) {
-        currTa.value    = isLocked ? (stageData.text || "") : (_draft || "");
+        currTa.value    = isLocked ? (stageData.submission?.text || stageData.text || "") : (_draft || "");
         currTa.readOnly = isLocked;
         currTa.style.background = isLocked ? "#f1f5f9" : "";
         currTa.style.color      = isLocked ? "#475569"  : "";
@@ -844,6 +900,20 @@
       if (submitBtn) {
         submitBtn.disabled = isLocked;
         submitBtn.textContent = isLocked ? "📋 הוגש" : "📋 הגש פעילות";
+      }
+
+      // Lock/unlock file-upload and recording controls
+      const fileBtn   = document.getElementById("ppFileBtn");
+      const recordBtn = document.getElementById("ppRecordBtn");
+      if (fileBtn)   { fileBtn.disabled   = isLocked; fileBtn.style.opacity   = isLocked ? ".45" : ""; }
+      if (recordBtn) { recordBtn.disabled = isLocked; recordBtn.style.opacity = isLocked ? ".45" : ""; }
+
+      // Show read-only submitted attachments when locked, or editable draft attachments when not
+      if (isLocked) {
+        const sub = stageData.submission || {};
+        renderAttachments([...(sub.files || []), ...(sub.audios || [])], true);
+      } else {
+        renderAttachments(_attachments, false);
       }
     }
 
@@ -875,7 +945,7 @@
         const res  = await fetch("/.netlify/functions/personal_project", {
           method:  "POST",
           headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ action: "save_draft", courseId, studentId, text })
+          body:    JSON.stringify({ action: "save_draft", courseId, studentId, text, draftAttachments: _attachments })
         });
         const data = await res.json();
         const ind  = document.getElementById("ppSaveIndicator");
@@ -902,12 +972,24 @@
       const btn = document.getElementById("ppSubmitBtn");
       const text = String(ta?.value || "").trim();
 
-      if (!text) { ta?.focus(); return; }
+      if (!text && !_attachments.length) {
+        ta?.focus();
+        alert("יש לכתוב תשובה, להעלות קובץ, או להקליט אודיו לפני ההגשה.");
+        return;
+      }
 
       const stageLabel = PP_STAGES[_currentStage]?.title || `שלב ${_currentStage + 1}`;
       if (!confirm(`האם להגיש את שלב ${_currentStage + 1} — ${stageLabel}?\n\nלאחר ההגשה לא ניתן לערוך עד שהמרצה יאשר.`)) return;
 
       if (btn) btn.disabled = true;
+
+      // Determine kind
+      const hasFiles  = _attachments.some(a => a.kind === "file");
+      const hasAudios = _attachments.some(a => a.kind === "audio");
+      const kind = text && (hasFiles || hasAudios) ? "mixed"
+                 : hasAudios && !hasFiles && !text  ? "audio"
+                 : hasFiles  && !text               ? "file"
+                 : "text";
 
       try {
         const res  = await fetch("/.netlify/functions/personal_project", {
@@ -918,20 +1000,28 @@
             courseId, studentId, studentName,
             stageIndex:  _currentStage,
             stageLabel,
-            text
+            submission: {
+              text,
+              files:  _attachments.filter(a => a.kind === "file"),
+              audios: _attachments.filter(a => a.kind === "audio"),
+              kind
+            }
           })
         });
         const data = await res.json();
         if (!data.ok) throw new Error(data.error);
 
         // Update local state — stage is now pending_review; do NOT advance yet
+        const submittedAttachments = [..._attachments];
         _stageAnswers[_currentStage] = {
           text,
-          status:      data.status || "pending_review",
+          submission: { text, files: _attachments.filter(a => a.kind === "file"), audios: _attachments.filter(a => a.kind === "audio"), kind },
+          status:       data.status || "pending_review",
           submissionId: data.submissionId || null,
-          submittedAt: Date.now()
+          submittedAt:  Date.now()
         };
-        _draft = "";
+        _draft       = "";
+        _attachments = [];
 
         renderAll();
 
@@ -1058,6 +1148,11 @@
           if (entry && old.status !== entry.status) {
             _stageAnswers[i] = { ...(old || {}), ...entry };
             changed = true;
+            // Pre-populate draft with previous submission text when teacher rejects,
+            // so the student sees their previous answer and can immediately edit it.
+            if (entry.status === "relocked" && i === _currentStage && !_draft) {
+              _draft = entry.submission?.text || entry.text || "";
+            }
           }
         });
         if (changed) {
@@ -1083,9 +1178,175 @@
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    // ── Stub actions ──────────────────────────────────────────────────────────
-    function handleFileUpload() { alert("העלאת קובץ — תכונה בקרוב!"); }
-    function handleRecord()     { alert("הקלטה — תכונה בקרוב!"); }
+    // ── Attachment rendering ──────────────────────────────────────────────────
+    function renderAttachments(items, isLocked) {
+      const list = document.getElementById("ppAttachList");
+      if (!list) return;
+      if (!items || !items.length) { list.innerHTML = ""; return; }
+
+      list.innerHTML = items.map((a, idx) => {
+        const icon   = a.kind === "audio" ? "🎤" : "📎";
+        const sizeKb = a.size ? `${(a.size / 1024).toFixed(0)} KB` : "";
+        const dur    = a.durationSec
+          ? ` · ${Math.floor(a.durationSec / 60)}:${String(a.durationSec % 60).padStart(2, "0")}`
+          : "";
+        const meta   = [sizeKb, dur.trim()].filter(Boolean).join(" · ");
+        const dl     = a.downloadUrl
+          ? `<a href="${escHtml(a.downloadUrl)}" target="_blank" rel="noopener" class="pp-attach-download">⬇ הורד</a>`
+          : "";
+        const rm     = !isLocked
+          ? `<button class="pp-attach-remove" onclick="removeAttachment(${idx})" title="הסר">✕</button>`
+          : "";
+        return `<div class="pp-attach-item">
+          <span class="pp-attach-icon">${icon}</span>
+          <span class="pp-attach-name">${escHtml(a.name)}</span>
+          ${meta ? `<span class="pp-attach-size">${escHtml(meta)}</span>` : ""}
+          ${dl}${rm}
+        </div>`;
+      }).join("");
+    }
+
+    function removeAttachment(idx) {
+      _attachments.splice(idx, 1);
+      renderAttachments(_attachments, false);
+      // Save updated metadata to draft
+      const ta = document.getElementById("ppCurrTa");
+      saveDraft(ta?.value || "");
+    }
+
+    // ── File upload ───────────────────────────────────────────────────────────
+    function handleFileUpload() {
+      const input = document.getElementById("ppFileInput");
+      if (input) input.click();
+    }
+
+    async function onFilePicked(input) {
+      const file = input?.files?.[0];
+      if (!file) return;
+      input.value = "";  // reset so same file can be picked again
+
+      const MAX_BYTES = 10 * 1024 * 1024;  // 10 MB
+      if (file.size > MAX_BYTES) {
+        alert(`הקובץ גדול מ-10 MB. אנא בחר/י קובץ קטן יותר.`);
+        return;
+      }
+
+      const ind = document.getElementById("ppSaveIndicator");
+      if (ind) { ind.textContent = "מעלה קובץ..."; ind.className = "pp-save-indicator saving"; }
+
+      try {
+        const storage = getStorage();
+        const safeName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const path = `pp_attachments/${courseId}/${studentId}/${_currentStage}/${safeName}`;
+        let downloadUrl = "";
+        if (storage) {
+          const ref = storage.ref(path);
+          await ref.put(file);
+          downloadUrl = await ref.getDownloadURL();
+        }
+
+        _attachments.push({
+          kind:        "file",
+          name:        file.name,
+          size:        file.size,
+          contentType: file.type || "application/octet-stream",
+          storageRef:  path,
+          downloadUrl,
+          uploadedAt:  Date.now()
+        });
+        renderAttachments(_attachments, false);
+        if (ind) { ind.textContent = "קובץ הועלה"; ind.className = "pp-save-indicator saved"; }
+        setTimeout(() => { if (ind) { ind.textContent = ""; ind.className = "pp-save-indicator"; } }, 2500);
+        const ta = document.getElementById("ppCurrTa");
+        saveDraft(ta?.value || "");
+      } catch(e) {
+        alert(`שגיאה בהעלאת הקובץ: ${e.message}`);
+        if (ind) { ind.textContent = ""; ind.className = "pp-save-indicator"; }
+      }
+    }
+
+    // ── Audio recording ───────────────────────────────────────────────────────
+    async function handleRecord() {
+      if (_mediaRecorder?.state === "recording") { stopRecord(); return; }
+
+      try {
+        const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "audio/ogg";
+        _mediaRecorder   = new MediaRecorder(stream, { mimeType });
+        _recordingChunks = [];
+        _recordSeconds   = 0;
+
+        _mediaRecorder.ondataavailable = e => { if (e.data.size) _recordingChunks.push(e.data); };
+        _mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          clearInterval(_recordTimer);
+          document.getElementById("ppRecordingBar").style.display = "none";
+          const btn = document.getElementById("ppRecordBtn");
+          if (btn) { btn.textContent = "🎤 הקליטו"; btn.disabled = false; }
+          _saveRecording(mimeType);
+        };
+
+        _mediaRecorder.start();
+        const bar = document.getElementById("ppRecordingBar");
+        if (bar) bar.style.display = "flex";
+        const btn = document.getElementById("ppRecordBtn");
+        if (btn) btn.textContent = "⏹ עצור";
+
+        _recordTimer = setInterval(() => {
+          _recordSeconds++;
+          const m = Math.floor(_recordSeconds / 60).toString().padStart(2, "0");
+          const s = (_recordSeconds % 60).toString().padStart(2, "0");
+          const el = document.getElementById("ppRecordingTime");
+          if (el) el.textContent = `מקליט ${m}:${s}`;
+        }, 1000);
+      } catch(e) {
+        alert(`לא ניתן לגשת למיקרופון: ${e.message}`);
+      }
+    }
+
+    function stopRecord() {
+      if (_mediaRecorder?.state === "recording") _mediaRecorder.stop();
+    }
+
+    async function _saveRecording(mimeType) {
+      const blob = new Blob(_recordingChunks, { type: mimeType });
+      const ext  = mimeType.includes("webm") ? "webm" : "ogg";
+      const timeStr = new Date().toLocaleTimeString("he-IL").replace(/:/g, "_");
+      const name = `הקלטה_${timeStr}.${ext}`;
+      const path = `pp_attachments/${courseId}/${studentId}/${_currentStage}/${Date.now()}_audio.${ext}`;
+
+      const ind = document.getElementById("ppSaveIndicator");
+      if (ind) { ind.textContent = "שומר הקלטה..."; ind.className = "pp-save-indicator saving"; }
+
+      try {
+        const storage = getStorage();
+        let downloadUrl = "";
+        if (storage) {
+          const ref = storage.ref(path);
+          await ref.put(blob, { contentType: mimeType });
+          downloadUrl = await ref.getDownloadURL();
+        }
+
+        _attachments.push({
+          kind:        "audio",
+          name,
+          size:        blob.size,
+          contentType: mimeType,
+          storageRef:  path,
+          downloadUrl,
+          durationSec: _recordSeconds,
+          uploadedAt:  Date.now()
+        });
+        renderAttachments(_attachments, false);
+        if (ind) { ind.textContent = "הקלטה נשמרה"; ind.className = "pp-save-indicator saved"; }
+        setTimeout(() => { if (ind) { ind.textContent = ""; ind.className = "pp-save-indicator"; } }, 2500);
+        const ta = document.getElementById("ppCurrTa");
+        saveDraft(ta?.value || "");
+      } catch(e) {
+        alert(`שגיאה בשמירת ההקלטה: ${e.message}`);
+        if (ind) { ind.textContent = ""; ind.className = "pp-save-indicator"; }
+      }
+    }
 
     // ── Exit ─────────────────────────────────────────────────────────────────
     function exitProject() {

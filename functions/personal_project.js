@@ -114,30 +114,64 @@ export async function handler(event) {
 
   // ── save_draft ────────────────────────────────────────────────────────────
   // Autosaves the current textarea content without advancing the stage.
+  // Also persists attachment metadata (storageRef + downloadUrl) so the draft
+  // can be restored on next visit without re-uploading.
   if (action === "save_draft") {
-    const text = String(body.text || "");
-    const now  = Date.now();
-    await studentRef.update({ draft: text, draftSavedAt: now });
+    const text             = String(body.text || "");
+    const rawAttachments   = Array.isArray(body.draftAttachments) ? body.draftAttachments : [];
+    const draftAttachments = rawAttachments.slice(0, 20).map(a => ({
+      kind:        String(a.kind        || "file").slice(0, 10),
+      name:        String(a.name        || "").slice(0, 200),
+      size:        Number(a.size        || 0),
+      contentType: String(a.contentType || "").slice(0, 100),
+      storageRef:  String(a.storageRef  || "").slice(0, 500),
+      downloadUrl: String(a.downloadUrl || "").slice(0, 1000),
+      uploadedAt:  Number(a.uploadedAt  || 0),
+      ...(a.durationSec ? { durationSec: Number(a.durationSec) } : {})
+    }));
+    const now    = Date.now();
+    const update = { draft: text, draftSavedAt: now };
+    if (draftAttachments.length) update.draftAttachments = draftAttachments;
+    await studentRef.update(update);
     return ok({ ok: true, draftSavedAt: now });
   }
 
   // ── submit_stage ──────────────────────────────────────────────────────────
-  // Saves the student's answer for a stage and marks it pending_review.
+  // Saves the student's submission for a stage and marks it pending_review.
+  // Accepts the canonical submission object {text, files, audios, kind} OR
+  // the legacy body.text field (backward compatible with older clients).
   // Does NOT auto-advance currentStage; advancement happens on approve_stage.
   if (action === "submit_stage") {
-    const text       = String(body.text || "").trim();
     const stageIndex = Number(body.stageIndex);
     const stageLabel = String(body.stageLabel || `שלב ${stageIndex + 1}`).slice(0, 80);
 
-    if (!text) return err("text required");
     if (isNaN(stageIndex) || stageIndex < 0 || stageIndex > MAX_STAGE_INDEX)
       return err(`invalid stageIndex (must be 0–${MAX_STAGE_INDEX})`);
+
+    // Build canonical submission object
+    let submission;
+    if (body.submission && typeof body.submission === "object") {
+      submission = {
+        text:   String(body.submission.text   || "").trim(),
+        files:  Array.isArray(body.submission.files)  ? body.submission.files.slice(0, 20)  : [],
+        audios: Array.isArray(body.submission.audios) ? body.submission.audios.slice(0, 10) : [],
+        kind:   String(body.submission.kind   || "text").slice(0, 10)
+      };
+    } else {
+      // Legacy: body.text only
+      const legacyText = String(body.text || "").trim();
+      submission = { text: legacyText, files: [], audios: [], kind: "text" };
+    }
+
+    if (!submission.text && !submission.files.length && !submission.audios.length)
+      return err("submission must contain text, a file, or an audio recording");
 
     const now          = Date.now();
     const submissionId = ppSubmissionId(courseId, studentId, stageIndex);
 
     const stageEntry = {
-      text,
+      text:         submission.text || "",  // kept for backward compat with micro_cockpit preview
+      submission,                           // canonical payload
       status:       "pending_review",
       stageId:      `pp_stage_${stageIndex}`,
       stageLabel,
@@ -146,7 +180,8 @@ export async function handler(event) {
     };
 
     await studentRef.child(`stages/${stageIndex}`).set(stageEntry);
-    await studentRef.update({ draft: "", draftSavedAt: now, lastSeen: now });
+    // Clear draft text and attachment metadata after successful submit
+    await studentRef.update({ draft: "", draftSavedAt: now, draftAttachments: null, lastSeen: now });
 
     // Sync to course_progress on submission — pass studentId correctly
     await mirrorToCourseProgress(
