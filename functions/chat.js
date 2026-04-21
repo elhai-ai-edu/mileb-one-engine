@@ -329,6 +329,154 @@ const DEFAULT_PROMPT =
 
 
 // ─────────────────────────────────────────
+// PART 17 §17.5 — TWO-STAGE AWARENESS MODEL
+// ─────────────────────────────────────────
+
+/**
+ * Infer the current CONTEXT_STAGE from available session signals.
+ *
+ * CONTEXT_STAGE is dynamic — set by the bot at runtime from student behaviour.
+ * Values: initial / understanding / attempting / struggling / ready / reflecting
+ *
+ * Signal priority (highest first):
+ *  1. emotionalTrajectory from soft context — "frustrated" → struggling
+ *  2. progress_flags — completions present → ready / reflecting
+ *  3. miled_sub state — "submitted" / "completed" → reflecting
+ *  4. session history depth → rough proxy for engagement stage
+ *  5. session_count — cross-session experience
+ */
+function inferContextStage(sessionCtx, historyLength) {
+  if (!sessionCtx) return "initial";
+
+  const trajectory = sessionCtx.emotionalTrajectory ||
+                     sessionCtx.tokenMetadata?.emotionalTrajectory || "";
+  if (trajectory === "frustrated" || trajectory === "struggling") return "struggling";
+
+  const miledSub = sessionCtx.miled_sub || "";
+  if (miledSub === "completed") return "reflecting";
+  if (miledSub === "submitted") return "ready";
+
+  const flags = sessionCtx.progress_flags;
+  const completedCount = flags && typeof flags === "object"
+    ? Object.values(flags).filter(v => v === true).length
+    : 0;
+  if (completedCount >= 3) return "reflecting";
+  if (completedCount >= 1) return "ready";
+
+  // Use in-session history depth as a proxy for engagement stage
+  if (historyLength >= 10) return "attempting";
+  if (historyLength >= 4)  return "understanding";
+
+  const sessionCount = sessionCtx.session_count || 0;
+  if (sessionCount >= 3) return "understanding";
+
+  return "initial";
+}
+
+/**
+ * Build the Two-Stage Awareness context block (Part 17 §17.5).
+ *
+ * Injected only when at least one stage dimension is known.
+ * Teaching Stage (T1_TOPIC_STAGE) is structural — declared by the instructor.
+ * Learning Stage (CONTEXT_STAGE) is dynamic — inferred at runtime.
+ *
+ * The block instructs the bot:
+ *  - Apply phase enforcement based on Teaching Stage (locked)
+ *  - Modulate pacing/tone based on Learning Stage (adaptive)
+ *  - NEVER change evaluation gate policy due to Learning Stage alone
+ */
+function buildTwoStageBlock(t1TopicStage, contextStage) {
+  if (!t1TopicStage && !contextStage) return "";
+
+  const lines = ["## מודל שני-השלבים (Part 17 §17.5)"];
+
+  if (t1TopicStage)
+    lines.push(`שלב הוראה (T1_TOPIC_STAGE): ${t1TopicStage} — מבני, נקבע על-ידי המרצה, נעול לאורך הסשן.`);
+
+  if (contextStage) {
+    const stageDescriptions = {
+      initial:      "התחלה — הלומד טרם עיבד את החומר.",
+      understanding:"הבנה — הלומד בונה מודל מנטלי ראשוני.",
+      attempting:   "ניסיון — הלומד מנסה ליישם.",
+      struggling:   "קושי — הלומד מתקשה; הכוון אמפתי לפני לחץ קוגניטיבי.",
+      ready:        "מוכנות — הלומד מוכן למעבר שלב.",
+      reflecting:   "רפלקציה — הלומד מסכם ומשייך."
+    };
+    const desc = stageDescriptions[contextStage] || contextStage;
+    lines.push(`שלב למידה (CONTEXT_STAGE): ${contextStage} — ${desc}`);
+  }
+
+  if (t1TopicStage && contextStage) {
+    const isStruggling = contextStage === "struggling";
+    const isEvalPhase  = t1TopicStage === "evaluation" || t1TopicStage === "diagnostic";
+    if (isEvalPhase && isStruggling) {
+      lines.push("הנחיה: שלב הוראה = הערכה + שלב למידה = קושי. רכך קצב, הגבר תמיכה — אל תשנה את מדיניות שער ההערכה.");
+    }
+  }
+
+  return lines.join("\n");
+}
+
+
+// ─────────────────────────────────────────
+// PART 28 — OPAL POPULATION ROUTING
+// ─────────────────────────────────────────
+
+/**
+ * OPAL (Online Pedagogical Adaptive Library) track routing.
+ *
+ * learner_population values → track assignment:
+ *   "immigrant_m1" / "immigrant_m2" / "immigrant_m3" → Immigrant Track
+ *   "haredi_h1"    / "haredi_h2"    / "haredi_h3"    → Haredi Track
+ *   "general" or unknown → General Track (no special OPAL tools)
+ *
+ * Immigrant Track tools (Tiers 1–6, M-track):
+ *   Word-in-Context, Register Ladder, Course Glossary, Connector Hunt,
+ *   Register Upgrader (immigrant variant), Loanword Bridge (general),
+ *   Source Analyzer, Source Synthesizer, Citation Coach
+ *
+ * Haredi Track tools (Tiers 1–6, H-track):
+ *   Style Bridge, Sentence Splitter, Loanword Bridge (Talmudic),
+ *   Register Upgrader (Haredi variant), Voice Identifier, Logic Judge
+ *
+ * The block instructs the LLM *which* OPAL tools are available —
+ * it does NOT invoke them; the bot decides when to use them based on context.
+ */
+function buildOpalTrackBlock(learnerPopulation) {
+  if (!learnerPopulation || learnerPopulation === "general") return "";
+
+  const isImmigrant = learnerPopulation.startsWith("immigrant_");
+  const isHaredi    = learnerPopulation.startsWith("haredi_");
+
+  if (!isImmigrant && !isHaredi) return "";
+
+  if (isImmigrant) {
+    return `## מסלול OPAL — עולים (${learnerPopulation})
+כלים פדגוגיים זמינים עבור לומד זה (מסלול עולים):
+- Word-in-Context: מילה + הגדרה + 3 משפטים + תיקון 2 שגיאות נפוצות.
+- Register Ladder: אותו רעיון ב-4 רמות: שפה יומיומית → פורמלית → אקדמית → מחקרית.
+- Course Glossary: 20 מונחי מפתח של הקורס, מותאמים לרמת עברית + שפת האם.
+- Connector Hunt: סימון מילות קישור לפי פונקציה (כי, אולם, לכן…).
+- Register Upgrader (גרסת עולים): שפה יומיומית → 3 גרסאות (בסיסית/אקדמית/מחקרית).
+- Source Analyzer: ניתוח קטע: טענה + ראיה + אמינות + שיטת ציטוט.
+- Citation Coach: בדיקת שילוב ציטוטים + עמידה ב-APA + זרימה.
+השתמש בכלים אלה כאשר הלומד מתקשה בשפה האקדמית. הפעל כלי בהתאם לצורך — אל תפרסם את רשימת הכלים ישירות ללומד.`;
+  }
+
+  // Haredi track
+  return `## מסלול OPAL — חרדים (${learnerPopulation})
+כלים פדגוגיים זמינים עבור לומד זה (מסלול חרדים):
+- Style Bridge: טקסט ישיבתי → עברית אקדמית, זה-לצד-זה, עד 3 תיקונים בסיבוב.
+- Sentence Splitter: משפט ישיבתי ארוך → ספירת רעיונות + משפטים אקדמיים קצרים.
+- Loanword Bridge: מונח אקדמי זר + אטימולוגיה + גישור תלמודי מושגי.
+- Register Upgrader (גרסת חרדים): המרת שפה ישיבתית → עברית אקדמית סטנדרטית.
+- Voice Identifier: זיהוי קולות שונים בטקסט ומתחים ביניהם.
+- Logic Judge: זיהוי קפיצות לוגיות, סתירות, ניתוק — דוח אבחוני.
+השתמש בכלים אלה כאשר הלומד מתקשה במעבר לרגיסטר אקדמי. הפעל כלי בהתאם לצורך — אל תפרסם את רשימת הכלים ישירות ללומד.`;
+}
+
+
+// ─────────────────────────────────────────
 // STUDENT MODEL (Part 33)
 // ─────────────────────────────────────────
 
@@ -521,7 +669,8 @@ export async function handler(event) {
       isNewBotSession  = false,         // ← prevents loading stale history on bot switch
       skillMode        = false,         // ← true when request originates from skills hub
       waveId           = null,          // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
-      stationRoot      = "lesson"       // ← MiledState.root from lesson_view (Part 34 §34.6)
+      stationRoot      = "lesson",      // ← MiledState.root from lesson_view (Part 34 §34.6)
+      t1TopicStage     = null           // ← Teaching Stage (Part 17 §17.5) — declared by instructor at config or runtime
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -628,6 +777,28 @@ export async function handler(event) {
     const studentModelBlock = buildStudentModelContextBlock(studentSkillsMastery, sessionCtx);
     if (studentModelBlock) {
       contextBlock = [contextBlock, studentModelBlock].filter(Boolean).join("\n\n");
+    }
+
+    // ─── INJECT OPAL TRACK INSTRUCTIONS (Part 28) ───
+    // Routes the bot to the appropriate OPAL tool subset based on learner_population.
+    // Immigrant track: language-foundation and genre tools.
+    // Haredi track: style-conversion and conceptual-bridging tools.
+    // No block injected for "general" population.
+    const opalTrackBlock = buildOpalTrackBlock(sessionCtx?.learner_population);
+    if (opalTrackBlock) {
+      contextBlock = [contextBlock, opalTrackBlock].filter(Boolean).join("\n\n");
+    }
+
+    // ─── INJECT TWO-STAGE AWARENESS (Part 17 §17.5) ───
+    // Teaching Stage (T1_TOPIC_STAGE): structural, declared by instructor.
+    //   Source priority: request body → botConfig.t1TopicStage → null
+    // Learning Stage (CONTEXT_STAGE): dynamic, inferred from session signals.
+    // Both stages are injected together as a single block.
+    const effectiveT1 = t1TopicStage || botConfig.t1TopicStage || null;
+    const contextStage = inferContextStage(sessionCtx, savedHistory.length);
+    const twoStageBlock = buildTwoStageBlock(effectiveT1, contextStage);
+    if (twoStageBlock) {
+      contextBlock = [contextBlock, twoStageBlock].filter(Boolean).join("\n\n");
     }
 
     // ─── INJECT COURSE CONTEXT ───
