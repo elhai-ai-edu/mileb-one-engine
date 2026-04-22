@@ -1290,11 +1290,16 @@ body { background: var(--bg) !important; }
 </div>
 
 <div class="top-bar" style="margin-top:0; top:0; z-index:10001;">
-  <div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <a href="/my_courses.html" class="btn btn-outline" style="font-size:13px;padding:7px 12px;text-decoration:none;white-space:nowrap;">&#x2190; חזרה לרשימת הקורסים</a>
     <span class="brand">MilEd.One</span>
     <h1>Macro Cockpit — ניהול אסטרטגי</h1>
   </div>
-  <span id="welcome-msg" style="font-size:13px;color:var(--color-text-muted,#6b7280);margin-inline-end:auto;align-self:center;"></span>
+  <!-- ─── Course title (populated when a course is selected) ─── -->
+  <span id="macro-course-title"
+    style="font-size:15px;font-weight:700;color:#fff;text-align:center;flex:1;margin:0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+    title=""></span>
+  <span id="welcome-msg" style="font-size:13px;color:var(--color-text-muted,#6b7280);align-self:center;"></span>
   <span id="user-badge" style="align-self:center;"></span>
   <!-- ─── Super-Admin Role Switcher ─── -->
   <div id="role-switcher" style="position:relative;display:none;align-self:center;">
@@ -1310,7 +1315,6 @@ body { background: var(--bg) !important; }
     </div>
   </div>
   <a id="toMicroCockpitBtn" href="/micro_cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">← עבור למיקרו</a>
-  <a href="/cockpit.html" class="btn btn-outline" style="font-size:13px;padding:7px 14px;">📊 סקירת מיומנויות כיתה</a>
 </div>
 
 <div id="cockpit-nav">
@@ -1334,8 +1338,24 @@ body { background: var(--bg) !important; }
        onclick="switchPhase('projects')"
        onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchPhase('projects');}">
     <div class="phase-card-phase">שלב 3</div>
-    <div class="phase-card-title">📁 פרויקטים</div>
+    <div class="phase-card-title">📁 עיצוב פרויקטים</div>
     <div class="phase-card-meta"><span class="phase-card-status" id="projects-phase-status-badge">הגדר פרויקטים</span></div>
+  </div>
+  <div class="phase-divider-arrow" aria-hidden="true">&#x2192;</div>
+  <div class="phase-card" id="phase-card-project-tracking" role="button" tabindex="0"
+       onclick="switchPhase('project-tracking')"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchPhase('project-tracking');}">
+    <div class="phase-card-phase">שלב 4</div>
+    <div class="phase-card-title">📊 מעקב פרויקטים</div>
+    <div class="phase-card-meta"><span class="phase-card-status" id="project-tracking-phase-status-badge">מעקב</span></div>
+  </div>
+  <div class="phase-divider-arrow" aria-hidden="true">&#x2192;</div>
+  <div class="phase-card" id="phase-card-skills-review" role="button" tabindex="0"
+       onclick="openSkillsReview()"
+       onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSkillsReview();}">
+    <div class="phase-card-phase">כלי</div>
+    <div class="phase-card-title">🏅 סקירת מיומנויות כיתה</div>
+    <div class="phase-card-meta"><span class="phase-card-status">פתח דוח</span></div>
   </div>
 </div>
 <script>(function(){
@@ -2369,6 +2389,35 @@ body { background: var(--bg) !important; }
     </div><!-- /projects-content -->
 
   </div><!-- /phase-projects -->
+
+  <!-- ══════════════════════════════════════════════════════════════
+       PHASE 4 — מעקב פרויקטים (Project Tracking)
+       ══════════════════════════════════════════════════════════════ -->
+  <div id="phase-project-tracking" style="display:none;">
+
+    <div id="project-tracking-gate" style="text-align:center;padding:60px 20px;">
+      <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+      <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:8px;">יש לבחור קורס פעיל תחילה</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:16px;">עבור לשלב עיצוב קורס ובחר קורס</div>
+      <button class="btn btn-outline" onclick="switchPhase('course')">&#x2190; עיצוב קורס</button>
+    </div>
+
+    <div id="project-tracking-content" style="display:none;">
+      <div class="mc-section">
+        <div class="mc-section-head">📊 מעקב פרויקטים<span class="mc-sub">סקירת התקדמות סטודנטים בפרויקטים</span></div>
+        <div class="mc-section-body" style="text-align:center;padding:40px 20px;">
+          <div style="font-size:36px;margin-bottom:12px;">🚧</div>
+          <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:8px;">מעקב פרויקטים — בקרוב</div>
+          <div style="font-size:13px;color:#64748b;margin-bottom:20px;">לצפייה בהתקדמות הסטודנטים בפרויקטים האישיים, עברו למיקרו קוקפיט</div>
+          <a id="project-tracking-micro-link" href="/micro_cockpit.html" class="btn btn-outline"
+             style="text-decoration:none;font-size:13px;padding:9px 20px;">
+            📋 עבור למיקרו קוקפיט — מעקב שלבים
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /phase-project-tracking -->
 
 
   <!-- Live Legacy (hidden — used by micro cockpit live view) -->
@@ -3468,6 +3517,9 @@ fetch('/config.json').then(r => r.json()).then(config => {
       indicator.innerHTML = `📚 קורס פעיל: <strong>${escapeHtml(presetCourseName)}</strong>&nbsp;&nbsp;<button onclick="clearCourseLockUI()" style="font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid currentColor;background:none;color:inherit;cursor:pointer;vertical-align:middle;">↩ החלף קורס</button>`;
       indicator.style.display = '';
     }
+    // Populate banner title immediately for preset course
+    const bannerTitle = document.getElementById('macro-course-title');
+    if (bannerTitle) { bannerTitle.textContent = presetCourseName; bannerTitle.title = presetCourseName; }
   }
 
   // ── Real courses from my_courses (same source as students.html + waiting_lobby.html) ──
@@ -4525,7 +4577,7 @@ async function macroSaveProjects() {
     const res = await fetch("/api/saveConfig", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(CONFIG)
+      body: JSON.stringify({ facultyId, config: CONFIG })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (msgEl) { msgEl.style.color = "#16a34a"; msgEl.textContent = "✅ נשמר."; }
@@ -4724,6 +4776,23 @@ function loadProjectsTab() {
   }
 }
 
+function loadProjectTrackingTab() {
+  const gate    = document.getElementById('project-tracking-gate');
+  const content = document.getElementById('project-tracking-content');
+  const microLink = document.getElementById('project-tracking-micro-link');
+  if (!macroCourseId) {
+    if (gate)    gate.style.display = 'block';
+    if (content) content.style.display = 'none';
+    return;
+  }
+  if (gate)    gate.style.display = 'none';
+  if (content) content.style.display = 'block';
+  if (microLink) {
+    const qs = macroCourseId ? `?classId=${encodeURIComponent(macroCourseId)}` : '';
+    microLink.href = `/micro_cockpit.html${qs}`;
+  }
+}
+
 async function saveProjectsTab() {
   const msgEl = document.getElementById('proj-save-msg');
   if (!macroCourseId || !CONFIG?.my_courses?.[macroCourseId]) {
@@ -4768,7 +4837,7 @@ async function saveProjectsTab() {
     const res = await fetch('/api/saveConfig', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(CONFIG)
+      body: JSON.stringify({ facultyId, config: CONFIG })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ נשמר בהצלחה.'; }
@@ -4836,6 +4905,9 @@ function applyCourseLockUI(courseId, courseName) {
     el.innerHTML = indicatorHtml;
     el.style.display = '';
   });
+  // Show course title in top banner
+  const titleEl = document.getElementById('macro-course-title');
+  if (titleEl) { titleEl.textContent = courseName || courseId; titleEl.title = courseName || courseId; }
   syncActiveContextPersistence({ updateUrl: true });
   debugLessonContext("course-select");
 }
@@ -4853,6 +4925,9 @@ function clearCourseLockUI() {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  // Clear course title from top banner
+  const titleEl = document.getElementById('macro-course-title');
+  if (titleEl) { titleEl.textContent = ''; titleEl.title = ''; }
   activeCourseId = null;
   macroCourseId = "";
   activeUnitId = macroToSessionUnitId(1);
@@ -7272,19 +7347,30 @@ let currentWizardStep = 1;
 const courseStepDone = { 1: false, 2: false, 3: false, 4: false, 5: false };
 
 function switchPhase(view) {
-  currentView = ['lesson', 'projects'].includes(view) ? view : 'course';
-  document.getElementById('phase-card-course')?.classList.toggle('active',    currentView === 'course');
-  document.getElementById('phase-card-lesson')?.classList.toggle('active',    currentView === 'lesson');
-  document.getElementById('phase-card-projects')?.classList.toggle('active',  currentView === 'projects');
-  const courseBlock    = document.getElementById('phase-course');
-  const lessonBlock    = document.getElementById('phase-lesson');
-  const projectsBlock  = document.getElementById('phase-projects');
-  if (courseBlock)   courseBlock.style.display   = currentView === 'course'   ? 'block' : 'none';
-  if (lessonBlock)   lessonBlock.style.display   = currentView === 'lesson'   ? 'block' : 'none';
-  if (projectsBlock) projectsBlock.style.display = currentView === 'projects' ? 'block' : 'none';
-  if (currentView === 'lesson')   checkLessonGate();
-  if (currentView === 'projects') loadProjectsTab();
+  const VALID = ['course', 'lesson', 'projects', 'project-tracking'];
+  currentView = VALID.includes(view) ? view : 'course';
+  document.getElementById('phase-card-course')?.classList.toggle('active',            currentView === 'course');
+  document.getElementById('phase-card-lesson')?.classList.toggle('active',            currentView === 'lesson');
+  document.getElementById('phase-card-projects')?.classList.toggle('active',          currentView === 'projects');
+  document.getElementById('phase-card-project-tracking')?.classList.toggle('active',  currentView === 'project-tracking');
+  document.getElementById('phase-card-skills-review')?.classList.remove('active');
+  const courseBlock          = document.getElementById('phase-course');
+  const lessonBlock          = document.getElementById('phase-lesson');
+  const projectsBlock        = document.getElementById('phase-projects');
+  const projectTrackingBlock = document.getElementById('phase-project-tracking');
+  if (courseBlock)          courseBlock.style.display          = currentView === 'course'           ? 'block' : 'none';
+  if (lessonBlock)          lessonBlock.style.display          = currentView === 'lesson'           ? 'block' : 'none';
+  if (projectsBlock)        projectsBlock.style.display        = currentView === 'projects'         ? 'block' : 'none';
+  if (projectTrackingBlock) projectTrackingBlock.style.display = currentView === 'project-tracking' ? 'block' : 'none';
+  if (currentView === 'lesson')           checkLessonGate();
+  if (currentView === 'projects')         loadProjectsTab();
+  if (currentView === 'project-tracking') loadProjectTrackingTab();
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function openSkillsReview() {
+  const courseParam = macroCourseId ? `?classId=${encodeURIComponent(macroCourseId)}` : '';
+  window.location.href = `/cockpit.html${courseParam}`;
 }
 
 function switchWizardStep(step) {
