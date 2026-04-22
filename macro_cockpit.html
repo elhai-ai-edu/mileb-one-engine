@@ -1297,7 +1297,8 @@ body { background: var(--bg) !important; }
   </div>
   <!-- ─── Course title (populated when a course is selected) ─── -->
   <span id="macro-course-title"
-    style="font-size:15px;font-weight:700;color:#fff;text-align:center;flex:1;margin:0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+    style="font-size:15px;font-weight:700;color:#fff;text-align:center;flex:1;margin:0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+    title=""></span>
   <span id="welcome-msg" style="font-size:13px;color:var(--color-text-muted,#6b7280);align-self:center;"></span>
   <span id="user-badge" style="align-self:center;"></span>
   <!-- ─── Super-Admin Role Switcher ─── -->
@@ -2397,7 +2398,7 @@ body { background: var(--bg) !important; }
     <div id="project-tracking-gate" style="text-align:center;padding:60px 20px;">
       <div style="font-size:40px;margin-bottom:12px;">🔒</div>
       <div style="font-size:16px;font-weight:700;color:#1e293b;margin-bottom:8px;">יש לבחור קורס פעיל תחילה</div>
-      <div style="font-size:13px;color:#64748b;margin-bottom:16px;">עבור לשלב עיצוב הקורס ובחר קורס</div>
+      <div style="font-size:13px;color:#64748b;margin-bottom:16px;">עבור לשלב עיצוב קורס ובחר קורס</div>
       <button class="btn btn-outline" onclick="switchPhase('course')">&#x2190; עיצוב קורס</button>
     </div>
 
@@ -3518,7 +3519,7 @@ fetch('/config.json').then(r => r.json()).then(config => {
     }
     // Populate banner title immediately for preset course
     const bannerTitle = document.getElementById('macro-course-title');
-    if (bannerTitle) bannerTitle.textContent = presetCourseName;
+    if (bannerTitle) { bannerTitle.textContent = presetCourseName; bannerTitle.title = presetCourseName; }
   }
 
   // ── Real courses from my_courses (same source as students.html + waiting_lobby.html) ──
@@ -4906,7 +4907,7 @@ function applyCourseLockUI(courseId, courseName) {
   });
   // Show course title in top banner
   const titleEl = document.getElementById('macro-course-title');
-  if (titleEl) titleEl.textContent = courseName || courseId;
+  if (titleEl) { titleEl.textContent = courseName || courseId; titleEl.title = courseName || courseId; }
   syncActiveContextPersistence({ updateUrl: true });
   debugLessonContext("course-select");
 }
@@ -4926,7 +4927,7 @@ function clearCourseLockUI() {
   });
   // Clear course title from top banner
   const titleEl = document.getElementById('macro-course-title');
-  if (titleEl) titleEl.textContent = '';
+  if (titleEl) { titleEl.textContent = ''; titleEl.title = ''; }
   activeCourseId = null;
   macroCourseId = "";
   activeUnitId = macroToSessionUnitId(1);
