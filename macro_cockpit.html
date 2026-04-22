@@ -4525,7 +4525,7 @@ async function macroSaveProjects() {
     const res = await fetch("/api/saveConfig", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(CONFIG)
+      body: JSON.stringify({ facultyId, config: CONFIG })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (msgEl) { msgEl.style.color = "#16a34a"; msgEl.textContent = "✅ נשמר."; }
@@ -4768,7 +4768,7 @@ async function saveProjectsTab() {
     const res = await fetch('/api/saveConfig', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(CONFIG)
+      body: JSON.stringify({ facultyId, config: CONFIG })
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ נשמר בהצלחה.'; }

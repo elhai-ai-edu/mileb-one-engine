@@ -1191,12 +1191,23 @@ function updateStage(branch,id,index,key,value){ config.branches[branch].items[i
 function deleteStage(branch,id,index){ config.branches[branch].items[id].stages.splice(index,1); render(); }
 
 async function saveConfig(){
-  await fetch("/api/saveConfig",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify(config)
+  try {
+    await persistConfigOrThrow();
+    alert("config נשמר בהצלחה");
+  } catch (e) {
+    alert("שגיאה בשמירה: " + e.message);
+  }
+}
+
+async function persistConfigOrThrow() {
+  const facultyId = (currentUser?.id || "").trim();
+  if (!facultyId) throw new Error("אין משתמש מחובר. התחברו מחדש ונסו שוב.");
+  const res = await fetch("/api/saveConfig", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ facultyId, config })
   });
-  alert("config נשמר בהצלחה");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 }
 
 // ─── COURSES MANAGEMENT ─────────────────────────────────────────────────────
@@ -1392,11 +1403,7 @@ async function saveCourse() {
   config.my_courses[id] = course;
 
   try {
-    await fetch("/api/saveConfig", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config)
-    });
+    await persistConfigOrThrow();
     msgEl.style.color = "#16a34a";
     msgEl.textContent = "✅ נשמר בהצלחה";
     loadCourses();
@@ -1411,11 +1418,7 @@ async function deleteCourse(id) {
   if (!confirm(`למחוק את הקורס "${config?.my_courses?.[id]?.name || id}"?\nהפעולה אינה הפיכה.`)) return;
   delete config.my_courses[id];
   try {
-    await fetch("/api/saveConfig", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(config)
-    });
+    await persistConfigOrThrow();
     const msg = document.getElementById("courses-save-msg");
     if (msg) { msg.style.color="#16a34a"; msg.textContent="✅ קורס נמחק"; setTimeout(()=>msg.textContent="",2000); }
     loadCourses();
