@@ -343,8 +343,8 @@ function buildPersonalProjectUrl(baseUrl, courseId, studentId, studentName) {
     if (!url.searchParams.get("courseId")) url.searchParams.set("courseId", courseId);
     if (!url.searchParams.get("studentId")) url.searchParams.set("studentId", studentId);
     if (!url.searchParams.get("studentName")) url.searchParams.set("studentName", studentName);
-    const q = url.searchParams.toString();
-    return `${url.pathname}${q ? `?${q}` : ""}${url.hash || ""}`;
+    if (url.origin === window.location.origin) return `${url.pathname}${url.search}${url.hash}`;
+    return url.href;
   } catch (_) {
     return fallback;
   }
