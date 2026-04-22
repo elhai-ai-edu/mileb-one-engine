@@ -1372,7 +1372,6 @@ body.management-theme .btn.btn-xs {
   <button class="cockpit-tab-btn" data-tab-target="prep" onclick="switchCockpitTab('prep', this)"><span>📚 לפני השיעור</span></button>
   <button class="cockpit-tab-btn active" data-tab-target="live" onclick="switchCockpitTab('live', this)"><span>🎛️ בתוך השיעור</span></button>
   <button class="cockpit-tab-btn" data-tab-target="journal" onclick="switchCockpitTab('journal', this)"><span>📓 לאחר השיעור</span></button>
-  <button class="cockpit-tab-btn" data-tab-target="stages" onclick="switchCockpitTab('stages', this)"><span>📍 מעקב שלבים — פרויקט גמר</span></button>
 </div>
 <script>(function(){
   document.addEventListener("click", function(e) {
@@ -2005,41 +2004,6 @@ body.management-theme .btn.btn-xs {
 
     </div><!-- /.mc-card-body syllabus 2 -->
     </div><!-- /.mc-card איזון -->
-  </div>
-
-  <div class="panel" data-tab-panel="stages">
-
-    <div class="mc-card">
-    <div class="mc-card-head">📍 מעקב שלבים — פרויקט גמר
-      <span style="margin-right:auto;">
-        <button class="btn btn-outline" type="button" onclick="loadStageSummary()">🔄 עדכן</button>
-      </span>
-    </div>
-    <div class="mc-card-body">
-
-      <!-- Summary strip -->
-      <div id="stageSummaryStrip" style="display:none;padding:12px 16px;border-radius:12px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:13px;font-weight:700;color:#166534;margin-bottom:16px;line-height:1.7;"></div>
-
-      <!-- Filter row -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;">
-        <input id="stagesStageFilter" class="lp-input" style="margin:0;max-width:220px;" placeholder="🔍 סינון לפי שלב (Stage ID)">
-        <select id="stagesStatusFilter" class="lp-input" style="margin:0;max-width:180px;">
-          <option value="">כל הסטטוסים</option>
-          <option value="pending_review">ממתין לאישור</option>
-          <option value="unlocked">מאושר</option>
-          <option value="relocked">נדחה</option>
-          <option value="none">לא התחיל</option>
-          <option value="stuck">תקוע (7+ ימים)</option>
-        </select>
-      </div>
-
-      <!-- Students table -->
-      <div id="stageSummaryTable" style="display:grid;gap:6px;">
-        <div class="thread-empty">בחר קורס ולחץ "עדכן" לטעינת נתוני שלבים</div>
-      </div>
-
-    </div><!-- /.mc-card-body -->
-    </div><!-- /.mc-card -->
   </div>
 
   <div class="panel" data-tab-panel="journal">
