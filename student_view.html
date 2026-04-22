@@ -1221,7 +1221,7 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
     <h1>ברוכים הבאים לכיתה</h1>
     <p>המרצה עוד לא פתח את השיעור — בינתיים, בואו נתחמם 🧠</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
-      <a href="/personal_project.html?courseId=he_a2_arabic" class="w-project-link" onclick="return false;" title="נפתח בקרוב">
+      <a id="personalProjectLink" href="/personal_project.html?courseId=he_a2_arabic" class="w-project-link">
         📁 פרויקט הגמר האישי שלי ←
       </a>
       <button class="w-team-project-link" onclick="enterTeamProject()">
@@ -2232,6 +2232,29 @@ function getStudentName() {
   return String(localStorage.getItem(_snameKey) || studentId.slice(0,8)).trim() || studentId.slice(0,8);
 }
 
+function buildPersonalProjectUrl(baseUrl) {
+  if (!courseId || !studentId) return '';
+  const fallback = `/personal_project.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(getStudentName())}`;
+  const raw = (typeof baseUrl === 'string' && baseUrl.trim()) ? baseUrl.trim() : fallback;
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (!url.searchParams.get('courseId'))    url.searchParams.set('courseId', courseId);
+    if (!url.searchParams.get('studentId'))   url.searchParams.set('studentId', studentId);
+    if (!url.searchParams.get('studentName')) url.searchParams.set('studentName', getStudentName());
+    if (!url.searchParams.get('source'))      url.searchParams.set('source', 'student_view');
+    return (url.origin === window.location.origin) ? `${url.pathname}${url.search}${url.hash}` : url.href;
+  } catch {
+    return fallback;
+  }
+}
+
+function syncPersonalProjectLink(baseUrl = '') {
+  const ppLink = document.getElementById('personalProjectLink');
+  if (!ppLink) return;
+  const nextHref = buildPersonalProjectUrl(baseUrl);
+  if (nextHref) ppLink.href = nextHref;
+}
+
 // ── Classroom API ──
 async function callClassroom(method, payload = null, query = '') {
   if (method === 'GET') {
@@ -2533,6 +2556,12 @@ async function loadConfigTitle() {
       if (lessonNameEl)  lessonNameEl.textContent  = cname;
       if (waitingNameEl) waitingNameEl.textContent = cname;
     }
+    const ppConfig = course?.personalProject;
+    const ppLink = document.getElementById('personalProjectLink');
+    if (ppLink && ppConfig) {
+      syncPersonalProjectLink(ppConfig.url || '');
+      ppLink.textContent = `📁 ${ppConfig.title || 'פרויקט הגמר האישי שלי'} ←`;
+    }
   } catch { /* non-fatal */ }
 }
 
@@ -2624,6 +2653,7 @@ function sendFloatChat() {}
 
 // ── Bootstrap ──
 async function bootstrapApp() {
+  if (courseId && studentId) syncPersonalProjectLink();
   await loadConfigTitle();
   await loadPreSession();
   // Heartbeat
