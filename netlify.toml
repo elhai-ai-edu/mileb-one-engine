@@ -97,6 +97,12 @@
   to   = "/.netlify/functions/personal_project"
   status = 200
 
+# Backward-compat: old project_workspace.html links redirect to the canonical page
+[[redirects]]
+  from = "/project_workspace.html"
+  to   = "/personal_project.html"
+  status = 301
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
