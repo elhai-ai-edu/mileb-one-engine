@@ -559,6 +559,7 @@
     const studentId   = params.get("studentId")   || "";
     const studentName = params.get("studentName") || studentId;
     const source      = params.get("source")      || "";
+    const sessionId   = params.get("sessionId")   || "";
 
     if (!courseId || !studentId) {
       document.body.innerHTML =
@@ -1355,14 +1356,27 @@
 
     // ── Exit ─────────────────────────────────────────────────────────────────
     function exitProject() {
-      if (source === "lesson") {
-        // Opened inside lesson_view iframe — signal parent to close
-        window.parent.postMessage({ type: "pp_exit" }, "*");
-        return;
-      }
       const sName = encodeURIComponent(studentName);
       const sid   = encodeURIComponent(studentId);
       const cid   = encodeURIComponent(courseId);
+      if (source === "students") {
+        location.href = "/students.html";
+        return;
+      }
+      if (source === "lesson") {
+        // Opened as a new tab from lesson_view — close this tab to return to lesson
+        window.close();
+        // Fallback if close() is blocked (tab not opened by script)
+        setTimeout(() => {
+          if (sessionId) {
+            location.href = `/lesson_view.html?sessionId=${encodeURIComponent(sessionId)}&courseId=${cid}`;
+          } else {
+            location.href = `/waiting_lobby.html?courseId=${cid}&studentId=${sid}&studentName=${sName}`;
+          }
+        }, 300);
+        return;
+      }
+      // Default — came from waiting_lobby or direct link
       location.href = `/waiting_lobby.html?courseId=${cid}&studentId=${sid}&studentName=${sName}`;
     }
 
