@@ -335,6 +335,22 @@ function getStudentName(courseId) {
   return localStorage.getItem(key) || getStudentId(courseId).slice(0, 8);
 }
 
+function buildPersonalProjectUrl(baseUrl, courseId, studentId, studentName) {
+  const fallback = `/personal_project.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(studentName)}`;
+  const raw = (typeof baseUrl === "string" && baseUrl.trim()) ? baseUrl.trim() : fallback;
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (!url.searchParams.get("courseId")) url.searchParams.set("courseId", courseId);
+    if (!url.searchParams.get("studentId")) url.searchParams.set("studentId", studentId);
+    if (!url.searchParams.get("studentName")) url.searchParams.set("studentName", studentName);
+    if (!url.searchParams.get("source")) url.searchParams.set("source", "students");
+    if (url.origin === window.location.origin) return `${url.pathname}${url.search}${url.hash}`;
+    return url.href;
+  } catch (_) {
+    return fallback;
+  }
+}
+
 function renderCourses(filterId, opts) {
   const courses   = CONFIG.my_courses || {};
   const container = document.getElementById("course-list");
@@ -373,7 +389,7 @@ function renderCourses(filterId, opts) {
 
     const personalBtn = personalProj ? `
       <a class="cc-btn cc-btn-personal"
-         href="${personalProj.url || `/personal_project.html?courseId=${esc(id)}&studentId=${esc(studentId)}&studentName=${esc(studentName)}`}">
+         href="${buildPersonalProjectUrl(personalProj.url, id, studentId, studentName)}">
         📝 ${personalProj.title || "פרויקט גמר אישי"}
       </a>` : "";
 

@@ -3600,6 +3600,7 @@
       if (!url.searchParams.has('studentId')   && studentId)   url.searchParams.set('studentId',   studentId);
       if (!url.searchParams.has('studentName') && studentName) url.searchParams.set('studentName', studentName);
       url.searchParams.set('source', 'lesson');
+      if (sessionId && !url.searchParams.has('sessionId')) url.searchParams.set('sessionId', sessionId);
       window.open(url.toString(), "_blank", "noopener");
     }
 

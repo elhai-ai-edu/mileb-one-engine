@@ -825,6 +825,17 @@ export async function handler(event) {
       if (stationInstruction) {
         contextBlock = [contextBlock, stationInstruction].filter(Boolean).join("\n\n");
       }
+
+      // ─── INJECT personalProject.systemPromptOverride (Part 34 §34.7) ───
+      // If the course defines a custom SP override for the personal project, append it
+      // so the lecturer's specific instructions take precedence over the generic station text.
+      if (stationRoot === "personal_project") {
+        const ppSpOverride = courseConfig?.personalProject?.systemPromptOverride;
+        if (ppSpOverride && typeof ppSpOverride === "string" && ppSpOverride.trim()) {
+          contextBlock = [contextBlock, "## הנחיות פרויקט מותאמות\n" + ppSpOverride.trim()]
+            .filter(Boolean).join("\n\n");
+        }
+      }
     }
 
     // ─── SERVER-SIDE STAGE LOCK ───

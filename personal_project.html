@@ -163,8 +163,13 @@
       margin-bottom: 4px;
     }
     .pp-proj-subtitle {
-      font-size: 13px; color: #7c3aed; font-weight: 600; margin-bottom: 16px;
+      font-size: 13px; color: #7c3aed; font-weight: 600; margin-bottom: 8px;
     }
+    .pp-proj-meta {
+      display: flex; flex-wrap: wrap; gap: 12px;
+      font-size: 12px; color: #64748b; margin-bottom: 14px;
+    }
+    .pp-proj-meta span { display: flex; align-items: center; gap: 4px; }
 
     /* ── Progress stepper ── */
     .pp-stepper {
@@ -463,6 +468,10 @@
       <div class="pp-panel" style="padding-bottom:14px;">
         <div class="pp-proj-title" id="ppProjTitle">פרויקט גמר — פתרון בעיה מקצועית</div>
         <div class="pp-proj-subtitle" id="ppProjSubtitle">טוען שלב פעיל...</div>
+        <div class="pp-proj-meta" id="ppProjMeta" style="display:none;">
+          <span id="ppProjGoalMeta"></span>
+          <span id="ppProjDeadlineMeta"></span>
+        </div>
 
         <!-- 4-milestone stepper -->
         <div class="pp-stepper" id="ppStepper">
@@ -559,6 +568,7 @@
     const studentId   = params.get("studentId")   || "";
     const studentName = params.get("studentName") || studentId;
     const source      = params.get("source")      || "";
+    const sessionId   = params.get("sessionId")   || "";
 
     if (!courseId || !studentId) {
       document.body.innerHTML =
@@ -721,6 +731,24 @@
 
         if (title && course?.name) title.textContent = course.name;
         if (projTitle && projConf?.title) projTitle.textContent = projConf.title;
+
+        // Show deadline and goal if configured
+        const metaEl       = document.getElementById("ppProjMeta");
+        const goalMetaEl   = document.getElementById("ppProjGoalMeta");
+        const deadlineMetaEl = document.getElementById("ppProjDeadlineMeta");
+        let hasAnyMeta = false;
+        if (goalMetaEl && projConf?.goal) {
+          goalMetaEl.innerHTML = `🎯 <strong>מטרה:</strong> ${escHtml(projConf.goal)}`;
+          hasAnyMeta = true;
+        }
+        if (deadlineMetaEl && projConf?.finalDeadline) {
+          const d = new Date(projConf.finalDeadline);
+          const dStr = isNaN(d.getTime()) ? projConf.finalDeadline
+            : d.toLocaleDateString("he-IL", { year: "numeric", month: "long", day: "numeric" });
+          deadlineMetaEl.innerHTML = `📅 <strong>מועד הגשה:</strong> ${escHtml(dStr)}`;
+          hasAnyMeta = true;
+        }
+        if (metaEl && hasAnyMeta) metaEl.style.display = "";
       } catch(e) {
         console.warn("[pp] config load failed:", e.message);
       }
@@ -1355,14 +1383,27 @@
 
     // ── Exit ─────────────────────────────────────────────────────────────────
     function exitProject() {
-      if (source === "lesson") {
-        // Opened inside lesson_view iframe — signal parent to close
-        window.parent.postMessage({ type: "pp_exit" }, "*");
-        return;
-      }
       const sName = encodeURIComponent(studentName);
       const sid   = encodeURIComponent(studentId);
       const cid   = encodeURIComponent(courseId);
+      if (source === "students") {
+        location.href = "/students.html";
+        return;
+      }
+      if (source === "lesson") {
+        // Opened as a new tab from lesson_view — close this tab to return to lesson
+        window.close();
+        // Fallback if close() is blocked (tab not opened by script)
+        setTimeout(() => {
+          if (sessionId) {
+            location.href = `/lesson_view.html?sessionId=${encodeURIComponent(sessionId)}&courseId=${cid}`;
+          } else {
+            location.href = `/waiting_lobby.html?courseId=${cid}&studentId=${sid}&studentName=${sName}`;
+          }
+        }, 300);
+        return;
+      }
+      // Default — came from waiting_lobby or direct link
       location.href = `/waiting_lobby.html?courseId=${cid}&studentId=${sid}&studentName=${sName}`;
     }
 
