@@ -157,3 +157,8 @@
   from = "/student-dashboard"
   to = "/student_dashboard.html"
   status = 200
+
+[[redirects]]
+  from = "/students"
+  to = "/students.html"
+  status = 200
