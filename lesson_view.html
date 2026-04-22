@@ -3591,13 +3591,16 @@
     function enterPersonalProjectMode() {
       const cId = lessonData?.courseId || courseIdFromUrl;
       if (!cId) { alert("לא הוגדר קורס — לא ניתן לפתוח פרויקט אישי."); return; }
-      const params = new URLSearchParams({
-        courseId:    cId,
-        studentId:   studentId   || "",
-        studentName: studentName || studentId || "",
-        source:      "lesson"
-      });
-      window.open(`/personal_project.html?${params.toString()}`, "_blank", "noopener");
+      // Use URL from config if available, otherwise default to project_workspace.html
+      const configUrl = lessonData?.personalProjectUrl ||
+        (lessonData?.personalProject?.url) || null;
+      const base = configUrl || `/project_workspace.html?courseId=${encodeURIComponent(cId)}`;
+      // Append studentId / studentName if not already in the URL
+      const url = new URL(base, window.location.origin);
+      if (!url.searchParams.has('studentId')   && studentId)   url.searchParams.set('studentId',   studentId);
+      if (!url.searchParams.has('studentName') && studentName) url.searchParams.set('studentName', studentName);
+      url.searchParams.set('source', 'lesson');
+      window.open(url.toString(), "_blank", "noopener");
     }
 
     function enterGroupMode(sprint) {
