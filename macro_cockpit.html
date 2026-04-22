@@ -2405,14 +2405,44 @@ body { background: var(--bg) !important; }
     <div id="project-tracking-content" style="display:none;">
       <div class="mc-section">
         <div class="mc-section-head">📊 מעקב פרויקטים<span class="mc-sub">סקירת התקדמות סטודנטים בפרויקטים</span></div>
-        <div class="mc-section-body" style="text-align:center;padding:40px 20px;">
-          <div style="font-size:36px;margin-bottom:12px;">🚧</div>
-          <div style="font-size:15px;font-weight:700;color:#1e293b;margin-bottom:8px;">מעקב פרויקטים — בקרוב</div>
-          <div style="font-size:13px;color:#64748b;margin-bottom:20px;">לצפייה בהתקדמות הסטודנטים בפרויקטים האישיים, עברו למיקרו קוקפיט</div>
-          <a id="project-tracking-micro-link" href="/micro_cockpit.html" class="btn btn-outline"
-             style="text-decoration:none;font-size:13px;padding:9px 20px;">
-            📋 עבור למיקרו קוקפיט — מעקב שלבים
-          </a>
+        <div class="mc-section-body" style="padding:18px;">
+          <div id="projectTrackingConfigSlots" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;margin-bottom:14px;">
+            <div class="thread-empty">טוען הגדרות פרויקטים...</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:14px;align-items:start;">
+            <div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#f8fafc;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <div style="font-size:14px;font-weight:800;color:#1e293b;">📝 פרויקט אישי מתמשך</div>
+                <span style="margin-right:auto;"></span>
+                <button class="btn btn-outline" type="button" onclick="loadPersonalProjectTracking()">🔄 עדכן</button>
+              </div>
+              <div id="projectTrackingPersonalStrip" style="display:none;padding:10px 12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:12px;font-weight:700;color:#166534;margin-bottom:10px;"></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+                <input id="projectTrackingPersonalStageFilter" class="lp-input" style="margin:0;max-width:220px;" placeholder="🔍 סינון לפי שלב (pp_stage)">
+                <select id="projectTrackingPersonalStatusFilter" class="lp-input" style="margin:0;max-width:170px;">
+                  <option value="">כל הסטטוסים</option>
+                  <option value="pending_review">ממתין לאישור</option>
+                  <option value="unlocked">מאושר</option>
+                  <option value="relocked">נדחה</option>
+                  <option value="none">לא התחיל</option>
+                </select>
+              </div>
+              <div id="projectTrackingPersonalTable" style="display:grid;gap:6px;">
+                <div class="thread-empty">לחץ "עדכן" לטעינת מעקב פרויקט אישי</div>
+              </div>
+            </div>
+            <div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#f8fafc;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <div style="font-size:14px;font-weight:800;color:#1e293b;">👥 פרויקט צוותי מתמשך</div>
+                <span style="margin-right:auto;"></span>
+                <button class="btn btn-outline" type="button" onclick="loadTeamProjectTracking()">🔄 עדכן</button>
+              </div>
+              <div id="projectTrackingTeamSummary" style="display:grid;gap:8px;">
+                <div class="thread-empty">לחץ "עדכן" לטעינת נתוני פרויקט צוותי</div>
+              </div>
+              <div id="projectTrackingTeamMembers" style="display:grid;gap:6px;margin-top:10px;"></div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -4594,6 +4624,7 @@ async function macroSaveProjects() {
 let _projTeamStages     = [];
 let _projPersonalStages = [];
 let _currentProjectTab  = 'team';
+let _projectTrackingPersonalRows = [];
 
 function switchProjectTab(tab) {
   _currentProjectTab = tab;
@@ -4779,7 +4810,6 @@ function loadProjectsTab() {
 function loadProjectTrackingTab() {
   const gate    = document.getElementById('project-tracking-gate');
   const content = document.getElementById('project-tracking-content');
-  const microLink = document.getElementById('project-tracking-micro-link');
   if (!macroCourseId) {
     if (gate)    gate.style.display = 'block';
     if (content) content.style.display = 'none';
@@ -4787,9 +4817,201 @@ function loadProjectTrackingTab() {
   }
   if (gate)    gate.style.display = 'none';
   if (content) content.style.display = 'block';
-  if (microLink) {
-    const qs = macroCourseId ? `?classId=${encodeURIComponent(macroCourseId)}` : '';
-    microLink.href = `/micro_cockpit.html${qs}`;
+  const course = CONFIG?.my_courses?.[macroCourseId] || {};
+  const team = course.teamProject || {};
+  const personal = course.personalProject || {};
+
+  const slots = document.getElementById('projectTrackingConfigSlots');
+  if (slots) {
+    const personalUrl = personal.url || `/personal_project.html?courseId=${encodeURIComponent(macroCourseId)}`;
+    const teamReady = !!team.projectId;
+    const personalReady = !!(personal.title || personal.url);
+    slots.innerHTML = `
+      <div style="border:1px solid #bfdbfe;background:#eff6ff;border-radius:10px;padding:10px;">
+        <div style="font-size:12px;font-weight:800;color:#1d4ed8;">📝 פרויקט אישי</div>
+        <div style="font-size:13px;font-weight:700;color:#0f172a;margin-top:4px;">${escapeHtml(personal.title || 'לא הוגדר שם תצוגה')}</div>
+        <div style="font-size:11px;color:#475569;margin-top:2px;">${escapeHtml(personalUrl)}</div>
+        <div style="margin-top:8px;">
+          <a class="btn btn-outline" href="${macroEscHtml(personalUrl)}" target="_blank" style="text-decoration:none;font-size:12px;padding:6px 10px;">↗ פתח סביבת פרויקט אישי</a>
+        </div>
+      </div>
+      <div style="border:1px solid #bbf7d0;background:#f0fdf4;border-radius:10px;padding:10px;">
+        <div style="font-size:12px;font-weight:800;color:#15803d;">👥 פרויקט צוות</div>
+        <div style="font-size:13px;font-weight:700;color:#0f172a;margin-top:4px;">${escapeHtml(team.title || 'לא הוגדר שם תצוגה')}</div>
+        <div style="font-size:11px;color:#475569;margin-top:2px;">projectId: ${escapeHtml(team.projectId || 'לא הוגדר')}</div>
+        <div style="margin-top:8px;font-size:11px;color:${teamReady ? '#166534' : '#b45309'};">${teamReady ? 'מוכן למעקב בדף זה' : 'יש להגדיר projectId ב"עיצוב פרויקטים"'}</div>
+      </div>`;
+    const badge = document.getElementById('project-tracking-phase-status-badge');
+    if (badge) {
+      const readyCount = Number(teamReady) + Number(personalReady);
+      badge.textContent = readyCount === 2 ? '✓ מחובר' : readyCount === 1 ? 'חלקי' : 'ללא פרויקטים';
+      badge.style.background = readyCount === 2 ? '#d1fae5' : '';
+      badge.style.color = readyCount === 2 ? '#065f46' : '';
+    }
+  }
+  loadPersonalProjectTracking();
+  loadTeamProjectTracking();
+}
+
+function _formatRelativeTime(ts) {
+  const value = Number(ts || 0);
+  if (!value) return '—';
+  const age = Date.now() - value;
+  if (age < 60_000) return 'כעת';
+  if (age < 3_600_000) return `לפני ${Math.floor(age / 60_000)} דק׳`;
+  if (age < 86_400_000) return `לפני ${Math.floor(age / 3_600_000)} שע׳`;
+  return `לפני ${Math.floor(age / 86_400_000)} ימים`;
+}
+
+async function loadPersonalProjectTracking() {
+  const container = document.getElementById('projectTrackingPersonalTable');
+  const strip = document.getElementById('projectTrackingPersonalStrip');
+  if (!container || !macroCourseId) return;
+  container.innerHTML = '<div class="thread-empty">טוען נתונים...</div>';
+  try {
+    const res = await fetch(`/.netlify/functions/gatekeeping?action=course_stage_summary&courseId=${encodeURIComponent(macroCourseId)}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'שגיאה בטעינת נתונים');
+    _projectTrackingPersonalRows = (data.students || []).filter(student => {
+      const current = String(student.currentStageId || '');
+      if (current.startsWith('pp_stage_')) return true;
+      const entries = Object.values(student.stages || {});
+      return entries.some(s => String(s?.stageId || '').startsWith('pp_stage_'));
+    });
+    if (strip) {
+      const pending = _projectTrackingPersonalRows.filter(s =>
+        Object.values(s.stages || {}).some(stage => String(stage?.stageId || '').startsWith('pp_stage_') && stage?.state === 'pending_review')
+      ).length;
+      strip.textContent = `${_projectTrackingPersonalRows.length} סטודנטים בפרויקט אישי · ${pending} ממתינים לאישור`;
+      strip.style.display = '';
+    }
+    renderPersonalProjectTrackingTable();
+  } catch (e) {
+    container.innerHTML = `<div class="thread-empty">שגיאה: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function renderPersonalProjectTrackingTable() {
+  const container = document.getElementById('projectTrackingPersonalTable');
+  if (!container) return;
+  const stageFilter = (document.getElementById('projectTrackingPersonalStageFilter')?.value || '').trim().toLowerCase();
+  const statusFilter = (document.getElementById('projectTrackingPersonalStatusFilter')?.value || '').trim().toLowerCase();
+
+  const students = _projectTrackingPersonalRows.filter(student => {
+    const ppEntries = Object.values(student.stages || {}).filter(s => String(s?.stageId || '').startsWith('pp_stage_'));
+    const current = String(student.currentStageId || '').toLowerCase();
+    if (stageFilter && !current.includes(stageFilter) && !ppEntries.some(s => String(s?.stageId || '').toLowerCase().includes(stageFilter))) return false;
+    if (statusFilter === 'none') return !current.startsWith('pp_stage_');
+    if (statusFilter && statusFilter !== 'none') {
+      return ppEntries.some(s => String(s?.state || '').toLowerCase() === statusFilter);
+    }
+    return true;
+  });
+
+  if (!students.length) {
+    container.innerHTML = '<div class="thread-empty">לא נמצאו סטודנטים לפי הפילטר הנוכחי</div>';
+    return;
+  }
+
+  container.innerHTML = students.map(student => {
+    const name = escapeHtml(student.studentName || student.studentId || '—');
+    const activeStage = escapeHtml(student.currentStageId || 'לא התחיל');
+    const ppEntries = Object.values(student.stages || {}).filter(s => String(s?.stageId || '').startsWith('pp_stage_'));
+    const pendingEntry = ppEntries.find(s => s?.state === 'pending_review');
+    const relockedEntry = ppEntries.find(s => s?.state === 'relocked');
+    const approvedEntry = ppEntries.find(s => s?.state === 'unlocked');
+    const statusBadge = pendingEntry ? '🟡 ממתין' : relockedEntry ? '🔴 תיקון' : approvedEntry ? '🟢 אושר' : '⚪ לא התחיל';
+    const stageIndex = pendingEntry?.stageId ? Number(String(pendingEntry.stageId).replace('pp_stage_', '')) : null;
+    const canEvaluate = Number.isInteger(stageIndex) && stageIndex >= 0;
+    const approveBtn = canEvaluate
+      ? `<button class="btn btn-xs btn-ghost-green" onclick="macroApprovePersonalProjectStage('${macroEscHtml(student.studentId || '')}', ${stageIndex}, 'approved')">✔ אשר</button>
+         <button class="btn btn-xs btn-ghost-red" onclick="macroApprovePersonalProjectStage('${macroEscHtml(student.studentId || '')}', ${stageIndex}, 'relocked')">✖ תיקון</button>`
+      : '';
+    const ppUrl = `/personal_project.html?courseId=${encodeURIComponent(macroCourseId)}&studentId=${encodeURIComponent(student.studentId || '')}&studentName=${encodeURIComponent(student.studentName || student.studentId || '')}`;
+    return `<div style="display:grid;grid-template-columns:1.2fr 1fr auto auto;gap:8px;align-items:center;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;">
+      <div style="font-size:13px;font-weight:700;color:#0f172a;">${name}</div>
+      <div style="font-size:12px;color:#475569;">${activeStage}</div>
+      <div style="font-size:11px;font-weight:700;color:#334155;">${statusBadge}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;">
+        ${approveBtn}
+        <a class="btn btn-xs btn-outline" href="${macroEscHtml(ppUrl)}" target="_blank" style="text-decoration:none;">↗ פתח</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function macroApprovePersonalProjectStage(targetStudentId, stageIndex, status) {
+  if (!macroCourseId || !targetStudentId) return;
+  try {
+    const res = await fetch('/.netlify/functions/personal_project', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'approve_stage',
+        courseId: macroCourseId,
+        studentId: facultyId || 'teacher',
+        targetStudentId,
+        stageIndex,
+        status
+      })
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'שגיאה בעדכון סטטוס');
+    await loadPersonalProjectTracking();
+  } catch (e) {
+    alert(`שגיאה: ${e.message}`);
+  }
+}
+
+async function loadTeamProjectTracking() {
+  const summary = document.getElementById('projectTrackingTeamSummary');
+  const membersContainer = document.getElementById('projectTrackingTeamMembers');
+  if (!summary || !membersContainer || !macroCourseId) return;
+  const team = CONFIG?.my_courses?.[macroCourseId]?.teamProject || {};
+  if (!team.projectId) {
+    summary.innerHTML = '<div class="thread-empty">לא הוגדר projectId לפרויקט צוותי בשלב "עיצוב פרויקטים"</div>';
+    membersContainer.innerHTML = '';
+    return;
+  }
+  const db = getRealtimeDb();
+  if (!db) {
+    summary.innerHTML = '<div class="thread-empty">Firebase לא זמין כרגע למעקב פרויקט צוותי</div>';
+    membersContainer.innerHTML = '';
+    return;
+  }
+  summary.innerHTML = '<div class="thread-empty">טוען נתוני פרויקט צוותי...</div>';
+  try {
+    const snap = await db.ref(`team_projects/${team.projectId}`).once('value');
+    const project = snap.val() || {};
+    const members = Array.isArray(project.members) ? project.members : [];
+    const presence = project.presence || {};
+    const onlineCount = members.filter(sid => getPresenceInfo(presence[sid] || {}).key !== 'offline').length;
+    const blockCount = Object.values(project.document?.blocks || {}).filter(b => !b?.deleted).length;
+    const boardCount = Object.keys(project.board || {}).length;
+    const updatedAt = Number(project.document?.lastUpdatedAt || project.lastActivity || 0);
+
+    summary.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(100px,1fr));gap:8px;">
+        <div style="padding:8px;border:1px solid #d1fae5;border-radius:8px;background:#f0fdf4;"><div style="font-size:11px;color:#166534;">חברי צוות</div><div style="font-size:18px;font-weight:800;color:#166534;">${members.length}</div></div>
+        <div style="padding:8px;border:1px solid #bfdbfe;border-radius:8px;background:#eff6ff;"><div style="font-size:11px;color:#1d4ed8;">מחוברים</div><div style="font-size:18px;font-weight:800;color:#1d4ed8;">${onlineCount}</div></div>
+        <div style="padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;"><div style="font-size:11px;color:#475569;">בלוקים במסמך</div><div style="font-size:18px;font-weight:800;color:#0f172a;">${blockCount}</div></div>
+        <div style="padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;"><div style="font-size:11px;color:#475569;">הודעות לוח</div><div style="font-size:18px;font-weight:800;color:#0f172a;">${boardCount}</div></div>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-top:8px;">עדכון אחרון: ${escapeHtml(_formatRelativeTime(updatedAt))}</div>`;
+
+    membersContainer.innerHTML = members.length
+      ? members.map(studentId => {
+          const name = escapeHtml(project.memberNames?.[studentId] || studentId);
+          const studentUrl = `/team_project.html?projectId=${encodeURIComponent(team.projectId)}&studentId=${encodeURIComponent(studentId)}&studentName=${encodeURIComponent(project.memberNames?.[studentId] || studentId)}&courseId=${encodeURIComponent(macroCourseId)}`;
+          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;">
+            <span style="font-size:12px;font-weight:700;color:#0f172a;flex:1;">${name}</span>
+            <a class="btn btn-xs btn-outline" href="${macroEscHtml(studentUrl)}" target="_blank" style="text-decoration:none;">↗ פתח</a>
+          </div>`;
+        }).join('')
+      : '<div class="thread-empty">לא נמצאו חברי צוות לפרויקט זה</div>';
+  } catch (e) {
+    summary.innerHTML = `<div class="thread-empty">שגיאה: ${escapeHtml(e.message)}</div>`;
+    membersContainer.innerHTML = '';
   }
 }
 
@@ -7476,6 +7698,8 @@ document.getElementById("lessonDesignLessonDate")?.addEventListener("change", (e
   });
   renderLessonDesignNavigator();
 });
+document.getElementById("projectTrackingPersonalStageFilter")?.addEventListener("input", renderPersonalProjectTrackingTable);
+document.getElementById("projectTrackingPersonalStatusFilter")?.addEventListener("change", renderPersonalProjectTrackingTable);
 
 document.addEventListener("click", (event) => {
   const avatarEl = event.target?.closest?.(".thread-msg-avatar");
