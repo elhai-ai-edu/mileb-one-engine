@@ -1382,7 +1382,7 @@ async function saveCourse() {
     templateId:     document.getElementById("cf-template").value.trim() || undefined,
     bots:           Object.keys(bots).length ? bots : (existing.bots || {}),
     teamProject:    teamId ? { projectId: teamId, title: teamTitle || name } : undefined,
-    personalProject: perTitle ? { title: perTitle, url: perUrl || `/chat.html?botType=task_final_project&courseId=${id}` } : undefined
+    personalProject: perTitle ? { title: perTitle, url: perUrl || `/personal_project.html?courseId=${id}` } : undefined
   };
 
   // Remove undefined keys

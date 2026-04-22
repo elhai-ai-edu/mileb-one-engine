@@ -755,7 +755,7 @@
           const btn = document.getElementById("personalProjectBtn");
           if (btn) {
             const sName = encodeURIComponent(localStorage.getItem(`miled_student_name_${courseId}`) || studentId);
-            btn.href    = `/personal_project.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${sName}`;
+            btn.href    = `/personal_project.html?courseId=${encodeURIComponent(courseId)}&studentId=${encodeURIComponent(studentId)}&studentName=${sName}&source=waiting_lobby`;
             btn.textContent = `📝 ${personalProj.title || "פרויקט גמר אישי"} ←`;
             btn.onclick = null;
           }
