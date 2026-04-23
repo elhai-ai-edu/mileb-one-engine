@@ -765,7 +765,7 @@
           policy: projectConfig?.botPolicy || projectConfig?.policy || null,
           title: projectConfig?.title || ""
         });
-      } catch (_) {
+      } catch (err) {
         return "";
       }
     }
@@ -831,6 +831,20 @@
     function applyProjectStagesFromConfig(projectConfig) {
       const configuredStages = normalizeConfiguredPersonalStages(projectConfig?.stages);
       PP_STAGES = (configuredStages.length ? configuredStages : DEFAULT_PP_STAGES).map(s => ({ ...s }));
+    }
+
+    function hasStageEntryChanged(oldEntry, newEntry) {
+      if (!newEntry) return false;
+      const oldText = oldEntry?.submission?.text || oldEntry?.text || "";
+      const newText = newEntry?.submission?.text || newEntry?.text || "";
+      return (
+        oldEntry?.status !== newEntry?.status ||
+        oldEntry?.feedback !== newEntry?.feedback ||
+        Number(oldEntry?.submittedAt || 0) !== Number(newEntry?.submittedAt || 0) ||
+        Number(oldEntry?.approvedAt || 0) !== Number(newEntry?.approvedAt || 0) ||
+        Number(oldEntry?.rejectedAt || 0) !== Number(newEntry?.rejectedAt || 0) ||
+        oldText !== newText
+      );
     }
 
     // ── Render all ──────────────────────────────────────────────────────────
@@ -1279,7 +1293,7 @@
         Object.entries(stages).forEach(([idx, entry]) => {
           const i   = Number(idx);
           const old = _stageAnswers[i] || {};
-          if (entry && JSON.stringify(old) !== JSON.stringify(entry)) {
+          if (hasStageEntryChanged(old, entry)) {
             _stageAnswers[i] = { ...(old || {}), ...entry };
             changed = true;
             // Pre-populate draft with previous submission text when teacher rejects,
