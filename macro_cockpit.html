@@ -4667,6 +4667,13 @@ function getDefaultPersonalProjectStages() {
   }));
 }
 
+function mapPersonalProjectStatusToTrackingState(status) {
+  const rawStatus = String(status || '').toLowerCase();
+  if (rawStatus === 'approved' || rawStatus === 'completed') return 'unlocked';
+  if (rawStatus === 'pending_review' || rawStatus === 'relocked') return rawStatus;
+  return null;
+}
+
 function switchProjectTab(tab) {
   _currentProjectTab = tab;
   document.getElementById('proj-panel-team').style.display     = tab === 'team'     ? '' : 'none';
@@ -4956,8 +4963,8 @@ async function loadPersonalProjectTracking() {
 
     const db = getRealtimeDb();
     if (db) {
-      const snap = await db.ref(`personal_projects/${macroCourseId}/students`).once('value');
-      const studentsRoot = snap.val() || {};
+      const personalStudentsSnap = await db.ref(`personal_projects/${macroCourseId}/students`).once('value');
+      const studentsRoot = personalStudentsSnap.val() || {};
       Object.entries(studentsRoot).forEach(([studentId, entry]) => {
         if (!studentId || !entry || typeof entry !== 'object') return;
         const personalStages = {};
@@ -4965,10 +4972,7 @@ async function loadPersonalProjectTracking() {
           const stageIndex = Number(idx);
           if (!Number.isInteger(stageIndex) || stageIndex < 0) return;
           const stageId = `${PERSONAL_PROJECT_STAGE_PREFIX}${stageIndex}`;
-          const rawStatus = String(stage?.status || '').toLowerCase();
-          const state = rawStatus === 'approved' || rawStatus === 'completed'
-            ? 'unlocked'
-            : (rawStatus === 'pending_review' || rawStatus === 'relocked' ? rawStatus : null);
+          const state = mapPersonalProjectStatusToTrackingState(stage?.status);
           personalStages[stageId] = {
             stageId,
             state,
@@ -4990,8 +4994,8 @@ async function loadPersonalProjectTracking() {
           studentName: existing.studentName || entry.studentName || null,
           currentStageId: existing.currentStageId || personalCurrentStageId,
           stages: {
-            ...personalStages,
-            ...(existing.stages || {})
+            ...(existing.stages || {}),
+            ...personalStages
           }
         });
       });
