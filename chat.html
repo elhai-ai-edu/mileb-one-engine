@@ -96,6 +96,14 @@ const classId     = params.get('classId') || params.get('courseId') || null;
 const skillMode   = params.get('skillMode') === 'true';
 // stationRoot — passed from lesson_view setChatFrame(); used by chat.js for bot mode override (Part 34 §34.6)
 const stationRoot = params.get('stationRoot') || 'lesson';
+const ppCurrentStage = params.get('ppCurrentStage');
+const ppStageTitle = params.get('ppStageTitle') || '';
+const ppStageInstructions = params.get('ppStageInstructions') || '';
+const ppStageTaskPrompt = params.get('ppStageTaskPrompt') || '';
+const ppStageBotHint = params.get('ppStageBotHint') || '';
+const ppBotPolicy = params.get('ppBotPolicy') || '';
+const ppCurrentStageNum = Number(ppCurrentStage);
+const hasPpCurrentStage = Number.isFinite(ppCurrentStageNum);
 
 const chatWindow = document.getElementById('chat-window');
 const input      = document.getElementById('user-input');
@@ -177,6 +185,12 @@ async function triggerBotOpening() {
         skillMode:       skillMode,
         waveId:          waveId,
         stationRoot:     stationRoot,
+        currentStep:     hasPpCurrentStage ? ppCurrentStageNum : null,
+        ppStageTitle:    ppStageTitle,
+        ppStageInstructions: ppStageInstructions,
+        ppStageTaskPrompt: ppStageTaskPrompt,
+        ppStageBotHint:  ppStageBotHint,
+        ppBotPolicy:     ppBotPolicy,
         history:         [],
         isNewBotSession: true
       })
@@ -237,6 +251,12 @@ async function sendMessage(){
         skillMode:   skillMode,
         waveId:      waveId,
         stationRoot: stationRoot,
+        currentStep: hasPpCurrentStage ? ppCurrentStageNum : null,
+        ppStageTitle:    ppStageTitle,
+        ppStageInstructions: ppStageInstructions,
+        ppStageTaskPrompt: ppStageTaskPrompt,
+        ppStageBotHint:  ppStageBotHint,
+        ppBotPolicy:     ppBotPolicy,
         history:     chatHistory
       })
     });
@@ -320,4 +340,3 @@ Generated via MilEd.One
 
 </body>
 </html>
-

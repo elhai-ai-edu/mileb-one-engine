@@ -670,7 +670,12 @@ export async function handler(event) {
       skillMode        = false,         // ← true when request originates from skills hub
       waveId           = null,          // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
       stationRoot      = "lesson",      // ← MiledState.root from lesson_view (Part 34 §34.6)
-      t1TopicStage     = null           // ← Teaching Stage (Part 17 §17.5) — declared by instructor at config or runtime
+      t1TopicStage     = null,          // ← Teaching Stage (Part 17 §17.5) — declared by instructor at config or runtime
+      ppStageTitle        = null,
+      ppStageInstructions = null,
+      ppStageTaskPrompt   = null,
+      ppStageBotHint      = null,
+      ppBotPolicy         = null
     } = JSON.parse(event.body || "{}");
 
     if (!botType)
@@ -835,6 +840,28 @@ export async function handler(event) {
           contextBlock = [contextBlock, "## הנחיות פרויקט מותאמות\n" + ppSpOverride.trim()]
             .filter(Boolean).join("\n\n");
         }
+      }
+    }
+
+    if (stationRoot === "personal_project") {
+      const effectivePpPolicy = ppBotPolicy
+        || courseConfig?.personalProject?.botPolicy
+        || courseConfig?.personalProject?.policy
+        || config?.branches?.tools?.items?.personal_project?.defaultPolicy
+        || null;
+      const ppLines = [];
+      const numericCurrentStep = Number(currentStep);
+      if (currentStep != null && Number.isFinite(numericCurrentStep)) {
+        ppLines.push(`אינדקס שלב אישי (0-based): ${numericCurrentStep}`);
+      }
+      if (ppStageTitle) ppLines.push(`כותרת שלב: ${ppStageTitle}`);
+      const effectiveStageText = ppStageTaskPrompt || ppStageInstructions;
+      if (effectiveStageText) ppLines.push(`הנחיית שלב: ${effectiveStageText}`);
+      if (ppStageBotHint) ppLines.push(`botHint לשלב: ${ppStageBotHint}`);
+      if (effectivePpPolicy) ppLines.push(`מדיניות בוט לפרויקט אישי: ${effectivePpPolicy}`);
+      if (ppLines.length) {
+        contextBlock = [contextBlock, "## הקשר פרויקט אישי\n" + ppLines.join("\n")]
+          .filter(Boolean).join("\n\n");
       }
     }
 

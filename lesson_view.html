@@ -1934,6 +1934,12 @@
       const chatFrame = document.getElementById("chatFrame");
       // Always use the active bot (user may have switched); fall back to lessonData bot
       const effectiveBotType = _activeBotType || botType;
+      if (MiledState.root === "personal_project") {
+        const rawCurrent = Number(lessonData?.currentStep);
+        _ppCurrentStage = Number.isFinite(rawCurrent) && rawCurrent > 0 ? (rawCurrent - 1) : null;
+      } else {
+        _ppCurrentStage = null;
+      }
       const query = new URLSearchParams();
       if (courseId) query.set("classId", courseId);
       if (effectiveBotType) query.set("botType", effectiveBotType);
@@ -2115,6 +2121,8 @@
       if (role !== "student") return;
       lessonData.currentStep = stepId;
       renderProjectStepper();
+      const courseId = lessonData?.courseId || courseIdFromUrl;
+      if (courseId) setChatFrame(courseId, lessonData?.botType || "");
       await callClassroom("POST", {
         action: "set_step",
         sessionId, studentId, studentName,

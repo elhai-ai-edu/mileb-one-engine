@@ -365,6 +365,17 @@
     .pp-stage-alert.pending { background: #fef9c3; border: 1.5px solid #fde047; color: #713f12; }
     .pp-stage-alert.approved { background: #dcfce7; border: 1.5px solid #86efac; color: #14532d; }
     .pp-stage-alert.relocked { background: #fee2e2; border: 1.5px solid #fca5a5; color: #7f1d1d; }
+    .pp-relocked-panel {
+      background: #fff7ed; border: 1.5px solid #fdba74; border-radius: 10px;
+      padding: 10px 12px; margin-bottom: 12px;
+    }
+    .pp-relocked-head { font-size: 12px; font-weight: 800; color: #9a3412; margin-bottom: 6px; }
+    .pp-relocked-note { font-size: 12px; color: #7c2d12; line-height: 1.6; margin-bottom: 8px; }
+    .pp-relocked-prev {
+      width: 100%; min-height: 64px; resize: vertical; border-radius: 8px;
+      border: 1px solid #fed7aa; background: #fff; padding: 8px; box-sizing: border-box;
+      font-size: 12px; color: #7c2d12;
+    }
 
     /* ── Modal spring ── */
     @keyframes modalPop {
@@ -493,6 +504,13 @@
 
           <!-- Stage status alert (shown when stage has been submitted/approved/relocked) -->
           <div id="ppStageAlert" class="pp-stage-alert" style="display:none;"></div>
+
+          <!-- Relocked focus panel -->
+          <div id="ppRelockedPanel" class="pp-relocked-panel" style="display:none;">
+            <div class="pp-relocked-head">🔁 שלב חוזר לתיקון</div>
+            <div class="pp-relocked-note" id="ppRelockedNote"></div>
+            <textarea id="ppRelockedPrevText" class="pp-relocked-prev" readonly></textarea>
+          </div>
 
           <!-- Previous stage submission (read-only context) -->
           <div id="ppPrevSection" style="display:none;">
@@ -650,12 +668,15 @@
     let _announcementRef = null;
     let _qaRef           = null;
     let _stagesRef       = null;
+    let _configPollTimer = null;
     let _attachments     = [];  // [{kind,name,size,contentType,storageRef,downloadUrl,uploadedAt,durationSec?}]
     let _mediaRecorder   = null;
     let _recordingChunks = [];
     let _recordTimer     = null;
     let _recordSeconds   = 0;
     const MAX_FILE_BYTES = 10 * 1024 * 1024;  // 10 MB per attachment
+    let _lastProjectConfigSig = "";
+    let _projectBotPolicy     = "gatekept";
 
     // ── Firebase ────────────────────────────────────────────────────────────
     function getDb() {
@@ -719,6 +740,7 @@
 
         // Firebase real-time listeners
         startListeners();
+        _configPollTimer = setInterval(() => loadCourseTitle(true), 30000);
 
         // Load chat iframe
         setChatFrame();
@@ -730,11 +752,35 @@
     }
 
     // ── Config / course title ───────────────────────────────────────────────
-    async function loadCourseTitle() {
+    function buildProjectConfigSignature(projectConfig) {
+      try {
+        return JSON.stringify({
+          stages: (projectConfig?.stages || []).map(s => ({
+            title: s?.title || "",
+            instructions: s?.instructions || "",
+            subtitle: s?.subtitle || "",
+            taskPrompt: s?.taskPrompt || "",
+            botHint: s?.botHint || ""
+          })),
+          policy: projectConfig?.botPolicy || projectConfig?.policy || null,
+          title: projectConfig?.title || ""
+        });
+      } catch (err) {
+        return "";
+      }
+    }
+
+    async function loadCourseTitle(silent = false) {
       try {
         const config   = await fetch(`/config.json?ts=${Date.now()}`).then(r => r.json());
         const course   = config?.my_courses?.[courseId];
         const projConf = course?.personalProject;
+        const personalProjectBot = config?.branches?.tools?.items?.personal_project || {};
+        _projectBotPolicy = String(projConf?.botPolicy || projConf?.policy || personalProjectBot?.defaultPolicy || "gatekept").trim() || "gatekept";
+
+        const nextSig = buildProjectConfigSignature(projConf);
+        const configChanged = !!_lastProjectConfigSig && nextSig !== _lastProjectConfigSig;
+        _lastProjectConfigSig = nextSig;
         applyProjectStagesFromConfig(projConf);
         const title    = document.getElementById("ppTitle");
         const projTitle = document.getElementById("ppProjTitle");
@@ -759,8 +805,10 @@
           hasAnyMeta = true;
         }
         if (metaEl && hasAnyMeta) metaEl.style.display = "";
+
+        if (configChanged) renderAll();
       } catch(e) {
-        console.warn("[pp] config load failed:", e.message);
+        if (!silent) console.warn("[pp] config load failed:", e.message);
       }
     }
 
@@ -769,15 +817,14 @@
       return rawStages.slice(0, MAX_PERSONAL_PROJECT_STAGES).map((stage, idx) => {
         if (!stage || typeof stage !== "object" || Array.isArray(stage)) return null;
         const fallbackTitle = `שלב ${idx + 1}`;
-        // Explicit fields take precedence; instructions acts as a universal fallback text.
-        const title      = String(stage.title        || "").trim() || fallbackTitle;
-        const supplement = String(stage.instructions || "").trim();
-        const subtitle   = String(stage.subtitle     || supplement || title).trim();
-        const taskPrompt = String(stage.taskPrompt   || supplement || subtitle).trim();
-        const botHint    = String(stage.botHint      || title).trim();
+        const title      = String(stage.title || "").trim() || fallbackTitle;
+        const instructions = String(stage.instructions || "").trim();
+        const subtitle   = String(stage.subtitle || instructions || title).trim();
+        const taskPrompt = String(stage.taskPrompt || instructions || subtitle).trim();
+        const botHint    = String(stage.botHint || title).trim();
         // A stage is considered empty only when every content field is absent.
-        if (!supplement && !stage.title && !stage.subtitle && !stage.taskPrompt && !stage.botHint) return null;
-        return { title, subtitle, taskPrompt, botHint };
+        if (!instructions && !stage.title && !stage.subtitle && !stage.taskPrompt && !stage.botHint) return null;
+        return { title, instructions, subtitle, taskPrompt, botHint };
       }).filter(Boolean);
     }
 
@@ -786,11 +833,26 @@
       PP_STAGES = (configuredStages.length ? configuredStages : DEFAULT_PP_STAGES).map(s => ({ ...s }));
     }
 
+    function hasStageEntryChanged(oldEntry, newEntry) {
+      if (!newEntry) return !!oldEntry;
+      const oldText = oldEntry?.submission?.text || oldEntry?.text || "";
+      const newText = newEntry?.submission?.text || newEntry?.text || "";
+      return (
+        oldEntry?.status !== newEntry?.status ||
+        oldEntry?.feedback !== newEntry?.feedback ||
+        Number(oldEntry?.submittedAt || 0) !== Number(newEntry?.submittedAt || 0) ||
+        Number(oldEntry?.approvedAt || 0) !== Number(newEntry?.approvedAt || 0) ||
+        Number(oldEntry?.rejectedAt || 0) !== Number(newEntry?.rejectedAt || 0) ||
+        oldText !== newText
+      );
+    }
+
     // ── Render all ──────────────────────────────────────────────────────────
     function renderAll() {
       renderStepper();
       renderStagesList();
       renderActiveStage();
+      setChatFrame();
     }
 
     // ── Stepper (4 milestones) ──────────────────────────────────────────────
@@ -924,6 +986,9 @@
 
       // Stage-level status alert
       const alertEl = document.getElementById("ppStageAlert");
+      const relockedPanel = document.getElementById("ppRelockedPanel");
+      const relockedNote = document.getElementById("ppRelockedNote");
+      const relockedPrevText = document.getElementById("ppRelockedPrevText");
       if (alertEl) {
         if (status === "pending_review") {
           alertEl.className   = "pp-stage-alert pending";
@@ -940,6 +1005,19 @@
           alertEl.style.display = "";
         } else {
           alertEl.style.display = "none";
+        }
+      }
+      if (relockedPanel) {
+        if (status === "relocked") {
+          const teacherNote = stageData.feedback
+            ? stageData.feedback
+            : "לא נוספה הערת מרצה מפורטת. עברו על המשימה, תקנו והגישו מחדש.";
+          const prevSubmissionText = stageData.submission?.text || stageData.text || "";
+          if (relockedNote) relockedNote.textContent = `הערת המרצה: ${teacherNote}`;
+          if (relockedPrevText) relockedPrevText.value = prevSubmissionText || "לא נמצא טקסט בהגשה הקודמת.";
+          relockedPanel.style.display = "";
+        } else {
+          relockedPanel.style.display = "none";
         }
       }
 
@@ -983,15 +1061,24 @@
     // ── Chat iframe ──────────────────────────────────────────────────────────
     function setChatFrame() {
       const frame = document.getElementById("ppChatFrame");
-      if (!frame || frame.getAttribute("data-loaded")) return;
+      if (!frame) return;
+      const stage = PP_STAGES[_currentStage] || {};
       const q = new URLSearchParams({
         classId:     courseId,
         botType:     "personal_project_bot",
         stationRoot: "personal_project",
-        sessionId:   `pp_${courseId}_${studentId}`
+        sessionId:   `pp_${courseId}_${studentId}`,
+        ppCurrentStage: String(_currentStage),
+        ppStageTitle: String(stage.title || ""),
+        ppStageInstructions: String(stage.instructions || stage.taskPrompt || ""),
+        ppStageTaskPrompt: String(stage.taskPrompt || ""),
+        ppStageBotHint: String(stage.botHint || ""),
+        ppBotPolicy: String(_projectBotPolicy || "gatekept")
       });
-      frame.src = `/chat.html?${q.toString()}`;
-      frame.setAttribute("data-loaded", "1");
+      const nextSrc = `/chat.html?${q.toString()}`;
+      if (frame.getAttribute("data-loaded-src") === nextSrc) return;
+      frame.setAttribute("data-loaded-src", nextSrc);
+      frame.src = nextSrc;
     }
 
     // ── Draft autosave ────────────────────────────────────────────────────────
@@ -1089,8 +1176,6 @@
         renderAll();
 
         // Reload chat iframe with updated stage context
-        const frame = document.getElementById("ppChatFrame");
-        if (frame) { frame.removeAttribute("data-loaded"); }
         setChatFrame();
 
       } catch(e) {
@@ -1208,12 +1293,12 @@
         Object.entries(stages).forEach(([idx, entry]) => {
           const i   = Number(idx);
           const old = _stageAnswers[i] || {};
-          if (entry && old.status !== entry.status) {
+          if (hasStageEntryChanged(old, entry)) {
             _stageAnswers[i] = { ...(old || {}), ...entry };
             changed = true;
             // Pre-populate draft with previous submission text when teacher rejects,
             // so the student sees their previous answer and can immediately edit it.
-            if (entry.status === "relocked" && i === _currentStage && !_draft) {
+            if (entry.status === "relocked" && old.status !== "relocked" && i === _currentStage && !_draft) {
               _draft = entry.submission?.text || entry.text || "";
             }
           }
@@ -1234,6 +1319,7 @@
       if (_announcementRef) { _announcementRef.off(); _announcementRef = null; }
       if (_qaRef)           { _qaRef.off();           _qaRef           = null; }
       if (_stagesRef)       { _stagesRef.off();       _stagesRef       = null; }
+      if (_configPollTimer) { clearInterval(_configPollTimer); _configPollTimer = null; }
     }
 
     // ── Scroll helper ────────────────────────────────────────────────────────
