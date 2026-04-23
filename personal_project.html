@@ -599,6 +599,9 @@
 
     // ── Project stages (7-stage Hebrew problem-solving project) ────────────
     const PP_STAGE_SCHEMA = window.MiledPersonalProjectStageSchema || null;
+    if (!PP_STAGE_SCHEMA) {
+      console.warn("[pp] personal_project_stage_schema.js not loaded — stage normalization unavailable. Stages will be empty until config is fetched.");
+    }
     const MAX_PERSONAL_PROJECT_STAGES = PP_STAGE_SCHEMA?.MAX_STAGES || 7;
     const DEFAULT_PP_STAGES = PP_STAGE_SCHEMA?.getDefaultStages?.() || [];
     let PP_STAGES = DEFAULT_PP_STAGES;  // reassigned by applyProjectStagesFromConfig during init()
@@ -705,6 +708,9 @@
 
     // ── Config / course title ───────────────────────────────────────────────
     function buildProjectConfigSignature(projectConfig) {
+      // Signature covers stage-content and bot-policy fields only.
+      // Changes to stages or policy trigger renderAll() → setChatFrame() → iframe reload.
+      // Title changes are applied directly in loadCourseTitle without triggering renderAll.
       try {
         const normalizedStages = normalizeConfiguredPersonalStages(projectConfig?.stages);
         return JSON.stringify({
@@ -715,8 +721,7 @@
             taskPrompt: s.taskPrompt,
             botHint: s.botHint
           })),
-          policy: projectConfig?.botPolicy || projectConfig?.policy || null,
-          title: projectConfig?.title || ""
+          policy: projectConfig?.botPolicy || projectConfig?.policy || null
         });
       } catch (err) {
         return "";
@@ -766,7 +771,10 @@
     }
 
     function normalizeConfiguredPersonalStages(rawStages) {
-      if (!PP_STAGE_SCHEMA?.normalizeStages) return [];
+      if (!PP_STAGE_SCHEMA?.normalizeStages) {
+        console.warn("[pp] normalizeConfiguredPersonalStages: PP_STAGE_SCHEMA.normalizeStages unavailable — returning [].");
+        return [];
+      }
       return PP_STAGE_SCHEMA.normalizeStages(rawStages, {
         maxStages: MAX_PERSONAL_PROJECT_STAGES,
         fallbackToDefaults: false
@@ -894,6 +902,10 @@
       if (allDone) return;
 
       const stage     = PP_STAGES[_currentStage];
+      if (!stage) {
+        console.warn(`[pp] renderActiveStage: no stage at index ${_currentStage} (PP_STAGES.length=${PP_STAGES.length})`);
+        return;
+      }
       const stageData = _stageAnswers[_currentStage] || {};
       const status    = stageData.status || "";
 
@@ -915,12 +927,14 @@
       if (navTask)      navTask.textContent      = stage.botHint;
       if (botStageLabel) botStageLabel.textContent = `שלב ${_currentStage + 1} — ${stage.title}`;
 
-      // Previous stage textarea
+      // Previous stage textarea — hidden when relocked so the #ppRelockedPanel
+      // (rendered just below via document.getElementById("ppRelockedPanel")) is the
+      // single point of reference: teacher note → previous submission → edit area.
       const prevSection = document.getElementById("ppPrevSection");
       const prevLabel   = document.getElementById("ppPrevLabel");
       const prevTa      = document.getElementById("ppPrevTa");
       const prevIdx     = _currentStage - 1;
-      if (prevSection && prevIdx >= 0 && _stageAnswers[prevIdx]?.text) {
+      if (prevSection && prevIdx >= 0 && _stageAnswers[prevIdx]?.text && status !== "relocked") {
         const prevStage = PP_STAGES[prevIdx];
         if (prevLabel) prevLabel.textContent = `${prevStage.title} — תשובה קודמת:`;
         if (prevTa)    prevTa.value          = _stageAnswers[prevIdx].text;
