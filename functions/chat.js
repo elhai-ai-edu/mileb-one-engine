@@ -851,7 +851,7 @@ export async function handler(event) {
         || null;
       const ppLines = [];
       if (currentStep != null && Number.isFinite(Number(currentStep))) {
-        ppLines.push(`אינדקס שלב אישי: ${Number(currentStep) + 1}`);
+        ppLines.push(`אינדקס שלב אישי (0-based): ${Number(currentStep)}`);
       }
       if (ppStageTitle) ppLines.push(`כותרת שלב: ${ppStageTitle}`);
       const effectiveStageText = ppStageTaskPrompt || ppStageInstructions;
