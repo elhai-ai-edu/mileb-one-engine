@@ -708,9 +708,9 @@
 
     // ── Config / course title ───────────────────────────────────────────────
     function buildProjectConfigSignature(projectConfig) {
-      // Signature covers only stage-content and bot-policy fields.
-      // Title changes are applied directly in loadCourseTitle and do not need to
-      // trigger renderAll (which would reload the chat iframe unnecessarily).
+      // Signature covers stage-content and bot-policy fields only.
+      // Changes to stages or policy trigger renderAll() → setChatFrame() → iframe reload.
+      // Title changes are applied directly in loadCourseTitle without triggering renderAll.
       try {
         const normalizedStages = normalizeConfiguredPersonalStages(projectConfig?.stages);
         return JSON.stringify({
@@ -927,8 +927,9 @@
       if (navTask)      navTask.textContent      = stage.botHint;
       if (botStageLabel) botStageLabel.textContent = `שלב ${_currentStage + 1} — ${stage.title}`;
 
-      // Previous stage textarea — hidden when relocked so the relockedPanel's
-      // own "previous submission" area is the single point of reference.
+      // Previous stage textarea — hidden when relocked so the #ppRelockedPanel
+      // (rendered just below via document.getElementById("ppRelockedPanel")) is the
+      // single point of reference: teacher note → previous submission → edit area.
       const prevSection = document.getElementById("ppPrevSection");
       const prevLabel   = document.getElementById("ppPrevLabel");
       const prevTa      = document.getElementById("ppPrevTa");
