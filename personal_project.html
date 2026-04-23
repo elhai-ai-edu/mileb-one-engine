@@ -740,7 +740,7 @@
 
         // Firebase real-time listeners
         startListeners();
-        _configPollTimer = setInterval(() => loadCourseTitle(true), 15000);
+        _configPollTimer = setInterval(() => loadCourseTitle(true), 30000);
 
         // Load chat iframe
         setChatFrame();
@@ -834,7 +834,7 @@
     }
 
     function hasStageEntryChanged(oldEntry, newEntry) {
-      if (!newEntry) return false;
+      if (!newEntry) return !!oldEntry;
       const oldText = oldEntry?.submission?.text || oldEntry?.text || "";
       const newText = newEntry?.submission?.text || newEntry?.text || "";
       return (

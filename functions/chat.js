@@ -850,8 +850,9 @@ export async function handler(event) {
         || config?.branches?.tools?.items?.personal_project?.defaultPolicy
         || null;
       const ppLines = [];
-      if (currentStep != null && Number.isFinite(Number(currentStep))) {
-        ppLines.push(`אינדקס שלב אישי (0-based): ${Number(currentStep)}`);
+      const numericCurrentStep = Number(currentStep);
+      if (currentStep != null && Number.isFinite(numericCurrentStep)) {
+        ppLines.push(`אינדקס שלב אישי (0-based): ${numericCurrentStep}`);
       }
       if (ppStageTitle) ppLines.push(`כותרת שלב: ${ppStageTitle}`);
       const effectiveStageText = ppStageTaskPrompt || ppStageInstructions;
