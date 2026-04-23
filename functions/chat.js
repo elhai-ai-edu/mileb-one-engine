@@ -133,8 +133,8 @@ function buildPersonalProjectContextBlock({
     || null;
   const lines = [];
   const numericCurrentStep = Number(currentStep);
-  if (currentStep != null && Number.isFinite(numericCurrentStep)) {
-    lines.push(`אינדקס שלב אישי (0-based): ${numericCurrentStep}`);
+  if (Number.isFinite(numericCurrentStep)) {
+    lines.push(`אינדקס שלב אישי: ${numericCurrentStep}`);
   }
   if (ppStageTitle) lines.push(`כותרת שלב: ${ppStageTitle}`);
   const effectiveStageText = ppStageTaskPrompt || ppStageInstructions;

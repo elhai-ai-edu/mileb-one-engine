@@ -150,6 +150,7 @@ function buildChatRequestPayload(message, history, isNewBotSession = false) {
     skillMode:       skillMode,
     waveId:          waveId,
     stationRoot:     stationRoot,
+    // Keep both fields during migration: generic currentStep + PP-specific ppCurrentStage.
     currentStep:     effectivePpCurrentStage,
     ppCurrentStage:  effectivePpCurrentStage,
     ppStageTitle:    ppStageTitle,

@@ -52,7 +52,7 @@
     }
   ];
 
-  function asText(value) {
+  function toTrimmedString(value) {
     return String(value || "").trim();
   }
 
@@ -60,13 +60,24 @@
     if (!rawStage || typeof rawStage !== "object" || Array.isArray(rawStage)) return null;
     const fallbackTitle = `שלב ${index + 1}`;
     const base = fallbackStage && typeof fallbackStage === "object" ? fallbackStage : {};
-    const title = asText(rawStage.title) || asText(base.title) || fallbackTitle;
-    const instructions = asText(rawStage.instructions) || asText(base.instructions);
-    const subtitle = asText(rawStage.subtitle) || asText(base.subtitle) || title;
-    const taskPrompt = asText(rawStage.taskPrompt) || instructions || asText(base.taskPrompt);
-    const botHint = asText(rawStage.botHint) || asText(base.botHint) || title;
+    // Fallback hierarchy (legacy-safe, minimal):
+    // title/subtitle/botHint -> explicit value, then default stage template, then title fallback.
+    // instructions -> explicit value, then default stage template.
+    // taskPrompt -> explicit value, then instructions text, then default stage template.
+    const title = toTrimmedString(rawStage.title) || toTrimmedString(base.title) || fallbackTitle;
+    const instructions = toTrimmedString(rawStage.instructions) || toTrimmedString(base.instructions);
+    const subtitle = toTrimmedString(rawStage.subtitle) || toTrimmedString(base.subtitle) || title;
+    const taskPrompt = toTrimmedString(rawStage.taskPrompt) || instructions || toTrimmedString(base.taskPrompt);
+    const botHint = toTrimmedString(rawStage.botHint) || toTrimmedString(base.botHint) || title;
 
-    if (!asText(rawStage.title) && !asText(rawStage.instructions) && !asText(rawStage.subtitle) && !asText(rawStage.taskPrompt) && !asText(rawStage.botHint)) {
+    const hasAnyCustomContent = [
+      rawStage.title,
+      rawStage.instructions,
+      rawStage.subtitle,
+      rawStage.taskPrompt,
+      rawStage.botHint
+    ].some(value => toTrimmedString(value));
+    if (!hasAnyCustomContent) {
       return null;
     }
     return { title, instructions, subtitle, taskPrompt, botHint };

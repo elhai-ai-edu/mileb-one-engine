@@ -4716,6 +4716,7 @@ function derivePersonalTrackingSnapshot(student) {
   }
 
   const reviewActionStageIndex = parsePersonalStageIndex(pendingEntry?.stageId);
+  // Keep actionableStageIndex for backward compatibility with existing callers.
   const actionableStageIndex = reviewActionStageIndex;
   const lastSeen = Number(student?.lastSeen || student?.personalLastSeen || 0);
   return { status, lastSeen, actionableStageIndex, reviewActionStageIndex, currentStageId };
@@ -5179,7 +5180,10 @@ function renderPersonalProjectTrackingTable() {
 async function macroApprovePersonalProjectStage(targetStudentId, stageIndex, status) {
   if (!macroCourseId || !targetStudentId) return;
   const normalizedStatus = String(status || '').trim().toLowerCase();
-  if (!Number.isInteger(stageIndex) || stageIndex < 0 || !['approved', 'relocked'].includes(normalizedStatus)) return;
+  if (!Number.isInteger(stageIndex) || stageIndex < 0 || !['approved', 'relocked'].includes(normalizedStatus)) {
+    console.warn('[Project tracking] invalid macroApprovePersonalProjectStage arguments:', { targetStudentId, stageIndex, status });
+    return;
+  }
   const requestingFacultyId = String(facultyId || '').trim();
   if (!requestingFacultyId) {
     alert('נדרש מזהה מרצה פעיל כדי לאשר/להחזיר שלב.');
