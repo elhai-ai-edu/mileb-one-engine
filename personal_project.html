@@ -631,7 +631,7 @@
         botHint:    "הצגה — שלב 7"
       }
     ];
-    let PP_STAGES = DEFAULT_PP_STAGES.map(s => ({ ...s }));
+    let PP_STAGES = DEFAULT_PP_STAGES;  // reassigned by applyProjectStagesFromConfig during init()
 
     // 4-milestone labels for the progress stepper
     // Each milestone covers a range of stages (0-indexed).
@@ -674,8 +674,15 @@
 
     // ── Boot ────────────────────────────────────────────────────────────────
     async function init() {
-      // Load course title from config
-      await loadCourseTitle();
+      // Load course title and stage definitions from config first.
+      // loadCourseTitle() has its own internal catch and logs a warning, so it does not normally
+      // throw; the outer try-catch here is a safety net for any unexpected throws from
+      // future changes to the function.
+      try {
+        await loadCourseTitle();
+      } catch(e) {
+        console.warn("[pp] init: loadCourseTitle threw unexpectedly:", e.message);
+      }
 
       try {
         const res  = await fetch("/.netlify/functions/personal_project", {
@@ -761,19 +768,16 @@
       if (!Array.isArray(rawStages)) return [];
       return rawStages.slice(0, MAX_PERSONAL_PROJECT_STAGES).map((stage, idx) => {
         if (!stage || typeof stage !== "object" || Array.isArray(stage)) return null;
-        const title        = String(stage.title || "").trim();
-        const instructions = String(stage.instructions || "").trim();
-        const subtitle     = String(stage.subtitle || instructions || "").trim();
-        const taskPrompt   = String(stage.taskPrompt || instructions || "").trim();
-        const botHint      = String(stage.botHint || title || "").trim();
-        if (!title && !instructions && !taskPrompt && !subtitle) return null;
         const fallbackTitle = `שלב ${idx + 1}`;
-        return {
-          title:      title || fallbackTitle,
-          subtitle:   subtitle || title || fallbackTitle,
-          taskPrompt: taskPrompt || subtitle || title || fallbackTitle,
-          botHint:    botHint || `${title || fallbackTitle} — שלב ${idx + 1}`
-        };
+        // Explicit fields take precedence; instructions acts as a universal fallback text.
+        const title      = String(stage.title        || "").trim() || fallbackTitle;
+        const supplement = String(stage.instructions || "").trim();
+        const subtitle   = String(stage.subtitle     || supplement || title).trim();
+        const taskPrompt = String(stage.taskPrompt   || supplement || subtitle).trim();
+        const botHint    = String(stage.botHint      || title).trim();
+        // A stage is considered empty only when every content field is absent.
+        if (!supplement && !stage.title && !stage.subtitle && !stage.taskPrompt && !stage.botHint) return null;
+        return { title, subtitle, taskPrompt, botHint };
       }).filter(Boolean);
     }
 

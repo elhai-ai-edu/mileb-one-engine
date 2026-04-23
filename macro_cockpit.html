@@ -4626,6 +4626,7 @@ let _projPersonalStages = [];
 let _currentProjectTab  = 'team';
 let _projectTrackingPersonalRows = [];
 const PERSONAL_PROJECT_STAGE_PREFIX = 'pp_stage_';
+const PERSONAL_PROJECT_MAX_STAGE_INDEX = 6;  // 7 stages (0–6), mirrors MAX_STAGE_INDEX in personal_project.js
 const DEFAULT_PERSONAL_PROJECT_STAGES = [
   {
     title: 'בחירת בעיה',
@@ -4964,47 +4965,59 @@ async function loadPersonalProjectTracking() {
     const mergedByStudent = new Map(
       summaryRows
         .filter(s => s?.studentId)
-        .map(student => [student.studentId, { ...student, stages: { ...(student.stages || {}) } }])
+        .map(student => [
+          student.studentId,
+          {
+            ...student,
+            stages: Object.fromEntries(
+              Object.entries(student.stages || {}).map(([k, v]) => [k, { ...v }])
+            )
+          }
+        ])
     );
 
     const db = getRealtimeDb();
     if (db) {
-      const personalStudentsSnap = await db.ref(`personal_projects/${macroCourseId}/students`).once('value');
-      const studentsRoot = personalStudentsSnap.val() || {};
-      Object.entries(studentsRoot).forEach(([studentId, entry]) => {
-        if (!studentId || !entry || typeof entry !== 'object') return;
-        const personalStages = {};
-        Object.entries(entry.stages || {}).forEach(([stageIndexStr, stage]) => {
-          const stageIndex = Number(stageIndexStr);
-          if (!Number.isInteger(stageIndex) || stageIndex < 0) return;
-          const stageId = buildPersonalProjectStageId(stageIndex);
-          const state = mapPersonalProjectStatusToTrackingState(stage?.status);
-          personalStages[stageId] = {
-            stageId,
-            state,
-            submittedAt: stage?.submittedAt || null,
-            approvedAt: stage?.approvedAt || null,
-            rejectedAt: stage?.rejectedAt || null,
-            submissionId: stage?.submissionId || null
-          };
-        });
+      try {
+        const personalStudentsSnap = await db.ref(`personal_projects/${macroCourseId}/students`).once('value');
+        const studentsRoot = personalStudentsSnap.val() || {};
+        Object.entries(studentsRoot).forEach(([studentId, entry]) => {
+          if (!studentId || !entry || typeof entry !== 'object') return;
+          const personalStages = {};
+          Object.entries(entry.stages || {}).forEach(([stageIndexStr, stage]) => {
+            const stageIndex = Number(stageIndexStr);
+            if (!Number.isInteger(stageIndex) || stageIndex < 0 || stageIndex > PERSONAL_PROJECT_MAX_STAGE_INDEX) return;  // inclusive: 0–6
+            const stageId = buildPersonalProjectStageId(stageIndex);
+            const state = mapPersonalProjectStatusToTrackingState(stage?.status);
+            personalStages[stageId] = {
+              stageId,
+              state,
+              submittedAt: stage?.submittedAt || null,
+              approvedAt: stage?.approvedAt || null,
+              rejectedAt: stage?.rejectedAt || null,
+              submissionId: stage?.submissionId || null
+            };
+          });
 
-        const currentStageIndex = Number(entry.currentStage);
-        const personalCurrentStageId = Number.isInteger(currentStageIndex) && currentStageIndex >= 0
-          ? buildPersonalProjectStageId(currentStageIndex)
-          : null;
-        const existing = mergedByStudent.get(studentId) || { studentId, stages: {} };
-        mergedByStudent.set(studentId, {
-          ...existing,
-          studentId,
-          studentName: existing.studentName || entry.studentName || null,
-          currentStageId: existing.currentStageId ?? personalCurrentStageId,
-          stages: {
-            ...(existing.stages || {}),
-            ...personalStages
-          }
+          const currentStageIndex = Number(entry.currentStage);
+          const personalCurrentStageId = Number.isInteger(currentStageIndex) && currentStageIndex >= 0
+            ? buildPersonalProjectStageId(currentStageIndex)
+            : null;
+          const existing = mergedByStudent.get(studentId) || { studentId, stages: {} };
+          mergedByStudent.set(studentId, {
+            ...existing,
+            studentId,
+            studentName: existing.studentName || entry.studentName || null,
+            currentStageId: existing.currentStageId ?? personalCurrentStageId,
+            stages: {
+              ...(existing.stages || {}),
+              ...personalStages
+            }
+          });
         });
-      });
+      } catch (firebaseErr) {
+        console.warn('[Project tracking] personal_projects Firebase read failed; tracking may be incomplete:', firebaseErr.message);
+      }
     } else {
       console.warn('[Project tracking] Firebase is unavailable; using only course_progress summary data.');
     }
