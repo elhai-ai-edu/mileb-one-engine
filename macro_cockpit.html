@@ -4626,6 +4626,46 @@ let _projPersonalStages = [];
 let _currentProjectTab  = 'team';
 let _projectTrackingPersonalRows = [];
 const PERSONAL_PROJECT_STAGE_PREFIX = 'pp_stage_';
+const DEFAULT_PERSONAL_PROJECT_STAGES = [
+  {
+    title: 'בחירת בעיה',
+    instructions: 'תאר/י את הבעיה המקצועית שבחרת: מה הבעיה, מה חשיבותה ומי מושפע ממנה.'
+  },
+  {
+    title: 'ניסיונות קדומים',
+    instructions: 'תאר/י ניסיונות קודמים לפתרון הבעיה ומה מנע מהם להצליח.'
+  },
+  {
+    title: 'מקורות מידע',
+    instructions: 'אסוף/י 3-5 מקורות מידע רלוונטיים וסכם/י מה למדת מכל מקור.'
+  },
+  {
+    title: 'שתי אלטרנטיבות',
+    instructions: 'הצג/י שתי גישות שונות לפתרון הבעיה עם יתרונות וחסרונות לכל אחת.'
+  },
+  {
+    title: 'בחירת פתרון',
+    instructions: 'בחר/י פתרון מנומק והסבר/י את ההיגיון שמאחורי הבחירה.'
+  },
+  {
+    title: 'כתיבת מסמך',
+    instructions: 'כתוב/י מסמך מסכם: הבעיה, ניסיונות קודמים, חלופות, פתרון נבחר ונימוק.'
+  },
+  {
+    title: 'הצגה',
+    instructions: 'כתוב/י תקציר קצר להצגת הפרויקט בכיתה: בעיה, ניסיונות, פתרון ומה למדת.'
+  }
+];
+
+function getDefaultPersonalProjectStages() {
+  return DEFAULT_PERSONAL_PROJECT_STAGES.map((stage, idx) => ({
+    id: `pp_default_stage_${idx + 1}`,
+    title: stage.title,
+    instructions: stage.instructions,
+    deadline: '',
+    gradeShare: 0
+  }));
+}
 
 function switchProjectTab(tab) {
   _currentProjectTab = tab;
@@ -4786,7 +4826,9 @@ function loadProjectsTab() {
 
     // ── Stages ──
     _projTeamStages     = (tp.stages || []).map(s => ({ ...s }));
-    _projPersonalStages = (pp.stages || []).map(s => ({ ...s }));
+    _projPersonalStages = Array.isArray(pp.stages) && pp.stages.length
+      ? pp.stages.map(s => ({ ...s }))
+      : getDefaultPersonalProjectStages();
     _renderProjStages('team');
     _renderProjStages('personal');
 
@@ -4898,12 +4940,65 @@ async function loadPersonalProjectTracking() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'שגיאה בטעינת נתונים');
-    _projectTrackingPersonalRows = (data.students || []).filter(student => {
+
+    const summaryRows = (data.students || []).filter(student => {
       const current = String(student.currentStageId || '');
       if (current.startsWith(PERSONAL_PROJECT_STAGE_PREFIX)) return true;
       const entries = Object.values(student.stages || {});
       return entries.some(s => String(s?.stageId || '').startsWith(PERSONAL_PROJECT_STAGE_PREFIX));
     });
+
+    const mergedByStudent = new Map(
+      summaryRows
+        .filter(s => s?.studentId)
+        .map(student => [student.studentId, { ...student, stages: { ...(student.stages || {}) } }])
+    );
+
+    const db = getRealtimeDb();
+    if (db) {
+      const snap = await db.ref(`personal_projects/${macroCourseId}/students`).once('value');
+      const studentsRoot = snap.val() || {};
+      Object.entries(studentsRoot).forEach(([studentId, entry]) => {
+        if (!studentId || !entry || typeof entry !== 'object') return;
+        const personalStages = {};
+        Object.entries(entry.stages || {}).forEach(([idx, stage]) => {
+          const stageIndex = Number(idx);
+          if (!Number.isInteger(stageIndex) || stageIndex < 0) return;
+          const stageId = `${PERSONAL_PROJECT_STAGE_PREFIX}${stageIndex}`;
+          const rawStatus = String(stage?.status || '').toLowerCase();
+          const state = rawStatus === 'approved' || rawStatus === 'completed'
+            ? 'unlocked'
+            : (rawStatus === 'pending_review' || rawStatus === 'relocked' ? rawStatus : null);
+          personalStages[stageId] = {
+            stageId,
+            state,
+            submittedAt: stage?.submittedAt || null,
+            approvedAt: stage?.approvedAt || null,
+            rejectedAt: stage?.rejectedAt || null,
+            submissionId: stage?.submissionId || null
+          };
+        });
+
+        const currentStageIndex = Number(entry.currentStage);
+        const personalCurrentStageId = Number.isInteger(currentStageIndex) && currentStageIndex >= 0
+          ? `${PERSONAL_PROJECT_STAGE_PREFIX}${currentStageIndex}`
+          : null;
+        const existing = mergedByStudent.get(studentId) || { studentId, stages: {} };
+        mergedByStudent.set(studentId, {
+          ...existing,
+          studentId,
+          studentName: existing.studentName || entry.studentName || null,
+          currentStageId: existing.currentStageId || personalCurrentStageId,
+          stages: {
+            ...personalStages,
+            ...(existing.stages || {})
+          }
+        });
+      });
+    }
+
+    _projectTrackingPersonalRows = Array.from(mergedByStudent.values());
+
     if (strip) {
       const pending = _projectTrackingPersonalRows.filter(s =>
         Object.values(s.stages || {}).some(stage => String(stage?.stageId || '').startsWith(PERSONAL_PROJECT_STAGE_PREFIX) && stage?.state === 'pending_review')
