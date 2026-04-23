@@ -104,6 +104,7 @@ const ppStageBotHint = params.get('ppStageBotHint') || '';
 const ppBotPolicy = params.get('ppBotPolicy') || '';
 const ppCurrentStageNum = Number(ppCurrentStage);
 const hasPpCurrentStage = Number.isFinite(ppCurrentStageNum);
+const effectivePpCurrentStage = hasPpCurrentStage ? ppCurrentStageNum : null;
 
 const chatWindow = document.getElementById('chat-window');
 const input      = document.getElementById('user-input');
@@ -137,6 +138,30 @@ if (chatHistory.length > 0){
 }
 
 let currentBotType = null;
+
+function buildChatRequestPayload(message, history, isNewBotSession = false) {
+  return {
+    message,
+    botType:         currentBotType,
+    classId:         classId,
+    studentId:       studentId,
+    facultyId:       facultyId,
+    sessionId:       sessionId,
+    skillMode:       skillMode,
+    waveId:          waveId,
+    stationRoot:     stationRoot,
+    // Keep both fields during migration: generic currentStep + PP-specific ppCurrentStage.
+    currentStep:     effectivePpCurrentStage,
+    ppCurrentStage:  effectivePpCurrentStage,
+    ppStageTitle:    ppStageTitle,
+    ppStageInstructions: ppStageInstructions,
+    ppStageTaskPrompt: ppStageTaskPrompt,
+    ppStageBotHint:  ppStageBotHint,
+    ppBotPolicy:     ppBotPolicy,
+    history:         history,
+    ...(isNewBotSession ? { isNewBotSession: true } : {})
+  };
+}
 
 fetch('/config.json')
 .then(r => r.json())
@@ -175,25 +200,7 @@ async function triggerBotOpening() {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message:         '__INIT__',
-        botType:         currentBotType,
-        classId:         classId,
-        studentId:       studentId,
-        facultyId:       facultyId,
-        sessionId:       sessionId,
-        skillMode:       skillMode,
-        waveId:          waveId,
-        stationRoot:     stationRoot,
-        currentStep:     hasPpCurrentStage ? ppCurrentStageNum : null,
-        ppStageTitle:    ppStageTitle,
-        ppStageInstructions: ppStageInstructions,
-        ppStageTaskPrompt: ppStageTaskPrompt,
-        ppStageBotHint:  ppStageBotHint,
-        ppBotPolicy:     ppBotPolicy,
-        history:         [],
-        isNewBotSession: true
-      })
+      body: JSON.stringify(buildChatRequestPayload('__INIT__', [], true))
     });
 
     const data = await res.json();
@@ -241,24 +248,7 @@ async function sendMessage(){
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message:     text,
-        botType:     currentBotType,
-        classId:     classId,
-        studentId:   studentId,
-        facultyId:   facultyId,
-        sessionId:   sessionId,
-        skillMode:   skillMode,
-        waveId:      waveId,
-        stationRoot: stationRoot,
-        currentStep: hasPpCurrentStage ? ppCurrentStageNum : null,
-        ppStageTitle:    ppStageTitle,
-        ppStageInstructions: ppStageInstructions,
-        ppStageTaskPrompt: ppStageTaskPrompt,
-        ppStageBotHint:  ppStageBotHint,
-        ppBotPolicy:     ppBotPolicy,
-        history:     chatHistory
-      })
+      body: JSON.stringify(buildChatRequestPayload(text, chatHistory))
     });
 
     if (response.status === 403){
