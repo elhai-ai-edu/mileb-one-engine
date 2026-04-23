@@ -578,7 +578,8 @@
     }
 
     // ── Project stages (7-stage Hebrew problem-solving project) ────────────
-    const PP_STAGES = [
+    const MAX_PERSONAL_PROJECT_STAGES = 7;
+    const DEFAULT_PP_STAGES = [
       {
         title:      "בחירת בעיה",
         subtitle:   "הגדרת הבעיה המקצועית שתחקור/י",
@@ -630,6 +631,7 @@
         botHint:    "הצגה — שלב 7"
       }
     ];
+    let PP_STAGES = DEFAULT_PP_STAGES;  // reassigned by applyProjectStagesFromConfig during init()
 
     // 4-milestone labels for the progress stepper
     // Each milestone covers a range of stages (0-indexed).
@@ -672,8 +674,15 @@
 
     // ── Boot ────────────────────────────────────────────────────────────────
     async function init() {
-      // Load course title from config
-      loadCourseTitle();
+      // Load course title and stage definitions from config first.
+      // loadCourseTitle() has its own internal catch and logs a warning, so it does not normally
+      // throw; the outer try-catch here is a safety net for any unexpected throws from
+      // future changes to the function.
+      try {
+        await loadCourseTitle();
+      } catch(e) {
+        console.warn("[pp] init: loadCourseTitle threw unexpectedly:", e.message);
+      }
 
       try {
         const res  = await fetch("/.netlify/functions/personal_project", {
@@ -726,6 +735,7 @@
         const config   = await fetch(`/config.json?ts=${Date.now()}`).then(r => r.json());
         const course   = config?.my_courses?.[courseId];
         const projConf = course?.personalProject;
+        applyProjectStagesFromConfig(projConf);
         const title    = document.getElementById("ppTitle");
         const projTitle = document.getElementById("ppProjTitle");
 
@@ -752,6 +762,28 @@
       } catch(e) {
         console.warn("[pp] config load failed:", e.message);
       }
+    }
+
+    function normalizeConfiguredPersonalStages(rawStages) {
+      if (!Array.isArray(rawStages)) return [];
+      return rawStages.slice(0, MAX_PERSONAL_PROJECT_STAGES).map((stage, idx) => {
+        if (!stage || typeof stage !== "object" || Array.isArray(stage)) return null;
+        const fallbackTitle = `שלב ${idx + 1}`;
+        // Explicit fields take precedence; instructions acts as a universal fallback text.
+        const title      = String(stage.title        || "").trim() || fallbackTitle;
+        const supplement = String(stage.instructions || "").trim();
+        const subtitle   = String(stage.subtitle     || supplement || title).trim();
+        const taskPrompt = String(stage.taskPrompt   || supplement || subtitle).trim();
+        const botHint    = String(stage.botHint      || title).trim();
+        // A stage is considered empty only when every content field is absent.
+        if (!supplement && !stage.title && !stage.subtitle && !stage.taskPrompt && !stage.botHint) return null;
+        return { title, subtitle, taskPrompt, botHint };
+      }).filter(Boolean);
+    }
+
+    function applyProjectStagesFromConfig(projectConfig) {
+      const configuredStages = normalizeConfiguredPersonalStages(projectConfig?.stages);
+      PP_STAGES = (configuredStages.length ? configuredStages : DEFAULT_PP_STAGES).map(s => ({ ...s }));
     }
 
     // ── Render all ──────────────────────────────────────────────────────────
