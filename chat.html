@@ -150,7 +150,8 @@ function buildChatRequestPayload(message, history, isNewBotSession = false) {
     skillMode:       skillMode,
     waveId:          waveId,
     stationRoot:     stationRoot,
-    // Keep both fields during migration: generic currentStep + PP-specific ppCurrentStage.
+    // ppCurrentStage is the authoritative PP field; currentStep is sent for backward compat.
+    // Server-side precedence rule (chat.js): ppCurrentStage wins when both are present.
     currentStep:     effectivePpCurrentStage,
     ppCurrentStage:  effectivePpCurrentStage,
     ppStageTitle:    ppStageTitle,

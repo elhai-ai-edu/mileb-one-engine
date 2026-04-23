@@ -745,7 +745,12 @@ export async function handler(event) {
       // but avoiding the Promise.all entry removes the unnecessary async overhead.
       studentId && studentId !== "anonymous" ? loadStudentModel(studentId, courseId) : Promise.resolve(null)
     ]);
+    // ppCurrentStage is the authoritative field for personal-project mode.
+    // currentStep is accepted for backward compat but is always overridden when ppCurrentStage is present.
     const effectiveCurrentStep = ppCurrentStage != null ? ppCurrentStage : currentStep;
+    if (stationRoot === "personal_project" && effectiveCurrentStep == null) {
+      console.warn("[chat] personal_project stationRoot but no stage index — ppCurrentStage and currentStep are both null. Bot context will lack stage info.");
+    }
 
     let contextBlock  = "";
     let savedHistory  = [];

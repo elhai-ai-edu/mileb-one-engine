@@ -4718,6 +4718,9 @@ function derivePersonalTrackingSnapshot(student) {
   const reviewActionStageIndex = parsePersonalStageIndex(pendingEntry?.stageId);
   // Keep actionableStageIndex for backward compatibility with existing callers.
   const actionableStageIndex = reviewActionStageIndex;
+  if (status === 'pending_review' && reviewActionStageIndex == null) {
+    console.warn('[PP tracking] status is pending_review but reviewActionStageIndex is null — pendingEntry.stageId may be malformed:', pendingEntry?.stageId);
+  }
   const lastSeen = Number(student?.lastSeen || student?.personalLastSeen || 0);
   return { status, lastSeen, actionableStageIndex, reviewActionStageIndex, currentStageId };
 }
@@ -4860,7 +4863,10 @@ function _syncProjStagesToMem(type) {
 }
 
 function normalizePersonalProjectStages(rawStages) {
-  if (!PP_STAGE_SCHEMA?.normalizeStages) return getDefaultPersonalProjectStages();
+  if (!PP_STAGE_SCHEMA?.normalizeStages) {
+    console.warn('[PP] MiledPersonalProjectStageSchema not loaded — falling back to getDefaultPersonalProjectStages().');
+    return getDefaultPersonalProjectStages();
+  }
   const normalized = PP_STAGE_SCHEMA.normalizeStages(rawStages, {
     maxStages: PERSONAL_PROJECT_MAX_STAGE_INDEX + 1,
     fallbackToDefaults: true
