@@ -4667,6 +4667,12 @@ function getDefaultPersonalProjectStages() {
   }));
 }
 
+function buildPersonalProjectStageId(stageIndex) {
+  return `${PERSONAL_PROJECT_STAGE_PREFIX}${stageIndex}`;
+}
+
+// Personal-project writes statuses: pending_review / approved / relocked / completed.
+// Tracking keeps the gatekeeping-compatible vocabulary where approved/completed are exposed as unlocked.
 function mapPersonalProjectStatusToTrackingState(status) {
   const rawStatus = String(status || '').toLowerCase();
   if (rawStatus === 'approved' || rawStatus === 'completed') return 'unlocked';
@@ -4968,10 +4974,10 @@ async function loadPersonalProjectTracking() {
       Object.entries(studentsRoot).forEach(([studentId, entry]) => {
         if (!studentId || !entry || typeof entry !== 'object') return;
         const personalStages = {};
-        Object.entries(entry.stages || {}).forEach(([idx, stage]) => {
-          const stageIndex = Number(idx);
+        Object.entries(entry.stages || {}).forEach(([stageIndexStr, stage]) => {
+          const stageIndex = Number(stageIndexStr);
           if (!Number.isInteger(stageIndex) || stageIndex < 0) return;
-          const stageId = `${PERSONAL_PROJECT_STAGE_PREFIX}${stageIndex}`;
+          const stageId = buildPersonalProjectStageId(stageIndex);
           const state = mapPersonalProjectStatusToTrackingState(stage?.status);
           personalStages[stageId] = {
             stageId,
@@ -4985,20 +4991,22 @@ async function loadPersonalProjectTracking() {
 
         const currentStageIndex = Number(entry.currentStage);
         const personalCurrentStageId = Number.isInteger(currentStageIndex) && currentStageIndex >= 0
-          ? `${PERSONAL_PROJECT_STAGE_PREFIX}${currentStageIndex}`
+          ? buildPersonalProjectStageId(currentStageIndex)
           : null;
         const existing = mergedByStudent.get(studentId) || { studentId, stages: {} };
         mergedByStudent.set(studentId, {
           ...existing,
           studentId,
           studentName: existing.studentName || entry.studentName || null,
-          currentStageId: existing.currentStageId || personalCurrentStageId,
+          currentStageId: existing.currentStageId ?? personalCurrentStageId,
           stages: {
             ...(existing.stages || {}),
             ...personalStages
           }
         });
       });
+    } else {
+      console.warn('[Project tracking] Firebase is unavailable; using only course_progress summary data.');
     }
 
     _projectTrackingPersonalRows = Array.from(mergedByStudent.values());

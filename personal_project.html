@@ -578,6 +578,7 @@
     }
 
     // ── Project stages (7-stage Hebrew problem-solving project) ────────────
+    const MAX_PERSONAL_PROJECT_STAGES = 7;
     const DEFAULT_PP_STAGES = [
       {
         title:      "בחירת בעיה",
@@ -758,8 +759,8 @@
 
     function normalizeConfiguredPersonalStages(rawStages) {
       if (!Array.isArray(rawStages)) return [];
-      return rawStages.slice(0, 7).map((stage, idx) => {
-        if (!stage || typeof stage !== "object") return null;
+      return rawStages.slice(0, MAX_PERSONAL_PROJECT_STAGES).map((stage, idx) => {
+        if (!stage || typeof stage !== "object" || Array.isArray(stage)) return null;
         const title        = String(stage.title || "").trim();
         const instructions = String(stage.instructions || "").trim();
         const subtitle     = String(stage.subtitle || instructions || "").trim();
