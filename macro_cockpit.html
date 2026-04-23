@@ -12,6 +12,7 @@
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.css">
 <script src="https://unpkg.com/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="/personal_project_stage_schema.js?v=20260423a"></script>
 <style>
 /* v8.5 — Skill-Academic Balance */
 .balance-preview {
@@ -4629,69 +4630,24 @@ let _currentProjectTab  = 'team';
 let _projectTrackingPersonalRows = [];
 const PERSONAL_PROJECT_STAGE_PREFIX = 'pp_stage_';
 const PERSONAL_PROJECT_MAX_STAGE_INDEX = 6;  // 7 stages (0–6), mirrors MAX_STAGE_INDEX in personal_project.js
-const DEFAULT_PERSONAL_PROJECT_STAGES = [
-  {
-    title: 'בחירת בעיה',
-    instructions: 'תאר/י את הבעיה המקצועית שבחרת: מה הבעיה, מה חשיבותה ומי מושפע ממנה.',
-    subtitle: 'הגדרת הבעיה המקצועית שתחקור/י',
-    taskPrompt: 'תאר/י את הבעיה שבחרת: מה הבעיה? מה חשיבותה? מי מושפע ממנה?',
-    botHint: 'בחירת הבעיה — שלב 1'
-  },
-  {
-    title: 'ניסיונות קדומים',
-    instructions: 'תאר/י ניסיונות קודמים לפתרון הבעיה ומה מנע מהם להצליח.',
-    subtitle: 'ניסיונות קודמים וסיבות לאי הצלחה',
-    taskPrompt: 'תאר/י מה נוסה בעבר, מה עבד חלקית, ומה מנע הצלחה מלאה.',
-    botHint: 'ניסיונות קדומים — שלב 2'
-  },
-  {
-    title: 'מקורות מידע',
-    instructions: 'אסוף/י 3-5 מקורות מידע רלוונטיים וסכם/י מה למדת מכל מקור.',
-    subtitle: 'איסוף וסיכום מקורות רלוונטיים',
-    taskPrompt: 'מצא/י 3-5 מקורות רלוונטיים ולכל מקור כתוב/י מה למדת ממנו.',
-    botHint: 'מקורות מידע — שלב 3'
-  },
-  {
-    title: 'שתי אלטרנטיבות',
-    instructions: 'הצג/י שתי גישות שונות לפתרון הבעיה עם יתרונות וחסרונות לכל אחת.',
-    subtitle: 'הצגת שתי גישות שונות לפתרון הבעיה',
-    taskPrompt: 'הצג/י שתי גישות שונות לפתרון הבעיה. לכל גישה פרט/י יתרונות וחסרונות.',
-    botHint: 'שתי אלטרנטיבות — שלב 4'
-  },
-  {
-    title: 'בחירת פתרון',
-    instructions: 'בחר/י פתרון מנומק והסבר/י את ההיגיון שמאחורי הבחירה.',
-    subtitle: 'בחירה מנומקת של הפתרון הטוב ביותר',
-    taskPrompt: 'איזה פתרון בחרת ומדוע? הסבר/י את ההיגיון מאחורי הבחירה.',
-    botHint: 'בחירת פתרון — שלב 5'
-  },
-  {
-    title: 'כתיבת מסמך',
-    instructions: 'כתוב/י מסמך מסכם: הבעיה, ניסיונות קודמים, חלופות, פתרון נבחר ונימוק.',
-    subtitle: 'כתיבת מסמך מסכם',
-    taskPrompt: 'כתוב/י סיכום פרויקט מלא: הבעיה, הניסיונות, החלופות והפתרון שבחרת.',
-    botHint: 'כתיבת מסמך — שלב 6'
-  },
-  {
-    title: 'הצגה',
-    instructions: 'כתוב/י תקציר קצר להצגת הפרויקט בכיתה: בעיה, ניסיונות, פתרון ומה למדת.',
-    subtitle: 'הכנת תקציר להצגה בכיתה',
-    taskPrompt: 'כתוב/י תקציר קצר להצגת הפרויקט בכיתה: בעיה, ניסיונות, פתרון ומה למדת.',
-    botHint: 'הצגה — שלב 7'
-  }
-];
+const PP_STAGE_SCHEMA = window.MiledPersonalProjectStageSchema || null;
 
-function getDefaultPersonalProjectStages() {
-  return DEFAULT_PERSONAL_PROJECT_STAGES.map((stage, idx) => ({
-    id: `pp_default_stage_${idx + 1}`,
+function decoratePersonalProjectStage(stage, idx, rawStage = {}) {
+  return {
+    id: rawStage?.id || `pp_default_stage_${idx + 1}`,
     title: stage.title,
     instructions: stage.instructions,
-    subtitle: stage.subtitle || '',
-    taskPrompt: stage.taskPrompt || '',
-    botHint: stage.botHint || '',
-    deadline: '',
-    gradeShare: 0
-  }));
+    subtitle: stage.subtitle,
+    taskPrompt: stage.taskPrompt,
+    botHint: stage.botHint,
+    deadline: String(rawStage?.deadline || ''),
+    gradeShare: parseInt(rawStage?.gradeShare || '0', 10) || 0
+  };
+}
+
+function getDefaultPersonalProjectStages() {
+  const defaults = PP_STAGE_SCHEMA?.getDefaultStages?.() || [];
+  return defaults.map((stage, idx) => decoratePersonalProjectStage(stage, idx, {}));
 }
 
 function buildPersonalProjectStageId(stageIndex) {
@@ -4759,10 +4715,57 @@ function derivePersonalTrackingSnapshot(student) {
     status = 'in_progress';
   }
 
-  const actionableEntry = pendingEntry || relockedEntry || currentEntry || null;
-  const actionableStageIndex = parsePersonalStageIndex(actionableEntry?.stageId);
+  const reviewActionStageIndex = parsePersonalStageIndex(pendingEntry?.stageId);
+  const actionableStageIndex = reviewActionStageIndex;
   const lastSeen = Number(student?.lastSeen || student?.personalLastSeen || 0);
-  return { status, lastSeen, actionableStageIndex, currentStageId };
+  return { status, lastSeen, actionableStageIndex, reviewActionStageIndex, currentStageId };
+}
+
+function buildCanonicalPersonalTrackingRow(summaryRow, personalStudentEntry, studentId) {
+  const base = summaryRow
+    ? {
+        ...summaryRow,
+        stages: Object.fromEntries(
+          Object.entries(summaryRow.stages || {}).map(([k, v]) => [k, { ...v }])
+        )
+      }
+    : { studentId, stages: {} };
+
+  if (!personalStudentEntry || typeof personalStudentEntry !== 'object') return base;
+
+  const personalStages = {};
+  Object.entries(personalStudentEntry.stages || {}).forEach(([stageIndexStr, stage]) => {
+    const stageIndex = Number(stageIndexStr);
+    if (!Number.isInteger(stageIndex) || stageIndex < 0 || stageIndex > PERSONAL_PROJECT_MAX_STAGE_INDEX) return;
+    const stageId = buildPersonalProjectStageId(stageIndex);
+    personalStages[stageId] = {
+      stageId,
+      state: mapPersonalProjectStatusToTrackingState(stage?.status),
+      submittedAt: stage?.submittedAt || null,
+      approvedAt: stage?.approvedAt || null,
+      rejectedAt: stage?.rejectedAt || null,
+      submissionId: stage?.submissionId || null
+    };
+  });
+
+  const currentStageIndex = Number(personalStudentEntry.currentStage);
+  const personalCurrentStageId = Number.isInteger(currentStageIndex) && currentStageIndex >= 0
+    ? buildPersonalProjectStageId(currentStageIndex)
+    : null;
+
+  return {
+    ...base,
+    studentId,
+    studentName: personalStudentEntry.studentName || base.studentName || null,
+    currentStageId: personalCurrentStageId || base.currentStageId || null,
+    personalLastSeen: Number(personalStudentEntry.lastSeen || 0) || null,
+    lastSeen: Number(personalStudentEntry.lastSeen || base.lastSeen || 0) || null,
+    // Explicit source priority: personal_projects data overrides course_progress for PP stages.
+    stages: {
+      ...(base.stages || {}),
+      ...personalStages
+    }
+  };
 }
 
 function switchProjectTab(tab) {
@@ -4856,16 +4859,14 @@ function _syncProjStagesToMem(type) {
 }
 
 function normalizePersonalProjectStages(rawStages) {
-  if (!Array.isArray(rawStages) || !rawStages.length) return getDefaultPersonalProjectStages();
-  return rawStages.map((stage, idx) => {
-    const base = DEFAULT_PERSONAL_PROJECT_STAGES[idx] || {};
-    const normalized = { ...(stage || {}) };
-    normalized.title = String(normalized.title || base.title || `שלב ${idx + 1}`).trim();
-    normalized.instructions = String(normalized.instructions || '').trim();
-    normalized.subtitle = String(normalized.subtitle || normalized.instructions || base.subtitle || normalized.title).trim();
-    normalized.taskPrompt = String(normalized.taskPrompt || normalized.instructions || base.taskPrompt || normalized.subtitle).trim();
-    normalized.botHint = String(normalized.botHint || base.botHint || normalized.title).trim();
-    return normalized;
+  if (!PP_STAGE_SCHEMA?.normalizeStages) return getDefaultPersonalProjectStages();
+  const normalized = PP_STAGE_SCHEMA.normalizeStages(rawStages, {
+    maxStages: PERSONAL_PROJECT_MAX_STAGE_INDEX + 1,
+    fallbackToDefaults: true
+  });
+  return normalized.map((stage, idx) => {
+    const rawStage = Array.isArray(rawStages) ? (rawStages[idx] || {}) : {};
+    return decoratePersonalProjectStage(stage, idx, rawStage);
   });
 }
 
@@ -5098,39 +5099,8 @@ async function loadPersonalProjectTracking() {
         const studentsRoot = personalStudentsSnap.val() || {};
         Object.entries(studentsRoot).forEach(([studentId, entry]) => {
           if (!studentId || !entry || typeof entry !== 'object') return;
-          const personalStages = {};
-          Object.entries(entry.stages || {}).forEach(([stageIndexStr, stage]) => {
-            const stageIndex = Number(stageIndexStr);
-            if (!Number.isInteger(stageIndex) || stageIndex < 0 || stageIndex > PERSONAL_PROJECT_MAX_STAGE_INDEX) return;  // inclusive: 0–6
-            const stageId = buildPersonalProjectStageId(stageIndex);
-            const state = mapPersonalProjectStatusToTrackingState(stage?.status);
-            personalStages[stageId] = {
-              stageId,
-              state,
-              submittedAt: stage?.submittedAt || null,
-              approvedAt: stage?.approvedAt || null,
-              rejectedAt: stage?.rejectedAt || null,
-              submissionId: stage?.submissionId || null
-            };
-          });
-
-          const currentStageIndex = Number(entry.currentStage);
-          const personalCurrentStageId = Number.isInteger(currentStageIndex) && currentStageIndex >= 0
-            ? buildPersonalProjectStageId(currentStageIndex)
-            : null;
-          const existing = mergedByStudent.get(studentId) || { studentId, stages: {} };
-          mergedByStudent.set(studentId, {
-            ...existing,
-            studentId,
-            studentName: entry.studentName || existing.studentName || null,
-            currentStageId: personalCurrentStageId || existing.currentStageId || null,
-            personalLastSeen: Number(entry.lastSeen || 0) || null,
-            lastSeen: Number(entry.lastSeen || existing.lastSeen || 0) || null,
-            stages: {
-              ...(existing.stages || {}),
-              ...personalStages
-            }
-          });
+          const existing = mergedByStudent.get(studentId) || null;
+          mergedByStudent.set(studentId, buildCanonicalPersonalTrackingRow(existing, entry, studentId));
         });
       } catch (firebaseErr) {
         console.warn('[Project tracking] personal_projects Firebase read failed; tracking may be incomplete:', firebaseErr.message);
@@ -5178,7 +5148,7 @@ function renderPersonalProjectTrackingTable() {
     const activeStage = escapeHtml(snapshot.currentStageId || 'לא התחיל');
     const statusMeta = PERSONAL_TRACKING_STATUS_META[snapshot.status] || PERSONAL_TRACKING_STATUS_META.not_started;
     const statusBadge = statusMeta.label;
-    const stageIndex = snapshot.actionableStageIndex;
+    const stageIndex = snapshot.reviewActionStageIndex;
     const canEvaluate = snapshot.status === 'pending_review' && Number.isInteger(stageIndex) && stageIndex >= 0;
     const lastSeenText = formatRelativeTime(snapshot.lastSeen);
     const approveBtn = canEvaluate
@@ -5208,6 +5178,8 @@ function renderPersonalProjectTrackingTable() {
 
 async function macroApprovePersonalProjectStage(targetStudentId, stageIndex, status) {
   if (!macroCourseId || !targetStudentId) return;
+  const normalizedStatus = String(status || '').trim().toLowerCase();
+  if (!Number.isInteger(stageIndex) || stageIndex < 0 || !['approved', 'relocked'].includes(normalizedStatus)) return;
   const requestingFacultyId = String(facultyId || '').trim();
   if (!requestingFacultyId) {
     alert('נדרש מזהה מרצה פעיל כדי לאשר/להחזיר שלב.');
@@ -5223,7 +5195,7 @@ async function macroApprovePersonalProjectStage(targetStudentId, stageIndex, sta
         studentId: requestingFacultyId,
         targetStudentId,
         stageIndex,
-        status
+        status: normalizedStatus
       })
     });
     const data = await res.json();
@@ -5327,7 +5299,7 @@ async function saveProjectsTab() {
     goal:                 (document.getElementById('proj-pers-goal').value     || '').trim(),
     systemPromptOverride: (document.getElementById('proj-pers-sp').value       || '').trim(),
     linkedSkills:         _getSelectedSkills('personal'),
-    stages:               _projPersonalStages,
+    stages:               normalizePersonalProjectStages(_projPersonalStages),
   };
 
   if (msgEl) { msgEl.style.color = '#6366f1'; msgEl.textContent = 'שומר...'; }

@@ -116,6 +116,34 @@ function buildGatekeepingContextBlock(sessionCtx, currentStep = null) {
   return lines.length ? "## מצב Gatekeeping\n" + lines.join("\n") : "";
 }
 
+function buildPersonalProjectContextBlock({
+  currentStep = null,
+  ppStageTitle = null,
+  ppStageInstructions = null,
+  ppStageTaskPrompt = null,
+  ppStageBotHint = null,
+  ppBotPolicy = null,
+  courseConfig = null,
+  config = null
+} = {}) {
+  const effectivePpPolicy = ppBotPolicy
+    || courseConfig?.personalProject?.botPolicy
+    || courseConfig?.personalProject?.policy
+    || config?.branches?.tools?.items?.personal_project?.defaultPolicy
+    || null;
+  const lines = [];
+  const numericCurrentStep = Number(currentStep);
+  if (currentStep != null && Number.isFinite(numericCurrentStep)) {
+    lines.push(`אינדקס שלב אישי (0-based): ${numericCurrentStep}`);
+  }
+  if (ppStageTitle) lines.push(`כותרת שלב: ${ppStageTitle}`);
+  const effectiveStageText = ppStageTaskPrompt || ppStageInstructions;
+  if (effectiveStageText) lines.push(`הנחיית שלב: ${effectiveStageText}`);
+  if (ppStageBotHint) lines.push(`botHint לשלב: ${ppStageBotHint}`);
+  if (effectivePpPolicy) lines.push(`מדיניות בוט לפרויקט אישי: ${effectivePpPolicy}`);
+  return lines.length ? "## הקשר פרויקט אישי\n" + lines.join("\n") : "";
+}
+
 
 // ─────────────────────────────────────────
 // CONVERSATION LOGGING
@@ -666,6 +694,7 @@ export async function handler(event) {
       sessionId        = null,
       hebrewLevel      = null,
       currentStep      = null,          // ← active project stage sent by workspace.html
+      ppCurrentStage   = null,
       isNewBotSession  = false,         // ← prevents loading stale history on bot switch
       skillMode        = false,         // ← true when request originates from skills hub
       waveId           = null,          // ← assessment wave (e.g. "wave_1_baseline", "wave_2_midterm")
@@ -716,6 +745,7 @@ export async function handler(event) {
       // but avoiding the Promise.all entry removes the unnecessary async overhead.
       studentId && studentId !== "anonymous" ? loadStudentModel(studentId, courseId) : Promise.resolve(null)
     ]);
+    const effectiveCurrentStep = ppCurrentStage != null ? ppCurrentStage : currentStep;
 
     let contextBlock  = "";
     let savedHistory  = [];
@@ -765,14 +795,14 @@ export async function handler(event) {
 
     // ─── INJECT CURRENT STEP ───
     // Adds the active project stage to the context block so the bot can enforce gating.
-    if (currentStep != null) {
-      const stepLine = `שלב נוכחי: ${currentStep}`;
+    if (effectiveCurrentStep != null) {
+      const stepLine = `שלב נוכחי: ${effectiveCurrentStep}`;
       contextBlock = contextBlock
         ? contextBlock + "\n" + stepLine
         : "## הקשר\n" + stepLine;
     }
 
-    const gatekeepingBlock = buildGatekeepingContextBlock(sessionCtx, currentStep);
+    const gatekeepingBlock = buildGatekeepingContextBlock(sessionCtx, effectiveCurrentStep);
     if (gatekeepingBlock) {
       contextBlock = [contextBlock, gatekeepingBlock].filter(Boolean).join("\n\n");
     }
@@ -844,24 +874,18 @@ export async function handler(event) {
     }
 
     if (stationRoot === "personal_project") {
-      const effectivePpPolicy = ppBotPolicy
-        || courseConfig?.personalProject?.botPolicy
-        || courseConfig?.personalProject?.policy
-        || config?.branches?.tools?.items?.personal_project?.defaultPolicy
-        || null;
-      const ppLines = [];
-      const numericCurrentStep = Number(currentStep);
-      if (currentStep != null && Number.isFinite(numericCurrentStep)) {
-        ppLines.push(`אינדקס שלב אישי (0-based): ${numericCurrentStep}`);
-      }
-      if (ppStageTitle) ppLines.push(`כותרת שלב: ${ppStageTitle}`);
-      const effectiveStageText = ppStageTaskPrompt || ppStageInstructions;
-      if (effectiveStageText) ppLines.push(`הנחיית שלב: ${effectiveStageText}`);
-      if (ppStageBotHint) ppLines.push(`botHint לשלב: ${ppStageBotHint}`);
-      if (effectivePpPolicy) ppLines.push(`מדיניות בוט לפרויקט אישי: ${effectivePpPolicy}`);
-      if (ppLines.length) {
-        contextBlock = [contextBlock, "## הקשר פרויקט אישי\n" + ppLines.join("\n")]
-          .filter(Boolean).join("\n\n");
+      const ppContextBlock = buildPersonalProjectContextBlock({
+        currentStep: effectiveCurrentStep,
+        ppStageTitle,
+        ppStageInstructions,
+        ppStageTaskPrompt,
+        ppStageBotHint,
+        ppBotPolicy,
+        courseConfig,
+        config
+      });
+      if (ppContextBlock) {
+        contextBlock = [contextBlock, ppContextBlock].filter(Boolean).join("\n\n");
       }
     }
 
@@ -871,8 +895,8 @@ export async function handler(event) {
     // (submitted, awaiting lecturer approval) and "relocked" (rejected, resubmit required).
     // "unlocked" (approved) and null/undefined (step not yet submitted) are allowed through.
     // __INIT__ always passes so the opening sequence is never blocked.
-    if (currentStep != null && message !== "__INIT__") {
-      const stageKeyForLock = normalizeStageStorageKey(currentStep);
+    if (effectiveCurrentStep != null && message !== "__INIT__") {
+      const stageKeyForLock = normalizeStageStorageKey(effectiveCurrentStep);
       const stepUnlockState = stageKeyForLock
         ? sessionCtx?.continuity?.unlockStates?.[stageKeyForLock]
         : null;
@@ -897,7 +921,7 @@ export async function handler(event) {
     // Blocks any message except __INIT__ when stageLock === true.
     if (message !== "__INIT__" && sessionCtx?.stageLock === true) {
       const stageLockReply = "שלב זה נעול כרגע ⛔ — המרצה השהה את ההתקדמות. אנא המתן לפתיחה מחדש.";
-      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+      logEnforcementEvent(studentId, sessionId, botType, effectiveCurrentStep || "unknown", {
         eventType:          "stage_lock_classroom",
         principleTriggered: "No-Skip",
         userAttempt:        message.slice(0, 80),
@@ -991,7 +1015,7 @@ export async function handler(event) {
       .slice(-14);
 
     if (effectiveNoFullSolution && detectFullSolutionRequest(message)) {
-      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+      logEnforcementEvent(studentId, sessionId, botType, effectiveCurrentStep || "unknown", {
         eventType:          "never_do_trigger",
         principleTriggered: "No-Substitution",
         userAttempt:        message.slice(0, 80),
@@ -1039,7 +1063,7 @@ export async function handler(event) {
       || "מצטער, לא הצלחתי לקבל תשובה כרגע.";
 
     if (effectiveNoFullSolution && looksLikeFullAnswer(reply)) {
-      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+      logEnforcementEvent(studentId, sessionId, botType, effectiveCurrentStep || "unknown", {
         eventType:          "agency_guard_triggered",
         principleTriggered: "No-Substitution",
         userAttempt:        message.slice(0, 80),
@@ -1052,7 +1076,7 @@ export async function handler(event) {
     // If output has fewer than 30% Hebrew characters when Hebrew output is required,
     // rewrite to a Hebrew fallback and log the violation.
     if (hebrewCharRatio(reply) < 0.30 && reply.length > 50) {
-      logEnforcementEvent(studentId, sessionId, botType, currentStep || "unknown", {
+      logEnforcementEvent(studentId, sessionId, botType, effectiveCurrentStep || "unknown", {
         eventType:          "language_violation",
         principleTriggered: "Language-Gate",
         direction:          "post",
@@ -1160,7 +1184,7 @@ export async function handler(event) {
             score:         skillSignal.score,
             weak_point:    skillSignal.weak_point || null,
             feedback:      skillSignal.feedback || null,
-            lesson:        currentStep || null,
+            lesson:        effectiveCurrentStep || null,
             ts:            Date.now(),
             signal_source: signalSource,
             bot_type:      botType
@@ -1197,7 +1221,7 @@ export async function handler(event) {
               status,
               exposures: signals.length,
               last_ts: Date.now(),
-              last_updated: `lesson_${currentStep || "?"}`,
+              last_updated: `lesson_${effectiveCurrentStep || "?"}`,
               recent_weak_points: recentWeakPoints,
               ...meta
             });
