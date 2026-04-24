@@ -311,6 +311,47 @@ const pilotInstruction = buildRuntimeInstructionLayer({ state: pilotState, actio
 assert('Pilot: forbidden_actions includes write_full_answer_for_student', pilotInstruction.forbidden_actions.includes('write_full_answer_for_student'));
 assert('Pilot: no_skip policy still enforced', pilotInstruction.runtime_policies?.no_skip === true);
 
+// ─── Test 12: Copy Detection ───────────────────────────────────────────────────
+
+section('Test 12: Copy Detection — bot structure copied by student');
+
+const botStructureMessage = 'הטענה המרכזית של הטקסט היא שחשיבה ביקורתית חשובה בעידן המידע.';
+const copiedAnswer = 'הטענה המרכזית של הטקסט היא שחשיבה ביקורתית חשובה בעידן המידע.';
+
+const stateWithBotCtx = createInitialProcessState({
+  student_id: 'smoke_student_12',
+  project_type: 'critical_text_review',
+  initial_stage: 'stage_2'
+});
+stateWithBotCtx.last_bot_message = botStructureMessage;
+
+const copyValidation = validateStageResponse({
+  answer: copiedAnswer,
+  stage: pilotFlow.nodes[1], // main_claim
+  state: stateWithBotCtx
+});
+
+assert('Test 12: contamination detected on copied answer', copyValidation.possible_bot_contamination === true);
+assert('Test 12: understanding_gain is surface_rewording on copy', copyValidation.understanding_gain === 'surface_rewording');
+
+// Run through driver — should NOT advance
+const stateForCopyDriver = createInitialProcessState({
+  student_id: 'smoke_student_12b',
+  project_type: 'critical_text_review',
+  initial_stage: 'stage_2'
+});
+stateForCopyDriver.current.phase = 'project';
+stateForCopyDriver.last_bot_message = botStructureMessage;
+updateProjectOutput(stateForCopyDriver, 'main_claim', copiedAnswer);
+
+const copyAction = runProjectForward(stateForCopyDriver, {
+  nodes: pilotFlow.nodes,
+  lastAnswer: copiedAnswer
+});
+
+assert('Test 12: action type is probe_understanding (no stage advance)', copyAction.type === 'probe_understanding');
+assert('Test 12: next_stage is null (no advance)', copyAction.next_stage === null);
+
 // ─── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n════════════════════════════════════════`);

@@ -3,6 +3,26 @@
 // Does NOT own pedagogy — it translates state decisions into safe model directives.
 
 /**
+ * Build a probe-understanding message when surface rewording or bot contamination is detected.
+ *
+ * @param {Object} state - Rich process state
+ * @returns {string} Hebrew probe message
+ */
+export function buildProbeUnderstandingMessage(state) {
+  const stage = state?.current?.stage_id;
+
+  if (stage === 'main_claim') {
+    return `נראה שהתשובה ברורה יותר בניסוח,
+אבל אני רוצה לוודא שגם הרעיון עצמו ברור.
+
+מה בטקסט גרם לך לחשוב שזה הרעיון המרכזי?`;
+  }
+
+  return `נסה להסביר את הרעיון במילים שלך,
+או לתת דוגמה קצרה שמראה שהבנת אותו.`;
+}
+
+/**
  * Build a runtime instruction layer from state + action.
  *
  * @param {Object} options
@@ -59,6 +79,12 @@ function buildSystemAddendum({ phase, stage_id, action_type, action, state }) {
     lines.push('התשובה האחרונה דורשת שכלול. הנח את הסטודנט לחדד בעצמו — אל תכתוב עבורו.');
   }
 
+  if (action_type === 'probe_understanding') {
+    lines.push('זוהתה העתקה אפשרית מהבוט או ניסוח שטחי ללא הבנה.');
+    lines.push('שאל שאלת העמקה שמבקשת מהסטודנט להסביר במילים שלו או לתת דוגמה.');
+    lines.push('אל תספק מבנה תשובה, ניסוח מוכן, או תוכן שמרמז על התשובה.');
+  }
+
   if (action_type === 'bridge_warning') {
     lines.push('הסטודנט עובר לשלב הפרויקט. חלק מהתנאים עדיין לא הושלמו.');
     lines.push('אפשר להמשיך בגמישות, אך כדאי להזכיר את החסרים.');
@@ -88,6 +114,10 @@ function buildStagePrompt({ action, state }) {
   if (action.type === 'needs_refinement') {
     const fb = state?.validation?.last_feedback_type || 'expand';
     return `${message}\nהצע לסטודנט לחדד: ${mapFeedbackTypeToHint(fb)}.`;
+  }
+
+  if (action.type === 'probe_understanding') {
+    return message;
   }
 
   if (action.type === 'advance') {
@@ -138,6 +168,10 @@ function buildAllowedActions(actionType) {
     base.push('ask_to_expand', 'ask_to_refine', 'point_to_missing_dimension');
   }
 
+  if (actionType === 'probe_understanding') {
+    base.push('ask_clarifying_question', 'ask_for_example', 'ask_student_to_rephrase');
+  }
+
   if (actionType === 'bridge_warning') {
     base.push('soft_warn_incomplete', 'allow_progress_with_note');
   }
@@ -154,7 +188,9 @@ function buildForbiddenActions() {
     'fabricate_information',
     'grade_without_rubric',
     'use_evaluative_tone_without_rubric',
-    'bypass_kernel_rules'
+    'bypass_kernel_rules',
+    'provide_answer_shaped_sentence_stems',
+    'include_conceptual_answers_inside_examples'
   ];
 }
 
