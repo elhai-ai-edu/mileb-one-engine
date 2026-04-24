@@ -258,6 +258,55 @@ Lesson Flow איננו:
 
 ---
 
+## 6.1 Lesson as Primary Pedagogical Entity
+
+השיעור אינו **מיכל של בלוקים**. הוא **נרטיב פדגוגי קוהרנטי**.
+
+### הגדרה
+
+Lesson הוא ישות פדגוגית ראשונית שמכילה:
+
+| שדה | תיאור |
+|-----|-------|
+| `lesson_title` | כותרת השיעור כישות עצמאית |
+| `objectives` | מטרות הלמידה הספציפיות לשיעור זה (נגזרות מהסיליבוס, אך ממוקדות לשיעור) |
+| `lesson_flow` | רצף הצעדים הפדגוגיים — כל צעד הוא node עם מטרה, פעילות ותנאי מעבר |
+| `preClass` | הכנה מוקדמת: קריאות, צפייה, משימת הכנה (אם קיים) |
+| `resources` | משאבי הלמידה המשויכים לשיעור זה ספציפית |
+| `runtime_binding` | הקישור לישות הריצה הפעילה — nodeId, status, activeGate |
+
+### עקרון-על
+
+> **Lesson הוא הגשר הישיר בין Macro Cockpit לבין Micro Cockpit.**
+
+מה שה-Macro Cockpit מגדיר כ-lesson (ב-openLesson), הוא בדיוק מה ש-Micro Cockpit מקבל כ-runtime entity.
+
+### זרימת הגשר
+
+```text
+Macro Cockpit
+  └── מגדיר lesson: lesson_title + objectives + lesson_flow
+         │
+         ▼
+  openLesson(lessonId)
+         │
+         ▼
+Micro Cockpit
+  └── מפעיל runtime מה-lesson_flow
+  └── משתמש ב-objectives לניתוח evidence
+  └── מציג resources רלוונטיים לפי node פעיל
+```
+
+### מה Lesson **אינו**
+
+- Lesson אינו סך-כל הפעילויות בקורס
+- Lesson אינו עמוד ב-Moodle
+- Lesson אינו playlist
+
+Lesson הוא **יחידת ריצה פדגוגית עצמאית** עם כוונה, רצף, ותוצר מוגדר.
+
+---
+
 ## 7. מילון המושגים המחייב
 
 ### Syllabus

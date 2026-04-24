@@ -1,6 +1,35 @@
 // LESSON FLOW BUILDER v1
 // MilEd.One
-// Purpose: Transform multi-source course inputs into a canonical Lesson Flow
+//
+// ─── ROLE DECLARATION ────────────────────────────────────────────────────────
+//
+// This module is a STRUCTURE BUILDER only.
+//
+// Responsibilities:
+//   - Normalize multi-source course inputs into a unified context
+//   - Build a structural skeleton of lesson flow nodes
+//   - Anchor nodes to existing course resources
+//   - Attach activities to nodes by stageLabel
+//   - Infer operational defaults (botMode, gate, expectedOutputs)
+//
+// NOT responsible for:
+//   - Pedagogical decision-making
+//   - Transformation logic (adapt / rescale / rebuild)
+//   - Template family selection
+//   - Gap analysis or course-level diagnosis
+//
+// These responsibilities belong to the Transformation Selector layer
+// (see docs/PEDAGOGICAL_TRANSFORMATION_SELECTOR_SPEC.md).
+//
+// ─── FUTURE EXTENSION POINTS ────────────────────────────────────────────────
+//
+// The following fields are reserved for future enrichment by higher layers:
+//   - node.objectives       : learning objectives per node (from lesson entity)
+//   - node.preClass         : pre-class preparation assigned to this stage
+//   - node.resources        : currently populated; richer binding planned
+//   - node.stepEnrichment   : additional scaffolding steps injected by compiler
+//
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function buildLessonFlow(input) {
   const context = normalizeInputs(input);
@@ -53,7 +82,11 @@ function buildSkeleton(ctx) {
       resources: [],
       expectedOutputs: [],
       gate: null,
-      botMode: null
+      botMode: null,
+      // Extension points (populated by higher layers):
+      objectives: null,
+      preClass: null,
+      stepEnrichment: null
     });
   });
 
