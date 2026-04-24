@@ -1256,6 +1256,32 @@ body { background: var(--bg); min-height: 100vh; overflow-x: hidden; }
       <div id="peerList"></div>
     </div>
   </div>
+  <!-- ─── Live Meeting Card ─── -->
+  <div id="svLiveMeetingCard" style="display:none;margin:0 auto 16px;max-width:700px;
+       padding:14px 18px;border-radius:14px;
+       background:linear-gradient(120deg,#f8fbff,#eff6ff);
+       border:1.5px solid #bfdbfe;
+       display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <span style="font-size:20px;">🎥</span>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:14px;font-weight:800;color:#1e3a8a;" id="svLiveMeetingTitle">שיעור חי</div>
+      <div style="font-size:12px;color:#475569;" id="svLiveMeetingStatus"></div>
+    </div>
+    <a id="svLiveMeetingJoinBtn" href="#" target="_blank" rel="noopener noreferrer"
+       style="display:none;padding:8px 16px;border-radius:10px;
+              background:linear-gradient(135deg,#1d4ed8,#0f766e);
+              color:#fff;font-size:13px;font-weight:700;
+              text-decoration:none;white-space:nowrap;">
+      📹 הצטרפות לזום
+    </a>
+    <a id="svLiveMeetingRecordingBtn" href="#" target="_blank" rel="noopener noreferrer"
+       style="display:none;padding:8px 16px;border-radius:10px;
+              background:#f0fdf4;color:#065f46;border:1px solid #86efac;
+              font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;">
+      🎞️ הקלטה
+    </a>
+    <span id="svLiveMeetingNoUrlHint" style="display:none;font-size:13px;color:#475569;">הקישור יתעדכן בקרוב</span>
+  </div>
 </div>
 
 <!-- ════════════ DOOR ANIMATION ════════════ -->
@@ -2531,6 +2557,8 @@ async function loadLesson() {
     } else {
       MiledState.go('lesson_empty');
     }
+    // Live meeting card (waiting screen)
+    renderSvLiveMeetingCard(data?.liveMeeting || null);
     // Start Firebase listener + WAF
     startSessionListener();
     startWafListener();
@@ -2541,6 +2569,44 @@ async function loadLesson() {
   } catch (e) {
     console.warn('lesson_payload failed', e);
   }
+}
+
+// ── Live Meeting Card (waiting screen) ──
+function renderSvLiveMeetingCard(liveMeeting) {
+  const card = document.getElementById('svLiveMeetingCard');
+  if (!card) return;
+  const hasUrl = !!(liveMeeting?.joinUrl || liveMeeting?.recordingUrl);
+  const isLive = liveMeeting?.status === 'live';
+  if (!liveMeeting || !(hasUrl || isLive)) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = '';
+
+  const titleEl  = document.getElementById('svLiveMeetingTitle');
+  const statusEl = document.getElementById('svLiveMeetingStatus');
+  const joinBtn  = document.getElementById('svLiveMeetingJoinBtn');
+  const recBtn   = document.getElementById('svLiveMeetingRecordingBtn');
+  const hintEl   = document.getElementById('svLiveMeetingNoUrlHint');
+
+  if (titleEl) titleEl.textContent = liveMeeting.title || 'שיעור חי';
+
+  const statusLabels = { scheduled: '📅 מתוכנן', live: '🔴 חי עכשיו', ended: '✅ הסתיים' };
+  if (statusEl) statusEl.textContent = statusLabels[liveMeeting.status] || liveMeeting.status || '';
+
+  const showJoin = !!(liveMeeting.joinUrl && liveMeeting.status !== 'ended');
+  if (joinBtn) {
+    joinBtn.style.display = showJoin ? '' : 'none';
+    if (showJoin) joinBtn.href = liveMeeting.joinUrl;
+  }
+
+  const showRec = !!liveMeeting.recordingUrl;
+  if (recBtn) {
+    recBtn.style.display = showRec ? '' : 'none';
+    if (showRec) recBtn.href = liveMeeting.recordingUrl;
+  }
+
+  if (hintEl) hintEl.style.display = (!showJoin && !showRec && isLive) ? '' : 'none';
 }
 
 // ── Config Title ──
