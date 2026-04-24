@@ -246,7 +246,10 @@ console.log(`\n═════════════════════�
 console.log(`Smoke tests complete: ${passed} passed, ${failed} failed`);
 if (failed > 0) {
   console.error('❌ Some smoke tests failed.');
-  process.exit(1);
+  // Only exit with error code when run directly (not when imported programmatically)
+  if (typeof process !== 'undefined' && process.argv[1] && process.argv[1].includes('process_runtime_smoke_test')) {
+    process.exit(1);
+  }
 } else {
   console.log('✅ All smoke tests passed.');
 }

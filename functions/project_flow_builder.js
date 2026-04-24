@@ -10,7 +10,7 @@ export function buildProjectFlow(projectStructure) {
     required_outputs: stage.required_outputs,
     gate: stage.suggested_gate,
     bot_role: stage.bot_role,
-    prompt_style: stage.prompt_style || null,
+    prompt_style: stage.prompt_style || '',
     validation_expectations: stage.validation_expectations || [],
     runtime: {
       status: 'pending',

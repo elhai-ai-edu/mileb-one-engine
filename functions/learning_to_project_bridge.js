@@ -87,8 +87,8 @@ export function applyBridgePolicy(state, bridgeConfig = {}) {
 
   // teacher visibility flag
   if (!result.ready && bridgeConfig.bridge_visibility !== 'invisible') {
-    if (!state.teacher_view) state.teacher_view = { flags: [] };
-    if (!state.teacher_view.flags) state.teacher_view.flags = [];
+    state.teacher_view = state.teacher_view || {};
+    state.teacher_view.flags = state.teacher_view.flags || [];
     if (!state.teacher_view.flags.includes('bridge_incomplete')) {
       state.teacher_view.flags.push('bridge_incomplete');
     }
