@@ -240,6 +240,76 @@ assert('Extraction detects critical_text_review project', extracted.project_stru
 assert('Extraction detects learning pipeline', extracted.learning_pipelines.length >= 1);
 assert('Bridges created for pipeline-project pair', extracted.bridges.length >= 1);
 
+// ─── Test 11: Realistic Hebrew pilot simulation ────────────────────────────────
+
+section('Test 11: Realistic Hebrew critical review pilot simulation');
+
+const pilotFlow = buildCriticalTextReviewFlow();
+const pilotState = createInitialProcessState({
+  student_id: 'pilot_student_1',
+  pipeline_id: 'critical_review_learning_pipeline',
+  project_type: 'critical_text_review',
+  initial_stage: 'stage_1'
+});
+// Phase for this flow is project (not learning), so outputs go to project_outputs
+pilotState.current.phase = 'project';
+
+// Hebrew answers that do NOT contain internal output key names
+const hebrewAnswers = {
+  identify_text_details: 'שם הטקסט הוא חשיבה ביקורתית. כתב אותו ד״ר לוי והוא פורסם באתר חינוכי בשנת 2024.',
+  main_claim: 'הכותב טוען שחשיבה ביקורתית חשובה כי היא עוזרת לנו לבדוק מידע ולא להאמין לכל דבר מיד.',
+  negative_evaluation: 'לא אהבתי שהטקסט קצת כללי מדי, כי הוא לא נותן מספיק דוגמאות מהחיים של סטודנטים.',
+  positive_evaluation: 'אהבתי שהנושא חשוב וברור, כי היום יש הרבה מידע ברשת וצריך לדעת לבדוק אותו.'
+};
+
+// Stage 1 — identify_text_details
+const stage1 = pilotFlow.nodes[0]; // identify_text_details
+const v1 = validateStageResponse({ answer: hebrewAnswers.identify_text_details, stage: stage1, expectedOutputs: [] });
+assert('Stage 1: Hebrew answer has_content', v1.has_content === true);
+assert('Stage 1: Hebrew answer not rejected as missing', v1.completeness !== 'missing');
+assert('Stage 1: feedback_type is not reconsider for good answer', v1.feedback_type !== 'reconsider');
+
+// Stage 2 — main_claim
+const stage2 = pilotFlow.nodes[1]; // main_claim
+const v2 = validateStageResponse({ answer: hebrewAnswers.main_claim, stage: stage2, expectedOutputs: [] });
+assert('Stage 2: main_claim Hebrew answer has_content', v2.has_content === true);
+assert('Stage 2: main_claim completeness not missing', v2.completeness !== 'missing');
+
+// Stage 4 — negative_evaluation (requires reasoning)
+const stage4 = pilotFlow.nodes[3]; // negative_evaluation
+const v4 = validateStageResponse({ answer: hebrewAnswers.negative_evaluation, stage: stage4, expectedOutputs: [] });
+assert('Stage 4: negative_evaluation has_content', v4.has_content === true);
+assert('Stage 4: negative_evaluation with reasoning is sufficient', v4.completeness === 'sufficient');
+
+// Stage 5 — positive_evaluation (requires reasoning)
+const stage5 = pilotFlow.nodes[4]; // positive_evaluation
+const v5 = validateStageResponse({ answer: hebrewAnswers.positive_evaluation, stage: stage5, expectedOutputs: [] });
+assert('Stage 5: positive_evaluation has_content', v5.has_content === true);
+assert('Stage 5: positive_evaluation with reasoning is sufficient', v5.completeness === 'sufficient');
+
+// Weak answer test — missing reasoning for negative_evaluation
+const weakAnswer = 'זה חשוב';
+const vWeak = validateStageResponse({ answer: weakAnswer, stage: stage4, expectedOutputs: [] });
+assert('Weak answer: has_content true (not empty)', vWeak.has_content === true);
+assert('Weak answer: completeness is partial or missing (not sufficient)', vWeak.completeness !== 'sufficient');
+assert('Weak answer: feedback_type is not null', typeof vWeak.feedback_type === 'string');
+const weakFeedback = buildValidationFeedback(vWeak, stage4);
+assert('Weak answer: feedback is Hebrew string', typeof weakFeedback === 'string' && weakFeedback.length > 0);
+assert('Weak answer: feedback does not use grading language', !weakFeedback.includes('נכון') && !weakFeedback.includes('לא נכון') && !weakFeedback.includes('שגוי'));
+
+// Driver test: action should not be 'missing' after storing output
+updateProjectOutput(pilotState, 'text_details', hebrewAnswers.identify_text_details);
+const pilotMissing = computeMissing(pilotState, ['text_details'], { source: 'project' });
+assert('Pilot: computeMissing returns 0 after project output stored', pilotMissing.length === 0);
+
+const pilotAction = runProjectForward(pilotState, { nodes: pilotFlow.nodes, lastAnswer: hebrewAnswers.identify_text_details });
+assert('Pilot: action is not missing after output stored', pilotAction.type !== 'missing');
+
+// PAIOS: instruction layer must still forbid full-answer generation
+const pilotInstruction = buildRuntimeInstructionLayer({ state: pilotState, action: pilotAction, context: {} });
+assert('Pilot: forbidden_actions includes write_full_answer_for_student', pilotInstruction.forbidden_actions.includes('write_full_answer_for_student'));
+assert('Pilot: no_skip policy still enforced', pilotInstruction.runtime_policies?.no_skip === true);
+
 // ─── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n════════════════════════════════════════`);

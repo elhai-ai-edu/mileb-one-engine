@@ -58,9 +58,9 @@ export function runProjectForward(state, options = {}) {
     }
   }
 
-  // Compute missing outputs for current stage
+  // Compute missing outputs for current stage (phase-aware)
   const required = currentNode.required_outputs || [];
-  const missing = computeMissing(state, required);
+  const missing = computeMissing(state, required, { source: currentNode.output_source || 'project' });
 
   if (missing.length > 0) {
     return {

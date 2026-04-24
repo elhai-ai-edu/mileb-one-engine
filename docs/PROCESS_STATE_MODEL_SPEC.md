@@ -139,12 +139,23 @@ expand / refine / reconsider / add missing dimension
 createInitialProcessState(config)
 updatePreparationOutput(state, key, value)
 updateProjectOutput(state, key, value)
-computeMissing(state)
+computeMissing(state, required, options)   // options.source: 'auto' | 'preparation' | 'project' | 'both'
 canAdvance(state)
 advanceStage(state)
 recordHistory(state, event)
 computeTeacherView(state)
 ```
+
+### computeMissing — Phase-Aware Behavior
+
+`computeMissing` must be phase-aware:
+
+- `learning` phase → checks `preparation_outputs`
+- `project` phase → checks `project_outputs`
+- `bridge` phase → checks both `preparation_outputs` and `project_outputs`
+- explicit `source` option overrides auto-detection
+
+Each flow node can declare `output_source: 'preparation' | 'project' | 'both'` to override the auto-detected source for that stage.
 
 ---
 
