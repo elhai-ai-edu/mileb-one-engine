@@ -47,10 +47,24 @@ export function updateProjectOutput(state, key, value) {
   return state;
 }
 
-export function computeMissing(state, required = []) {
-  const missing = required.filter(r => !state.project_outputs[r]);
+export function computeMissing(state, required = [], options = {}) {
+  const sources = getOutputSources(state, options.source || 'project');
+  const missing = required.filter(key => !sources.some(src => Boolean(src[key])));
   state.missing = missing;
   return missing;
+}
+
+function getOutputSources(state, source) {
+  if (source === 'preparation') return [state.preparation_outputs || {}];
+  if (source === 'project')     return [state.project_outputs || {}];
+  if (source === 'both')        return [state.preparation_outputs || {}, state.project_outputs || {}];
+
+  // auto — infer from current phase.
+  // Unknown/undefined phase falls back to project_outputs (same as explicit 'project').
+  const phase = state.current?.phase;
+  if (phase === 'learning')  return [state.preparation_outputs || {}];
+  if (phase === 'bridge')    return [state.preparation_outputs || {}, state.project_outputs || {}];
+  return [state.project_outputs || {}];
 }
 
 export function canAdvance(state) {
