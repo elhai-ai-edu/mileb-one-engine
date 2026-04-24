@@ -194,6 +194,7 @@ assert('Empty answer feedback_type is reconsider', emptyValidation.feedback_type
 
 const feedback = buildValidationFeedback(emptyValidation, stage);
 assert('Feedback is Hebrew string', typeof feedback === 'string' && feedback.length > 0);
+// Representative sample of grading terms that must not appear — not exhaustive
 assert('Feedback does not use grading language', !feedback.includes('נכון') && !feedback.includes('לא נכון'));
 
 // ─── Test 9: Bridge readiness ─────────────────────────────────────────────────

@@ -59,7 +59,8 @@ function getOutputSources(state, source) {
   if (source === 'project')     return [state.project_outputs || {}];
   if (source === 'both')        return [state.preparation_outputs || {}, state.project_outputs || {}];
 
-  // auto — infer from current phase
+  // auto — infer from current phase.
+  // Unknown/undefined phase falls back to project_outputs (same as explicit 'project').
   const phase = state.current?.phase;
   if (phase === 'learning')  return [state.preparation_outputs || {}];
   if (phase === 'bridge')    return [state.preparation_outputs || {}, state.project_outputs || {}];

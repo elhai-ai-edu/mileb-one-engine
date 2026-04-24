@@ -158,7 +158,8 @@ function assessRelevance(answer, stage) {
     const hints = profile.relevance_hints || [];
     if (!hints.length) return 'partial';
     const matchCount = hints.filter(h => text.includes(h)).length;
-    if (matchCount >= profile.min_matches && matchCount >= Math.ceil(hints.length * 0.2)) return 'high';
+    // 'high' requires at least profile.min_matches hint matches
+    if (matchCount >= profile.min_matches) return 'high';
     if (matchCount >= 1) return 'partial';
     return 'low';
   }
@@ -184,12 +185,13 @@ function assessCompleteness(answer, stage, expectedOutputs) {
   if (profile) {
     if (!hasContent(answer)) return { completeness: 'missing', missing_dimensions: [] };
 
-    // Special case: compose_continuous_review needs minimum length + multiple review parts
-    if (stageId === 'compose_continuous_review') {
-      if (text.trim().length < profile.min_length) {
+    // Stages that require multi-part review text use review_parts_hints + min_length.
+    // This is driven by profile fields so the logic below is generic per-profile.
+    if (profile.review_parts_hints && profile.min_review_parts != null) {
+      if (text.trim().length < (profile.min_length || 0)) {
         return { completeness: 'partial', missing_dimensions: ['אורך מינימלי'] };
       }
-      const partsFound = (profile.review_parts_hints || []).filter(h => text.includes(h)).length;
+      const partsFound = profile.review_parts_hints.filter(h => text.includes(h)).length;
       if (partsFound < profile.min_review_parts) {
         return { completeness: 'partial', missing_dimensions: ['חלקי ביקורת'] };
       }
