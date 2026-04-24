@@ -1,5 +1,6 @@
 // pedagogical_structure_extractor.js
-// v0.2 — rule-based extraction of pedagogical structure + task/project patterns from raw content
+// v0.3 — rule-based extraction of pedagogical structure + task/project patterns from raw content
+//        Now includes: learning pipeline detection, critical review project detection, bridge generation.
 
 export function extractPedagogicalStructureFromContent(input = {}) {
   const text = input.raw_text || "";
@@ -7,17 +8,25 @@ export function extractPedagogicalStructureFromContent(input = {}) {
   const stages = detectStages(text);
   const taskPatterns = detectTaskPatterns(text);
   const projectStructures = detectProjectStructures(text);
-  const pattern = detectPattern(stages, taskPatterns, projectStructures);
+  const learning_pipelines = detectLearningPipelines(text);
+  const critical_projects = detectCriticalReviewProject(text);
+  const allProjects = [...projectStructures, ...critical_projects];
+  const bridges = learning_pipelines.flatMap(pipeline =>
+    allProjects.map(project => buildLearningToProjectBridge(pipeline, project))
+  );
+  const pattern = detectPattern(stages, taskPatterns, allProjects);
 
   return {
     detected_structure: stages,
     task_patterns: taskPatterns,
-    project_structures: projectStructures,
+    project_structures: allProjects,
+    learning_pipelines,
+    bridges,
     pedagogical_pattern: pattern,
-    strengths: detectStrengths(pattern, taskPatterns, projectStructures),
-    gaps: detectGaps(stages, taskPatterns, projectStructures),
-    recommended_template_family: mapPatternToTemplate(pattern, taskPatterns, projectStructures),
-    enriched_decision: buildDecision(pattern, taskPatterns, projectStructures, input.context || {})
+    strengths: detectStrengths(pattern, taskPatterns, allProjects),
+    gaps: detectGaps(stages, taskPatterns, allProjects),
+    recommended_template_family: mapPatternToTemplate(pattern, taskPatterns, allProjects),
+    enriched_decision: buildDecision(pattern, taskPatterns, allProjects, input.context || {})
   };
 }
 
@@ -239,6 +248,7 @@ function detectExpectedSentenceCount(text) {
 function detectPattern(stages, taskPatterns = [], projectStructures = []) {
   const ids = stages.map(s => s.stage_id);
 
+  if (projectStructures.some(project => project.project_type === "critical_text_review")) return "critical_text_review";
   if (projectStructures.some(project => project.project_type === "multi_stage_research_project")) return "multi_stage_research_project";
 
   if (ids.includes("identity") && ids.includes("group") && ids.includes("concept_definition")) return "inductive_social_learning";
@@ -257,6 +267,10 @@ function detectStrengths(pattern, taskPatterns = [], projectStructures = []) {
 
   if (projectStructures.some(project => project.project_type === "multi_stage_research_project")) {
     strengths.push("problem_based_learning", "critical_information_literacy", "multi_modal_outputs", "stage_based_research_process");
+  }
+
+  if (projectStructures.some(project => project.project_type === "critical_text_review")) {
+    strengths.push("critical_reading", "structured_review_writing", "oral_expression", "multi_stage_project");
   }
 
   return strengths;
@@ -281,7 +295,8 @@ function detectGaps(stages, taskPatterns = [], projectStructures = []) {
 }
 
 function mapPatternToTemplate(pattern, taskPatterns = [], projectStructures = []) {
-  if (pattern === "multi_stage_research_project" || projectStructures.length) return "problem_based_inquiry";
+  if (pattern === "critical_text_review") return "critical_review_writing";
+  if (pattern === "multi_stage_research_project" || projectStructures.some(p => p.project_type === "multi_stage_research_project")) return "problem_based_inquiry";
   if (pattern === "inductive_social_learning") return "inductive_peer_learning";
   if (taskPatterns.some(task => task.task_type === "vocabulary_sentence_production")) return "scaffolded_skill_building";
   return "generic_template";
@@ -320,5 +335,235 @@ function buildDecision(pattern, taskPatterns = [], projectStructures = [], conte
     decision.context.project_structures = projectStructures;
   }
 
+  const hasCriticalReview = projectStructures.some(p => p.project_type === "critical_text_review");
+  if (hasCriticalReview) {
+    decision.transformation_type = decision.transformation_type || "adapt";
+    decision.pedagogical_actions.push("add_critical_reading_stages", "add_review_writing_scaffold", "add_oral_expression_stage");
+    decision.context.target_skills = [
+      ...(Array.isArray(decision.context.target_skills) ? decision.context.target_skills : []),
+      "critical_reading",
+      "text_analysis",
+      "structured_review_writing",
+      "oral_expression"
+    ];
+  }
+
   return decision;
+}
+
+// ─── New exports (Step 6) ────────────────────────────────────────────────────
+
+const CRITICAL_REVIEW_PROJECT_SIGNALS = [
+  'חלקי הביקורת',
+  'פתיחה = הפרטים של הטקסט',
+  'מה הטענה המרכזית',
+  'דעה אישית שלילית',
+  'דעה אישית חיובית',
+  'מסקנות והמלצות',
+  'שלבי כתיבת הביקורת'
+];
+
+const CRITICAL_THINKING_LEARNING_PIPELINE_SIGNALS = [
+  'אוצר מילים',
+  'יובל ושרון',
+  'חשיבה ביקורתית',
+  'סכמו את הקטע הבא בעזרת AI',
+  'שאלו שאלת הבהרה',
+  'פייק ניוז',
+  'הקליטו את עצמכם'
+];
+
+/**
+ * Detect learning pipelines present in raw text.
+ * Returns an array of pipeline descriptor objects.
+ *
+ * @param {string} rawText
+ * @returns {Array}
+ */
+export function detectLearningPipelines(rawText = "") {
+  const text = rawText || "";
+  const pipelines = [];
+
+  const criticalSignalCount = CRITICAL_THINKING_LEARNING_PIPELINE_SIGNALS.filter(s => text.includes(s)).length;
+  if (criticalSignalCount >= 2) {
+    pipelines.push({
+      pipeline_id: "critical_review_learning_pipeline",
+      label: "צינור למידה: חשיבה ביקורתית",
+      detected_signals: CRITICAL_THINKING_LEARNING_PIPELINE_SIGNALS.filter(s => text.includes(s)),
+      required_preparation_outputs: [
+        "vocabulary_task_complete",
+        "clarifying_question_submitted",
+        "critical_reading_complete"
+      ]
+    });
+  }
+
+  // Inductive social sciences pipeline signals
+  const socialSignals = ["מי אני", "מי אנחנו", "מה זה מדעי החברה"];
+  const socialSignalCount = socialSignals.filter(s => text.includes(s)).length;
+  if (socialSignalCount >= 2) {
+    pipelines.push({
+      pipeline_id: "intro_social_sciences_pipeline",
+      label: "צינור למידה: מבוא למדעי החברה",
+      detected_signals: socialSignals.filter(s => text.includes(s)),
+      required_preparation_outputs: [
+        "self_description_submitted",
+        "concept_definition_submitted"
+      ]
+    });
+  }
+
+  return pipelines;
+}
+
+/**
+ * Detect if the text describes a critical text review project.
+ *
+ * @param {string} rawText
+ * @returns {Array}
+ */
+export function detectCriticalReviewProject(rawText = "") {
+  const text = rawText || "";
+  const projects = [];
+
+  const signalCount = CRITICAL_REVIEW_PROJECT_SIGNALS.filter(s => text.includes(s)).length;
+  if (signalCount >= 2) {
+    projects.push({
+      project_type: "critical_text_review",
+      title: "פרויקט ביקורת טקסט",
+      domain: "critical_reading_and_writing",
+      stages: buildCriticalReviewProjectStages(),
+      required_outputs: [
+        "text_details",
+        "main_claim",
+        "author_values",
+        "negative_evaluation",
+        "positive_evaluation",
+        "conclusion_recommendation",
+        "continuous_review_text"
+      ],
+      output_modes: ["written", "oral"],
+      suggested_template_family: "critical_review_writing",
+      suggested_bot_roles: [
+        "critical_reading_coach",
+        "review_writing_coach",
+        "oral_expression_coach"
+      ],
+      suggested_gate: {
+        type: "evidence_required",
+        evidence: "continuous_review_submitted"
+      },
+      forbidden_actions: [
+        "write_full_review_for_student",
+        "give_final_evaluation_text",
+        "skip_reading_stages",
+        "invent_author_claims",
+        "replace_student_critical_voice"
+      ]
+    });
+  }
+
+  return projects;
+}
+
+/**
+ * Build a bridge descriptor between a learning pipeline and a project.
+ *
+ * @param {Object} pipeline - Learning pipeline descriptor
+ * @param {Object} project  - Project structure descriptor
+ * @returns {Object} Bridge descriptor
+ */
+export function buildLearningToProjectBridge(pipeline, project) {
+  return {
+    bridge_type: "learning_to_project",
+    pipeline_id: pipeline.pipeline_id,
+    project_type: project.project_type,
+    bridge_mode: "flexible",
+    bridge_visibility: "visible",
+    transition_tone: "soft_guiding",
+    missing_policy: "warn_and_track",
+    required_preparation_outputs: pipeline.required_preparation_outputs || []
+  };
+}
+
+function buildCriticalReviewProjectStages() {
+  return [
+    {
+      stage_id: "identify_text_details",
+      label: "שלב 1: פתיחה — פרטי הטקסט",
+      type: "text_identification",
+      sub_tasks: ["identify_title", "identify_author", "identify_genre", "identify_publication_context"],
+      required_outputs: ["text_details"],
+      suggested_gate: { type: "completion_required", evidence: "text_details" },
+      bot_role: "critical_reading_coach",
+      prompt_style: "guided_identification",
+      validation_expectations: ["title_present", "author_present"]
+    },
+    {
+      stage_id: "main_claim",
+      label: "שלב 2: הטענה המרכזית",
+      type: "claim_analysis",
+      sub_tasks: ["identify_main_argument", "explain_in_own_words"],
+      required_outputs: ["main_claim"],
+      suggested_gate: { type: "completion_required", evidence: "main_claim" },
+      bot_role: "critical_reading_coach",
+      prompt_style: "socratic_question",
+      validation_expectations: ["claim_identified", "student_paraphrase_present"]
+    },
+    {
+      stage_id: "author_values",
+      label: "שלב 3: ערכי המחבר",
+      type: "values_extraction",
+      sub_tasks: ["identify_worldview", "identify_assumptions", "connect_to_claim"],
+      required_outputs: ["author_values"],
+      suggested_gate: { type: "completion_required", evidence: "author_values" },
+      bot_role: "critical_reading_coach",
+      prompt_style: "reflective_inquiry",
+      validation_expectations: ["at_least_one_value_identified"]
+    },
+    {
+      stage_id: "negative_evaluation",
+      label: "שלב 4: דעה אישית שלילית",
+      type: "critical_evaluation",
+      sub_tasks: ["identify_weakness", "justify_critique", "use_evidence_or_reasoning"],
+      required_outputs: ["negative_evaluation"],
+      suggested_gate: { type: "completion_required", evidence: "negative_evaluation" },
+      bot_role: "review_writing_coach",
+      prompt_style: "structured_critique",
+      validation_expectations: ["critique_present", "reasoning_present"]
+    },
+    {
+      stage_id: "positive_evaluation",
+      label: "שלב 5: דעה אישית חיובית",
+      type: "positive_evaluation",
+      sub_tasks: ["identify_strength", "justify_appreciation", "connect_to_goals"],
+      required_outputs: ["positive_evaluation"],
+      suggested_gate: { type: "completion_required", evidence: "positive_evaluation" },
+      bot_role: "review_writing_coach",
+      prompt_style: "structured_appreciation",
+      validation_expectations: ["strength_present", "reasoning_present"]
+    },
+    {
+      stage_id: "conclusion_recommendation",
+      label: "שלב 6: מסקנות והמלצות",
+      type: "synthesis_and_recommendation",
+      sub_tasks: ["summarize_evaluation", "recommend_audience", "explain_rationale"],
+      required_outputs: ["conclusion_recommendation"],
+      suggested_gate: { type: "completion_required", evidence: "conclusion_recommendation" },
+      bot_role: "review_writing_coach",
+      prompt_style: "synthesis_prompt",
+      validation_expectations: ["conclusion_present", "recommendation_present"]
+    },
+    {
+      stage_id: "compose_continuous_review",
+      label: "שלב 7: כתיבת ביקורת רציפה",
+      type: "academic_writing_synthesis",
+      sub_tasks: ["integrate_all_stages", "write_continuous_text", "use_academic_connectors", "record_oral_reading"],
+      required_outputs: ["continuous_review_text"],
+      suggested_gate: { type: "evidence_required", evidence: "continuous_review_submitted" },
+      bot_role: "oral_expression_coach",
+      prompt_style: "writing_integration",
+      validation_expectations: ["minimum_length", "all_stages_referenced"]
+    }
+  ];
 }
