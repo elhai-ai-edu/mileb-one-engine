@@ -58,6 +58,10 @@ export function buildCriticalTextReviewFlow() {
       suggested_gate: { type: 'completion_required', evidence: 'main_claim' },
       bot_role: 'critical_reading_coach',
       prompt_style: 'socratic_question',
+      prompts: [
+        'מה הרעיון המרכזי שהכותב מנסה להעביר?',
+        'מה גרם לך לחשוב שזה הרעיון המרכזי?'
+      ],
       validation_expectations: ['claim_identified', 'student_paraphrase_present']
     },
     {

@@ -5,6 +5,7 @@
 import { computeMissing, canAdvance, advanceStage } from './process_state_manager.js';
 import { applyBridgePolicy } from './learning_to_project_bridge.js';
 import { validateStageResponse, selectFeedbackType } from './process_validation.js';
+import { buildProbeUnderstandingMessage } from './runtime_instruction_builder.js';
 
 /**
  * Advance the project forward one step based on rich process state.
@@ -77,11 +78,25 @@ export function runProjectForward(state, options = {}) {
     const validation = validateStageResponse({
       answer: lastAnswer,
       stage: currentNode,
-      expectedOutputs: required
+      expectedOutputs: required,
+      state
     });
 
     state.validation.last_result = validation;
     state.validation.last_feedback_type = selectFeedbackType(validation);
+
+    if (
+      validation.understanding_gain === 'surface_rewording' ||
+      validation.possible_bot_contamination
+    ) {
+      return {
+        type: 'probe_understanding',
+        message: buildProbeUnderstandingMessage(state),
+        next_stage: null,
+        missing: [],
+        validation
+      };
+    }
 
     if (validation.completeness !== 'sufficient' || validation.relevance === 'low') {
       state.validation.needs_refinement = true;

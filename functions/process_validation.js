@@ -9,20 +9,32 @@
  * @param {string} options.answer            - Raw student answer text
  * @param {Object} options.stage             - Current stage definition (from project_flow_builder)
  * @param {Array}  [options.expectedOutputs] - Expected output keys for this stage
+ * @param {Object} [options.state]           - Process state (may include last_bot_message / previous_answer)
  * @returns {Object} Validation result
  */
-export function validateStageResponse({ answer = '', stage = {}, expectedOutputs = [] }) {
+export function validateStageResponse({ answer = '', stage = {}, expectedOutputs = [], state = null }) {
   const has_content = hasContent(answer);
   const relevance = assessRelevance(answer, stage);
   const { completeness, missing_dimensions } = assessCompleteness(answer, stage, expectedOutputs);
   const feedback_type = selectFeedbackType({ has_content, relevance, completeness, missing_dimensions });
+
+  const lastBotMessage = state?.last_bot_message || null;
+  const previousAnswer = state?.previous_answer || null;
+  const possible_bot_contamination = detectBotContamination(answer, lastBotMessage);
+  const understanding_gain = computeUnderstandingGain({
+    current: answer,
+    previous: previousAnswer,
+    contamination: possible_bot_contamination
+  });
 
   return {
     has_content,
     relevance,
     completeness,
     missing_dimensions,
-    feedback_type
+    feedback_type,
+    understanding_gain,
+    possible_bot_contamination
   };
 }
 
@@ -79,6 +91,48 @@ export function buildValidationFeedback(validation, stage = {}) {
   }
 
   return 'נראה שיש כאן התחלה... אפשר לחדד?';
+}
+
+// ─── Understanding-gain helpers ──────────────────────────────────────────────
+
+function textSimilarity(a, b) {
+  if (!a || !b) return 0;
+  const shorter = a.length < b.length ? a : b;
+  const longer = a.length >= b.length ? a : b;
+  let same = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    if (shorter[i] === longer[i]) same++;
+  }
+  return same / longer.length;
+}
+
+function detectSurfaceRewording(current, previous) {
+  if (!previous) return false;
+  return textSimilarity(current, previous) > 0.8;
+}
+
+function detectBotContamination(current, lastBotMessage) {
+  if (!lastBotMessage) return false;
+  return textSimilarity(current, lastBotMessage) > 0.7;
+}
+
+function computeUnderstandingGain({ current, previous, contamination }) {
+  if (!current || current.length < 10) return 'none';
+
+  if (contamination) return 'surface_rewording';
+
+  if (detectSurfaceRewording(current, previous)) {
+    return 'surface_rewording';
+  }
+
+  const hasReasoning = /כי|לכן|כלומר|זה אומר/.test(current);
+  const hasExample = /למשל|לדוגמה/.test(current);
+
+  if (hasReasoning || hasExample) {
+    return 'meaningful';
+  }
+
+  return 'surface_rewording';
 }
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
