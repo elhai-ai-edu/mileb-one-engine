@@ -48,7 +48,8 @@ export function buildPersonalProjectFlow() {
       suggested_gate: { type: 'completion_required', evidence: 'problem_definition' },
       bot_role: 'problem_framing_coach',
       prompt_style: 'guided_identification',
-      validation_expectations: ['problem_present', 'importance_present', 'affected_present']
+      validation_expectations: ['problem_present', 'importance_present', 'affected_present'],
+      min_length: 50
     },
     {
       stage_id: 'prior_attempts',
@@ -59,7 +60,8 @@ export function buildPersonalProjectFlow() {
       suggested_gate: { type: 'completion_required', evidence: 'prior_attempts' },
       bot_role: 'problem_framing_coach',
       prompt_style: 'reflective_inquiry',
-      validation_expectations: ['attempt_described', 'blocker_identified']
+      validation_expectations: ['attempt_described', 'blocker_identified'],
+      min_length: 60
     },
     {
       stage_id: 'information_sources',
@@ -70,7 +72,8 @@ export function buildPersonalProjectFlow() {
       suggested_gate: { type: 'completion_required', evidence: 'information_sources' },
       bot_role: 'research_coach',
       prompt_style: 'source_reflection',
-      validation_expectations: ['source_markers_present', 'multiple_sources']
+      validation_expectations: ['source_markers_present', 'multiple_sources'],
+      min_length: 80
     },
     {
       stage_id: 'two_alternatives',
@@ -81,7 +84,8 @@ export function buildPersonalProjectFlow() {
       suggested_gate: { type: 'completion_required', evidence: 'two_alternatives' },
       bot_role: 'critical_thinking_coach',
       prompt_style: 'comparative_analysis',
-      validation_expectations: ['two_options_present', 'pros_cons_present']
+      validation_expectations: ['two_options_present', 'pros_cons_present'],
+      min_length: 100
     },
     {
       stage_id: 'solution_choice',
@@ -92,7 +96,8 @@ export function buildPersonalProjectFlow() {
       suggested_gate: { type: 'completion_required', evidence: 'solution_choice' },
       bot_role: 'decision_coach',
       prompt_style: 'structured_reasoning',
-      validation_expectations: ['choice_stated', 'reasoning_present']
+      validation_expectations: ['choice_stated', 'reasoning_present'],
+      min_length: 60
     },
     {
       stage_id: 'summary_document',
@@ -103,7 +108,8 @@ export function buildPersonalProjectFlow() {
       suggested_gate: { type: 'evidence_required', evidence: 'summary_document_submitted' },
       bot_role: 'writing_coach',
       prompt_style: 'writing_integration',
-      validation_expectations: ['minimum_length', 'all_stages_referenced']
+      validation_expectations: ['minimum_length', 'all_stages_referenced'],
+      min_length: 300
     },
     {
       stage_id: 'presentation_abstract',
@@ -114,7 +120,8 @@ export function buildPersonalProjectFlow() {
       suggested_gate: { type: 'completion_required', evidence: 'presentation_abstract' },
       bot_role: 'presentation_coach',
       prompt_style: 'synthesis_prompt',
-      validation_expectations: ['abstract_present', 'learning_reflection_present']
+      validation_expectations: ['abstract_present', 'learning_reflection_present'],
+      min_length: 100
     }
   ];
 

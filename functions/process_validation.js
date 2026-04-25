@@ -316,9 +316,13 @@ function assessCompleteness(answer, stage, expectedOutputs) {
 
     // Source credibility check (information_sources stage):
     // require at least min_sources distinct source markers to prevent single-line answers.
-    if (profile.source_markers && profile.min_sources != null) {
+    // Note: paragraph counting via /\n\s*\n|\.\s+[א-ת]/g is a lightweight heuristic —
+    // it reliably detects paragraph breaks and sentence starts but may undercount in
+    // edge cases (e.g. text ending mid-sentence). markerCount is the primary signal;
+    // paragraphCount is a fallback for structured multi-paragraph answers.
+    if (profile.source_markers && profile.min_sources !== null) {
       const markerCount = (profile.source_markers || []).filter(m => text.includes(m)).length;
-      // Also count paragraph/sentence boundaries as rough source separators
+      // Count explicit paragraph breaks and Hebrew-sentence starts after a period.
       const paragraphCount = (text.match(/\n\s*\n|\.\s+[א-ת]/g) || []).length + 1;
       const sourcesFound = Math.max(markerCount, paragraphCount);
       if (sourcesFound < profile.min_sources) {

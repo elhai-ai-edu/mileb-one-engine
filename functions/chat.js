@@ -166,7 +166,16 @@ function buildPersonalProjectContextBlock({
 
   // Explicit enforcement hint: the bot should never write the answer for the student
   // and should prompt for expansion when the answer is too short.
-  lines.push("הנחיית אכיפה: אם הסטודנט מבקש שתכתוב עבורו — סרב בנימוס והסבר שעליו לנסח בעצמו. אם התשובה קצרה מ-60 תווים — בקש הרחבה ממוקדת.");
+  // The threshold is taken from the flow node's min_length (set per-stage in buildPersonalProjectFlow).
+  if (Number.isFinite(numericCurrentStep)) {
+    const flowNode = PP_CONTEXT_FLOW.nodes[numericCurrentStep] || null;
+    const lengthThreshold = (flowNode && typeof flowNode.min_length === 'number')
+      ? flowNode.min_length
+      : 60;
+    lines.push(`הנחיית אכיפה: אם הסטודנט מבקש שתכתוב עבורו — סרב בנימוס והסבר שעליו לנסח בעצמו. אם התשובה קצרה מ-${lengthThreshold} תווים — בקש הרחבה ממוקדת.`);
+  } else {
+    lines.push("הנחיית אכיפה: אם הסטודנט מבקש שתכתוב עבורו — סרב בנימוס והסבר שעליו לנסח בעצמו. אם התשובה קצרה מ-60 תווים — בקש הרחבה ממוקדת.");
+  }
 
   return lines.length ? "## הקשר פרויקט אישי\n" + lines.join("\n") : "";
 }
