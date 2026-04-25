@@ -1030,7 +1030,9 @@ async function handleCourseStageSummary(query) {
             submittedAt: s?.submittedAt || null,
             approvedAt: s?.approvedAt || null,
             rejectedAt: s?.rejectedAt || null,
-            submissionId: s?.submissionId || null
+            submissionId: s?.submissionId || null,
+            ...(s?.validation_flags        ? { validation_flags:        s.validation_flags        } : {}),
+            ...(s?.contamination_suspected ? { contamination_suspected: s.contamination_suspected } : {})
           }
         ])
       )

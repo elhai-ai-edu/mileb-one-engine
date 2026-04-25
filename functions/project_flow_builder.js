@@ -31,6 +31,97 @@ export function buildProjectFlow(projectStructure) {
 }
 
 /**
+ * Build a flow for the personal_project type.
+ * Stages are fixed and follow the canonical 7-step personal project structure.
+ * Stage IDs mirror the validation profiles in process_validation.js.
+ *
+ * @returns {Object} Project flow
+ */
+export function buildPersonalProjectFlow() {
+  const stages = [
+    {
+      stage_id: 'problem_definition',
+      label: 'שלב 1: בחירת בעיה',
+      sub_tasks: ['identify_problem', 'explain_importance', 'identify_affected'],
+      required_outputs: ['problem_definition'],
+      output_source: 'project',
+      suggested_gate: { type: 'completion_required', evidence: 'problem_definition' },
+      bot_role: 'problem_framing_coach',
+      prompt_style: 'guided_identification',
+      validation_expectations: ['problem_present', 'importance_present', 'affected_present']
+    },
+    {
+      stage_id: 'prior_attempts',
+      label: 'שלב 2: ניסיונות קדומים',
+      sub_tasks: ['describe_past_attempts', 'explain_partial_success', 'identify_blockers'],
+      required_outputs: ['prior_attempts'],
+      output_source: 'project',
+      suggested_gate: { type: 'completion_required', evidence: 'prior_attempts' },
+      bot_role: 'problem_framing_coach',
+      prompt_style: 'reflective_inquiry',
+      validation_expectations: ['attempt_described', 'blocker_identified']
+    },
+    {
+      stage_id: 'information_sources',
+      label: 'שלב 3: מקורות מידע',
+      sub_tasks: ['gather_sources', 'summarize_each_source', 'connect_to_problem'],
+      required_outputs: ['information_sources'],
+      output_source: 'project',
+      suggested_gate: { type: 'completion_required', evidence: 'information_sources' },
+      bot_role: 'research_coach',
+      prompt_style: 'source_reflection',
+      validation_expectations: ['source_markers_present', 'multiple_sources']
+    },
+    {
+      stage_id: 'two_alternatives',
+      label: 'שלב 4: שתי אלטרנטיבות',
+      sub_tasks: ['describe_option_a', 'describe_option_b', 'compare_pros_cons'],
+      required_outputs: ['two_alternatives'],
+      output_source: 'project',
+      suggested_gate: { type: 'completion_required', evidence: 'two_alternatives' },
+      bot_role: 'critical_thinking_coach',
+      prompt_style: 'comparative_analysis',
+      validation_expectations: ['two_options_present', 'pros_cons_present']
+    },
+    {
+      stage_id: 'solution_choice',
+      label: 'שלב 5: בחירת פתרון',
+      sub_tasks: ['state_chosen_solution', 'justify_choice', 'connect_to_prior_stages'],
+      required_outputs: ['solution_choice'],
+      output_source: 'project',
+      suggested_gate: { type: 'completion_required', evidence: 'solution_choice' },
+      bot_role: 'decision_coach',
+      prompt_style: 'structured_reasoning',
+      validation_expectations: ['choice_stated', 'reasoning_present']
+    },
+    {
+      stage_id: 'summary_document',
+      label: 'שלב 6: כתיבת מסמך',
+      sub_tasks: ['integrate_all_stages', 'write_coherent_document', 'include_all_components'],
+      required_outputs: ['summary_document'],
+      output_source: 'project',
+      suggested_gate: { type: 'evidence_required', evidence: 'summary_document_submitted' },
+      bot_role: 'writing_coach',
+      prompt_style: 'writing_integration',
+      validation_expectations: ['minimum_length', 'all_stages_referenced']
+    },
+    {
+      stage_id: 'presentation_abstract',
+      label: 'שלב 7: הצגה',
+      sub_tasks: ['write_abstract', 'include_problem_and_solution', 'reflect_on_learning'],
+      required_outputs: ['presentation_abstract'],
+      output_source: 'project',
+      suggested_gate: { type: 'completion_required', evidence: 'presentation_abstract' },
+      bot_role: 'presentation_coach',
+      prompt_style: 'synthesis_prompt',
+      validation_expectations: ['abstract_present', 'learning_reflection_present']
+    }
+  ];
+
+  return buildProjectFlow({ project_type: 'personal_project', stages });
+}
+
+/**
  * Build a flow for the critical_text_review project type.
  * Stages are fixed and follow the canonical critical review structure.
  *

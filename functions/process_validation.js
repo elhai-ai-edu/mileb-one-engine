@@ -198,6 +198,63 @@ function getStageValidationProfile(stageId) {
       min_length: 250,
       review_parts_hints: ['טוען', 'טענה', 'אהבתי', 'לא אהבתי', 'לסיכום', 'ממליץ', 'ממליצה', 'בעיה', 'חשוב'],
       min_review_parts: 3
+    },
+
+    // ── Personal Project stages ──────────────────────────────────────────────
+    problem_definition: {
+      relevance_hints: ['בעיה', 'מושפע', 'חשיבות', 'מה הבעיה', 'מי מושפע', 'למה חשוב', 'חשוב כי', 'בעיה מקצועית'],
+      completeness_patterns: [/בעי/, /חשוב|חשיבות|חשובה/, /מושפע|מי מושפע/],
+      min_matches: 2,
+      min_length: 50,
+      requires_reasoning: false
+    },
+    prior_attempts: {
+      relevance_hints: ['נוסה', 'ניסיון', 'מנע', 'הצליח', 'נכשל', 'עבד', 'לא עבד', 'בעבר', 'ניסו', 'הוצע'],
+      completeness_patterns: [/נוסה|ניסו|ניסיון|ניסינו/, /מנע|לא הצליח|נכשל|לא עבד|בעיה/],
+      min_matches: 1,
+      min_length: 60,
+      requires_reasoning: false
+    },
+    information_sources: {
+      relevance_hints: ['מקור', 'למדתי', 'לפי', 'נמצא', 'כתוב', 'נכתב', 'מחקר', 'אתר', 'ספר', 'מאמר', 'פרסם'],
+      completeness_patterns: [/מקור|לפי|מתוך|כתב|פרסם|אתר|מחקר|ספר|מאמר/],
+      min_matches: 1,
+      min_length: 80,
+      requires_reasoning: false,
+      // Source credibility: require markers that indicate attribution to a real source
+      source_markers: ['ב-', 'לפי', 'מתוך', 'כתב', 'פרסם', 'אתר', 'מחקר', 'ספר', 'מאמר', 'נכתב', 'כותב'],
+      min_sources: 2   // at least 2 distinct source markers or paragraphs
+    },
+    two_alternatives: {
+      relevance_hints: ['אפשרות', 'גישה', 'יתרון', 'חסרון', 'אלטרנטיבה', 'ראשונה', 'שנייה', 'גישה א', 'גישה ב', 'פתרון א', 'פתרון ב'],
+      completeness_patterns: [/אפשרות|גישה|אלטרנטיב/, /יתרון|חסרון/],
+      min_matches: 2,
+      min_length: 100,
+      requires_reasoning: false
+    },
+    solution_choice: {
+      relevance_hints: ['בחרתי', 'מפני', 'לכן', 'כי', 'בגלל', 'החלטתי', 'עדיף', 'הפתרון שבחרתי'],
+      completeness_patterns: [/בחרתי|החלטתי|בחרה|בחר ב/, /כי|לכן|מפני|בגלל|מאחר/],
+      min_matches: 2,
+      min_length: 60,
+      requires_reasoning: true,
+      reasoning_hints: ['כי', 'לכן', 'מפני ש', 'בגלל', 'מאחר', 'משום']
+    },
+    summary_document: {
+      relevance_hints: ['בעיה', 'ניסיון', 'חלופה', 'פתרון', 'לסיכום', 'מסמך', 'כתבתי', 'סיכום', 'תהליך'],
+      completeness_patterns: [/בעי/, /ניסיון|ניסינו|נוסה/, /חלופ|אלטרנטיב|גישה/, /פתרון|בחרתי/],
+      min_matches: 3,
+      min_length: 300,
+      requires_reasoning: false,
+      review_parts_hints: ['בעיה', 'ניסיון', 'אפשרות', 'פתרון', 'מקור', 'חלופה', 'גישה', 'בחרתי', 'למדתי'],
+      min_review_parts: 3
+    },
+    presentation_abstract: {
+      relevance_hints: ['הצגה', 'סיכום', 'למדתי', 'בעיה', 'פתרון', 'הצגת הפרויקט', 'מה למדתי', 'תקציר'],
+      completeness_patterns: [/בעי/, /פתרון|בחרתי/, /למד|הצגה|תקציר/],
+      min_matches: 2,
+      min_length: 100,
+      requires_reasoning: false
     }
   };
   return profiles[stageId] || null;
@@ -254,7 +311,19 @@ function assessCompleteness(answer, stage, expectedOutputs) {
 
     // Check minimum length requirement
     if (profile.min_length && text.trim().length < profile.min_length) {
-      return { completeness: 'partial', missing_dimensions: [] };
+      return { completeness: 'partial', missing_dimensions: ['אורך מינימלי'] };
+    }
+
+    // Source credibility check (information_sources stage):
+    // require at least min_sources distinct source markers to prevent single-line answers.
+    if (profile.source_markers && profile.min_sources != null) {
+      const markerCount = (profile.source_markers || []).filter(m => text.includes(m)).length;
+      // Also count paragraph/sentence boundaries as rough source separators
+      const paragraphCount = (text.match(/\n\s*\n|\.\s+[א-ת]/g) || []).length + 1;
+      const sourcesFound = Math.max(markerCount, paragraphCount);
+      if (sourcesFound < profile.min_sources) {
+        return { completeness: 'partial', missing_dimensions: ['מקורות מרובים'] };
+      }
     }
 
     // Check pattern matches
