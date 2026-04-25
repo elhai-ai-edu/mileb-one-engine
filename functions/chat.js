@@ -15,6 +15,12 @@ const kernel = fs.readFileSync(kernelPath, "utf8");
 import { getDatabase } from "firebase-admin/database";
 import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 
+// ─── PROCESS RUNTIME IMPORTS (pilot: critical_text_review only) ───
+import { createInitialProcessState, recordHistory } from './process_state_manager.js';
+import { runProjectForward }                        from './project_runtime_driver.js';
+import { buildRuntimeInstructionLayer }             from './runtime_instruction_builder.js';
+import { buildCriticalTextReviewFlow }              from './project_flow_builder.js';
+
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
 const SITE_URL           = "https://cozy-seahorse-7c5204.netlify.app";
@@ -167,6 +173,219 @@ async function logMessage(sessionId, role, content) {
 
 const MODEL_THINKING = "google/gemini-2.0-flash-thinking-exp";
 const MODEL_FAST     = "google/gemini-2.0-flash-001";
+
+// ─────────────────────────────────────────
+// PROCESS RUNTIME — PILOT-ONLY STATE STORE
+// Pilot-only persistence. Replace with Firebase/session persistence after classroom validation.
+// NOTE: In-memory Map is not concurrency-safe across simultaneous requests for the same key.
+// Acceptable for single-classroom pilot; must be replaced before multi-class rollout.
+// ─────────────────────────────────────────
+
+const PROCESS_STATE_STORE = globalThis.__MILED_PROCESS_STATE_STORE__ || new Map();
+globalThis.__MILED_PROCESS_STATE_STORE__ = PROCESS_STATE_STORE;
+
+const PROCESS_RUNTIME_TEMPERATURE = 0.7;
+const PROCESS_RUNTIME_MAX_TOKENS  = 1024;
+
+function buildProcessStateKey(body = {}) {
+  return `${body.sessionId || 'local'}:${body.studentId || body.userId || 'anonymous'}:${body.project_type || body.botType}`;
+}
+
+function loadProcessState(key) {
+  return PROCESS_STATE_STORE.get(key) || null;
+}
+
+function saveProcessState(key, state) {
+  PROCESS_STATE_STORE.set(key, state);
+}
+
+// ─────────────────────────────────────────
+// PROCESS RUNTIME — GUARD
+// ─────────────────────────────────────────
+
+function isProcessRuntimeRequest(body = {}) {
+  return (
+    body.botType === 'critical_text_review' ||
+    body.project_type === 'critical_text_review' ||
+    (body.process_runtime_enabled === true && body.project_type === 'critical_text_review')
+  );
+}
+
+// ─────────────────────────────────────────
+// PROCESS RUNTIME — STATE BOOTSTRAP
+// ─────────────────────────────────────────
+
+function createCriticalReviewInitialState(body = {}) {
+  const state = createInitialProcessState({
+    student_id:    body.studentId || body.userId || 'anonymous',
+    pipeline_id:   'critical_review_learning_pipeline',
+    project_type:  'critical_text_review',
+    initial_stage: 'stage_1',
+    bridge: {
+      bridge_type:      'learning_to_project',
+      bridge_mode:      'flexible',
+      bridge_visibility:'visible',
+      transition_tone:  'soft_guiding',
+      missing_policy:   'warn_and_track'
+    }
+  });
+
+  const flow = buildCriticalTextReviewFlow();
+  state.nodes = flow.nodes;
+
+  return state;
+}
+
+function updateStateFromStudentMessage(state, message) {
+  const currentNode = (state.nodes || []).find(n =>
+    n.node_id === state.current?.stage_id || n.stage_id === state.current?.stage_id
+  );
+
+  if (!currentNode) return state;
+
+  const outputKey = currentNode.required_outputs?.[0];
+
+  if (outputKey && message && message.trim()) {
+    state.project_outputs[outputKey] = message.trim();
+  }
+
+  state.previous_answer  = state.last_user_message || null;
+  state.last_user_message = message;
+
+  return state;
+}
+
+// ─────────────────────────────────────────
+// PROCESS RUNTIME — MODEL MESSAGES
+// ─────────────────────────────────────────
+
+function buildProcessModelMessages({ state, action, instructionLayer, message }) {
+  return [
+    {
+      role: 'system',
+      content: [
+        'אתה בוט למידה תהליכי של MilEd.',
+        instructionLayer.system_addendum,
+        '',
+        'מדיניות מחייבת:',
+        JSON.stringify(instructionLayer.runtime_policies, null, 2),
+        '',
+        'פעולות מותרות:',
+        instructionLayer.allowed_actions.join(', '),
+        '',
+        'פעולות אסורות:',
+        instructionLayer.forbidden_actions.join(', '),
+        '',
+        'סגנון תגובה:',
+        JSON.stringify(instructionLayer.response_style, null, 2)
+      ].join('\n')
+    },
+    {
+      role: 'assistant',
+      content: instructionLayer.stage_prompt
+    },
+    {
+      role: 'user',
+      content: message
+    }
+  ];
+}
+
+async function callProcessModel(messages) {
+  const response = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'Content-Type':  'application/json',
+      'HTTP-Referer':  SITE_URL,
+      'X-Title':       'MilEd.One'
+    },
+    body: JSON.stringify({ model: MODEL_FAST, messages, temperature: PROCESS_RUNTIME_TEMPERATURE, max_tokens: PROCESS_RUNTIME_MAX_TOKENS })
+  });
+
+  const raw = await response.text();
+  if (!response.ok) {
+    console.error('[process-runtime] LLM ERROR:', response.status, raw);
+    throw new Error('LLM request failed');
+  }
+
+  const data = JSON.parse(raw);
+  return data.choices?.[0]?.message?.content || 'מצטער, לא הצלחתי לקבל תשובה כרגע.';
+}
+
+// ─────────────────────────────────────────
+// PROCESS RUNTIME — HANDLER
+// Pilot-only process runtime path.
+// Keep narrow. Do not generalize until after classroom validation.
+// chat.js orchestrates runtime; pedagogy remains in helper modules.
+// ─────────────────────────────────────────
+
+async function handleProcessRuntimeRequest(body, headers) {
+  const message = body.message || body.userMessage || '';
+  const key     = buildProcessStateKey(body);
+
+  let state = loadProcessState(key);
+
+  if (!state) {
+    state = createCriticalReviewInitialState(body);
+  }
+
+  state = updateStateFromStudentMessage(state, message);
+
+  const action = runProjectForward(state, {
+    nodes:      state.nodes,
+    lastAnswer: message
+  });
+
+  const instructionLayer = buildRuntimeInstructionLayer({
+    state,
+    action,
+    context: {
+      pilot_mode:   true,
+      project_type: 'critical_text_review'
+    }
+  });
+
+  const modelMessages = buildProcessModelMessages({ state, action, instructionLayer, message });
+
+  const responseText = await callProcessModel(modelMessages);
+
+  state.last_bot_message = responseText;
+
+  recordHistory(state, {
+    event_type: 'process_runtime_turn',
+    stage_id:   state.current?.stage_id,
+    summary:    action.type
+  });
+
+  saveProcessState(key, state);
+
+  if (body.debug_process_runtime === true) {
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({
+        reply: responseText,
+        botType: body.botType || 'critical_text_review',
+        process_debug: {
+          stage_id:   state.current?.stage_id,
+          action_type: action.type,
+          missing:    action.missing || [],
+          validation: action.validation || {}
+        }
+      })
+    };
+  }
+
+  return {
+    statusCode: 200,
+    headers,
+    body: JSON.stringify({
+      reply:   responseText,
+      botType: body.botType || 'critical_text_review'
+    })
+  };
+}
 
 const THINKING_BOT_TYPES = [
   "faculty_assistant",
@@ -709,6 +928,12 @@ export async function handler(event) {
 
     if (!botType)
       return { statusCode: 400, headers, body: JSON.stringify({ error: "botType required" }) };
+
+    // ─── PROCESS RUNTIME GUARD (pilot: critical_text_review only) ───
+    const parsedBody = JSON.parse(event.body || "{}");
+    if (isProcessRuntimeRequest(parsedBody)) {
+      return await handleProcessRuntimeRequest(parsedBody, headers);
+    }
 
     // ─── FACULTY VERIFICATION ───
     // Resolve facultyVerified server-side so clients cannot spoof access to institution-scoped bots.
