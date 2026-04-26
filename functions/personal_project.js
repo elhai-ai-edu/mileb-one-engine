@@ -2,9 +2,15 @@
 
 import { getDatabase } from "firebase-admin/database";
 import { ensureFirebaseAdminApp } from "./firebase-admin.js";
+import { validateStageResponse } from "./process_validation.js";
+import { buildPersonalProjectFlow } from "./project_flow_builder.js";
 
 const MAX_STUDENT_NAME_LENGTH = 80;
 const MAX_STAGE_INDEX         = 6;   // PP_STAGES has 7 stages (0–6)
+
+// Build the canonical personal project flow once at module load.
+// Used to look up per-stage validation profiles during submit_stage.
+const PP_FLOW = buildPersonalProjectFlow();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,9 +49,11 @@ async function mirrorToCourseProgress(db, courseId, studentId, studentName, stag
       state:        courseStatus,
       submissionId: submissionId || null,
       submittedAt:  extra.submittedAt || null,
-      ...(extra.approvedAt  ? { approvedAt:  extra.approvedAt  } : {}),
-      ...(extra.rejectedAt  ? { rejectedAt:  extra.rejectedAt  } : {}),
-      ...(extra.feedback    ? { feedback:    extra.feedback    } : {})
+      ...(extra.approvedAt          ? { approvedAt:              extra.approvedAt              } : {}),
+      ...(extra.rejectedAt          ? { rejectedAt:              extra.rejectedAt              } : {}),
+      ...(extra.feedback            ? { feedback:                extra.feedback                } : {}),
+      ...(extra.validation_flags    ? { validation_flags:        extra.validation_flags        } : {}),
+      ...(extra.contamination_suspected ? { contamination_suspected: extra.contamination_suspected } : {})
     },
     ...(status === "approved" ? { currentStageId: `pp_stage_${stageIndex}` } : {}),
     updatedAt: Date.now()
@@ -166,6 +174,42 @@ export async function handler(event) {
     if (!submission.text && !submission.files.length && !submission.audios.length)
       return err("submission must contain text, a file, or an audio recording");
 
+    // ── Process validation ────────────────────────────────────────────────────
+    // Run stage-aware validation on the text portion of the submission.
+    // Policy: reject only genuinely empty answers; flag partial answers for the teacher.
+    const ppFlowNode = PP_FLOW.nodes[stageIndex] || null;
+    let validation_flags = null;
+    let contamination_suspected = false;
+
+    if (ppFlowNode && submission.text) {
+      const validation = validateStageResponse({
+        answer: submission.text,
+        stage: ppFlowNode,
+        expectedOutputs: ppFlowNode.required_outputs || []
+      });
+
+      // Hard reject: no content at all (after the non-empty check above this catches
+      // cases where only whitespace or very short filler was sent)
+      if (validation.completeness === 'missing' && !validation.has_content) {
+        return err("הגשה ריקה — יש לכתוב תשובה לפני ההגשה");
+      }
+
+      // Soft flag: partial answer — teacher sees what is missing
+      if (validation.completeness === 'partial') {
+        const dims = validation.missing_dimensions || [];
+        validation_flags = {
+          completeness: 'partial',
+          missing_dimensions: dims,
+          flaggedAt: Date.now()
+        };
+      }
+
+      // Contamination flag: answer looks like it was copied from the bot
+      if (validation.possible_bot_contamination) {
+        contamination_suspected = true;
+      }
+    }
+
     const now          = Date.now();
     const submissionId = ppSubmissionId(courseId, studentId, stageIndex);
 
@@ -176,7 +220,9 @@ export async function handler(event) {
       stageId:      `pp_stage_${stageIndex}`,
       stageLabel,
       submissionId,
-      submittedAt:  now
+      submittedAt:  now,
+      ...(validation_flags       ? { validation_flags }       : {}),
+      ...(contamination_suspected ? { contamination_suspected } : {})
     };
 
     await studentRef.child(`stages/${stageIndex}`).set(stageEntry);
@@ -186,7 +232,11 @@ export async function handler(event) {
     // Sync to course_progress on submission — pass studentId correctly
     await mirrorToCourseProgress(
       db, courseId, studentId, studentName, stageIndex, stageLabel,
-      "pending_review", submissionId, { submittedAt: now }
+      "pending_review", submissionId, {
+        submittedAt: now,
+        ...(validation_flags        ? { validation_flags }        : {}),
+        ...(contamination_suspected ? { contamination_suspected } : {})
+      }
     );
 
     return ok({ ok: true, status: "pending_review", submissionId });

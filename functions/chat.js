@@ -19,7 +19,10 @@ import { ensureFirebaseAdminApp } from "./firebase-admin.js";
 import { createInitialProcessState, recordHistory } from './process_state_manager.js';
 import { runProjectForward }                        from './project_runtime_driver.js';
 import { buildRuntimeInstructionLayer }             from './runtime_instruction_builder.js';
-import { buildCriticalTextReviewFlow }              from './project_flow_builder.js';
+import { buildCriticalTextReviewFlow, buildPersonalProjectFlow } from './project_flow_builder.js';
+
+// Build the PP flow once at module level for context injection in buildPersonalProjectContextBlock.
+const PP_CONTEXT_FLOW = buildPersonalProjectFlow();
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_URL     = "https://openrouter.ai/api/v1/chat/completions";
@@ -147,6 +150,33 @@ function buildPersonalProjectContextBlock({
   if (effectiveStageText) lines.push(`הנחיית שלב: ${effectiveStageText}`);
   if (ppStageBotHint) lines.push(`botHint לשלב: ${ppStageBotHint}`);
   if (effectivePpPolicy) lines.push(`מדיניות בוט לפרויקט אישי: ${effectivePpPolicy}`);
+
+  // Inject structured validation profile for the current stage so the bot
+  // knows exactly what components to look for and ask about.
+  if (Number.isFinite(numericCurrentStep)) {
+    const flowNode = PP_CONTEXT_FLOW.nodes[numericCurrentStep] || null;
+    if (flowNode) {
+      const profile = {
+        required_outputs: flowNode.required_outputs || [],
+        validation_expectations: flowNode.validation_expectations || []
+      };
+      lines.push(`פרופיל ולידציה לשלב: ${JSON.stringify(profile)}`);
+    }
+  }
+
+  // Explicit enforcement hint: the bot should never write the answer for the student
+  // and should prompt for expansion when the answer is too short.
+  // The threshold is taken from the flow node's min_length (set per-stage in buildPersonalProjectFlow).
+  if (Number.isFinite(numericCurrentStep)) {
+    const flowNode = PP_CONTEXT_FLOW.nodes[numericCurrentStep] || null;
+    const lengthThreshold = (flowNode && typeof flowNode.min_length === 'number')
+      ? flowNode.min_length
+      : 60;
+    lines.push(`הנחיית אכיפה: אם הסטודנט מבקש שתכתוב עבורו — סרב בנימוס והסבר שעליו לנסח בעצמו. אם התשובה קצרה מ-${lengthThreshold} תווים — בקש הרחבה ממוקדת.`);
+  } else {
+    lines.push("הנחיית אכיפה: אם הסטודנט מבקש שתכתוב עבורו — סרב בנימוס והסבר שעליו לנסח בעצמו. אם התשובה קצרה מ-60 תווים — בקש הרחבה ממוקדת.");
+  }
+
   return lines.length ? "## הקשר פרויקט אישי\n" + lines.join("\n") : "";
 }
 
